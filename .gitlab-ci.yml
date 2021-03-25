@@ -1,0 +1,75 @@
+stages:
+  - build
+  - deploy
+  - release
+
+
+build apk:
+  stage: build
+  image: lbry/android-base:platform-28
+  before_script:
+    - echo "$PGP_PRIVATE_KEY" | gpg --batch --import
+    - echo "deb https://dl.bintray.com/sobolevn/deb git-secret main" | tee -a /etc/apt/sources.list
+    - wget -O - https://api.bintray.com/users/sobolevn/keys/gpg/public.key | apt-key add -
+    - apt-get -y update && apt-get -y install build-essential ca-certificates curl git gpg-agent openjdk-8-jdk software-properties-common wget zipalign git-secret
+    - git secret reveal
+    - chmod u+x $CI_PROJECT_DIR/gradlew
+    - export BUILD_VERSION=$($CI_PROJECT_DIR/gradlew -p $CI_PROJECT_DIR -q printVersionName --console=plain | tail -1)
+  artifacts:
+    paths:
+      - bin/browser-*-release__arm.apk
+      - bin/browser-*-release__arm64.apk
+    expire_in: 1 week
+  script:
+    - export PATH=/usr/bin:$PATH
+    - export ANDROID_SDK_ROOT=~/.buildozer/android/platform/android-sdk-23
+    - chmod u+x ./release.sh
+    - ./release.sh
+    - cp bin/browser-$BUILD_VERSION-release__arm.apk /dev/null
+    - cp bin/browser-$BUILD_VERSION-release__arm64.apk /dev/null
+
+deploy build.lbry.io:
+  image: python:stretch
+  stage: deploy
+  dependencies:
+    - build apk
+  before_script:
+    - apt-get -y update && apt-get -y install apt-transport-https
+    - echo "$PGP_PRIVATE_KEY" | gpg --batch --import
+    - echo "deb https://dl.bintray.com/sobolevn/deb git-secret main" | tee -a /etc/apt/sources.list
+    - wget -O - https://api.bintray.com/users/sobolevn/keys/gpg/public.key | apt-key add -
+    - apt-get -y update && apt-get -y install openjdk-8-jdk git git-secret
+    - pip install awscli
+    - chmod u+x $CI_PROJECT_DIR/gradlew
+    - git secret reveal
+    - export BUILD_VERSION=$($CI_PROJECT_DIR/gradlew -p $CI_PROJECT_DIR -q printVersionName --console=plain | tail -1)
+    - export BUILD_APK_FILENAME__32=browser-$BUILD_VERSION-release__arm.apk
+    - export BUILD_APK_FILENAME__64=browser-$BUILD_VERSION-release__arm64.apk
+  script:
+    - aws s3 cp bin/$BUILD_APK_FILENAME__64 s3://build.lbry.io/android/build-${CI_PIPELINE_IID}_commit-${CI_COMMIT_SHA:0:7}/$BUILD_APK_FILENAME__64
+    - aws s3 cp bin/$BUILD_APK_FILENAME__32 s3://build.lbry.io/android/build-${CI_PIPELINE_IID}_commit-${CI_COMMIT_SHA:0:7}/$BUILD_APK_FILENAME__32
+    - aws s3 cp bin/$BUILD_APK_FILENAME__64 s3://build.lbry.io/android/push.apk
+
+release apk:
+  image: python:stretch
+  stage: release
+  only:
+    - tags
+  dependencies:
+    - build apk
+  before_script:
+    - apt-get -y update && apt-get -y install apt-transport-https
+    - echo "$PGP_PRIVATE_KEY" | gpg --batch --import
+    - echo "deb https://dl.bintray.com/sobolevn/deb git-secret main" | tee -a /etc/apt/sources.list
+    - wget -O - https://api.bintray.com/users/sobolevn/keys/gpg/public.key | apt-key add -
+    - apt-get -y update && apt-get -y install openjdk-8-jdk git git-secret
+    - pip install awscli githubrelease
+    - git secret reveal
+    - chmod u+x $CI_PROJECT_DIR/gradlew
+    - export BUILD_VERSION=$($CI_PROJECT_DIR/gradlew -p $CI_PROJECT_DIR -q printVersionName --console=plain | tail -1)
+    - export BUILD_APK_FILENAME__32=browser-$BUILD_VERSION-release__arm.apk
+    - export BUILD_APK_FILENAME__64=browser-$BUILD_VERSION-release__arm64.apk
+  script:
+    - githubrelease release lbryio/lbry-android create $CI_COMMIT_TAG --publish bin/$BUILD_APK_FILENAME__64 bin/$BUILD_APK_FILENAME__32
+    - githubrelease release lbryio/lbry-android edit $CI_COMMIT_TAG --draft
+    - aws s3 cp bin/$BUILD_APK_FILENAME__64 s3://build.lbry.io/android/latest.apk

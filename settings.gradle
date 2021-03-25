@@ -1,0 +1,2 @@
+rootProject.name='Odysee'
+include ':app'

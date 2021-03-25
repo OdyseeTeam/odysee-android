@@ -1,0 +1,45 @@
+package com.odysee.app.tasks;
+
+import android.os.AsyncTask;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.utils.Lbry;
+
+public class SetSdkSettingTask extends AsyncTask<Void, Void, Boolean> {
+    private final String key;
+    private final String value;
+    private final GenericTaskHandler handler;
+    private Exception error;
+    public SetSdkSettingTask(String key, String value, GenericTaskHandler handler) {
+        this.key = key;
+        this.value = value;
+        this.handler = handler;
+    }
+
+    @Override
+    protected Boolean doInBackground(Void... params) {
+        try {
+            Map<String, Object> options = new HashMap<>();
+            options.put("key", key);
+            options.put("value", value);
+            Lbry.genericApiCall("setting_set", options);
+            return true;
+        } catch (ApiCallException ex) {
+            error = ex;
+            return false;
+        }
+    }
+
+    protected void onPostExecute(Boolean result) {
+        if (handler != null) {
+            if (result) {
+                handler.onSuccess();
+            } else {
+                handler.onError(error);
+            }
+        }
+    }
+}

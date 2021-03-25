@@ -1,0 +1,72 @@
+package com.odysee.app.tasks.file;
+
+import android.os.AsyncTask;
+import android.view.View;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.model.LbryFile;
+import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Lbry;
+
+public class GetFileTask extends AsyncTask<Void, Void, LbryFile> {
+    private final String uri;
+    private final boolean saveFile;
+    private final View progressView;
+    private final GetFileHandler handler;
+    private Exception error;
+
+    public GetFileTask(String uri, boolean saveFile, View progressView, GetFileHandler handler) {
+        this.uri = uri;
+        this.saveFile = saveFile;
+        this.progressView = progressView;
+        this.handler = handler;
+    }
+
+    protected void onPreExecute() {
+        Helper.setViewVisibility(progressView, View.VISIBLE);
+        if (handler != null) {
+            handler.beforeStart();
+        }
+    }
+
+    protected LbryFile doInBackground(Void... params) {
+        LbryFile file = null;
+        try {
+            Map<String, Object> options = new HashMap<>();
+            options.put("uri", uri);
+            options.put("save_file", saveFile);
+            JSONObject streamInfo = (JSONObject) Lbry.genericApiCall("get", options);
+            if (streamInfo.has("error")) {
+                throw new ApiCallException(Helper.getJSONString("error", "", streamInfo));
+            }
+
+            file = LbryFile.fromJSONObject(streamInfo);
+        } catch (ApiCallException ex) {
+            error = ex;
+        }
+
+        return file;
+    }
+
+    protected void onPostExecute(LbryFile file) {
+        Helper.setViewVisibility(progressView, View.GONE);
+        if (handler != null) {
+            if (file != null) {
+                handler.onSuccess(file, saveFile);
+            } else {
+                handler.onError(error, saveFile);
+            }
+        }
+    }
+
+    public interface GetFileHandler {
+        void beforeStart();
+        void onSuccess(LbryFile file, boolean saveFile);
+        void onError(Exception error, boolean saveFile);
+    }
+}
