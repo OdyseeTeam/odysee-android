@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="@color/pageBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -25,16 +26,104 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="8dp"
             android:layout_marginEnd="16dp">
-            <TextView
-                android:id="@+id/all_content_page_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:fontFamily="@font/inter"
-                android:text="@string/all_content"
-                android:textSize="20sp"  />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/category_selection_chipgroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleLine="true"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_cheese"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/cheese_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_bighits"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/big_hits_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_gaming"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/gaming_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_lab"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/lab_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_tech"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/tech_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_news"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/news_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_finance20"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/finance20_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_theuniverse"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/theuniverse_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_movies"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/movies_category" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_wildwest"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:text="@string/wildwest_category" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+            </HorizontalScrollView>
             <ProgressBar
                 android:id="@+id/all_content_load_progress"
                 android:visibility="gone"
@@ -73,47 +162,6 @@
                         android:textFontWeight="300"
                         android:textSize="12sp"
                         android:text="@string/trending" />
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_marginStart="2dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_arrow_dropdown"
-                        app:tint="@color/foreground" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/all_content_for_prefix"
-                    android:layout_centerVertical="true"
-                    android:layout_toEndOf="@id/all_content_sort_link"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="2dp"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
-                    android:textSize="12sp"
-                    android:text="@string/for_text"
-                    android:visibility="gone" />
-                <LinearLayout
-                    android:id="@+id/all_content_scope_link"
-                    android:layout_toEndOf="@id/all_content_sort_link"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="2dp"
-                    android:layout_centerVertical="true"
-                    android:visibility="gone">
-                    <TextView
-                        android:id="@+id/all_content_scope_link_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginStart="4dp"
-                        android:fontFamily="@font/inter"
-                        android:textFontWeight="300"
-                        android:textSize="12sp"
-                        android:text="@string/everyone" />
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
@@ -193,9 +241,10 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/all_content_list"
-            android:clipToPadding="false"
-            android:layout_marginTop="2dp"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout_marginTop="2dp"
+            android:clipToPadding="false"
+            tools:listitem="@layout/list_item_stream" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

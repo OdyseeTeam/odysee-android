@@ -35,6 +35,18 @@
     <!-- URI bar -->
     <string name="uri_placeholder">Search videos, music and more</string>
 
+    <!-- Home tab -->
+    <string name="cheese_category">Cheese</string>
+    <string name="big_hits_category">Big Hits</string>
+    <string name="gaming_category">Gaming</string>
+    <string name="lab_category">Lab</string>
+    <string name="tech_category">Tech</string>
+    <string name="news_category">News</string>
+    <string name="finance20_category">Finance 2.0</string>
+    <string name="theuniverse_category">The Universe</string>
+    <string name="movies_category">Movies</string>
+    <string name="wildwest_category">Wild West</string>
+
     <!-- Following page -->
     <string name="find_channels_to_follow">Find Channels to follow</string>
     <string name="channels_you_follow">Channels you follow</string>

@@ -3253,6 +3253,50 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     public void openFragment(Class fragmentClass, boolean allowNavigateBack, int navItemId) {
 //        openFragment(fragmentClass, allowNavigateBack, navItemId, null);
     }
+
+/*
+    public void openFragment(Class fragmentClass, boolean allowNavigateBack, int navItemId, Map<String, Object> params) {
+        try {
+            String key = buildNavFragmentKey(fragmentClass, navItemId, params);
+            Fragment fragment = openNavFragments.containsKey(key) ? openNavFragments.get(key) : (Fragment) fragmentClass.newInstance();
+            if (fragment instanceof BaseFragment) {
+                ((BaseFragment) fragment).setParams(params);
+            }
+            Fragment currentFragment = getCurrentFragment();
+            if (currentFragment != null && currentFragment.equals(fragment)) {
+                return;
+            }
+
+            if (currentFragment != null && ((BaseFragment) currentFragment).getParams() != null
+                    && ((BaseFragment) currentFragment).getParams().containsKey("source")
+                    && ((BaseFragment) currentFragment).getParams().get("source").equals("notification")) {
+
+                Map<String, Object> currentParams = new HashMap<>(1);
+
+                if (((BaseFragment) currentFragment).getParams().containsKey("url"))
+                    currentParams.put("url", ((BaseFragment) currentFragment).getParams().get("url"));
+
+                ((BaseFragment) currentFragment).setParams(currentParams);
+            }
+
+            //fragment.setRetainInstance(true);
+            FragmentManager manager = getSupportFragmentManager();
+            FragmentTransaction transaction = manager.beginTransaction().replace(R.id.content_main, fragment);
+            if (allowNavigateBack) {
+                transaction.addToBackStack(null);
+            }
+            transaction.commit();
+
+            if (navItemId > -1) {
+                openNavFragments.put(key, fragment);
+            }
+        } catch (Exception ex) {
+            // pass
+        }
+    }
+*/
+
+
     public void fetchOwnChannels() {
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {
             @Override

@@ -39,18 +39,17 @@
         <meta-data android:name="wakelock" android:value="0"/>
 
         <activity
+            android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
-            android:name="com.odysee.app.MainActivity"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
             android:theme="@style/AppTheme.NoActionBar"
-            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -86,19 +85,19 @@
         </activity>
 
         <activity
-            android:name="com.odysee.app.FirstRunActivity"
+            android:name=".FirstRunActivity"
             android:launchMode="singleTask"
-            android:parentActivityName="com.odysee.app.MainActivity"
+            android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarTranslucent" />
         <activity
-            android:name="com.odysee.app.VerificationActivity"
+            android:name=".VerificationActivity"
             android:launchMode="singleTask"
-            android:parentActivityName="com.odysee.app.MainActivity"
+            android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarTranslucent"
             android:windowSoftInputMode="adjustResize" />
 
         <service
-            android:name="com.odysee.app.LbrynetMessagingService"
+            android:name=".LbrynetMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -106,7 +105,7 @@
         </service>
 
         <provider
-            android:name="com.odysee.app.LocalFileProvider"
+            android:name=".LocalFileProvider"
             android:authorities="com.odysee.app.fileprovider"
             android:grantUriPermissions="true"
             android:exported="false">

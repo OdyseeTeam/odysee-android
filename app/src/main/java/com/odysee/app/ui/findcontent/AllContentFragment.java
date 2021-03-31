@@ -14,6 +14,7 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
@@ -40,6 +41,7 @@ import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.tasks.FollowUnfollowTagTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -56,7 +58,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private View customizeLink;
     private View sortLink;
     private View contentFromLink;
-    private View scopeLink;
     private TextView titleView;
     private TextView sortLinkText;
     private TextView contentFromLinkText;
@@ -79,6 +80,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private int currentClaimSearchPage;
     private ClaimSearchTask contentClaimSearchTask;
 
+    private ChipGroup categorySelection;
+    private String claim_search = "cheese";
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_all_content, container, false);
@@ -88,21 +92,46 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
 
         layoutFilterContainer = root.findViewById(R.id.all_content_filter_container);
-        titleView = root.findViewById(R.id.all_content_page_title);
         sortLink = root.findViewById(R.id.all_content_sort_link);
         contentFromLink = root.findViewById(R.id.all_content_time_link);
-        scopeLink = root.findViewById(R.id.all_content_scope_link);
         customizeLink = root.findViewById(R.id.all_content_customize_link);
         fromPrefix = root.findViewById(R.id.all_content_from_prefix);
-        forPrefix = root.findViewById(R.id.all_content_for_prefix);
 
         sortLinkText = root.findViewById(R.id.all_content_sort_link_text);
         contentFromLinkText = root.findViewById(R.id.all_content_time_link_text);
-        scopeLinkText = root.findViewById(R.id.all_content_scope_link_text);
 
         bigContentLoading = root.findViewById(R.id.all_content_main_progress);
         contentLoading = root.findViewById(R.id.all_content_load_progress);
         noContentView = root.findViewById(R.id.all_content_no_claim_search_content);
+
+        categorySelection = root.findViewById(R.id.category_selection_chipgroup);
+        categorySelection.setOnCheckedChangeListener(new ChipGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(ChipGroup group, int checkedId) {
+                // TODO Check that shown content corresponds with expected one, including "sortBy"
+                if (checkedId == R.id.chip_cheese)
+                    claim_search = "cheese";
+                else if (checkedId == R.id.chip_bighits)
+                    claim_search = "bighits";
+                else if (checkedId == R.id.chip_gaming)
+                    claim_search = "gaming";
+                else if (checkedId == R.id.chip_lab)
+                    claim_search = "lab";
+                else if (checkedId == R.id.chip_tech)
+                    claim_search = "tech";
+                else if (checkedId == R.id.chip_news)
+                    claim_search = "news";
+                else if (checkedId == R.id.chip_finance20)
+                    claim_search = "finance";
+                else if (checkedId == R.id.chip_theuniverse)
+                    claim_search = "theuniverse";
+                else if (checkedId == R.id.chip_movies)
+                    claim_search = "movies";
+                else if (checkedId == R.id.chip_wildwest)
+                    claim_search = "wildwest";
+                onCategoryChanged(claim_search);
+            }
+        });
 
         contentList = root.findViewById(R.id.all_content_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -146,25 +175,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 if (context instanceof MainActivity) {
                     MainActivity activity = (MainActivity) context;
                     dialog.show(activity.getSupportFragmentManager(), ContentSortDialogFragment.TAG);
-                }
-            }
-        });
-        scopeLink.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ContentScopeDialogFragment dialog = ContentScopeDialogFragment.newInstance();
-                dialog.setCurrentScopeItem(currentContentScope);
-                dialog.setContentScopeListener(new ContentScopeDialogFragment.ContentScopeListener() {
-                    @Override
-                    public void onContentScopeItemSelected(int scopeItem) {
-                        onContentScopeChanged(scopeItem);
-                    }
-                });
-
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) context;
-                    dialog.show(activity.getSupportFragmentManager(), ContentScopeDialogFragment.TAG);
                 }
             }
         });
@@ -224,11 +234,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 currentContentScope = ContentScopeDialogFragment.ITEM_TAGS;
                 Helper.setViewVisibility(customizeLink, View.VISIBLE);
             }
-            titleView.setText(getString(R.string.all_content));
         }
-
-        Helper.setViewVisibility(forPrefix, singleTagView ? View.GONE : View.VISIBLE);
-        Helper.setViewVisibility(scopeLink, singleTagView ? View.GONE : View.VISIBLE);
 
         if (reload) {
             fetchClaimSearchContent(true);
@@ -244,26 +250,12 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         fetchClaimSearchContent(true);
     }
 
-    private void onContentScopeChanged(int contentScope) {
-        currentContentScope = contentScope;
+    private void onCategoryChanged(String newCategory) {
+        if (newCategory.equals("wildwest"))
+            layoutFilterContainer.setVisibility(View.INVISIBLE);
+        else
+            layoutFilterContainer.setVisibility(View.VISIBLE);
 
-        // rebuild options and search
-        updateContentScopeLinkText();
-        boolean isTagScope = currentContentScope == ContentScopeDialogFragment.ITEM_TAGS;
-        if (isTagScope) {
-            tags = Helper.getTagsForTagObjects(Lbry.followedTags);
-            // Update tags list with the user's followed tags
-            if (tags == null || tags.size() == 0) {
-                Snackbar.make(getView(), R.string.customize_tags_hint, Snackbar.LENGTH_LONG).setAction(R.string.customize, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        // show customize
-                        showCustomizeTagsDialog();
-                    }
-                }).show();
-            }
-        }
-        Helper.setViewVisibility(customizeLink, isTagScope ? View.VISIBLE : View.GONE);
         fetchClaimSearchContent(true);
     }
 
@@ -410,22 +402,25 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
+        List<String> channelIdList = new ArrayList();
+        channelIdList = ContentSources.get(claim_search);
+
         return Lbry.buildClaimSearchOptions(
                 (List) null,
                 (currentContentScope == ContentScopeDialogFragment.ITEM_EVERYONE) ? null : tags,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
-                null,
+                channelIdList,
                 null,
                 getContentSortOrder(),
-                contentReleaseTime,
+                claim_search.equals("wildwest") ? Helper.buildReleaseTime(1) : contentReleaseTime,
                 0,
-                0,
+                claim_search.equals("movies") ? 20 : 0,
                 currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,
                 Helper.CONTENT_PAGE_SIZE);
     }
 
     private List<String> getContentSortOrder() {
-        if (contentSortOrder == null) {
+        if (contentSortOrder == null || claim_search.equals("wildwest")) {
             return Arrays.asList(Claim.ORDER_BY_TRENDING_GROUP, Claim.ORDER_BY_TRENDING_MIXED);
         }
         return contentSortOrder;
