@@ -48,6 +48,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -573,7 +574,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 nowPlayingClaim = null;
                 nowPlayingClaimUrl = null;
                 nowPlayingClaimBitmap = null;
-                findViewById(R.id.global_now_playing_card).setVisibility(View.GONE);
+                findViewById(R.id.miniplayer).setVisibility(View.GONE);
             }
         });
 
@@ -628,10 +629,12 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         int miniPlayerBottomMargin = Helper.parseInt(
                 sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
-        ConstraintLayout.LayoutParams lp = (ConstraintLayout.LayoutParams) findViewById(R.id.global_now_playing_card).getLayoutParams();
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
         int scaledMiniPlayerBottomMargin = getScaledValue(miniPlayerBottomMargin);
-        lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
+        if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
+            lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
+        }
     }
 
     public boolean isDarkMode() {
@@ -902,7 +905,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
         }
-//        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
+        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
     }
 
     private void openSpecialUrl(String url, String source) {
@@ -931,7 +934,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         Map<String, Object> params = new HashMap<>();
         params.put("claimId", claim.getClaimId());
         params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
-//        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
+        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
     }
 
     public void openRewards() {
@@ -961,7 +964,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     private void renderPictureInPictureMode() {
         findViewById(R.id.content_main).setVisibility(View.GONE);
         findViewById(R.id.floating_balance_main_container).setVisibility(View.GONE);
-        findViewById(R.id.global_now_playing_card).setVisibility(View.GONE);
+        findViewById(R.id.miniplayer).setVisibility(View.GONE);
         //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
         findViewById(R.id.app_bar_main_container).setFitsSystemWindows(true);
         hideNotifications();
@@ -1007,7 +1010,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 fragment instanceof SearchFragment;
         findViewById(R.id.floating_balance_main_container).setVisibility(!canShowFloatingBalance || inFullscreenMode ? View.INVISIBLE : View.VISIBLE);
         if (!(fragment instanceof FileViewFragment) && !(fragment instanceof ShuffleFragment) && !inFullscreenMode && nowPlayingClaim != null) {
-            findViewById(R.id.global_now_playing_card).setVisibility(View.VISIBLE);
+            findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
         }
         /*if (!Lbry.SDK_READY && !inFullscreenMode) {
             findViewById(R.id.global_sdk_initializing_status).setVisibility(View.VISIBLE);
@@ -1647,11 +1650,12 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
 
         if (nowPlayingClaim != null) {
-            findViewById(R.id.global_now_playing_card).setVisibility(View.VISIBLE);
+            findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
         if (appPlayer != null) {
+            // TODO This will reset player when changing tabs. See if it is needed
             PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
             playerView.setPlayer(appPlayer);
@@ -1663,7 +1667,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     public void hideGlobalNowPlaying() {
-        findViewById(R.id.global_now_playing_card).setVisibility(View.GONE);
+        findViewById(R.id.miniplayer).setVisibility(View.GONE);
     }
 
     public void unsetFitsSystemWindows(View view) {
@@ -2467,23 +2471,24 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 handled = true;
                 return;
             }
-
-            if (!handled) {
-                // check fragment and nav history
-                FragmentManager manager = getSupportFragmentManager();
-                int backCount = getSupportFragmentManager().getBackStackEntryCount();
-                if (backCount > 0) {
-                    // we can pop the stack
-                    manager.popBackStack();
-                    setSelectedNavMenuItemForFragment(getCurrentFragment());
-                } else if (!enterPIPMode()) {
-                    // we're at the top of the stack
-                    moveTaskToBack(true);
-                    return;
-                }
-            }
-        }
 */
+        // check fragment and nav history
+        FragmentManager manager = getSupportFragmentManager();
+        int backCount = getSupportFragmentManager().getBackStackEntryCount();
+        if (backCount > 0) {
+            // we can pop the stack
+            manager.popBackStack();
+
+            if (backCount == 1) { // It was 1 before popping
+                findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+                findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+            }
+        } else if (!enterPIPMode()) {
+            // we're at the top of the stack
+            moveTaskToBack(true);
+            return;
+        }
     }
 
     public void simpleSignIn() {
@@ -3143,7 +3148,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         nowPlayingClaim = null;
         nowPlayingClaimUrl = null;
         nowPlayingClaimBitmap = null;
-        findViewById(R.id.global_now_playing_card).setVisibility(View.GONE);
+        findViewById(R.id.miniplayer).setVisibility(View.GONE);
         ((TextView) findViewById(R.id.global_now_playing_title)).setText(null);
         ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(null);
         if (appPlayer != null) {
@@ -3254,11 +3259,9 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 //        openFragment(fragmentClass, allowNavigateBack, navItemId, null);
     }
 
-/*
     public void openFragment(Class fragmentClass, boolean allowNavigateBack, int navItemId, Map<String, Object> params) {
         try {
-            String key = buildNavFragmentKey(fragmentClass, navItemId, params);
-            Fragment fragment = openNavFragments.containsKey(key) ? openNavFragments.get(key) : (Fragment) fragmentClass.newInstance();
+            Fragment fragment = (Fragment) fragmentClass.newInstance();
             if (fragment instanceof BaseFragment) {
                 ((BaseFragment) fragment).setParams(params);
             }
@@ -3281,21 +3284,18 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
             //fragment.setRetainInstance(true);
             FragmentManager manager = getSupportFragmentManager();
-            FragmentTransaction transaction = manager.beginTransaction().replace(R.id.content_main, fragment);
+            FragmentTransaction transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
             if (allowNavigateBack) {
                 transaction.addToBackStack(null);
             }
             transaction.commit();
-
-            if (navItemId > -1) {
-                openNavFragments.put(key, fragment);
-            }
+            findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
+            findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+            findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
         } catch (Exception ex) {
             // pass
         }
     }
-*/
-
 
     public void fetchOwnChannels() {
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {

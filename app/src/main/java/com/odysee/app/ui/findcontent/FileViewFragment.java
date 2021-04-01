@@ -803,6 +803,7 @@ public class FileViewFragment extends BaseFragment implements
             activity.removeWalletBalanceListener(this);
             activity.restoreWalletContainerPosition();
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            activity.checkNowPlaying();
         }
 
         closeWebView();
