@@ -940,10 +940,9 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
     private void renderPictureInPictureMode() {
         findViewById(R.id.content_main).setVisibility(View.GONE);
-        findViewById(R.id.floating_balance_main_container).setVisibility(View.GONE);
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
         //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
-        findViewById(R.id.app_bar_main_container).setFitsSystemWindows(true);
+        findViewById(R.id.appbar).setFitsSystemWindows(true);
         hideNotifications();
         hideActionBar();
         dismissActiveDialogs();
@@ -977,14 +976,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
         findViewById(R.id.content_main).setVisibility(View.VISIBLE);
         Fragment fragment = getCurrentFragment();
-        boolean canShowFloatingBalance = fragment == null ||
-                fragment instanceof FollowingFragment ||
-                fragment instanceof FileViewFragment ||
-                fragment instanceof ChannelFragment ||
-                fragment instanceof AllContentFragment ||
-                fragment instanceof LibraryFragment ||
-                fragment instanceof SearchFragment;
-        findViewById(R.id.floating_balance_main_container).setVisibility(!canShowFloatingBalance || inFullscreenMode ? View.INVISIBLE : View.VISIBLE);
         if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
         }
@@ -2623,15 +2614,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     private Fragment getCurrentFragment() {
-        int backCount = getSupportFragmentManager().getBackStackEntryCount();
-        if (backCount > 0) {
-            try {
-                return getSupportFragmentManager().getFragments().get(backCount - 1);
-            } catch (IndexOutOfBoundsException ex) {
-                return null;
-            }
-        }
-        return null;
+        return getSupportFragmentManager().findFragmentById(R.id.content_main);
     }
 
     public void hideActionBar() {
