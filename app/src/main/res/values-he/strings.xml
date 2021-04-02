@@ -20,7 +20,6 @@
     <string name="settings">הגדרות</string>
     <string name="about">אודות</string>
     <string name="sign_in">כניסה</string>
-    <string name="shuffle">ערבול</string>
     <string name="startup_failed">אתחול אפליקציה נכשל. אנא בדוק את החיבור לנתונים ונסה שנית. אם הבעיה חוזרת על עצמה, אנא שלח דוא\"ל אל hello@lbry.com</string>
     <string name="no_claim_search_content">אין תוכן להצגה כרגע. אנא שפר את תנאי החיפוש או חזור שנית מאוחר יותר.</string>
 

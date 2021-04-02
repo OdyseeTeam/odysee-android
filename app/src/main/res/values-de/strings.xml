@@ -20,7 +20,6 @@
     <string name="settings">Einstellungen</string>
     <string name="about">Über</string>
     <string name="sign_in">Anmelden</string>
-    <string name="shuffle">Zufällig</string>
     <string name="startup_failed">App-Start fehlgeschlagen. Bitte überprüfe Deine Datenverbindung und versuche es erneut. Wenn dieses Problem weiterhin bestehen sollte, sende bitte einen E-Mail an hello@lbry.com</string>
     <string name="no_claim_search_content">Derzeit sind keine Inhalte verfügbar. Bitte verfeinere Deine Auswahl oder versuche es später erneut.</string>
 

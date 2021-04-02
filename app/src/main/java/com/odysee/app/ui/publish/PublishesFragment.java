@@ -81,7 +81,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
         public void onClick(View view) {
             Context context = getContext();
             if (context instanceof MainActivity) {
-                ((MainActivity) context).openFragment(PublishFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH);
+                ((MainActivity) context).openFragment(PublishFragment.class, true, null);
             }
         }
     };

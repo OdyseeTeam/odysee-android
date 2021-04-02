@@ -20,7 +20,6 @@
     <string name="settings">設定</string>
     <string name="about">關於</string>
     <string name="sign_in">登入</string>
-    <string name="shuffle">隨機播放</string>
     <string name="startup_failed">程式啟動失敗。請檢查網絡連線，然後再次嘗試。\n如此問題持續發生，請發送電子郵件至 hello@lbry.com。</string>
     <string name="no_claim_search_content">目前沒有可顯示的內容。請重新選擇或稍後再回來。</string>
 

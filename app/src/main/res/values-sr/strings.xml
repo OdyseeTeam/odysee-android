@@ -20,7 +20,6 @@
     <string name="settings">Podešavanja</string>
     <string name="about">O Nama</string>
     <string name="sign_in">Prijavi Se</string>
-    <string name="shuffle">Izmiksuj</string>
     <string name="startup_failed">Aplikacija je naišla na problem. Molimo vas da proverite vašu vezu sa internetom i probate ponovo. Ukoliko problem i dalje postoji, kontaktirajte nas na hello@lbry.com</string>
     <string name="no_claim_search_content">Trenutno nemamo sadržaja za vas. Preciznije definišite ono šta tražite ili pokušajte ponovo kasnije.</string>
 

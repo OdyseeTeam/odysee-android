@@ -20,7 +20,6 @@
     <string name="settings">Ustawienia</string>
     <string name="about">O aplikacji</string>
     <string name="sign_in">Zaloguj się</string>
-    <string name="shuffle">Wymieszaj</string>
     <string name="startup_failed">Uruchomienie aplikacji nie powiodło się. Sprawdź stan podłącznia do sieci danych i spróbuj ponownie. Jeśli to nie pomoże usunąć usterki, wyślij e-mail na adres hello@lbry.com</string>
     <string name="no_claim_search_content">Brak zawartości do wyświetlenia w tej chwili. Spróbuj zawęzić swój wybór lub sprawdź później. </string>
 

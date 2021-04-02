@@ -364,7 +364,7 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             public void onClick(View view) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openFragment(TransactionHistoryFragment.class, true, NavMenuItem.ID_ITEM_WALLET);
+                    ((MainActivity) context).openFragment(TransactionHistoryFragment.class, true, null);
                 }
             }
         });

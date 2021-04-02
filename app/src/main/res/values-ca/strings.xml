@@ -20,7 +20,6 @@
     <string name="settings">Configuració</string>
     <string name="about">Quant a</string>
     <string name="sign_in">Inicia sessió</string>
-    <string name="shuffle">Mescla</string>
     <string name="startup_failed">Error en iniciar l\'aplicació. Sisplau, comprova la teva connexió i torna a intentar-ho. Si el problema persisteix, sisplau envia un correu a hello@lbry.com</string>
     <string name="no_claim_search_content">No hi ha contingut per mostrar en aquest moment. Sisplau, canvia la teva selecció o comprova-ho més tard.</string>
 

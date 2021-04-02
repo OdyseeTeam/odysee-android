@@ -20,7 +20,6 @@
     <string name="settings">Ajustes</string>
     <string name="about">Acerca de</string>
     <string name="sign_in">Registrarse</string>
-    <string name="shuffle">Aleatorio</string>
     <string name="startup_failed">Error al iniciar la aplicación. Verifique su conexión de datos e inténtelo nuevamente. Si este problema persiste, por favor envíe un correo electrónico a hello@lbry.com</string>
     <string name="no_claim_search_content">No hay contenido para mostrar en este momento. Por favor, cambie su selección o realice la consulta más tarde.</string>
 

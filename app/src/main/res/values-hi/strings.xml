@@ -20,7 +20,6 @@
     <string name="settings">समायोजन ,  सेटिंग्स</string>
     <string name="about">के बारे में</string>
     <string name="sign_in">साइन इन</string>
-    <string name="shuffle">मिश्रण</string>
     <string name="startup_failed">आप शुरू नहीं हो पाया है। कृपया अपना डाटा कनेक्शन चेक करें और पुनः प्रयास करें ।अगर यह समस्या निरंतर बनी रहती है तो कृपया hello@lbry.com पर ईमेल करें</string>
     <string name="no_claim_search_content">इस समय प्रदर्शन के लिए कोई सामग्री नहीं है। कृपया अपने चयन को और स्पष्ट करें अथवा कुछ देर बाद प्रयास करें</string>
 

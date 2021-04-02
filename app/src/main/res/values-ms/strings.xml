@@ -20,7 +20,6 @@
     <string name="settings">Tetapan</string>
     <string name="about">Perihal</string>
     <string name="sign_in">Masuk</string>
-    <string name="shuffle">Rombak</string>
     <string name="startup_failed">Aplikasi gagal dimulakan. Periksa sambungan data anda dan cuba lagi. Sekiranya masalah ini berlanjutan, hantarkan e-mel ke hello@lbry.com</string>
     <string name="no_claim_search_content">Tiada kandungan untuk dipaparkan pada masa ini. Halusi pilihan anda atau periksa semula kemudian.</string>
 

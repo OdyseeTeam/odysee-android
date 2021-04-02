@@ -20,7 +20,6 @@
     <string name="settings">Réglages</string>
     <string name="about">À propos de</string>
     <string name="sign_in">Se connecter</string>
-    <string name="shuffle">Mélanger</string>
     <string name="startup_failed">Démarrage app a échoué. Veuillez vérifier votre connexion de données et réessayer. Si ce problème persiste, veuillez envoyer un courriel hello@lbry.com</string>
     <string name="no_claim_search_content">Aucun contenu à afficher pour le moment. S’il vous plaît affiner votre sélection ou vérifier plus tard.</string>
 

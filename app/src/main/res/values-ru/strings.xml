@@ -20,7 +20,6 @@
     <string name="settings">Настройки</string>
     <string name="about">О</string>
     <string name="sign_in">Войти</string>
-    <string name="shuffle">Перемешать</string>
     <string name="startup_failed">Приложение не смогло запуститься. Пожалуйста, проверьте ваше соединение и попробуйте снова. Если проблема остаётся, пожалуйста, напишите сообщение на hello@lbry.com</string>
     <string name="no_claim_search_content">Не найден контент для отображения. Пожалуйста, измените запрос или попробуйте позже. </string>
 

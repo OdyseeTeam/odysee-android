@@ -20,7 +20,6 @@
     <string name="settings">Configurações</string>
     <string name="about">Sobre</string>
     <string name="sign_in">Entre</string>
-    <string name="shuffle">Shuffle</string>
     <string name="startup_failed">Falha na inicialização do aplicativo. Verifique sua conexão de dados e tente novamente. Se esse problema persistir, envie um email para hello@lbry.com</string>
     <string name="no_claim_search_content">Nenhum conteúdo para exibir no momento. Refine sua seleção ou volte mais tarde.</string>
 

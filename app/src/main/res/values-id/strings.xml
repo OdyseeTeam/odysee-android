@@ -20,7 +20,6 @@
     <string name="settings">Pengaturan</string>
     <string name="about">Tentang</string>
     <string name="sign_in">Masuk</string>
-    <string name="shuffle">Acak</string>
     <string name="startup_failed">Gagal Memulai aplikasi. Silakan periksa koneksi data Anda dan coba lagi. Jika masalah ini terus berlanjut, silakan kirim email ke hello@lbry.com</string>
     <string name="no_claim_search_content">Tidak ada konten untuk ditampilkan saat ini. Harap perbaiki pilihan Anda atau periksa kembali nanti.</string>
 

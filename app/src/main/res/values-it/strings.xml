@@ -20,7 +20,6 @@
     <string name="settings">Impostazioni</string>
     <string name="about">A riguardo</string>
     <string name="sign_in">Accedi</string>
-    <string name="shuffle">Mescola</string>
     <string name="startup_failed">Avvio app fallito. Per favore contraolla i tuoi dati di connessione e riprova. Se il problema persiste, per favore invia una email a hello@lbry.com</string>
     <string name="no_claim_search_content">Nessun contenuto da visualizzare al momento. Per favore migliora la selezione o riprova più tardi.</string>
 

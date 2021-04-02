@@ -18,7 +18,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.content.res.TypedArray;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -30,23 +29,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -84,15 +77,11 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.core.content.res.ResourcesCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
-import androidx.core.view.GravityCompat;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -177,7 +166,6 @@ import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.lbryinc.AndroidPurchaseTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchRewardsTask;
-import com.odysee.app.tasks.LighthouseAutoCompleteTask;
 import com.odysee.app.tasks.MergeSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
@@ -193,20 +181,16 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.UnlockTipsTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
-import com.odysee.app.ui.findcontent.EditorsChoiceFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.other.AboutFragment;
-import com.odysee.app.ui.publish.PublishFormFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
 import com.odysee.app.ui.findcontent.SearchFragment;
-import com.odysee.app.ui.findcontent.ShuffleFragment;
 import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
@@ -217,7 +201,6 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
-import com.odysee.app.R;
 import io.lbry.lbrysdk.DownloadManager;
 import io.lbry.lbrysdk.LbrynetService;
 import io.lbry.lbrysdk.ServiceHelper;
@@ -536,7 +519,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         fragmentManager.addOnBackStackChangedListener(backStackChangedListener);
 
         BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-
         bottomNavigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -605,11 +587,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             public void onClick(View view) {
                 if (nowPlayingClaim != null && !Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
                     hideNotifications();
-                    if (nowPlayingSource == SOURCE_NOW_PLAYING_SHUFFLE) {
-                        openFragment(ShuffleFragment.class, true, NavMenuItem.ID_ITEM_SHUFFLE);
-                    } else {
-                        openFileUrl(nowPlayingClaimUrl);
-                    }
+                    openFileUrl(nowPlayingClaimUrl);
                 }
             }
         });
@@ -672,7 +650,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         specialRouteFragmentClassMap.put("settings", SettingsFragment.class);
         specialRouteFragmentClassMap.put("subscription", FollowingFragment.class);
         specialRouteFragmentClassMap.put("subscriptions", FollowingFragment.class);
-        specialRouteFragmentClassMap.put("surf", ShuffleFragment.class);
         specialRouteFragmentClassMap.put("wallet", WalletFragment.class);
         specialRouteFragmentClassMap.put("discover", FollowingFragment.class);
     }
@@ -844,7 +821,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             public void run() {
                 try {
                     getSupportFragmentManager().popBackStack();
-                    openFragment(PublishesFragment.class, true, NavMenuItem.ID_ITEM_PUBLISHES);
+                    openFragment(PublishesFragment.class, true, null);
                 } catch (IllegalStateException ex) {
                     // pass
                     try {
@@ -905,7 +882,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
         }
-        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
+        openFragment(FileViewFragment.class, true, params);
     }
 
     private void openSpecialUrl(String url, String source) {
@@ -934,11 +911,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         Map<String, Object> params = new HashMap<>();
         params.put("claimId", claim.getClaimId());
         params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
-        openFragment(FileViewFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
+        openFragment(FileViewFragment.class, true, params);
     }
 
     public void openRewards() {
-        openFragment(RewardsFragment.class, true, NavMenuItem.ID_ITEM_REWARDS);
+        openFragment(RewardsFragment.class, true, null);
     }
 
     private final FragmentManager.OnBackStackChangedListener backStackChangedListener = new FragmentManager.OnBackStackChangedListener() {
@@ -1004,12 +981,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 fragment instanceof FollowingFragment ||
                 fragment instanceof FileViewFragment ||
                 fragment instanceof ChannelFragment ||
-                fragment instanceof EditorsChoiceFragment ||
                 fragment instanceof AllContentFragment ||
                 fragment instanceof LibraryFragment ||
                 fragment instanceof SearchFragment;
         findViewById(R.id.floating_balance_main_container).setVisibility(!canShowFloatingBalance || inFullscreenMode ? View.INVISIBLE : View.VISIBLE);
-        if (!(fragment instanceof FileViewFragment) && !(fragment instanceof ShuffleFragment) && !inFullscreenMode && nowPlayingClaim != null) {
+        if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
         }
         /*if (!Lbry.SDK_READY && !inFullscreenMode) {
@@ -1252,9 +1228,9 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             openChannelUrl(pendingChannelUrl);
             pendingChannelUrl = null;
         } else if (pendingOpenWalletPage) {
-            openFragment(WalletFragment.class, true, NavMenuItem.ID_ITEM_WALLET);
+            openFragment(WalletFragment.class, true, null);
         } else if (pendingOpenRewardsPage) {
-            openFragment(RewardsFragment.class, true, NavMenuItem.ID_ITEM_REWARDS);
+            openFragment(RewardsFragment.class, true, null);
         }
     }
 
@@ -2636,12 +2612,14 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
 
     private void showSignedInUser() {
+/*
         if (Lbryio.isSignedIn()) {
             findViewById(R.id.sign_in_button_container).setVisibility(View.GONE);
             findViewById(R.id.signed_in_email_container).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.signed_in_email)).setText(Lbryio.getSignedInEmail());
             findViewById(R.id.sign_in_header_divider).setBackgroundColor(getResources().getColor(R.color.lightDivider));
         }
+*/
     }
 
     private Fragment getCurrentFragment() {
@@ -2933,7 +2911,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (fragment != null) {
             openFragment(fragment, true);
         } else {
-            openFragment(FollowingFragment.class, false, NavMenuItem.ID_ITEM_FOLLOWING);
+            openFragment(FollowingFragment.class, false, null);
         }
     }
 
@@ -3086,55 +3064,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         return notification;
     }
 
-    private static List<NavMenuItem> buildNavMenu(Context context) {
-        NavMenuItem findContentGroup = new NavMenuItem(NavMenuItem.ID_GROUP_FIND_CONTENT, R.string.find_content, true, context);
-        NavMenuItem yourContentGroup = new NavMenuItem(NavMenuItem.ID_GROUP_YOUR_CONTENT, R.string.your_content, true, context);
-        NavMenuItem walletGroup = new NavMenuItem(NavMenuItem.ID_GROUP_WALLET, R.string.wallet, true, context);
-        NavMenuItem otherGroup = new NavMenuItem(NavMenuItem.ID_GROUP_OTHER, 0, true, context);
-
-        findContentGroup.setItems(Arrays.asList(
-                new NavMenuItem(NavMenuItem.ID_ITEM_FOLLOWING, R.string.fa_heart, R.string.following, "Following", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_EDITORS_CHOICE, R.string.fa_star, R.string.editors_choice, "EditorsChoice", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_ALL_CONTENT, R.string.fa_globe_americas, R.string.all_content, "AllContent", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_SHUFFLE, R.string.fa_random, R.string.shuffle, "Shuffle",context)
-        ));
-
-        yourContentGroup.setItems(Arrays.asList(
-                new NavMenuItem(NavMenuItem.ID_ITEM_NEW_PUBLISH, R.string.fa_upload, R.string.new_publish, "NewPublish", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_CHANNELS, R.string.fa_at, R.string.channels, "Channels", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_LIBRARY, R.string.fa_download, R.string.library, "Library", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_PUBLISHES, R.string.fa_cloud_upload, R.string.publishes, "Publishes", context)
-        ));
-
-        walletGroup.setItems(Arrays.asList(
-                new NavMenuItem(NavMenuItem.ID_ITEM_WALLET, R.string.fa_wallet, R.string.wallet, "Wallet", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_REWARDS, R.string.fa_award, R.string.rewards, "Rewards", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_INVITES, R.string.fa_user_friends, R.string.invites, "Invites", context)
-        ));
-
-        otherGroup.setItems(Arrays.asList(
-                new NavMenuItem(NavMenuItem.ID_ITEM_SETTINGS, R.string.fa_cog, R.string.settings, "Settings", context),
-                new NavMenuItem(NavMenuItem.ID_ITEM_ABOUT, R.string.fa_mobile_alt, R.string.about, "About", context)
-        ));
-
-        return Arrays.asList(findContentGroup, yourContentGroup, walletGroup, otherGroup);
-    }
-
-    // Flatten the structure into a single list for the RecyclerView
-    private static List<NavMenuItem> flattenNavMenu(List<NavMenuItem> navMenuItems) {
-        List<NavMenuItem> flatMenu = new ArrayList<>();
-        for (NavMenuItem item : navMenuItems) {
-            flatMenu.add(item);
-            if (item.getItems() != null) {
-                for (NavMenuItem subItem : item.getItems()) {
-                    flatMenu.add(subItem);
-                }
-            }
-        }
-
-        return flatMenu;
-    }
-
     public void setNowPlayingClaim(Claim claim, String url) {
         nowPlayingClaim = claim;
         nowPlayingClaimUrl = url;
@@ -3237,6 +3166,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         super.onStop();
     }
 
+    /**
+     * Used for search and on startup
+     * @param fragment
+     * @param allowNavigateBack
+     */
     public void openFragment(Fragment fragment, boolean allowNavigateBack) {
         Fragment currentFragment = getCurrentFragment();
         if (currentFragment != null && currentFragment.equals(fragment)) {
@@ -3255,11 +3189,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
     }
 
-    public void openFragment(Class fragmentClass, boolean allowNavigateBack, int navItemId) {
-//        openFragment(fragmentClass, allowNavigateBack, navItemId, null);
-    }
-
-    public void openFragment(Class fragmentClass, boolean allowNavigateBack, int navItemId, Map<String, Object> params) {
+    public void openFragment(Class fragmentClass, boolean allowNavigateBack, @Nullable Map<String, Object> params) {
         try {
             Fragment fragment = (Fragment) fragmentClass.newInstance();
             if (fragment instanceof BaseFragment) {
