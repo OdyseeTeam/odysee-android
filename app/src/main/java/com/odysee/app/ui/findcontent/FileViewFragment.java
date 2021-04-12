@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -97,7 +98,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -110,6 +115,8 @@ import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.exceptions.LbryioRequestException;
+import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
@@ -122,7 +129,6 @@ import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
 import com.odysee.app.model.Fee;
 import com.odysee.app.model.LbryFile;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.WalletBalance;
@@ -152,7 +158,6 @@ import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.tasks.lbryinc.LogFileViewTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.controls.SolidIconView;
-import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -161,6 +166,7 @@ import com.odysee.app.utils.Lbryio;
 import io.lbry.lbrysdk.DownloadManager;
 import io.lbry.lbrysdk.LbrynetService;
 import io.lbry.lbrysdk.Utils;
+import okhttp3.Response;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -221,6 +227,11 @@ public class FileViewFragment extends BaseFragment implements
     private View buttonClearReplyToComment;
     private TextView textNothingAtLocation;
 
+    private TextView likeReactionAmount;
+    private TextView dislikeReactionAmount;
+    private ImageView likeReactionIcon;
+    private ImageView dislikeReactionIcon;
+
     private boolean postingComment;
     private boolean fetchingChannels;
     private View progressLoadingChannels;
@@ -273,6 +284,11 @@ public class FileViewFragment extends BaseFragment implements
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
+
+        likeReactionAmount = root.findViewById(R.id.likes_amount);
+        dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
+        likeReactionIcon = root.findViewById(R.id.like_icon);
+        dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
 
         inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
         inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
@@ -1498,6 +1514,7 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(tipButton, View.VISIBLE);
 
         loadViewCount();
+        loadReactions();
         checkIsFollowing();
         
         View root = getView();
@@ -1877,6 +1894,118 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void loadReactions() {
+        loadReactions(claim);
+    }
+    private void loadReactions(Claim c) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        Callable<Integer[]> callable = () -> {
+            Integer[] reactions = { 0, 0, 0, 0};
+            Map<String, String> options = new HashMap<String, String>();
+            options.put("claim_ids", c.getClaimId());
+
+            JSONObject data = null;
+            Integer likeReactionsCount;
+            try {
+                data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
+
+                if (data != null && data.has("others_reactions")) {
+                    JSONObject othersReactions = (JSONObject) data.get("others_reactions");
+                    if (othersReactions.has(c.getClaimId())) {
+                        Integer likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                        reactions[0] = likesFromOthers;
+                        Integer dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                        reactions[1] = dislikesFromOthers;
+                    }
+                }
+                if (data != null && data.has("my_reactions")) {
+                    JSONObject othersReactions = (JSONObject) data.get("my_reactions");
+                    if (othersReactions.has(claim.getClaimId())) {
+                        Integer likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                        reactions[2] = likes;
+                        Integer dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                        reactions[3] = dislikes;
+                    }
+                }
+            } catch (LbryioRequestException | LbryioResponseException e) {
+                e.printStackTrace();
+            }
+            return reactions;
+        };
+
+        Future<Integer[]> futureReactions = executor.submit(callable);
+
+        Integer[] result = null;
+
+        try {
+            result = futureReactions.get();
+            likeReactionAmount.setText(result[0].toString());
+            dislikeReactionAmount.setText(result[1].toString());
+
+            if (result[2] != 0) {
+                likeReactionIcon.setColorFilter(getContext().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+            } else {
+                likeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
+            }
+
+            if (result[3] != 0) {
+                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+            } else {
+                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Map<String, Integer[]> loadReactions(List<Comment> comments) {
+        List<String> commentIds = new ArrayList<>();
+
+        for (Comment c: comments) {
+            commentIds.add(c.getId());
+
+            List <Comment> replies = c.getReplies();
+
+            if (replies.size() > 0) {
+                for (Comment r: replies) {
+                    commentIds.add(r.getId());
+                }
+            }
+        }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Map<String, Integer[]>> future = executor.submit(() -> {
+            Map<String, Object> params = new HashMap<>();
+            params.put("comment_ids", String.join(",", commentIds));
+
+            JSONObject response = (JSONObject) Lbry.parseResponse(Lbry.apiCall("comment_react_list", params, "https://api.lbry.tv/api/v1/proxy"));
+            JSONObject responseOthersReactions = (JSONObject) response.getJSONObject("others_reactions");
+            Map<String, Integer[]> result = new HashMap<>();
+
+            responseOthersReactions.keys().forEachRemaining(key -> {
+                try {
+                    JSONObject value = (JSONObject) responseOthersReactions.get(key);
+                    Integer[] reactions = new Integer[2];
+                    reactions[0] = value.getInt("like");
+                    reactions[1] = value.getInt("dislike");
+                    result.put(key, reactions);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            });
+            return result;
+        });
+
+        try {
+             return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
     private void onMainActionButtonClicked() {
         // Check if the claim is free
         Claim.GenericMetadata metadata = claim.getValue();
@@ -2350,6 +2479,12 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
+                    Map<String, Integer[]> commentReactions = loadReactions(comments);
+
+                    for (Comment c: comments) {
+                        c.setLikesCount(commentReactions.get(c.getId())[0]);
+                        c.setDislikesCount(commentReactions.get(c.getId())[1]);
+                    }
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {

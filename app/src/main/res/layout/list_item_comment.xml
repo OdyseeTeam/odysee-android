@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
@@ -84,18 +85,53 @@
                 android:textIsSelectable="true"
                 android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/comment_reply_link"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter"
-                android:text="@string/reply"
-                android:textFontWeight="300"
-                android:textColor="@color/lbryGreen"
-                android:textSize="12sp" />
+                android:orientation="horizontal"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:id="@+id/comment_reply_link"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/reply"
+                    android:textColor="@color/lbryGreen"
+                    android:textFontWeight="300"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+
+                    <TextView
+                        android:id="@+id/comment_likes_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="@font/inter"
+                        android:text="0"
+                        style="@style/AppTheme.Small_Drawable"
+                        android:drawableStart="@drawable/ic_fire"/>
+
+                    <TextView
+                        android:id="@+id/comment_dislikes_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="@font/inter"
+                        android:text="0"
+                        style="@style/AppTheme.Small_Drawable"
+                        android:drawableStart="@drawable/ic_slime"/>
+
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </RelativeLayout>
 

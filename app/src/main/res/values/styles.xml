@@ -7,7 +7,6 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">@color/colorPrimaryDark</item>
         <!--item name="android:windowLightStatusBar">true</item-->
     </style>
 
@@ -26,5 +25,10 @@
         <item name="actionMenuTextColor">@color/actionBarForeground</item>
     </style>
 
+    <style name="AppTheme.Small_Drawable">
+        <item name="android:textSize">24sp</item>
+        <item name="android:scaleX">0.5</item>
+        <item name="android:scaleY">0.5</item>
+    </style>
 
 </resources>

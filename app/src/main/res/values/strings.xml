@@ -62,6 +62,8 @@
 
     <!-- File view -->
     <string name="tags">Tags</string>
+    <string name="like_desc">Fire icon</string>
+    <string name="dislike_desc">Slime icon</string>
     <string name="share">Share</string>
     <string name="repost">Repost</string>
     <string name="tip">Tip</string>

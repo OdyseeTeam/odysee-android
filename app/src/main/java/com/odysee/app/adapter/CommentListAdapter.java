@@ -108,6 +108,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         protected final View noThumbnailView;
         protected final TextView alphaView;
         protected final TextView commentTimeView;
+        protected final TextView likesCount;
+        protected final TextView dislikesCount;
         protected final View replyLink;
         protected final RecyclerView repliesList;
 
@@ -117,6 +119,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             commentTimeView = v.findViewById(R.id.comment_time);
             commentText = v.findViewById(R.id.comment_text);
             replyLink = v.findViewById(R.id.comment_reply_link);
+            likesCount = v.findViewById(R.id.comment_likes_count);
+            dislikesCount = v.findViewById(R.id.comment_dislikes_count);
             thumbnailView = v.findViewById(R.id.comment_thumbnail);
             noThumbnailView = v.findViewById(R.id.comment_no_thumbnail);
             alphaView = v.findViewById(R.id.comment_thumbnail_alpha);
@@ -183,6 +187,11 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 (comment.getTimestamp() * 1000), System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
         holder.commentText.setText(comment.getText());
         holder.replyLink.setVisibility(!nested ? View.VISIBLE : View.GONE);
+
+        String likesAmount = comment.getLikesCount() != null ? comment.getLikesCount().toString() : "0";
+        String dislikesAmount = comment.getDislikesCount() != null ? comment.getDislikesCount().toString() : "0";
+        holder.likesCount.setText(likesAmount);
+        holder.dislikesCount.setText(dislikesAmount);
 
         boolean hasThumbnail = comment.getPoster() != null && !Helper.isNullOrEmpty(comment.getPoster().getThumbnailUrl());
         holder.thumbnailView.setVisibility(hasThumbnail ? View.VISIBLE : View.INVISIBLE);
