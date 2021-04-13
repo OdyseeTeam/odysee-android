@@ -374,6 +374,7 @@ public class FileViewFragment extends BaseFragment implements
 
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.hideToolbar();
             activity.setBackPressInterceptor(this);
             activity.addDownloadActionListener(this);
             activity.addFetchClaimsListener(this);

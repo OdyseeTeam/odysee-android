@@ -602,6 +602,9 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 */
     }
 
+    public void hideToolbar() {
+        findViewById(R.id.toolbar).setVisibility(View.GONE);
+    }
     private void updateMiniPlayerMargins() {
         // mini-player bottom margin setting
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -1616,6 +1619,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             return;
         }
 
+        findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
         if (nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
