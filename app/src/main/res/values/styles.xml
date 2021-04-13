@@ -26,7 +26,7 @@
     </style>
 
     <style name="AppTheme.Small_Drawable">
-        <item name="android:textSize">24sp</item>
+        <item name="android:textSize">32sp</item>
         <item name="android:scaleX">0.5</item>
         <item name="android:scaleY">0.5</item>
     </style>
