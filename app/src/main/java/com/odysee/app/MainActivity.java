@@ -34,15 +34,20 @@ import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -67,6 +72,7 @@ import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -507,6 +513,14 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         storagePermissionListeners = new ArrayList<>();
         walletBalanceListeners = new ArrayList<>();
 
+        SharedPreferences sharedPreferences = getSharedPreferences("lbry_shared_preferences", MODE_PRIVATE);
+        SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+
+        if (sharedPreferences.getString("lbry_installation_id", "").equals("")) {
+            Lbry.INSTALLATION_ID = Lbry.generateId();
+            sharedPreferencesEditor.putString("lbry_installation_id", Lbry.INSTALLATION_ID);
+            sharedPreferencesEditor.commit();
+        }
         sdkStatusListeners.add(this);
 
         // Create Fragment instances here so they are not recreated when selected on the bottom navigation bar
@@ -545,6 +559,48 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             @Override
             public void onClick(View view) {
                 bottomNavigation.setSelectedItemId(R.id.action_wallet_menu);
+            }
+        });
+
+        findViewById(R.id.profile_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                findViewById(R.id.profile_button).setEnabled(false);
+                LayoutInflater layoutInflater = (LayoutInflater) MainActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View customView = layoutInflater.inflate(R.layout.popup_user,null);
+                PopupWindow popupWindow = new PopupWindow(customView, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+
+                Button closeButton = customView.findViewById(R.id.popup_user_close_button);
+                closeButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        findViewById(R.id.profile_button).setEnabled(true);
+                        popupWindow.dismiss();
+                    }
+                });
+                MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
+                TextView userIdText = customView.findViewById(R.id.user_id);
+                if (Lbryio.isSignedIn()) {
+                    userIdText.setVisibility(View.VISIBLE);
+                    signUserButton.setVisibility(View.GONE);
+                    userIdText.setText(Lbryio.getSignedInEmail());
+                }
+                else {
+                    userIdText.setVisibility(View.GONE);
+                    signUserButton.setVisibility(View.VISIBLE);
+                }
+                signUserButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        // Close the popup window so its status gets updated when user opens it again
+                        closeButton.performClick();
+                        walletSyncSignIn();
+                    }
+                });
+
+                //display the popup window
+                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.END, 0, 0);
+
             }
         });
 
@@ -1117,7 +1173,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         updateMiniPlayerMargins();
         enteringPIPMode = false;
 
-//        checkFirstRun();
+        checkFirstRun();
         checkNowPlaying();
 
         if (isFirstRunCompleted()) {
@@ -2681,7 +2737,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             }
             protected void onPreExecute() {
                 hideActionBar();
-                findViewById(R.id.splash_view).setVisibility(View.VISIBLE);
+//                findViewById(R.id.splash_view).setVisibility(View.VISIBLE);
                 LbryAnalytics.setCurrentScreen(MainActivity.this, "Splash", "Splash");
                 initStartupStages();
             }
@@ -2795,10 +2851,10 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                     return;
                 }
 
-                findViewById(R.id.splash_view).setVisibility(View.GONE);
+//                findViewById(R.id.splash_view).setVisibility(View.GONE);
                 showActionBar();
 
-                loadLastFragment();
+//                loadLastFragment();
                 showSignedInUser();
                 fetchRewards();
                 loadRemoteNotifications(false);
@@ -2877,16 +2933,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 inPictureInPictureMode = false;
                 renderFullMode();
             }
-        }
-    }
-
-    private void loadLastFragment() {
-        Fragment fragment = getCurrentFragment();
-
-        if (fragment != null) {
-            openFragment(fragment, true);
-        } else {
-            openFragment(FollowingFragment.class, false, null);
         }
     }
 
