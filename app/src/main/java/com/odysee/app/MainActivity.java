@@ -2823,7 +2823,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 }
 
                 if (Lbryio.totalUnclaimedRewardAmount > 0) {
-                    showFloatingUnclaimedRewards();
                     updateRewardsUsdVale();
                 }
             }
@@ -2839,17 +2838,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (Lbryio.totalUnclaimedRewardAmount > 0) {
             double usdRewardAmount = Lbryio.totalUnclaimedRewardAmount * Lbryio.LBCUSDRate;
         }
-    }
-
-    public void showFloatingUnclaimedRewards() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean notInterestedInRewards = sp.getBoolean(PREFERENCE_KEY_INTERNAL_REWARDS_NOT_INTERESTED, false);
-        if (notInterestedInRewards) {
-            return;
-        }
-
-        ((TextView) findViewById(R.id.floating_reward_value)).setText(Helper.shortCurrencyFormat(Lbryio.totalUnclaimedRewardAmount));
-        findViewById(R.id.floating_reward_container).setVisibility(View.VISIBLE);
     }
 
     private void checkUrlIntent(Intent intent) {

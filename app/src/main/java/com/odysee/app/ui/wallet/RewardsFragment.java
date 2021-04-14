@@ -136,11 +136,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                 Lbryio.updateRewardsLists(rewards);
                 updateUnclaimedRewardsValue();
 
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).showFloatingUnclaimedRewards();
-                }
-
                 if (adapter == null) {
                     adapter = new RewardListAdapter(rewards, getContext());
                     adapter.setClickListener(RewardsFragment.this);
