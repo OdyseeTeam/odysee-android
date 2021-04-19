@@ -896,22 +896,12 @@ public class PublishFormFragment extends BaseFragment implements
             }
         }
 
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
-
         String filterText = Helper.getValue(inputTagFilter.getText());
         updateSuggestedTags(filterText, SUGGESTED_LIMIT, true);
     }
 
     public void onSdkReady() {
         fetchChannels();
-        onWalletBalanceUpdated(Lbry.walletBalance);
     }
 
     private void fetchChannels() {

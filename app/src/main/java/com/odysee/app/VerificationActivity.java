@@ -43,7 +43,6 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
 import com.odysee.app.R;
-import io.lbry.lbrysdk.LbrynetService;
 
 public class VerificationActivity extends FragmentActivity implements SignInListener, WalletSyncListener {
 
@@ -131,24 +130,6 @@ public class VerificationActivity extends FragmentActivity implements SignInList
         }
 
         IntentFilter filter = new IntentFilter();
-        filter.addAction(LbrynetService.ACTION_STOP_SERVICE);
-        filter.addAction(MainActivity.ACTION_SDK_READY);
-        sdkReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (MainActivity.ACTION_SDK_READY.equals(action)) {
-                    for (SdkStatusListener listener : sdkStatusListeners) {
-                        if (listener != null) {
-                            listener.onSdkReady();
-                        }
-                    }
-                } else if (LbrynetService.ACTION_STOP_SERVICE.equals(action)) {
-                    finish();
-                }
-            }
-        };
-        registerReceiver(sdkReceiver, filter);
 
         billingClient = BillingClient.newBuilder(this)
                 .setListener(purchasesUpdatedListener)
@@ -272,6 +253,7 @@ public class VerificationActivity extends FragmentActivity implements SignInList
         Bundle bundle = new Bundle();
         bundle.putString("email", email);
         LbryAnalytics.logEvent(LbryAnalytics.EVENT_EMAIL_VERIFIED, bundle);
+        finish();
 
         if (flow == VERIFICATION_FLOW_SIGN_IN) {
             final Intent resultIntent = new Intent();
@@ -321,11 +303,7 @@ public class VerificationActivity extends FragmentActivity implements SignInList
                                 finish();
                             }
                         }
-                    } else if (flow == VERIFICATION_FLOW_WALLET) {
-                        // for wallet sync, if password unlock is required, show password entry page
-                        viewPager.setCurrentItem(VerificationPagerAdapter.PAGE_VERIFICATION_WALLET, false);
-                    }
-                }
+                    }                }
                 @Override
                 public void onError(Exception error) {
                     showFetchUserError(error != null ? error.getMessage() : getString(R.string.fetch_current_user_error));

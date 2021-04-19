@@ -122,7 +122,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
 
         loadingRecentContainer = root.findViewById(R.id.wallet_loading_recent_container);
         layoutAccountRecommended = root.findViewById(R.id.wallet_account_recommended_container);
-        layoutSdkInitializing = root.findViewById(R.id.container_sdk_initializing);
         linkSkipAccount = root.findViewById(R.id.wallet_skip_account_link);
         buttonSignUp = root.findViewById(R.id.wallet_sign_up_button);
 
@@ -348,7 +347,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             }
         });
 
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
         layoutAccountRecommended.setVisibility(hasSkippedAccount() || Lbryio.isSignedIn() ? View.GONE : View.VISIBLE);
         linkSkipAccount.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -554,16 +552,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
         }
 
         Helper.setViewVisibility(layoutAccountRecommended, hasSkippedAccount() || Lbryio.isSignedIn() ? View.GONE : View.VISIBLE);
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-            }
-
-            checkReceiveAddress();
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onPause() {
@@ -576,7 +564,8 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             activity.setWunderbarValue(null);
-            activity.addWalletBalanceListener(this);
+            // TODO Use a scheduled task here to get updated wallet balance
+//            activity.addWalletBalanceListener(this);
         }
     }
 
@@ -603,7 +592,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
 
         checkReceiveAddress();
         checkRewardsDriver();
-        checkTips();
         fetchRecentTransactions();
     }
 
@@ -715,23 +703,7 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
 
         textWalletBalanceDesc.setText(spendableBalance == totalBalance ? getResources().getString(R.string.your_total_balance) : getResources().getString(R.string.all_of_this_is_yours));
 
-        checkTips();
         checkRewardsDriver();
-    }
-
-    public void checkTips() {
-        checkTips(false);
-    }
-
-    public void checkTips(boolean forceHideLink) {
-        WalletBalance walletBalance = Lbry.walletBalance;
-        double tipBalance = walletBalance == null ? 0 : walletBalance.getTips().doubleValue();
-        boolean unlocking = false;
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            unlocking = activity.isUnlockingTips();
-        }
     }
 
     private void checkRewardsDriver() {

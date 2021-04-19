@@ -95,15 +95,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Rewards", "Rewards");
         }
-
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onSdkReady() {
@@ -123,7 +114,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.removeSdkStatusListener(this);
         }
         super.onStop();
     }

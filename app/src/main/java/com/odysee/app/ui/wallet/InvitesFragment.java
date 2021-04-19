@@ -309,15 +309,6 @@ public class InvitesFragment extends BaseFragment implements SdkStatusListener, 
         }
 
         fetchInviteStatus();
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-                activity.addWalletBalanceListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onSdkReady() {
@@ -342,13 +333,6 @@ public class InvitesFragment extends BaseFragment implements SdkStatusListener, 
 
     public void onStop() {
         clearInputFocus();
-
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.removeSdkStatusListener(this);
-            activity.removeWalletBalanceListener(this);
-        }
         super.onStop();
     }
 

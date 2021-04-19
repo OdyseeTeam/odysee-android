@@ -144,13 +144,6 @@ public class ChannelCommentsFragment extends Fragment implements SdkStatusListen
     public void onResume() {
         super.onResume();
         Context context = getContext();
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
 
         if (context instanceof MainActivity) {
             ((MainActivity) context).addWalletBalanceListener(this);
@@ -164,16 +157,7 @@ public class ChannelCommentsFragment extends Fragment implements SdkStatusListen
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.removeSdkStatusListener(this);
             activity.removeWalletBalanceListener(this);
-        }
-    }
-
-    private void checkCommentSdkInitializing() {
-        View root = getView();
-        if (root != null) {
-            TextView commentsSDKInitializing = root.findViewById(R.id.channel_comments_sdk_initializing);
-            Helper.setViewVisibility(commentsSDKInitializing, Lbry.SDK_READY ? View.GONE : View.VISIBLE);
         }
     }
 

@@ -46,7 +46,7 @@
                     app:layout_constraintEnd_toEndOf="parent">
 
                     <LinearLayout
-                        android:id="@+id/floating_balance_container"
+                        android:id="@+id/wallet_balance_container"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_marginStart="8dp"
@@ -55,7 +55,10 @@
                         android:paddingStart="12dp"
                         android:paddingTop="8dp"
                         android:paddingEnd="16dp"
-                        android:paddingBottom="8dp">
+                        android:paddingBottom="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="12dp"
@@ -64,32 +67,17 @@
                             android:src="@drawable/ic_credits" />
 
                         <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:fontFamily="@font/inter"
-                            android:textSize="14sp" />
-
-                        <TextView
                             android:id="@+id/floating_balance_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"
                             android:layout_marginStart="2dp"
                             android:fontFamily="@font/inter"
-                            android:text="@string/zero"
+                            tools:text="543.2"
                             android:textColor="@color/exo_black_opacity_70"
                             android:textFontWeight="300"
                             android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:visibility="gone" />
-
-                        <ProgressBar
-                            android:id="@+id/floating_balance_loading"
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_gravity="center_vertical"
-                            android:layout_marginStart="2dp" />
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <ImageButton

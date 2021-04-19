@@ -1,6 +1,5 @@
 package com.odysee.app;
 
-import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -28,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.security.KeyPairGeneratorSpec;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -42,8 +42,7 @@ import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebView;
-import android.widget.Button;
-import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -111,17 +110,31 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.Key;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -133,13 +146,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLParameters;
+import javax.security.auth.x500.X500Principal;
 
 import com.odysee.app.adapter.NotificationListAdapter;
 import com.odysee.app.adapter.StartupStageAdapter;
 import com.odysee.app.adapter.UrlSuggestionListAdapter;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.dialog.ContentScopeDialogFragment;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.AuthTokenInvalidatedException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.CameraPermissionListener;
@@ -149,13 +168,11 @@ import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.FilePickerListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
@@ -185,9 +202,7 @@ import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.UnlockTipsTask;
-import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
@@ -207,10 +222,6 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
-import io.lbry.lbrysdk.DownloadManager;
-import io.lbry.lbrysdk.LbrynetService;
-import io.lbry.lbrysdk.ServiceHelper;
-import io.lbry.lbrysdk.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -218,8 +229,7 @@ import okhttp3.OkHttpClient;
 
 import static android.os.Build.VERSION_CODES.M;
 
-public class MainActivity extends AppCompatActivity implements SdkStatusListener,
-        SharedPreferences.OnSharedPreferenceChangeListener,
+public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener {
     private static final String CHANNEL_ID_PLAYBACK = "com.odysee.app.LBRY_PLAYBACK_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
@@ -289,8 +299,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     public static final int REQUEST_VIDEO_CAPTURE = 5002;
     public static final int REQUEST_TAKE_PHOTO = 5003;
 
+    private static final String SP_NAME = "app";
+    private static final String KEY_ALIAS = "LBRYKey";
+    private static final String KEYSTORE_PROVIDER = "AndroidKeyStore";
+
     // broadcast action names
-    public static final String ACTION_SDK_READY = "com.odysee.app.Broadcast.SdkReady";
     public static final String ACTION_AUTH_TOKEN_GENERATED = "com.odysee.app.Broadcast.AuthTokenGenerated";
     public static final String ACTION_USER_AUTHENTICATION_SUCCESS = "com.odysee.app.Broadcast.UserAuthenticationSuccess";
     public static final String ACTION_USER_SIGN_IN_SUCCESS = "com.odysee.app.Broadcast.UserSignInSuccess";
@@ -317,7 +330,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     public static final String PREFERENCE_KEY_NOTIFICATION_REWARDS = "com.odysee.app.preference.notifications.Rewards";
     public static final String PREFERENCE_KEY_NOTIFICATION_CONTENT_INTERESTS = "com.odysee.app.preference.notifications.ContentInterests";
     public static final String PREFERENCE_KEY_NOTIFICATION_CREATOR = "com.odysee.app.preference.notifications.Creator";
-    public static final String PREFERENCE_KEY_KEEP_SDK_BACKGROUND = "com.odysee.app.preference.other.KeepSdkInBackground";
     public static final String PREFERENCE_KEY_PARTICIPATE_DATA_NETWORK = "com.odysee.app.preference.other.ParticipateInDataNetwork";
     public static final String PREFERENCE_KEY_SEND_BUFFERING_EVENTS = "com.odysee.app.preference.other.SendBufferingEvents";
     public static final String PREFERENCE_KEY_SHARE_USAGE_DATA = "com.odysee.app.preference.other.ShareUsageData";
@@ -332,8 +344,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
-
-    private final int CHECK_SDK_READY_INTERVAL = 1000;
 
     public static final String PREFERENCE_KEY_AUTH_TOKEN = "com.odysee.app.Preference.AuthToken";
 
@@ -352,7 +362,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
     private static boolean appStarted;
     private boolean serviceRunning;
-    private CheckSdkReadyTask checkSdkReadyTask;
     private PlayerNotificationManager playerNotificationManager;
     private MediaSessionCompat mediaSession;
     private boolean receivedStopService;
@@ -368,7 +377,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     private List<FilePickerListener> filePickerListeners;
     private List<PIPModeListener> pipModeListeners;
     private List<ScreenOrientationListener> screenOrientationListeners;
-    private List<SdkStatusListener> sdkStatusListeners;
     private List<StoragePermissionListener> storagePermissionListeners;
     private List<WalletBalanceListener> walletBalanceListeners;
     private List<FetchClaimsListener> fetchClaimsListeners;
@@ -459,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         establishBillingClientConnection();
 
         playerNotificationManager = new PlayerNotificationManager(
-                this, LbrynetService.NOTIFICATION_CHANNEL_ID, PLAYBACK_NOTIFICATION_ID, new PlayerNotificationDescriptionAdapter());
+                this, "io.lbry.browser.DAEMON_NOTIFICATION_CHANNEL", PLAYBACK_NOTIFICATION_ID, new PlayerNotificationDescriptionAdapter());
 
         // TODO: Check Google Play Services availability
         // castContext = CastContext.getSharedInstance(this);
@@ -481,7 +489,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
         // register receivers
         registerRequestsReceiver();
-        registerServiceActionsReceiver();
 
         View decorView = getWindow().getDecorView();
         decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
@@ -500,7 +507,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
         // other
         pendingSyncSetQueue = new ArrayList<>();
-        openNavFragments = new HashMap<>();
 
         cameraPermissionListeners = new ArrayList<>();
         downloadActionListeners = new ArrayList<>();
@@ -509,7 +515,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         filePickerListeners = new ArrayList<>();
         pipModeListeners = new ArrayList<>();
         screenOrientationListeners = new ArrayList<>();
-        sdkStatusListeners = new ArrayList<>();
         storagePermissionListeners = new ArrayList<>();
         walletBalanceListeners = new ArrayList<>();
 
@@ -521,7 +526,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             sharedPreferencesEditor.putString("lbry_installation_id", Lbry.INSTALLATION_ID);
             sharedPreferencesEditor.commit();
         }
-        sdkStatusListeners.add(this);
 
         // Create Fragment instances here so they are not recreated when selected on the bottom navigation bar
         Fragment homeFragment = new AllContentFragment();
@@ -555,7 +559,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         });
         bottomNavigation.setSelectedItemId(R.id.action_home_menu);
 
-        findViewById(R.id.floating_balance_container).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.wallet_balance_container).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 bottomNavigation.setSelectedItemId(R.id.action_wallet_menu);
@@ -570,7 +574,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 View customView = layoutInflater.inflate(R.layout.popup_user,null);
                 PopupWindow popupWindow = new PopupWindow(customView, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
 
-                Button closeButton = customView.findViewById(R.id.popup_user_close_button);
+                ImageButton closeButton = customView.findViewById(R.id.popup_user_close_button);
                 closeButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -584,6 +588,10 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                     userIdText.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(Lbryio.getSignedInEmail());
+                    SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("auth_token", Lbryio.AUTH_TOKEN);
+                    editor.apply();
                 }
                 else {
                     userIdText.setVisibility(View.GONE);
@@ -594,12 +602,12 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         closeButton.performClick();
-                        walletSyncSignIn();
+                        simpleSignIn();
                     }
                 });
 
-                //display the popup window
-                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.END, 0, 0);
+                int height = findViewById(R.id.toolbar).getLayoutParams().height + 32;
+                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 0, height);
 
             }
         });
@@ -647,15 +655,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 }
             }
         });
-
-/*
-        findViewById(R.id.sign_in_button_container).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                walletSyncSignIn();
-            }
-        });
-*/
     }
 
     public void hideToolbar() {
@@ -795,17 +794,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         cameraPermissionListeners.remove(listener);
     }
 
-
-    public void addSdkStatusListener(SdkStatusListener listener) {
-        if (!sdkStatusListeners.contains(listener)) {
-            sdkStatusListeners.add(listener);
-        }
-    }
-
-    public void removeSdkStatusListener(SdkStatusListener listener) {
-        sdkStatusListeners.remove(listener);
-    }
-
     public void addStoragePermissionListener(StoragePermissionListener listener) {
         if (!storagePermissionListeners.contains(listener)) {
             storagePermissionListeners.add(listener);
@@ -826,18 +814,12 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         walletBalanceListeners.remove(listener);
     }
 
-    public void restoreWalletContainerPosition() {
-        View floatingBalance = findViewById(R.id.floating_balance_main_container);
-
-        ObjectAnimator animation = ObjectAnimator.ofFloat(floatingBalance, "translationY", 0f);
-        animation.setDuration(250).start();
+    public void hideWalletBalance() {
+        findViewById(R.id.wallet_balance_container).setVisibility(View.GONE);
     }
 
-    public void translateFloatingWallet(float initialY) {
-        if (findViewById(R.id.floating_balance_main_container).getY() == initialY) {
-            ObjectAnimator animation = ObjectAnimator.ofFloat(findViewById(R.id.floating_balance_main_container), "translationY", 2 * findViewById(R.id.floating_balance_main_container).getHeight());
-            animation.setDuration(300).start();
-        }
+    public void showWalletBalance() {
+        findViewById(R.id.wallet_balance_container).setVisibility(View.VISIBLE);
     }
 
     public void addFetchChannelsListener(FetchChannelsListener listener) {
@@ -1000,7 +982,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     private void renderPictureInPictureMode() {
         findViewById(R.id.content_main).setVisibility(View.GONE);
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
-        //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
         findViewById(R.id.appbar).setFitsSystemWindows(true);
         hideNotifications();
         hideActionBar();
@@ -1038,9 +1019,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
         }
-        /*if (!Lbry.SDK_READY && !inFullscreenMode) {
-            findViewById(R.id.global_sdk_initializing_status).setVisibility(View.VISIBLE);
-        }*/
         for (PIPModeListener listener : pipModeListeners) {
             listener.onExitPIPMode();
         }
@@ -1057,9 +1035,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         shuttingDown = true;
         unregisterReceivers();
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        if (receivedStopService || !isServiceRunning(this, LbrynetService.class)) {
-            notificationManager.cancelAll();
-        }
         if (webSocketClient != null) {
             webSocketClient.close();
         }
@@ -1077,10 +1052,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             nowPlayingClaimBitmap = null;
         }
         appStarted = false;
-
-        if (!keepSdkBackground()) {
-            sendBroadcast(new Intent(LbrynetService.ACTION_STOP_SERVICE));
-        }
 
         super.onDestroy();
     }
@@ -1105,29 +1076,24 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     public void updateWalletBalance() {
-        WalletBalanceTask task = new WalletBalanceTask(new WalletBalanceTask.WalletBalanceHandler() {
-            @Override
-            public void onSuccess(WalletBalance walletBalance) {
-                for (WalletBalanceListener listener : walletBalanceListeners) {
-                    if (listener != null) {
-                        listener.onWalletBalanceUpdated(walletBalance);
-                    }
+        Log.i(TAG, "updateWalletBalance: Updating wallet balance");
+        WalletBalance balance;
+        try {
+            SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+            JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, sharedPref.getString("auth_token", Lbryio.AUTH_TOKEN));
+            balance = WalletBalance.fromJSONObject(json);
+            for (WalletBalanceListener listener : walletBalanceListeners) {
+                if (listener != null) {
+                    listener.onWalletBalanceUpdated(balance);
                 }
-                Lbry.walletBalance = walletBalance;
-                updateFloatingWalletBalance();
-
-                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
             }
-
-            @Override
-            public void onError(Exception error) {
-
-            }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            Lbry.walletBalance = balance;
+            updateFloatingWalletBalance(balance);
+            sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+        } catch (ApiCallException | ClassCastException ex) {
+            ex.printStackTrace();
+        }
     }
-
-
 
     @SneakyThrows
     private void checkWebSocketClient() {
@@ -1176,22 +1142,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         checkFirstRun();
         checkNowPlaying();
 
-        if (isFirstRunCompleted()) {
-            // check (and start) the LBRY SDK service
-            serviceRunning = isServiceRunning(this, LbrynetService.class);
-            if (!serviceRunning) {
-                Lbry.SDK_READY = false;
-                //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.VISIBLE);
-                ServiceHelper.start(this, "", LbrynetService.class, "lbrynetservice");
-            }
-        }
-        checkSdkReady();
-        showSignedInUser();
-        checkPendingOpens();
+        scheduleWalletBalanceUpdate();
+//            scheduleWalletSyncTask();
 
-        /*if (Lbry.SDK_READY) {
-            findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
-        }*/
+        checkSdkReady();
+//        checkPendingOpens();
     }
 
     public boolean isFirstRunCompleted() {
@@ -1326,11 +1281,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     public boolean canShowUrlSuggestions() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_URL_SUGGESTIONS, true);
-    }
-
-    public boolean keepSdkBackground() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(MainActivity.PREFERENCE_KEY_KEEP_SDK_BACKGROUND, true);
     }
 /*
     private void setupUriBar() {
@@ -1707,7 +1657,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (actionBar != null) {
             actionBar.hide();
         }
-        //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
         findViewById(R.id.app_bar_main_container).setFitsSystemWindows(false);
 
         View decorView = getWindow().getDecorView();
@@ -1737,9 +1686,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         appBarMainContainer.setFitsSystemWindows(true);
         decorView.setSystemUiVisibility(flags);
 
-        /*if (!Lbry.SDK_READY) {
-            findViewById(R.id.global_sdk_initializing_status).setVisibility(View.VISIBLE);
-        }*/
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.show();
@@ -1749,7 +1695,33 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
     private void initKeyStore() {
         try {
-            Lbry.KEYSTORE = Utils.initKeyStore(this);
+            KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER);
+            ks.load(null);
+
+            if (!ks.containsAlias(KEY_ALIAS)) {
+                Calendar start = Calendar.getInstance();
+                Calendar end = Calendar.getInstance();
+                end.add(Calendar.YEAR, 100);
+
+                KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(this)
+                        .setAlias(KEY_ALIAS)
+                        .setSubject(new X500Principal(String.format("CN=%s", KEY_ALIAS)))
+                        .setSerialNumber(BigInteger.ONE)
+                        .setStartDate(start.getTime())
+                        .setEndDate(end.getTime())
+                        .build();
+
+                try {
+                    KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA", KEYSTORE_PROVIDER);
+                    keygen.initialize(spec);
+                    keygen.generateKeyPair();
+                } catch (NoSuchProviderException ex) {
+                    throw ex;
+                } catch (InvalidAlgorithmParameterException ex) {
+                    throw ex;
+                }
+            }
+            Lbry.KEYSTORE = ks;
         } catch (Exception ex) {
             // This shouldn't happen, but in case it does.
             Toast.makeText(this, "The keystore could not be initialized. The app requires a secure keystore to run properly.", Toast.LENGTH_LONG).show();
@@ -1772,10 +1744,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
 
         fetchRewards();
-        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-            BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-            bottomNavigation.setSelectedItemId(R.id.action_following_menu);
-        }
     }
 
     public static boolean isServiceRunning(Context context, Class<?> serviceClass) {
@@ -1795,8 +1763,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         String encryptedAuthToken = sp.getString(PREFERENCE_KEY_AUTH_TOKEN, null);
         if (!Helper.isNullOrEmpty(encryptedAuthToken)) {
             try {
-                Lbryio.AUTH_TOKEN = new String(Utils.decrypt(
-                        Base64.decode(encryptedAuthToken, Base64.NO_WRAP), this, Lbry.KEYSTORE), StandardCharsets.UTF_8);
+                Lbryio.AUTH_TOKEN = new String(decrypt(Base64.decode(encryptedAuthToken, Base64.NO_WRAP), this, Lbry.KEYSTORE), StandardCharsets.UTF_8);
             } catch (Exception ex) {
                 // pass. A new auth token would have to be generated if the old one cannot be decrypted
                 Log.e(TAG, "Could not decrypt existing auth token.", ex);
@@ -1805,16 +1772,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     private void checkSdkReady() {
-        if (!Lbry.SDK_READY) {
-            new Handler().postDelayed(() -> {
-                if (checkSdkReadyTask != null && checkSdkReadyTask.getStatus() != AsyncTask.Status.FINISHED) {
-                    // task already running
-                    return;
-                }
-                checkSdkReadyTask = new CheckSdkReadyTask(MainActivity.this, sdkStatusListeners);
-                checkSdkReadyTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            }, CHECK_SDK_READY_INTERVAL);
-        } else {
+        if (Lbryio.isSignedIn()) {
             scheduleWalletBalanceUpdate();
             scheduleWalletSyncTask();
         }
@@ -1824,9 +1782,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         if (Lbryio.isSignedIn()) {
             checkSyncedWallet();
         }
-
-        //findViewById(R.id.global_sdk_initializing_status).setVisibility(View.GONE);
-        checkAndEnableShareUsageData();
 
         scheduleWalletBalanceUpdate();
         scheduleWalletSyncTask();
@@ -2048,25 +2003,44 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
     }
 
-    private void updateFloatingWalletBalance() {
-        if (!hasLoadedFirstBalance) {
-            findViewById(R.id.floating_balance_loading).setVisibility(View.GONE);
-            findViewById(R.id.floating_balance_value).setVisibility(View.VISIBLE);
-            hasLoadedFirstBalance = true;
-        }
+    private void updateFloatingWalletBalance(WalletBalance balance) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (Lbryio.isSignedIn()) {
+                    View balanceContainer = findViewById(R.id.wallet_balance_container);
+                    TextView walletBalance = balanceContainer.findViewById(R.id.floating_balance_value);
+                    walletBalance.setText(Helper.shortCurrencyFormat(balance.getTotal().doubleValue()));
+                    showWalletBalance();
+                    walletBalance.invalidate();
+                    walletBalance.requestLayout();
 
-        ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getAvailable().doubleValue()));
+                    BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+
+                    if (bottomNavigation.getSelectedItemId() == findViewById(R.id.action_wallet_menu).getId()) {
+                        Fragment walletFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container_main_activity);
+                        ((WalletFragment) walletFragment).onWalletBalanceUpdated(balance);
+                    }
+                } else {
+                    hideWalletBalance();
+                }
+            }
+        });
     }
 
     private void scheduleWalletBalanceUpdate() {
+        Log.i(TAG, "scheduleWalletBalanceUpdate: Scheduling wallet balance update...");
         if (scheduler != null && !walletBalanceUpdateScheduled) {
             scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
-                    updateWalletBalance();
+                    try {
+                        updateWalletBalance();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-            }, 0, 5, TimeUnit.SECONDS);
+            }, 5, 15, TimeUnit.SECONDS);
             walletBalanceUpdateScheduled = true;
         }
     }
@@ -2167,7 +2141,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     public void pushCurrentWalletSync() {
-        String password = Utils.getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
+        String password = getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
         SyncApplyTask fetchTask = new SyncApplyTask(true, password, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncApplySuccess(String hash, String data) {
@@ -2228,7 +2202,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
 
     public void syncApplyAndSet() {
         fullSyncInProgress = true;
-        String password = Utils.getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
+        String password = getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
         SyncApplyTask fetchTask = new SyncApplyTask(true, password, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncApplySuccess(String hash, String data) {
@@ -2251,6 +2225,112 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         fetchTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private byte[] rsaEncrypt(byte[] secret, KeyStore keyStore) throws Exception {
+        PrivateKey privateKey = null;
+        PublicKey publicKey = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            privateKey = (PrivateKey) keyStore.getKey(KEY_ALIAS, null);
+            publicKey = keyStore.getCertificate(KEY_ALIAS).getPublicKey();
+        } else {
+            KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(KEY_ALIAS, null);
+            privateKey = privateKeyEntry.getPrivateKey();
+            publicKey = privateKeyEntry.getCertificate().getPublicKey();
+        }
+
+        if (publicKey == null) {
+            throw new Exception("Could not obtain public key for encryption.");
+        }
+
+        // Encrypt the text
+        Cipher inputCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        inputCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, inputCipher);
+        cipherOutputStream.write(secret);
+        cipherOutputStream.close();
+
+        return outputStream.toByteArray();
+    }
+
+    private static byte[] rsaDecrypt(byte[] encrypted, KeyStore keyStore) throws Exception {
+        PrivateKey privateKey = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            privateKey = (PrivateKey) keyStore.getKey(KEY_ALIAS, null);
+        } else {
+            KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(KEY_ALIAS, null);
+            privateKey = privateKeyEntry.getPrivateKey();
+        }
+
+        if (privateKey == null) {
+            throw new Exception("Could not obtain private key for decryption");
+        }
+
+        Cipher output = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        output.init(Cipher.DECRYPT_MODE, privateKey);
+        CipherInputStream cipherInputStream = new CipherInputStream(new ByteArrayInputStream(encrypted), output);
+        ArrayList<Byte> values = new ArrayList<Byte>();
+        int nextByte;
+        while ((nextByte = cipherInputStream.read()) != -1) {
+            values.add((byte) nextByte);
+        }
+
+        byte[] bytes = new byte[values.size()];
+        for(int i = 0; i < bytes.length; i++) {
+            bytes[i] = values.get(i).byteValue();
+        }
+        return bytes;
+    }
+    private String generateSecretKey(KeyStore keyStore) throws Exception {
+        byte[] key = new byte[16];
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(key);
+
+        byte[] encryptedKey = rsaEncrypt(key, keyStore);
+        String base64Encrypted = Base64.encodeToString(encryptedKey, Base64.DEFAULT);
+
+        SharedPreferences pref = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("key", base64Encrypted);
+        editor.commit();
+
+        return base64Encrypted;
+    }
+
+    private Key getSecretKey(KeyStore keyStore) throws Exception{
+        SharedPreferences pref = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        String base64Key = pref.getString("key", null);
+        if (base64Key == null || base64Key.trim().length() == 0) {
+            base64Key = generateSecretKey(keyStore);
+        }
+        return new SecretKeySpec(rsaDecrypt(Base64.decode(base64Key, Base64.DEFAULT), keyStore), "AES");
+    }
+
+    public byte[] decrypt(byte[] encrypted, Context context, KeyStore keyStore) throws Exception {
+        Cipher c = Cipher.getInstance("AES/ECB/PKCS7Padding", "BC");
+        c.init(Cipher.DECRYPT_MODE, getSecretKey(keyStore));
+        return c.doFinal(encrypted);
+    }
+
+
+    public String getSecureValue(String key, Context context, KeyStore keyStore) {
+        try {
+            SharedPreferences pref = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+            String encryptedValue = pref.getString(key, null);
+
+            if (encryptedValue == null || encryptedValue.trim().length() == 0) {
+                return null;
+            }
+
+            byte[] decoded = Base64.decode(encryptedValue, Base64.DEFAULT);
+            return new String(decrypt(decoded, context, keyStore), Charset.forName("UTF8"));
+        } catch (Exception ex) {
+            Log.e(TAG, "utils - Could not retrieve a secure value", ex);
+        }
+
+        return null;
+    }
+
     public void syncWalletAndLoadPreferences() {
         if (!userSyncEnabled()) {
             return;
@@ -2260,7 +2340,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
 
         fullSyncInProgress = true;
-        String password = Utils.getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
+        String password = getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
         SyncGetTask task = new SyncGetTask(password, true, null, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncGetSuccess(WalletSync walletSync) {
@@ -2622,10 +2702,15 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
     }
 
+    private String getAppInternalStorageDir() {
+        File[] dirs = getExternalFilesDirs(null);
+        return dirs[0].getAbsolutePath();
+
+    }
     public void requestVideoCapture() {
         Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
-            String outputPath = String.format("%s/record", Utils.getAppInternalStorageDir(this));
+            String outputPath = String.format("%s/record", getAppInternalStorageDir());
             File dir = new File(outputPath);
             if (!dir.isDirectory()) {
                 dir.mkdirs();
@@ -2644,7 +2729,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     public void requestTakePhoto() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
-            String outputPath = String.format("%s/photos", Utils.getAppInternalStorageDir(this));
+            String outputPath = String.format("%s/photos", getAppInternalStorageDir());
             File dir = new File(outputPath);
             if (!dir.isDirectory()) {
                 dir.mkdirs();
@@ -2745,7 +2830,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 BufferedReader reader = null;
                 try {
                     // Load the installation id from the file system
-                    String lbrynetDir = String.format("%s/%s", Utils.getAppInternalStorageDir(context), "lbrynet");
+                    String lbrynetDir = String.format("%s/%s", getAppInternalStorageDir(), "lbrynet");
                     String installIdPath = String.format("%s/install_id", lbrynetDir);
                     reader = new BufferedReader(new InputStreamReader(new FileInputStream(installIdPath)));
                     String installId = reader.readLine();
@@ -2872,11 +2957,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             @Override
             public void onSuccess(List<Reward> rewards) {
                 Lbryio.updateRewardsLists(rewards);
-                for (Fragment fragment : openNavFragments.values()) {
-                    if (fragment instanceof RewardsFragment) {
-                        ((RewardsFragment) fragment).updateUnclaimedRewardsValue();
-                    }
-                }
 
                 if (Lbryio.totalUnclaimedRewardAmount > 0) {
                     updateRewardsUsdVale();
@@ -3006,83 +3086,9 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         }
     }
 
-    private void registerServiceActionsReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(DownloadManager.ACTION_DOWNLOAD_EVENT);
-        intentFilter.addAction(LbrynetService.LBRY_SDK_SERVICE_STARTED);
-        intentFilter.addAction(LbrynetService.ACTION_STOP_SERVICE);
-        serviceActionsReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (LbrynetService.ACTION_STOP_SERVICE.equals(action)) {
-                    MainActivity.this.receivedStopService = true;
-
-                    // STOP is meant to close everything,
-                    // So destroy the player at this point (even with background play enabled)
-                    if (appPlayer != null) {
-                        playerNotificationManager.setPlayer(null);
-                        stopExoplayer();
-                        nowPlayingClaim = null;
-                        nowPlayingClaimUrl = null;
-                        nowPlayingClaimBitmap = null;
-                    }
-
-                    MainActivity.this.finish();
-                } else if (LbrynetService.LBRY_SDK_SERVICE_STARTED.equals(action)) {
-                    // Rebuild the service notification
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            Notification svcNotification = buildServiceNotification();
-                            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                            notificationManager.notify(1, svcNotification);
-                        }
-                    }, 1000);
-                } else if (DownloadManager.ACTION_DOWNLOAD_EVENT.equalsIgnoreCase(action)) {
-                    String downloadAction = intent.getStringExtra("action");
-                    String uri = intent.getStringExtra("uri");
-                    String outpoint = intent.getStringExtra("outpoint");
-                    String fileInfoJson = intent.getStringExtra("file_info");
-                    double progress = intent.getDoubleExtra("progress", 0);
-                    if (uri == null || outpoint == null || (fileInfoJson == null && !"abort".equals(downloadAction))) {
-                        return;
-                    }
-
-                    for (DownloadActionListener listener : downloadActionListeners) {
-                        listener.onDownloadAction(downloadAction, uri, outpoint, fileInfoJson, progress);
-                    }
-                }
-            }
-        };
-        registerReceiver(serviceActionsReceiver, intentFilter);
-    }
-
     private void unregisterReceivers() {
         Helper.unregisterReceiver(requestsReceiver, this);
         Helper.unregisterReceiver(serviceActionsReceiver, this);
-    }
-
-    private Notification buildServiceNotification() {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, LbrynetService.NOTIFICATION_CHANNEL_ID);
-        Intent contextIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, contextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Intent stopIntent = new Intent(LbrynetService.ACTION_STOP_SERVICE);
-        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(this, 0, stopIntent, 0);
-
-        String serviceDescription = "The LBRY service is running in the background.";
-        Notification notification = builder.setColor(ContextCompat.getColor(this, R.color.lbryGreen))
-                .setContentIntent(pendingIntent)
-                .setContentText(serviceDescription)
-                .setGroup(LbrynetService.GROUP_SERVICE)
-                .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_lbry)
-                .setOngoing(true)
-                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
-                .build();
-
-        return notification;
     }
 
     public void setNowPlayingClaim(Claim claim, String url) {
@@ -3103,55 +3109,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
         ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(null);
         if (appPlayer != null) {
             appPlayer.setPlayWhenReady(false);
-        }
-    }
-
-    private static class CheckSdkReadyTask extends AsyncTask<Void, Void, Boolean> {
-        private final Context context;
-        private final List<SdkStatusListener> listeners;
-
-        public CheckSdkReadyTask(Context context, List<SdkStatusListener> listeners) {
-            this.context = context;
-            this.listeners = new ArrayList<>(listeners);
-        }
-
-        public Boolean doInBackground(Void... params) {
-            boolean sdkReady = false;
-            try {
-                String response = Utils.sdkCall("status");
-                if (response != null) {
-                    JSONObject result = new JSONObject(response);
-                    JSONObject status = result.getJSONObject("result");
-                    if (!Lbry.IS_STATUS_PARSED) {
-                        Lbry.parseStatus(status.toString());
-                    }
-
-                    // TODO: Broadcast startup status changes
-                    JSONObject startupStatus = status.getJSONObject("startup_status");
-                    sdkReady = startupStatus.getBoolean("file_manager") && startupStatus.getBoolean("wallet");
-                }
-            } catch (ConnectException | JSONException ex) {
-                // pass
-            }
-
-            return sdkReady;
-        }
-        protected void onPostExecute(Boolean sdkReady) {
-            Lbry.SDK_READY = sdkReady;
-            if (context != null) {
-                if (sdkReady) {
-                    context.sendBroadcast(new Intent(ACTION_SDK_READY));
-
-                    // update listeners
-                    for (SdkStatusListener listener : listeners) {
-                        if (listener != null) {
-                            listener.onSdkReady();
-                        }
-                    }
-                } else if (context instanceof MainActivity) {
-                    ((MainActivity) context).checkSdkReady();
-                }
-            }
         }
     }
 
@@ -3295,23 +3252,11 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             @Override
             public void onSuccess() {
                 unlockingTips = false;
-                for (Fragment fragment : openNavFragments.values()) {
-                    if (fragment instanceof WalletFragment) {
-                        ((WalletFragment) fragment).checkTips(true);
-                    }
-                }
             }
 
             @Override
             public void onError(Exception error) {
                 unlockingTips = false;
-                for (Fragment fragment : openNavFragments.values()) {
-                    if (fragment instanceof WalletFragment) {
-                        ((WalletFragment) fragment).checkTips();
-                    }
-                }
-                // fail silently?
-                //showError(error.getMessage());
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -3475,6 +3420,8 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
     }
 
     private void checkSyncedWallet() {
+        // FIXME
+/*
         String password = Utils.getSecureValue(SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
         // Just check if the current user has a synced wallet, no need to do anything else here
         SyncGetTask task = new SyncGetTask(password, false, null, new DefaultSyncTaskHandler() {
@@ -3491,6 +3438,7 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
             public void onSyncGetError(Exception error) { }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+*/
     }
 
     public static void requestPermission(String permission, int requestCode, String rationale, Context context, boolean forceRequest) {
@@ -3562,51 +3510,6 @@ public class MainActivity extends AppCompatActivity implements SdkStatusListener
                 task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
         }
-    }
-
-    private void checkAndEnableShareUsageData() {
-        final SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean shareUsageData = sp.getBoolean(PREFERENCE_KEY_SHARE_USAGE_DATA, false);
-        if (shareUsageData) {
-            return;
-        }
-
-        (new AsyncTask<Void, Void, Void>() {
-            protected Void doInBackground(Void... params) {
-                PrintStream out = null;
-                try {
-                    String fileContent = "true";
-                    String path = String.format("%s/sud", Utils.getAppInternalStorageDir(MainActivity.this));
-                    out = new PrintStream(new FileOutputStream(path));
-                    out.print(fileContent);
-                } catch (Exception ex) {
-                    // pass
-                } finally {
-                    Helper.closeCloseable(out);
-                }
-                return null;
-            }
-
-            protected void onPostExecute(Void result) {
-                updateSdkSetting("share_usage_data", true);
-                sp.edit().putBoolean(PREFERENCE_KEY_SHARE_USAGE_DATA, true).apply();
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    public void updateSdkSetting(String key, Object value) {
-        (new Thread() {
-            public void run() {
-                Map<String, Object> params = new HashMap<>();
-                params.put(key, value);
-                try {
-                    Lbry.parseResponse(Lbry.apiCall("settings_set", params, Lbry.SDK_CONNECTION_STRING));
-                } catch (Exception ex) {
-                    // pass
-                    Log.d(TAG, ex.getMessage(), ex);
-                }
-            }
-        }).start();
     }
 
     public interface BackPressInterceptor {

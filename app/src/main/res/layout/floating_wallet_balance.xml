@@ -44,7 +44,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/floating_balance_container"
+        android:id="@+id/wallet_balance_container"
         android:clickable="true"
         android:background="@drawable/bg_floating_balance"
         android:foreground="?attr/selectableItemBackground"

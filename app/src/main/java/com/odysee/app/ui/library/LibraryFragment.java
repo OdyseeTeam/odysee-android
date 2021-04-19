@@ -222,21 +222,12 @@ public class LibraryFragment extends BaseFragment implements
 
         layoutSdkInitializing.setVisibility(
                 !Lbry.SDK_READY && currentFilter == FILTER_DOWNLOADS ? View.VISIBLE : View.GONE);
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onPause() {
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.removeSdkStatusListener(this);
             activity.removeDownloadActionListener(this);
         }
         super.onPause();

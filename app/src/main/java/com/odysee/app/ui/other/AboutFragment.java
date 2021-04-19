@@ -186,12 +186,6 @@ public class AboutFragment extends BaseFragment implements SdkStatusListener {
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "About", "About");
-
-            if (!Lbry.SDK_READY) {
-                activity.addSdkStatusListener(this);
-            } else {
-                onSdkReady();
-            }
         }
         FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
             @Override
@@ -204,11 +198,6 @@ public class AboutFragment extends BaseFragment implements SdkStatusListener {
 
     @Override
     public void onStop() {
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) getContext();
-            activity.removeSdkStatusListener(this);
-        }
         super.onStop();
     }
 

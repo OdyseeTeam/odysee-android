@@ -104,15 +104,6 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Channel Manager", "ChannelManager");
         }
-
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-                activity.addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onSdkReady() {

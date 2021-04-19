@@ -144,6 +144,13 @@ public final class Lbry {
 
     public static Response apiCall(String method, Map<String, Object> params, String connectionString) throws LbryRequestException {
         long counter = new Double(System.currentTimeMillis() / 1000.0).longValue();
+
+        String authToken = "";
+
+        if (params != null && params.containsKey("auth_token")) {
+            authToken = params.get("auth_token").toString();
+            params.remove("auth_token");
+        }
         JSONObject requestParams = buildJsonParams(params);
         JSONObject requestBody = new JSONObject();
         try {
@@ -156,7 +163,12 @@ public final class Lbry {
         }
 
         RequestBody body = RequestBody.create(requestBody.toString(), Helper.JSON_MEDIA_TYPE);
-        Request request =  new Request.Builder().url(connectionString).post(body).build();
+        Request.Builder requestBuilder = new Request.Builder().url(connectionString).post(body);
+
+        if (authToken != "")
+            requestBuilder.addHeader("X-Lbry-Auth-Token", authToken);
+
+        Request request =  requestBuilder.build();
         OkHttpClient client = new OkHttpClient.Builder().
                 writeTimeout(300, TimeUnit.SECONDS).
                 readTimeout(300, TimeUnit.SECONDS).
@@ -505,6 +517,20 @@ public final class Lbry {
             throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
         }
         return response;
+    }
+    public static Object directApiCall(String method, String authToken) throws ApiCallException {
+        Map<String, Object> params = new HashMap<>();
+        params.put("auth_token", authToken);
+        Object response = null;
+        try {
+            response = parseResponse(apiCall(method, params, LBRY_TV_CONNECTION_STRING));
+        } catch (LbryRequestException | LbryResponseException ex) {
+            throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
+        }
+        return response;
+    }
+    public static Object genericApiCall(String method, boolean useSdk, String authToken) throws ApiCallException {
+        return directApiCall(method, authToken);
     }
     public static Object genericApiCall(String method) throws ApiCallException {
         return genericApiCall(method, null);

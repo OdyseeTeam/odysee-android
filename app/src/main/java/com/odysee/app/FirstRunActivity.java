@@ -58,24 +58,6 @@ public class FirstRunActivity extends AppCompatActivity {
         registerAuthReceiver();
         findViewById(R.id.welcome_wait_container).setVisibility(View.VISIBLE);
         IntentFilter filter = new IntentFilter();
-        filter.addAction(MainActivity.ACTION_SDK_READY);
-        filter.addAction(LbrynetService.ACTION_STOP_SERVICE);
-        sdkReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (MainActivity.ACTION_SDK_READY.equals(action)) {
-                    // authenticate after we receive the sdk ready event
-                    authenticate();
-                } else if (LbrynetService.ACTION_STOP_SERVICE.equals(action)) {
-                    finish();
-                    if (MainActivity.instance != null) {
-                        MainActivity.instance.finish();
-                    }
-                }
-            }
-        };
-        registerReceiver(sdkReceiver, filter);
 
         CheckInstallIdTask task = new CheckInstallIdTask(this, new CheckInstallIdTask.InstallIdHandler() {
             @Override

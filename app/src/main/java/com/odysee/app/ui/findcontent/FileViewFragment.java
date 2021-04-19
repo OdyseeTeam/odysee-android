@@ -789,14 +789,6 @@ public class FileViewFragment extends BaseFragment implements
             updatePlaybackSpeedView(root);
             loadAndScheduleDurations();
         }
-
-        if (!Lbry.SDK_READY) {
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).addSdkStatusListener(this);
-            }
-        } else {
-            onSdkReady();
-        }
     }
 
     public void onPause() {
@@ -815,10 +807,8 @@ public class FileViewFragment extends BaseFragment implements
             activity.removeFetchClaimsListener(this);
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
-            activity.removeSdkStatusListener(this);
             activity.removeStoragePermissionListener(this);
             activity.removeWalletBalanceListener(this);
-            activity.restoreWalletContainerPosition();
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             activity.checkNowPlaying();
         }
@@ -1927,6 +1917,9 @@ public class FileViewFragment extends BaseFragment implements
                         reactions[2] = likes;
                         Integer dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
                         reactions[3] = dislikes;
+                        // We want to show total amount, not just other's reactions
+                        reactions[0] = reactions[0] + reactions[2];
+                        reactions[1] = reactions[1] + reactions[3];
                     }
                 }
             } catch (LbryioRequestException | LbryioResponseException e) {
@@ -1945,19 +1938,21 @@ public class FileViewFragment extends BaseFragment implements
             dislikeReactionAmount.setText(result[1].toString());
 
             if (result[2] != 0) {
-                likeReactionIcon.setColorFilter(getContext().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+                likeReactionIcon.setColorFilter(getContext().getColor(R.color.fireActive), PorterDuff.Mode.SRC_IN);
+                likeReactionAmount.setTextColor(getContext().getColor(R.color.fireActive));
             } else {
                 likeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
+                likeReactionAmount.setTextColor(getContext().getColor(R.color.darkForeground));
             }
 
             if (result[3] != 0) {
-                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.slimeActive), PorterDuff.Mode.SRC_IN);
+                dislikeReactionAmount.setTextColor(getContext().getColor(R.color.slimeActive));
             } else {
                 dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
+                dislikeReactionAmount.setTextColor(getContext().getColor(R.color.darkForeground));
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
     }
