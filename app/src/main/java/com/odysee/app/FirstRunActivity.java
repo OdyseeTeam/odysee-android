@@ -42,88 +42,40 @@ public class FirstRunActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_first_run);
-
-        TextView welcomeTos = findViewById(R.id.welcome_text_view_tos);
-        welcomeTos.setMovementMethod(LinkMovementMethod.getInstance());
-        welcomeTos.setText(HtmlCompat.fromHtml(getString(R.string.welcome_tos), HtmlCompat.FROM_HTML_MODE_LEGACY));
-
-        findViewById(R.id.welcome_link_use_lbry).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finishFirstRun();
-            }
-        });
-
-        registerAuthReceiver();
-        findViewById(R.id.welcome_wait_container).setVisibility(View.VISIBLE);
-        IntentFilter filter = new IntentFilter();
+//        setContentView(R.layout.activity_first_run);
+//
+//        TextView welcomeTos = findViewById(R.id.welcome_text_view_tos);
+//        welcomeTos.setMovementMethod(LinkMovementMethod.getInstance());
+//        welcomeTos.setText(HtmlCompat.fromHtml(getString(R.string.welcome_tos), HtmlCompat.FROM_HTML_MODE_LEGACY));
+//
+//        findViewById(R.id.welcome_link_use_lbry).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                finishFirstRun();
+//            }
+//        });
+//
+//        registerAuthReceiver();
+//        findViewById(R.id.welcome_wait_container).setVisibility(View.VISIBLE);
+//        IntentFilter filter = new IntentFilter();
 
         CheckInstallIdTask task = new CheckInstallIdTask(this, new CheckInstallIdTask.InstallIdHandler() {
             @Override
             public void onInstallIdChecked(boolean result) {
-                // start the sdk from FirstRun
-                boolean serviceRunning = MainActivity.isServiceRunning(MainActivity.instance, LbrynetService.class);
-                if (!serviceRunning) {
-                    Lbry.SDK_READY = false;
-                    ServiceHelper.start(MainActivity.instance, "", LbrynetService.class, "lbrynetservice");
-                }
-
                 if (result) {
                     // install_id generated and validated, authenticate now
-                    authenticate();
-                    return;
-                }
-
-                // we weren't able to generate the install_id ourselves, depend on the sdk for that
-                if (Lbry.SDK_READY) {
                     authenticate();
                     return;
                 }
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        finishFirstRun();
     }
 
     public void onResume() {
         super.onResume();
         LbryAnalytics.setCurrentScreen(this, "First Run", "FirstRun");
-    }
-
-    private void registerAuthReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MainActivity.ACTION_USER_AUTHENTICATION_SUCCESS);
-        filter.addAction(MainActivity.ACTION_USER_AUTHENTICATION_FAILED);
-        authReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (MainActivity.ACTION_USER_AUTHENTICATION_SUCCESS.equals(intent.getAction())) {
-                    handleAuthenticationSuccess();
-                } else {
-                    handleAuthenticationFailed();
-                }
-            }
-        };
-        registerReceiver(authReceiver, filter);
-    }
-
-    private void handleAuthenticationSuccess() {
-        // first_auth completed event
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean firstAuthCompleted = sp.getBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED, false);
-        if (!firstAuthCompleted) {
-            LbryAnalytics.logEvent(LbryAnalytics.EVENT_FIRST_USER_AUTH);
-            sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED, true).apply();
-        }
-
-        findViewById(R.id.welcome_wait_container).setVisibility(View.GONE);
-        findViewById(R.id.welcome_display).setVisibility(View.VISIBLE);
-        findViewById(R.id.welcome_link_use_lbry).setVisibility(View.VISIBLE);
-    }
-
-    private void handleAuthenticationFailed() {
-        findViewById(R.id.welcome_progress_bar).setVisibility(View.GONE);
-        ((TextView) findViewById(R.id.welcome_wait_text)).setText(R.string.startup_failed);
     }
 
     private void authenticate() {
@@ -140,19 +92,8 @@ public class FirstRunActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        return;
-    }
-
-    @Override
     protected void onDestroy() {
-        Helper.unregisterReceiver(authReceiver, this);
-        Helper.unregisterReceiver(sdkReceiver, this);
         super.onDestroy();
-    }
-
-    private void generateIdAndAuthenticate() {
-
     }
 
     private static class CheckInstallIdTask extends AsyncTask<Void, Void, Boolean> {

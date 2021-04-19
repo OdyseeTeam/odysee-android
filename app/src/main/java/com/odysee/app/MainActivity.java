@@ -1078,20 +1078,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void updateWalletBalance() {
         Log.i(TAG, "updateWalletBalance: Updating wallet balance");
         WalletBalance balance;
-        try {
-            SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-            JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, sharedPref.getString("auth_token", Lbryio.AUTH_TOKEN));
-            balance = WalletBalance.fromJSONObject(json);
-            for (WalletBalanceListener listener : walletBalanceListeners) {
-                if (listener != null) {
-                    listener.onWalletBalanceUpdated(balance);
+        if (Lbryio.isSignedIn()) {
+            try {
+                SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+                JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, sharedPref.getString("auth_token", Lbryio.AUTH_TOKEN));
+                balance = WalletBalance.fromJSONObject(json);
+                for (WalletBalanceListener listener : walletBalanceListeners) {
+                    if (listener != null) {
+                        listener.onWalletBalanceUpdated(balance);
+                    }
                 }
+                Lbry.walletBalance = balance;
+                updateFloatingWalletBalance(balance);
+                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+            } catch (ApiCallException | ClassCastException ex) {
+                ex.printStackTrace();
             }
-            Lbry.walletBalance = balance;
-            updateFloatingWalletBalance(balance);
-            sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-        } catch (ApiCallException | ClassCastException ex) {
-            ex.printStackTrace();
         }
     }
 

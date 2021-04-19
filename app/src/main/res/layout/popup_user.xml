@@ -7,30 +7,24 @@
     android:padding="8dp"
     android:orientation="vertical"
     android:background="@color/actionBarForeground">
-    <LinearLayout
-        android:layout_width="match_parent"
+    <ImageButton
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:id="@+id/popup_user_close_button"
+        android:src="@drawable/ic_close"
+        android:background="@drawable/flag_transparent"
+        android:text="Close" />
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <ImageButton
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:id="@+id/popup_user_close_button"
-            android:src="@drawable/ic_close"
-            android:background="@drawable/flag_transparent"
-            android:text="Close" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:id="@+id/user_id"
-            tools:text="user@example.com"
-            android:visibility="gone"
-            tools:visibility="visible"
-            android:textColor="@color/white"/>
-
-    </LinearLayout>
+        android:layout_marginStart="8dp"
+        android:id="@+id/user_id"
+        tools:text="user@example.com"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:textColor="@color/white"/>
     <com.google.android.material.button.MaterialButton
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/button_sign_user"
         android:text="Sign in"/>
