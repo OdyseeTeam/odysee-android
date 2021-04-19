@@ -268,14 +268,14 @@
                     android:id="@+id/file_view_actions_area"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="7">
+                    android:orientation="horizontal">
 
                     <LinearLayout
                         android:id="@+id/file_view_action_like"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
@@ -309,14 +309,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_dislike"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -345,14 +343,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_share"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -378,14 +374,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_tip"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -412,14 +406,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_repost"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -447,14 +439,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_edit"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp"
+                        android:padding="8dp"
                         android:visibility="gone">
 
                         <RelativeLayout
@@ -481,14 +471,13 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_download"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:visibility="gone"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -523,14 +512,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_delete"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp"
+                        android:padding="8dp"
                         android:visibility="gone">
 
                         <RelativeLayout
@@ -557,14 +544,12 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_unpublish"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -590,14 +575,13 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_report"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:visibility="gone"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
