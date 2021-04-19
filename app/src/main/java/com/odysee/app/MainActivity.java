@@ -1078,6 +1078,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void updateWalletBalance() {
         Log.i(TAG, "updateWalletBalance: Updating wallet balance");
         WalletBalance balance;
+
+        runOnUiThread(new Runnable() {
+            BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+            @Override
+            public void run() {
+                if (Lbryio.isSignedIn()) {
+                    bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(true);
+                    bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(true);
+                } else {
+                    bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(false);
+                    bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(false);
+                }
+            }
+        });
+
         if (Lbryio.isSignedIn()) {
             try {
                 SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
