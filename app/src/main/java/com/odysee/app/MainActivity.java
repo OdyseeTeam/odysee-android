@@ -566,6 +566,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
 
+        findViewById(R.id.upload_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Hide bottom navigation
+                // Hide main bar
+                // Show PublishFragment.class
+                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment()).addToBackStack("publish_claim").commit();
+                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+                hideActionBar();
+            }
+        });
+
         findViewById(R.id.profile_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
