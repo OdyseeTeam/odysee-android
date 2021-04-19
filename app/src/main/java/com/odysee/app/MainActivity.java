@@ -586,7 +586,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 TextView userIdText = customView.findViewById(R.id.user_id);
                 if (Lbryio.isSignedIn()) {
                     userIdText.setVisibility(View.VISIBLE);
-                    signUserButton.setVisibility(View.GONE);
+                    signUserButton.setText("Sign out");
                     userIdText.setText(Lbryio.getSignedInEmail());
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
@@ -595,14 +595,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
                 else {
                     userIdText.setVisibility(View.GONE);
-                    signUserButton.setVisibility(View.VISIBLE);
+                    signUserButton.setText(getString(R.string.sign_in));
                 }
                 signUserButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         closeButton.performClick();
-                        simpleSignIn();
+                        if (Lbryio.isSignedIn()) {
+                            signOutUser();
+                        } else {
+                            simpleSignIn();
+                        }
                     }
                 });
 
@@ -1086,9 +1090,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (Lbryio.isSignedIn()) {
                     bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(true);
                     bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(true);
+                    showWalletBalance();
                 } else {
                     bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(false);
                     bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(false);
+                    hideWalletBalance();
                 }
             }
         });
@@ -2613,6 +2619,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             moveTaskToBack(true);
             return;
         }
+    }
+
+    public void signOutUser() {
+        Lbryio.currentUser = null;
+        Lbryio.AUTH_TOKEN = "";
+        SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+        sharedPref.edit().remove("auth_token").commit();
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
+
     }
 
     public void simpleSignIn() {
