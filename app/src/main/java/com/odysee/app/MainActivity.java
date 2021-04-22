@@ -1108,21 +1108,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Log.i(TAG, "updateWalletBalance: Updating wallet balance");
         WalletBalance balance;
 
-        runOnUiThread(new Runnable() {
-            BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-            @Override
-            public void run() {
-                if (Lbryio.isSignedIn()) {
-                    bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(true);
-                    bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(true);
-                    showWalletBalance();
-                } else {
-                    bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(false);
-                    bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(false);
-                    hideWalletBalance();
-                }
-            }
-        });
+        showSignedInUIElements(Lbryio.isSignedIn());
 
         if (Lbryio.isSignedIn()) {
             try {
@@ -1143,6 +1129,26 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    /**
+     * Shows or hides the wallet balance and the bottom navigation items which need user to be signed in.
+     * This runs on the main (UI) thread
+     * @param show true to show items, false to hide them
+     */
+    private void showSignedInUIElements(boolean show) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+                bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(show);
+                bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(show);
+
+                if (show)
+                    showWalletBalance();
+                else
+                    hideWalletBalance();
+            }
+        });
+    }
     @SneakyThrows
     private void checkWebSocketClient() {
         if ((webSocketClient == null || webSocketClient.isClosed()) && !Helper.isNullOrEmpty(Lbryio.AUTH_TOKEN)) {
@@ -2634,6 +2640,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
+        updateWalletBalance(); // Force wallet to be updated so certain views are no longer shown
     }
 
     public void simpleSignIn() {
