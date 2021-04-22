@@ -36,7 +36,7 @@ public class FetchRewardsTask extends AsyncTask<Void, Void, List<Reward>> {
         try {
             Map<String, String> options = new HashMap<>();
             options.put("multiple_rewards_per_type", "true");
-            JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", null, null));
+            JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", options, null));
             rewards = new ArrayList<>();
             for (int i = 0; i < results.length(); i++) {
                 rewards.add(Reward.fromJSONObject(results.getJSONObject(i)));

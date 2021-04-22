@@ -23,6 +23,11 @@
         android:visibility="gone"
         tools:visibility="visible"
         android:textColor="@color/white"/>
+    <Button
+        android:id="@+id/button_show_rewards"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rewards" />
     <com.google.android.material.button.MaterialButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -37,11 +37,10 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
-public class RewardsFragment extends BaseFragment implements RewardListAdapter.RewardClickListener, SdkStatusListener {
+public class RewardsFragment extends BaseFragment implements RewardListAdapter.RewardClickListener {
 
     private boolean rewardClaimInProgress;
     private View layoutAccountDriver;
-    private View layoutSdkInitializing;
     private View linkNotInterested;
     private TextView textAccountDriverTitle;
     private TextView textFreeCreditsWorth;
@@ -59,7 +58,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         View root = inflater.inflate(R.layout.fragment_rewards, container, false);
 
         layoutAccountDriver = root.findViewById(R.id.rewards_account_driver_container);
-        layoutSdkInitializing = root.findViewById(R.id.container_sdk_initializing);
         linkNotInterested = root.findViewById(R.id.rewards_not_interested_link);
         textAccountDriverTitle = root.findViewById(R.id.rewards_account_driver_title);
         textFreeCreditsWorth = root.findViewById(R.id.rewards_account_driver_credits_worth);
@@ -95,10 +93,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Rewards", "Rewards");
         }
-    }
-
-    public void onSdkReady() {
-        Helper.setViewVisibility(layoutSdkInitializing, View.GONE);
     }
 
     public void onStart() {
@@ -147,8 +141,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
     }
 
     private void initUi() {
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
-
         linkNotInterested.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

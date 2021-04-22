@@ -58,8 +58,6 @@
             android:paddingTop="16dp" />
     </RelativeLayout>
 
-    <include layout="@layout/container_sdk_initializing" />
-
     <RelativeLayout
         android:id="@+id/rewards_account_driver_container"
         android:background="@color/lbryGreen"

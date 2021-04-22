@@ -42,6 +42,7 @@ import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -596,9 +597,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
+                Button buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 TextView userIdText = customView.findViewById(R.id.user_id);
                 if (Lbryio.isSignedIn()) {
                     userIdText.setVisibility(View.VISIBLE);
+                    buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setText("Sign out");
                     userIdText.setText(Lbryio.getSignedInEmail());
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
@@ -608,8 +611,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
                 else {
                     userIdText.setVisibility(View.GONE);
+                    buttonShowRewards.setVisibility(View.GONE);
                     signUserButton.setText(getString(R.string.sign_in));
                 }
+
+                buttonShowRewards.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        closeButton.performClick();
+                        openFragment(RewardsFragment.class, true, null);
+                    }
+                });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -1181,7 +1193,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         scheduleWalletBalanceUpdate();
 //            scheduleWalletSyncTask();
 
-        checkSdkReady();
 //        checkPendingOpens();
     }
 
@@ -2516,6 +2527,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 //        clearWunderbarFocus(findViewById(R.id.wunderbar));
         findViewById(R.id.content_main_container).setVisibility(View.VISIBLE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+        hideBottomNavigation();
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.lbryGreen));
         if (remoteNotifcationsLastLoaded == null ||
                 (System.currentTimeMillis() - remoteNotifcationsLastLoaded.getTime() > REMOTE_NOTIFICATION_REFRESH_TTL)) {
@@ -2531,6 +2544,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.actionBarForeground));
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.GONE);
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+        showBottomBavigation();
     }
 
     private void markNotificationsSeen() {
@@ -2569,6 +2584,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         showNotifications();
     }
 
+    private void showBottomBavigation() {
+        findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+    }
+
+    private void hideBottomNavigation() {
+        findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
+    }
+
     @Override
     public void onBackPressed() {
         if (findViewById(R.id.url_suggestions_container).getVisibility() == View.VISIBLE) {
@@ -2584,37 +2607,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-/*
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
-        } else {
-            boolean handled = false;
-            // TODO: Refactor both forms as back press interceptors?
-            ChannelFormFragment channelFormFragment = null;
-            PublishFormFragment publishFormFragment = null;
-            for (Fragment fragment : openNavFragments.values()) {
-                if (fragment instanceof ChannelFormFragment) {
-                    channelFormFragment = ((ChannelFormFragment) fragment);
-                    break;
-                }
-                if (fragment instanceof PublishFormFragment) {
-                    publishFormFragment = ((PublishFormFragment) fragment);
-                    break;
-                }
-            }
-            if (channelFormFragment != null && channelFormFragment.isSaveInProgress()) {
-                handled = true;
-                return;
-            }
-            if (publishFormFragment != null && (publishFormFragment.isSaveInProgress() || publishFormFragment.isTranscodeInProgress())) {
-                if (publishFormFragment.isTranscodeInProgress()) {
-                    showMessage(R.string.transcode_in_progress);
-                }
-                handled = true;
-                return;
-            }
-*/
         // check fragment and nav history
         FragmentManager manager = getSupportFragmentManager();
         int backCount = getSupportFragmentManager().getBackStackEntryCount();
