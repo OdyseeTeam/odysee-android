@@ -3295,7 +3295,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 unlockingTips = false;
             }
-        }, Lbryio.AUTH_TOKEN);
+        });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
