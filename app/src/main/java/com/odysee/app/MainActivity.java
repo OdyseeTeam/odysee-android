@@ -2641,6 +2641,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
         updateWalletBalance(); // Force wallet to be updated so certain views are no longer shown
+
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            DatabaseHelper.clearNotifications(db);
+            notificationListAdapter.clearNotifications();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void simpleSignIn() {
@@ -2712,8 +2720,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else if (requestCode == REQUEST_SIMPLE_SIGN_IN || requestCode == REQUEST_WALLET_SYNC_SIGN_IN) {
             if (resultCode == RESULT_OK) {
                 // user signed in
-                showSignedInUser();
-
                 if (requestCode == REQUEST_WALLET_SYNC_SIGN_IN) {
                     SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
                     sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_SYNC_ENABLED, true).apply();
@@ -2788,19 +2794,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         showError(getString(R.string.cannot_take_photo));
-    }
-
-
-
-    private void showSignedInUser() {
-/*
-        if (Lbryio.isSignedIn()) {
-            findViewById(R.id.sign_in_button_container).setVisibility(View.GONE);
-            findViewById(R.id.signed_in_email_container).setVisibility(View.VISIBLE);
-            ((TextView) findViewById(R.id.signed_in_email)).setText(Lbryio.getSignedInEmail());
-            findViewById(R.id.sign_in_header_divider).setBackgroundColor(getResources().getColor(R.color.lightDivider));
-        }
-*/
     }
 
     private Fragment getCurrentFragment() {
@@ -2985,7 +2978,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 showActionBar();
 
 //                loadLastFragment();
-                showSignedInUser();
                 fetchRewards();
                 loadRemoteNotifications(false);
 
@@ -3303,7 +3295,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 unlockingTips = false;
             }
-        });
+        }, Lbryio.AUTH_TOKEN);
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

@@ -127,6 +127,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_MARK_NOTIFICATIONS_READ = "UPDATE notifications SET is_read = 1 WHERE is_read = 0";
     private static final String SQL_MARK_NOTIFICATIONS_SEEN = "UPDATE notifications SET is_seen = 1 WHERE is_seen = 0";
     private static final String SQL_MARK_NOTIFICATION_READ_AND_SEEN = "UPDATE notifications SET is_read = 1, is_seen = 1 WHERE id = ?";
+    private static final String SQL_CLEAR_NOTIFICATIONS = "DELETE FROM notifications";
 
     private static final String SQL_INSERT_SHUFFLE_WATCHED = "REPLACE INTO shuffle_watched (claim_id) VALUES (?)";
     private static final String SQL_GET_SHUFFLE_WATCHED_CLAIMS = "SELECT claim_id FROM shuffle_watched";
@@ -439,6 +440,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     public static void markNotificationReadAndSeen(long notificationId, SQLiteDatabase db) {
         db.execSQL(SQL_MARK_NOTIFICATION_READ_AND_SEEN, new Object[] { notificationId });
+    }
+    public static void clearNotifications(SQLiteDatabase db) {
+        db.execSQL(SQL_CLEAR_NOTIFICATIONS);
     }
     public static void createOrUpdateShuffleWatched(String claimId, SQLiteDatabase db) {
         db.execSQL(SQL_INSERT_SHUFFLE_WATCHED, new Object[] { claimId });

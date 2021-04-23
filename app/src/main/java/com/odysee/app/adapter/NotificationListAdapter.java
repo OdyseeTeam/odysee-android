@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -111,6 +112,16 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         for (LbryNotification notification : notifications) {
             items.remove(notification);
         }
+        notifyDataSetChanged();
+    }
+
+    public void clearNotifications() {
+        // Using a for-each loop will throw an exception, so a simple for should be used
+        for (Iterator<LbryNotification> iterator = getItems().iterator(); iterator.hasNext();) {
+            LbryNotification notification = iterator.next();
+            iterator.remove();
+        }
+
         notifyDataSetChanged();
     }
 
