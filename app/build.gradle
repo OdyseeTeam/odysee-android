@@ -28,17 +28,19 @@ android {
 
     productFlavors {
         __32bit {
-            versionCode android.defaultConfig.versionCode * 10 + 1
+//            versionCode android.defaultConfig.versionCode * 10 + 1
             ndk {
                 abiFilter "armeabi-v7a"
             }
         }
+/*
         __64bit {
             versionCode android.defaultConfig.versionCode * 10 + 2
             ndk {
                 abiFilter "arm64-v8a"
             }
         }
+*/
     }
 
     buildTypes {
@@ -131,7 +133,7 @@ dependencies {
 //    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     __32bitImplementation 'io.lbry:lbrysdk32:0.91.0'
-    __64bitImplementation 'io.lbry:lbrysdk64:0.91.0'
+//    __64bitImplementation 'io.lbry:lbrysdk64:0.91.0'
 }
 
 apply plugin: 'com.google.gms.google-services'
