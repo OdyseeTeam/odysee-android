@@ -75,9 +75,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
     private static final String MOONPAY_URL_FORMAT =
             "https://buy.moonpay.io?apiKey=pk_live_xNFffrN5NWKy6fu0ggbV8VQIwRieRzy&colorCode=%%232F9176&currencyCode=LBC&showWalletAddressForm=true&walletAddress=%s&externalCustomerId=%s";
 
-    private View layoutAccountRecommended;
-    private View layoutSdkInitializing;
-    private View linkSkipAccount;
     private CreditsBalanceView walletTotalBalanceView;
     private CreditsBalanceView walletSpendableBalanceView;
     private CreditsBalanceView walletSupportingBalanceView;
@@ -121,9 +118,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
         View root = inflater.inflate(R.layout.fragment_wallet, container, false);
 
         loadingRecentContainer = root.findViewById(R.id.wallet_loading_recent_container);
-        layoutAccountRecommended = root.findViewById(R.id.wallet_account_recommended_container);
-        linkSkipAccount = root.findViewById(R.id.wallet_skip_account_link);
-        buttonSignUp = root.findViewById(R.id.wallet_sign_up_button);
 
         inlineBalanceContainer = root.findViewById(R.id.wallet_inline_balance_container);
         textWalletInlineBalance = root.findViewById(R.id.wallet_inline_balance_value);
@@ -268,7 +262,7 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
 
         detailRows = new ArrayList(3);
 
-        detailAdapter = new WalletDetailAdapter((MainActivity) context, detailRows);
+        detailAdapter = new WalletDetailAdapter(context, detailRows);
         detailListView.setAdapter(detailAdapter);
 
         buttonViewMore.setOnClickListener(new View.OnClickListener() {
@@ -290,15 +284,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             }
         });
 
-        buttonSignUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).walletSyncSignIn();
-                }
-            }
-        });
         buttonGetNewAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -344,16 +329,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             public void onFocusChange(View view, boolean hasFocus) {
                 inputSendAmount.setHint(hasFocus ? getString(R.string.zero) : "");
                 inlineBalanceContainer.setVisibility(hasFocus ? View.VISIBLE : View.INVISIBLE);
-            }
-        });
-
-        layoutAccountRecommended.setVisibility(hasSkippedAccount() || Lbryio.isSignedIn() ? View.GONE : View.VISIBLE);
-        linkSkipAccount.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-                sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_SKIP_WALLET_ACCOUNT, true).apply();
-                layoutAccountRecommended.setVisibility(View.GONE);
             }
         });
 
@@ -550,8 +525,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Wallet", "Wallet");
         }
-
-        Helper.setViewVisibility(layoutAccountRecommended, hasSkippedAccount() || Lbryio.isSignedIn() ? View.GONE : View.VISIBLE);
     }
 
     public void onPause() {
@@ -583,11 +556,6 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             activity.syncWalletAndLoadPreferences();
-        }
-
-        // update view
-        if (layoutSdkInitializing != null) {
-            layoutSdkInitializing.setVisibility(View.GONE);
         }
 
         checkReceiveAddress();
@@ -631,7 +599,7 @@ public class WalletFragment extends BaseFragment implements SdkStatusListener, W
             detailRows = new ArrayList<>(3);
 
         if (detailAdapter == null) {
-            detailAdapter = new WalletDetailAdapter((MainActivity) getContext(), detailRows);
+            detailAdapter = new WalletDetailAdapter(getContext(), detailRows);
             detailListView.setAdapter(detailAdapter);
         }
 

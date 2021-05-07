@@ -40,12 +40,6 @@ import com.odysee.app.utils.Lbryio;
 public class RewardsFragment extends BaseFragment implements RewardListAdapter.RewardClickListener {
 
     private boolean rewardClaimInProgress;
-    private View layoutAccountDriver;
-    private View linkNotInterested;
-    private TextView textAccountDriverTitle;
-    private TextView textFreeCreditsWorth;
-    private TextView textLearnMoreLink;
-    private MaterialButton buttonGetStarted;
 
     private ProgressBar rewardsLoading;
     private RewardListAdapter adapter;
@@ -56,13 +50,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_rewards, container, false);
-
-        layoutAccountDriver = root.findViewById(R.id.rewards_account_driver_container);
-        linkNotInterested = root.findViewById(R.id.rewards_not_interested_link);
-        textAccountDriverTitle = root.findViewById(R.id.rewards_account_driver_title);
-        textFreeCreditsWorth = root.findViewById(R.id.rewards_account_driver_credits_worth);
-        textLearnMoreLink = root.findViewById(R.id.rewards_account_driver_learn_more);
-        buttonGetStarted = root.findViewById(R.id.rewards_get_started_button);
 
         linkFilterUnclaimed = root.findViewById(R.id.rewards_filter_link_unclaimed);
         linkFilterAll = root.findViewById(R.id.rewards_filter_link_all);
@@ -85,7 +72,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
 
     public void onResume() {
         super.onResume();
-        checkRewardsStatus();
         fetchRewards();
 
         Context context = getContext();
@@ -118,7 +104,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
             @Override
             public void onSuccess(List<Reward> rewards) {
                 Lbryio.updateRewardsLists(rewards);
-                updateUnclaimedRewardsValue();
 
                 if (adapter == null) {
                     adapter = new RewardListAdapter(rewards, getContext());
@@ -141,32 +126,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
     }
 
     private void initUi() {
-        linkNotInterested.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-
-                Context context = getContext();
-
-                if (context instanceof MainActivity) {
-                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                    sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_REWARDS_NOT_INTERESTED, true).apply();
-
-                    MainActivity activity = (MainActivity) context;
-                    activity.onBackPressed();
-                }
-            }
-        });
-        buttonGetStarted.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).rewardsSignIn();
-                }
-            }
-        });
-
         linkFilterAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -189,33 +148,6 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                 }
             }
         });
-
-        updateUnclaimedRewardsValue();
-        layoutAccountDriver.setVisibility(Lbryio.currentUser != null && Lbryio.currentUser.isRewardApproved() ? View.GONE : View.VISIBLE);
-        Helper.applyHtmlForTextView(textLearnMoreLink);
-    }
-
-    private void checkRewardsStatus() {
-        Helper.setViewVisibility(layoutAccountDriver, Lbryio.currentUser != null && Lbryio.currentUser.isRewardApproved() ? View.GONE : View.VISIBLE);
-    }
-
-    public void updateUnclaimedRewardsValue() {
-        try {
-            String accountDriverTitle = getResources().getQuantityString(
-                    R.plurals.available_credits,
-                    Lbryio.totalUnclaimedRewardAmount == 1 ? 1 : 2,
-                    Helper.shortCurrencyFormat(Lbryio.totalUnclaimedRewardAmount));
-            double unclaimedRewardAmountUsd = Lbryio.totalUnclaimedRewardAmount * Lbryio.LBCUSDRate;
-            Helper.setViewText(textAccountDriverTitle, accountDriverTitle);
-            Helper.setViewText(textFreeCreditsWorth, getString(R.string.free_credits_worth, Helper.SIMPLE_CURRENCY_FORMAT.format(unclaimedRewardAmountUsd)));
-        } catch (IllegalStateException ex) {
-            // pass
-        }
-
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            ((MainActivity) context).updateRewardsUsdVale();
-        }
     }
 
     @Override
