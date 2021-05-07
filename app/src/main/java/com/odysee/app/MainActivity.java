@@ -1,5 +1,8 @@
 package com.odysee.app;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.OnAccountsUpdateListener;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -32,6 +35,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
+import android.transition.Fade;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -231,7 +235,7 @@ import okhttp3.OkHttpClient;
 import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
-        ActionMode.Callback, SelectionModeListener {
+        ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
     private static final String CHANNEL_ID_PLAYBACK = "com.odysee.app.LBRY_PLAYBACK_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
     private static final String SPECIAL_URL_PREFIX = "lbry://?";
@@ -392,6 +396,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean pendingOpenWalletPage;
     private boolean pendingOpenRewardsPage;
     private boolean pendingFollowingReload;
+
+    AccountManager accountManager;
 
     // startup stages (to be able to determine how far a user made it if startup fails)
     // and display a more useful message for troubleshooting
@@ -599,18 +605,25 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
                 Button buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 TextView userIdText = customView.findViewById(R.id.user_id);
-                if (Lbryio.isSignedIn()) {
+
+                AccountManager am = AccountManager.get(getApplicationContext());
+                final boolean isSignedIn;
+                if (am.getAccounts().length > 0)
+                    isSignedIn = true;
+                else
+                    isSignedIn = false;
+                if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
                     buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setText("Sign out");
-                    userIdText.setText(Lbryio.getSignedInEmail());
+                    userIdText.setText(am.getUserData(am.getAccounts()[0], "email"));
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("auth_token", Lbryio.AUTH_TOKEN);
                     editor.apply();
-                }
-                else {
+                } else {
                     userIdText.setVisibility(View.GONE);
+                    userIdText.setText("");
                     buttonShowRewards.setVisibility(View.GONE);
                     signUserButton.setText(getString(R.string.sign_in));
                 }
@@ -627,7 +640,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         closeButton.performClick();
-                        if (Lbryio.isSignedIn()) {
+                        if (isSignedIn) {
                             signOutUser();
                         } else {
                             simpleSignIn();
@@ -684,6 +697,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
         });
+
+        accountManager = AccountManager.get(this);
     }
 
     public void hideToolbar() {
@@ -1105,15 +1120,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void updateWalletBalance() {
-        Log.i(TAG, "updateWalletBalance: Updating wallet balance");
         WalletBalance balance;
 
-        showSignedInUIElements(Lbryio.isSignedIn());
+        showSignedInUIElements(accountManager.getAccounts().length > 0);
 
-        if (Lbryio.isSignedIn()) {
+        if (accountManager.getAccounts().length > 0) {
+            Log.i(TAG, "updateWalletBalance: Updating wallet balance");
             try {
                 SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-                JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, sharedPref.getString("auth_token", Lbryio.AUTH_TOKEN));
+                JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, accountManager.peekAuthToken(accountManager.getAccounts()[0], "auth_token_type"));
                 balance = WalletBalance.fromJSONObject(json);
                 for (WalletBalanceListener listener : walletBalanceListeners) {
                     if (listener != null) {
@@ -1126,6 +1141,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             } catch (ApiCallException | ClassCastException ex) {
                 ex.printStackTrace();
             }
+        } else {
+            Log.i(TAG, "updateWalletBalance: Skipping updating wallet balance");
         }
     }
 
@@ -1181,6 +1198,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             };
             webSocketClient.connect();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        accountManager.addOnAccountsUpdatedListener(this, null, true);
     }
 
     @Override
@@ -2009,6 +2032,32 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    @Override
+    public void onAccountsUpdated(Account[] accounts) {
+        if (accounts.length > 0) {
+            Account act = accounts[0];
+            AccountManager am = AccountManager.get(this);
+            String email = am.getUserData(act, "email");
+            String token;
+            try {
+                token = am.peekAuthToken(act, "auth_token_type");
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateWalletBalance();
+                    }
+                }).start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+            bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
+        }
+
+    }
+
     private class PlayerNotificationDescriptionAdapter implements PlayerNotificationManager.MediaDescriptionAdapter {
 
         @Override
@@ -2060,7 +2109,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (Lbryio.isSignedIn()) {
+                if (accountManager.getAccounts().length > 0) {
                     View balanceContainer = findViewById(R.id.wallet_balance_container);
                     TextView walletBalance = balanceContainer.findViewById(R.id.floating_balance_value);
                     walletBalance.setText(Helper.shortCurrencyFormat(balance.getTotal().doubleValue()));
@@ -2640,6 +2689,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
+        accountManager.removeAccountExplicitly(accountManager.getAccounts()[0]);
         updateWalletBalance(); // Force wallet to be updated so certain views are no longer shown
 
         try {
@@ -2652,9 +2702,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void simpleSignIn() {
-        Intent intent = new Intent(this, VerificationActivity.class);
-        intent.putExtra("flow", VerificationActivity.VERIFICATION_FLOW_SIGN_IN);
-        startActivityForResult(intent, REQUEST_SIMPLE_SIGN_IN);
+        Intent intent = new Intent(this, SignInActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        startActivity(intent);
+        overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
     }
 
     public void walletSyncSignIn() {
@@ -3178,6 +3229,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (inPictureInPictureMode) {
             MainActivity.playerReassigned = true;
         }
+        accountManager.removeOnAccountsUpdatedListener(this);
         super.onStop();
     }
 

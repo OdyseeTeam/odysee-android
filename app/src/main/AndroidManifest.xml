@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
 
     <application
         android:allowBackup="true"
@@ -95,6 +97,11 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarTranslucent"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".SignInActivity"
+            android:launchMode="singleInstance"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBarTranslucent"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".LbrynetMessagingService"
@@ -103,7 +110,18 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+        <service
+            android:name=".OdyseeAccountAuthenticatorService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
 
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
         <provider
             android:name=".LocalFileProvider"
             android:authorities="com.odysee.app.fileprovider"
