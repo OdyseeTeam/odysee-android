@@ -148,7 +148,7 @@ public class LbrynetMessagingService extends FirebaseMessagingService {
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                         .setColor(ContextCompat.getColor(this, R.color.lbryGreen))
-                        .setSmallIcon(R.drawable.ic_lbry)
+                        .setSmallIcon(R.drawable.ic_spaceman_launcher_foreground)
                         .setContentTitle(title)
                         .setContentText(messageBody)
                         .setAutoCancel(true)
