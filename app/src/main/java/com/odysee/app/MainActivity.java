@@ -6,8 +6,6 @@ import android.accounts.OnAccountsUpdateListener;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.content.BroadcastReceiver;
@@ -35,7 +33,6 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
-import android.transition.Fade;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -88,7 +85,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -111,7 +107,6 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -119,12 +114,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.ConnectException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -212,12 +203,10 @@ import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
-import com.odysee.app.ui.other.AboutFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
 import com.odysee.app.ui.findcontent.SearchFragment;
-import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
@@ -739,7 +728,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void initSpecialRouteMap() {
         specialRouteFragmentClassMap = new HashMap<>();
-        specialRouteFragmentClassMap.put("about", AboutFragment.class);
         specialRouteFragmentClassMap.put("allcontent", AllContentFragment.class);
         specialRouteFragmentClassMap.put("channels", ChannelManagerFragment.class);
         specialRouteFragmentClassMap.put("invite", InvitesFragment.class);
@@ -749,7 +737,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         specialRouteFragmentClassMap.put("publishes", PublishesFragment.class);
         specialRouteFragmentClassMap.put("following", FollowingFragment.class);
         specialRouteFragmentClassMap.put("rewards", RewardsFragment.class);
-        specialRouteFragmentClassMap.put("settings", SettingsFragment.class);
         specialRouteFragmentClassMap.put("subscription", FollowingFragment.class);
         specialRouteFragmentClassMap.put("subscriptions", FollowingFragment.class);
         specialRouteFragmentClassMap.put("wallet", WalletFragment.class);
@@ -1024,16 +1011,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void renderPictureInPictureMode() {
-        findViewById(R.id.content_main).setVisibility(View.GONE);
+        findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
-        findViewById(R.id.appbar).setFitsSystemWindows(true);
+        findViewById(R.id.appbar).setVisibility(View.GONE);
+        hideBottomNavigation();
         hideNotifications();
         hideActionBar();
         dismissActiveDialogs();
-
-        for (PIPModeListener listener : pipModeListeners) {
-            listener.onEnterPIPMode();
-        }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
         PlayerView pipPlayer = findViewById(R.id.pip_player);
@@ -1058,19 +1043,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             findViewById(R.id.app_bar_main_container).setFitsSystemWindows(false);
         }
 
-        findViewById(R.id.content_main).setVisibility(View.VISIBLE);
+        findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+        findViewById(R.id.appbar).setVisibility(View.VISIBLE);
+        showBottomBavigation();
+
+        findViewById(R.id.content_main).setVisibility(View.GONE);
         Fragment fragment = getCurrentFragment();
         if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
-        }
-        for (PIPModeListener listener : pipModeListeners) {
-            listener.onExitPIPMode();
         }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
         PlayerView pipPlayer = findViewById(R.id.pip_player);
         pipPlayer.setPlayer(null);
-        pipPlayerContainer.setVisibility(View.INVISIBLE);
+        pipPlayerContainer.setVisibility(View.GONE);
         playerReassigned = true;
     }
 
@@ -1733,7 +1720,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (actionBar != null) {
             actionBar.hide();
         }
-        findViewById(R.id.app_bar_main_container).setFitsSystemWindows(false);
+        findViewById(R.id.appbar).setFitsSystemWindows(false);
 
         View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(
@@ -1755,17 +1742,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void exitFullScreenMode() {
-        View appBarMainContainer = findViewById(R.id.app_bar_main_container);
+        View appBarMainContainer = findViewById(R.id.appbar);
         View decorView = getWindow().getDecorView();
         int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
                 (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
-        appBarMainContainer.setFitsSystemWindows(true);
+        appBarMainContainer.setFitsSystemWindows(false);
         decorView.setSystemUiVisibility(flags);
-
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.show();
-        }
         inFullscreenMode = false;
     }
 
@@ -2599,8 +2581,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.actionBarForeground));
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.GONE);
-        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-        showBottomBavigation();
+        if (!isInPictureInPictureMode()) {
+            findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+            showBottomBavigation();
+        }
     }
 
     private void markNotificationsSeen() {
