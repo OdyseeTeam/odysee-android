@@ -442,7 +442,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     Glide.with(context.getApplicationContext()).
                             asBitmap().
                             load(thumbnailUrl).
-                            centerCrop().
                             placeholder(R.drawable.bg_thumbnail_placeholder).
                             into(vh.thumbnailView);
                     vh.thumbnailView.setVisibility(View.VISIBLE);

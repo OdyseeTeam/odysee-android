@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Claim_Duration">
+        <item name="android:textFontWeight">300</item>
+    </style>
+    <style name="Claim_Title">
+        <item name="android:textFontWeight">800</item>
+        <item name="android:textSize">@dimen/claim_title_text_size</item>
+    </style>
+</resources>

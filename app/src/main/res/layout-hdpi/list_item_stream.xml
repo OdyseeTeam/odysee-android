@@ -4,8 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
     android:paddingTop="8dp"
     android:paddingBottom="8dp"
     android:clickable="true"
@@ -49,13 +47,14 @@
             android:textFontWeight="300"
             android:textSize="12sp" />
     </LinearLayout>
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
         <RelativeLayout
             android:id="@+id/claim_media_container"
-            android:layout_width="160dp"
-            android:layout_height="90dp">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
             <RelativeLayout
                 android:layout_centerHorizontal="true"
                 android:background="@drawable/bg_thumbnail_icon"
@@ -76,8 +75,10 @@
             </RelativeLayout>
             <ImageView
                 android:id="@+id/claim_thumbnail"
-                android:layout_width="160dp"
-                android:layout_height="90dp" />
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"/>
             <TextView
                 android:background="@android:color/black"
                 android:id="@+id/claim_duration"
@@ -89,7 +90,7 @@
                 android:layout_marginBottom="4dp"
                 android:fontFamily="@font/inter"
                 android:textColor="@android:color/white"
-                android:textSize="10sp"
+                android:textSize="14sp"
                 android:textFontWeight="300"
                 android:padding="2dp"
                 android:visibility="gone" />
@@ -111,7 +112,6 @@
                     android:layout_width="12dp"
                     android:layout_height="12dp"
                     android:layout_gravity="center_vertical"
-                    android:scaleType="centerCrop"
                     android:src="@drawable/ic_credits" />
                 <TextView
                     android:id="@+id/claim_fee"
@@ -152,6 +152,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
             android:layout_toEndOf="@id/claim_media_container">
             <LinearLayout
                 android:id="@+id/claim_text_loading_placeholder_1"
@@ -174,53 +175,61 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="gone" />
+
             <TextView
                 android:id="@+id/claim_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxLines="2"
                 android:ellipsize="end"
                 android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="600" />
-            <TextView
-                android:id="@+id/claim_publisher"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/lbryGreen"
-                android:fontFamily="@font/inter"
-                style="@style/Claim_Publisher" />
-            <RelativeLayout
+                android:lineSpacingMultiplier="1.1"
+                android:maxLines="2"
+                style="@style/Claim_Title" />
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
                 <TextView
-                    android:id="@+id/claim_publish_time"
+                    android:id="@+id/claim_publisher"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/lbryGreen"
                     android:fontFamily="@font/inter"
-                    style="@style/Claim_Duration" />
-                <TextView
-                    android:id="@+id/claim_pending_text"
-                    android:layout_width="wrap_content"
+                    style="@style/Claim_Publisher" />
+                <RelativeLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/pending"
-                    android:textSize="11sp"
-                    android:textStyle="italic"
-                    android:textFontWeight="300"
-                    android:visibility="gone" />
+                    android:layout_marginStart="8dp">
+                    <TextView
+                        android:id="@+id/claim_publish_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
+                        style="@style/Claim_Duration" />
+                    <TextView
+                        android:id="@+id/claim_pending_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/pending"
+                        android:textSize="11sp"
+                        android:textStyle="italic"
+                        android:textFontWeight="300"
+                        android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/claim_file_size"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:textSize="11sp"
-                    android:textFontWeight="300" />
-            </RelativeLayout>
+                    <TextView
+                        android:id="@+id/claim_file_size"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:fontFamily="@font/inter"
+                        android:textSize="11sp"
+                        android:textFontWeight="300" />
+                </RelativeLayout>
+
+            </LinearLayout>
             <!-- download progress bar -->
             <ProgressBar
                 android:id="@+id/claim_download_progress"
@@ -242,5 +251,5 @@
                 android:textSize="10sp"
                 android:textFontWeight="300" />
         </LinearLayout>
-    </RelativeLayout>
+    </LinearLayout>
 </LinearLayout>

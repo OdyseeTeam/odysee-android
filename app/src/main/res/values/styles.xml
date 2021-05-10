@@ -31,4 +31,10 @@
         <item name="android:scaleY">0.5</item>
     </style>
 
+    <style name="Claim_Publisher">
+        <item name="android:textSize">@dimen/claim_publisher_text_size</item>
+    </style>
+    <style name="Claim_Duration">
+        <item name="android:textSize">@dimen/claim_duration_text_size</item>
+    </style>
 </resources>
