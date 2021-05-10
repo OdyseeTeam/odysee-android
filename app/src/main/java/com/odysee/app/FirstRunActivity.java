@@ -30,9 +30,6 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
 import com.odysee.app.R;
-import io.lbry.lbrysdk.LbrynetService;
-import io.lbry.lbrysdk.ServiceHelper;
-import io.lbry.lbrysdk.Utils;
 
 public class FirstRunActivity extends AppCompatActivity {
 
@@ -105,7 +102,9 @@ public class FirstRunActivity extends AppCompatActivity {
         }
         protected Boolean doInBackground(Void... params) {
             // Load the installation id from the file system
-            String lbrynetDir = String.format("%s/%s", Utils.getAppInternalStorageDir(context), "lbrynet");
+            File[] dirs = context.getExternalFilesDirs(null);
+            String lbrynetDir = dirs[0].getAbsolutePath().concat("/lbrynet");
+
             File dir = new File(lbrynetDir);
             boolean dirExists = dir.isDirectory();
             if (!dirExists) {

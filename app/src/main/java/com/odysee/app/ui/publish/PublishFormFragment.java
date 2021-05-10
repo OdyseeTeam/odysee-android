@@ -87,7 +87,6 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Predefined;
-import io.lbry.lbrysdk.Utils;
 import lombok.Data;
 import lombok.Getter;
 
@@ -785,7 +784,8 @@ public class PublishFormFragment extends BaseFragment implements
 
         Context context = getContext();
         if (context != null) {
-            String outputPath = String.format("%s/videos", Utils.getAppInternalStorageDir(context));
+            File[] dirs = context.getExternalFilesDirs(null);
+            String outputPath = String.format("%s/videos", dirs[0].getAbsolutePath());
             File dir = new File(outputPath);
             if (!dir.isDirectory()) {
                 dir.mkdirs();

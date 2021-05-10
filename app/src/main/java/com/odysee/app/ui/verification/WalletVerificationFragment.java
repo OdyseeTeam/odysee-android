@@ -32,7 +32,6 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Lbryio;
-import io.lbry.lbrysdk.Utils;
 import lombok.Setter;
 
 public class WalletVerificationFragment extends Fragment implements SdkStatusListener {
@@ -127,9 +126,10 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
         Helper.setViewVisibility(loading, View.VISIBLE);
         Helper.setViewVisibility(textLoading, View.VISIBLE);
         // attempt to load secure value from versions pre-0.15.0
-        String prevVersionPassword = Utils.getSecureValue(MainActivity.SECURE_VALUE_FIRST_RUN_PASSWORD, getContext(), Lbry.KEYSTORE);
-        String password = Utils.getSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, getContext(), Lbry.KEYSTORE);
+//        String prevVersionPassword = Utils.getSecureValue(MainActivity.SECURE_VALUE_FIRST_RUN_PASSWORD, getContext(), Lbry.KEYSTORE);
+//        String password = Utils.getSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, getContext(), Lbry.KEYSTORE);
         // start verification process
+/*
         SyncGetTask task = new SyncGetTask(!Helper.isNullOrEmpty(prevVersionPassword) ? prevVersionPassword : password,
                 false,
                 null,
@@ -158,6 +158,7 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+*/
     }
 
     public void processExistingWallet(WalletSync walletSync) {
@@ -165,6 +166,7 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
         SyncApplyTask applyTask = new SyncApplyTask("", walletSync.getData(), null, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncApplySuccess(String hash, String data) {
+/*
                 // check if local and remote hash are different, and then run sync set
                 Utils.setSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, "", getContext(), Lbry.KEYSTORE);
                 if (!hash.equalsIgnoreCase(Lbryio.lastRemoteHash) && !Helper.isNullOrEmpty(Lbryio.lastRemoteHash)) {
@@ -173,6 +175,7 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
                 if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }
+*/
             }
 
             @Override
@@ -204,6 +207,7 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
         SyncApplyTask applyTask = new SyncApplyTask(password, currentWalletSync.getData(), null, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncApplySuccess(String hash, String data) {
+/*
                 Utils.setSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, password, getContext(), Lbry.KEYSTORE);
                 // check if local and remote hash are different, and then run sync set
                 if (!hash.equalsIgnoreCase(Lbryio.lastRemoteHash) && !Helper.isNullOrEmpty(Lbryio.lastRemoteHash)) {
@@ -212,6 +216,7 @@ public class WalletVerificationFragment extends Fragment implements SdkStatusLis
                 if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }
+*/
             }
 
             @Override

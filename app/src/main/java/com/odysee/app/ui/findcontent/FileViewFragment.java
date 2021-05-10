@@ -163,9 +163,6 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
-import io.lbry.lbrysdk.DownloadManager;
-import io.lbry.lbrysdk.LbrynetService;
-import io.lbry.lbrysdk.Utils;
 import okhttp3.Response;
 
 public class FileViewFragment extends BaseFragment implements
@@ -770,6 +767,7 @@ public class FileViewFragment extends BaseFragment implements
             if (claim != null && claim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
+            activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
         }
 
         if (MainActivity.appPlayer != null) {
@@ -1169,15 +1167,6 @@ public class FileViewFragment extends BaseFragment implements
                 if (claim != null) {
                     if (downloadInProgress) {
                         onDownloadAborted();
-
-                        // file is already downloading and not completed
-                        Intent intent = new Intent(LbrynetService.ACTION_DELETE_DOWNLOAD);
-                        intent.putExtra("uri", claim.getPermanentUrl());
-                        intent.putExtra("nativeDelete", true);
-                        Context context = getContext();
-                        if (context != null) {
-                            context.sendBroadcast(intent);
-                        }
                     } else {
                         checkStoragePermissionAndStartDownload();
                     }
@@ -1393,31 +1382,7 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
         SetSdkSettingTask task = null;
         if (startDownloadPending) {
-            startDownloadPending = false;
-            task = new SetSdkSettingTask("download_dir", Utils.getConfiguredDownloadDirectory(context), new GenericTaskHandler() {
-                @Override
-                public void beforeStart() { }
-                @Override
-                public void onSuccess() { startDownload(); }
-                @Override
-                public void onError(Exception error) {
-                    // start the download anyway. Only that it will be saved in the app private folder: /sdcard/Android/com.odysee.app/Download
-                    startDownload();
-                }
-            });
         } else if (fileGetPending) {
-            fileGetPending = false;
-            task = new SetSdkSettingTask("download_dir", Utils.getConfiguredDownloadDirectory(context), new GenericTaskHandler() {
-                @Override
-                public void beforeStart() { }
-                @Override
-                public void onSuccess() { fileGet(true); }
-                @Override
-                public void onError(Exception error) {
-                    // start the file get anyway. Only that it will be saved in the app private folder: /sdcard/Android/com.odysee.app/Download
-                    fileGet(true);
-                }
-            });
         }
         if (task != null) {
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -1464,7 +1429,7 @@ public class FileViewFragment extends BaseFragment implements
                     Helper.setViewVisibility(actionDelete, View.GONE);
                     View root = getView();
                     if (root != null) {
-                        root.findViewById(R.id.file_view_action_download).setVisibility(View.VISIBLE);
+//                        root.findViewById(R.id.file_view_action_download).setVisibility(View.VISIBLE);
                         root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.GONE);
                     }
                     Helper.setViewEnabled(actionDelete, true);
@@ -2200,19 +2165,7 @@ public class FileViewFragment extends BaseFragment implements
                     }
 
                     claim.setFile(file);
-                    if (saveFile) {
-                        // download
-                        String outpoint = String.format("%s:%d", claim.getTxid(), claim.getNout());
-                        Intent intent = new Intent(LbrynetService.ACTION_QUEUE_DOWNLOAD);
-                        intent.putExtra("outpoint", outpoint);
-                        Context context = getContext();
-                        if (context != null) {
-                            context.sendBroadcast(intent);
-                        }
-                    } else {
-                        // streaming
-                        playOrViewMedia();
-                    }
+                    playOrViewMedia();
                 }
             }
 
@@ -2626,7 +2579,7 @@ public class FileViewFragment extends BaseFragment implements
             activity.enterFullScreenMode();
 
             int statusBarHeight = activity.getStatusBarHeight();
-            exoplayerContainer.setPadding(0, 0, 0, statusBarHeight);
+            exoplayerContainer.setPadding(0, 0, 0, 0);
 
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         }
@@ -2853,7 +2806,7 @@ public class FileViewFragment extends BaseFragment implements
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.GONE);
             } else {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), View.GONE);
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.VISIBLE);
+//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.VISIBLE);
             }
 
         }
@@ -2899,50 +2852,7 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if (uri == null || outpoint == null || (fileInfoJson == null && !"abort".equals(downloadAction))) {
-            return;
-        }
-        onRelatedDownloadAction(downloadAction, uri, outpoint, fileInfoJson, progress);
-        if (claim == null || claim != null && !claim.getPermanentUrl().equalsIgnoreCase(uri)) {
-            return;
-        }
-        if ("abort".equals(downloadAction)) {
-            onDownloadAborted();
-            return;
-        }
-
-        View root = getView();
-        if (root != null) {
-            ImageView downloadIconView = root.findViewById(R.id.file_view_action_download_icon);
-            ProgressBar downloadProgressView = root.findViewById(R.id.file_view_download_progress);
-
-            try {
-                JSONObject fileInfo = new JSONObject(fileInfoJson);
-                LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-                claim.setFile(claimFile);
-
-                if (DownloadManager.ACTION_START.equals(downloadAction)) {
-                    downloadInProgress = true;
-                    Helper.setViewVisibility(downloadProgressView, View.VISIBLE);
-                    downloadProgressView.setProgress(0);
-                    downloadIconView.setImageResource(R.drawable.ic_stop);
-                } else if (DownloadManager.ACTION_UPDATE.equals(downloadAction)) {
-                    // handle download updated
-                    downloadInProgress = true;
-                    Helper.setViewVisibility(downloadProgressView, View.VISIBLE);
-                    downloadProgressView.setProgress(Double.valueOf(progress).intValue());
-                    downloadIconView.setImageResource(R.drawable.ic_stop);
-                } else if (DownloadManager.ACTION_COMPLETE.equals(downloadAction)) {
-                    downloadInProgress = false;
-                    downloadProgressView.setProgress(100);
-                    Helper.setViewVisibility(downloadProgressView, View.GONE);
-                    playOrViewMedia();
-                }
-                checkIsFileComplete();
-            } catch (JSONException ex) {
-                // invalid file info for download
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

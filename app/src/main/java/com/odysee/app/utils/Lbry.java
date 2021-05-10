@@ -1,5 +1,6 @@
 package com.odysee.app.utils;
 
+import android.os.Build;
 import android.util.Log;
 
 import org.bitcoinj.core.Base58;
@@ -32,7 +33,6 @@ import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
-import io.lbry.lbrysdk.Utils;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -56,7 +56,7 @@ public final class Lbry {
 
     // Values to obtain from LBRY SDK status
     public static boolean IS_STATUS_PARSED = false; // Check if the status has been parsed at least once
-    public static final String PLATFORM = String.format("Android %s (API %d)", Utils.getAndroidRelease(), Utils.getAndroidSdk());
+    public static final String PLATFORM = String.format("Android %s (API %d)", Build.VERSION.RELEASE, Build.VERSION.SDK_INT);
     public static final String OS = "android";
     public static String INSTALLATION_ID = null;
     public static String NODE_ID = null;

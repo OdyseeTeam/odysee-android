@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.preference.PreferenceManager;
@@ -39,8 +40,6 @@ import com.odysee.app.model.WalletSync;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.model.lbryinc.User;
-import io.lbry.lbrysdk.LbrynetService;
-import io.lbry.lbrysdk.Utils;
 import lombok.Data;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -271,9 +270,8 @@ public final class Lbryio {
         options.put("app_version", appVersion);
         options.put("app_id", Lbry.INSTALLATION_ID);
         options.put("node_id", "");
-        options.put("daemon_version", LbrynetService.LBRY_SDK_VERSION);
         options.put("operating_system", "android");
-        options.put("platform", String.format("Android %s (API %d)", Utils.getAndroidRelease(), Utils.getAndroidSdk()));
+        options.put("platform", String.format("Android %s (API %d)", Build.VERSION.RELEASE, Build.VERSION.SDK_INT));
         try {
             JSONObject response = (JSONObject) parseResponse(call("install", "new", options, Helper.METHOD_POST, context));
         } catch (LbryioRequestException | LbryioResponseException | ClassCastException ex) {
@@ -314,17 +312,6 @@ public final class Lbryio {
     }
 
     private static void broadcastAuthTokenGenerated(Context context) {
-        try {
-            if (context != null) {
-                String encryptedAuthToken = Utils.encrypt(AUTH_TOKEN.getBytes(StandardCharsets.UTF_8), context, Lbry.KEYSTORE);
-                Intent intent = new Intent(MainActivity.ACTION_AUTH_TOKEN_GENERATED);
-                intent.putExtra("authToken", encryptedAuthToken);
-                context.sendBroadcast(intent);
-            }
-        } catch (Exception ex) {
-            Log.e(TAG, "Error sending encrypted auth token action broadcast", ex);
-            // pass
-        }
     }
 
     public static Map<String, String> buildSingleParam(String key, String value) {
