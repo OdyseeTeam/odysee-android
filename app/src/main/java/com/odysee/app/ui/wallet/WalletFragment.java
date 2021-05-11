@@ -52,9 +52,7 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.WalletBalanceListener;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletDetailItem;
@@ -69,7 +67,7 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.views.CreditsBalanceView;
 
-public class WalletFragment extends BaseFragment implements SdkStatusListener, WalletBalanceListener {
+public class WalletFragment extends BaseFragment implements WalletBalanceListener {
 
     private static final String MOONPAY_KEY = "c2tfbGl2ZV9ueVJqVXNDbE5pcnVSdnlCMkJLWW5JcFA5VnA3dWU=";
     private static final String MOONPAY_URL_FORMAT =

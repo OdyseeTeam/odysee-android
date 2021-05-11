@@ -1,7 +1,6 @@
 package com.odysee.app;
 
 import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
@@ -31,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.odysee.app.adapter.VerificationPagerAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.SignInListener;
 import com.odysee.app.listener.WalletSyncListener;
 import com.odysee.app.model.lbryinc.RewardVerified;
@@ -42,15 +40,12 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
-import com.odysee.app.R;
-
 public class VerificationActivity extends FragmentActivity implements SignInListener, WalletSyncListener {
 
     public static final int VERIFICATION_FLOW_SIGN_IN = 1;
     public static final int VERIFICATION_FLOW_REWARDS = 2;
     public static final int VERIFICATION_FLOW_WALLET = 3;
 
-    private List<SdkStatusListener> sdkStatusListeners;
     private BillingClient billingClient;
     private BroadcastReceiver sdkReceiver;
     private String email;
@@ -107,8 +102,6 @@ public class VerificationActivity extends FragmentActivity implements SignInList
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        sdkStatusListeners = new ArrayList<>();
 
         signedIn = Lbryio.isSignedIn();
         Intent intent = getIntent();
@@ -435,15 +428,5 @@ public class VerificationActivity extends FragmentActivity implements SignInList
     public void onDestroy() {
         Helper.unregisterReceiver(sdkReceiver, this);
         super.onDestroy();
-    }
-
-    public void addSdkStatusListener(SdkStatusListener listener) {
-        if (!sdkStatusListeners.contains(listener)) {
-            sdkStatusListeners.add(listener);
-        }
-    }
-
-    public void removeSdkStatusListener(SdkStatusListener listener) {
-        sdkStatusListeners.remove(listener);
     }
 }

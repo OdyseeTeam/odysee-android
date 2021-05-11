@@ -63,7 +63,6 @@ import com.odysee.app.adapter.LanguageSpinnerAdapter;
 import com.odysee.app.adapter.LicenseSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.listener.FilePickerListener;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
@@ -71,7 +70,6 @@ import com.odysee.app.model.Fee;
 import com.odysee.app.model.GalleryItem;
 import com.odysee.app.model.Language;
 import com.odysee.app.model.License;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.tasks.UpdateSuggestedTagsTask;
@@ -91,7 +89,7 @@ import lombok.Data;
 import lombok.Getter;
 
 public class PublishFormFragment extends BaseFragment implements
-        FilePickerListener, SdkStatusListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener {
+        FilePickerListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener {
 
     private static final String H264_CODEC = "h264";
     private static final int MAX_VIDEO_DIMENSION = 1920;

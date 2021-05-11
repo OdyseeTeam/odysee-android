@@ -30,10 +30,8 @@ import java.util.Map;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.claim.AbandonChannelTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -43,7 +41,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 
-public class ChannelManagerFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener, SdkStatusListener {
+public class ChannelManagerFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
     private Button buttonNewChannel;
     private FloatingActionButton fabNewChannel;

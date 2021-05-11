@@ -29,10 +29,8 @@ import java.util.List;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.AbandonStreamTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -42,7 +40,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 
-public class PublishesFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener, SdkStatusListener {
+public class PublishesFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
     private Button buttonNewPublish;
     private FloatingActionButton fabNewPublish;

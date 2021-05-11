@@ -37,7 +37,6 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.Comment;
@@ -57,7 +56,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import lombok.Setter;
 
-public class ChannelCommentsFragment extends Fragment implements SdkStatusListener, WalletBalanceListener {
+public class ChannelCommentsFragment extends Fragment implements WalletBalanceListener {
 
     @Setter
     private Claim claim;
@@ -149,6 +148,7 @@ public class ChannelCommentsFragment extends Fragment implements SdkStatusListen
             ((MainActivity) context).addWalletBalanceListener(this);
         }
 
+        fetchChannels();
         checkAndLoadComments();
     }
 
@@ -159,11 +159,6 @@ public class ChannelCommentsFragment extends Fragment implements SdkStatusListen
             MainActivity activity = (MainActivity) context;
             activity.removeWalletBalanceListener(this);
         }
-    }
-
-    @Override
-    public void onSdkReady() {
-        fetchChannels();
     }
 
     private void checkAndLoadComments() {

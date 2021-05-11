@@ -31,7 +31,6 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.InviteeListAdapter;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.WalletBalance;
@@ -49,7 +48,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
-public class InvitesFragment extends BaseFragment implements SdkStatusListener, WalletBalanceListener {
+public class InvitesFragment extends BaseFragment implements WalletBalanceListener {
 
     private static final String INVITE_LINK_FORMAT = "https://lbry.tv/$/invite/%s:%s";
 

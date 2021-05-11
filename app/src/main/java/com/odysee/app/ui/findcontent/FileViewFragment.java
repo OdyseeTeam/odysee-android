@@ -121,7 +121,6 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
@@ -163,7 +162,6 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
-import okhttp3.Response;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -171,7 +169,6 @@ public class FileViewFragment extends BaseFragment implements
         FetchClaimsListener,
         PIPModeListener,
         ScreenOrientationListener,
-        SdkStatusListener,
         StoragePermissionListener,
         WalletBalanceListener {
     private static final int RELATED_CONTENT_SIZE = 16;

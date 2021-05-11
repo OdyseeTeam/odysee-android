@@ -36,7 +36,6 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.listener.DownloadActionListener;
-import com.odysee.app.listener.SdkStatusListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
@@ -56,7 +55,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 
 public class LibraryFragment extends BaseFragment implements
-        ActionMode.Callback, DownloadActionListener, SelectionModeListener, SdkStatusListener  {
+        ActionMode.Callback, DownloadActionListener, SelectionModeListener {
 
     private static final int FILTER_DOWNLOADS = 1;
     private static final int FILTER_PURCHASES = 2;
