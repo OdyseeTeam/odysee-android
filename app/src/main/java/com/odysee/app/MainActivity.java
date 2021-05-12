@@ -712,8 +712,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public boolean isBackgroundPlaybackEnabled() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_BACKGROUND_PLAYBACK, true);
+        return false; // TODO This is a workaround for audio keep playing after app is no longer on the foreground
+//        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+//        return sp.getBoolean(PREFERENCE_KEY_BACKGROUND_PLAYBACK, true);
     }
 
     public boolean isMediaAutoplayEnabled() {
@@ -1826,30 +1827,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // pass. A new auth token would have to be generated if the old one cannot be decrypted
                 Log.e(TAG, "Could not decrypt existing auth token.", ex);
             }
-        }
-    }
-
-    private void checkSdkReady() {
-        if (Lbryio.isSignedIn()) {
-            scheduleWalletBalanceUpdate();
-            scheduleWalletSyncTask();
-        }
-    }
-
-    public void onSdkReady() {
-        if (Lbryio.isSignedIn()) {
-            checkSyncedWallet();
-        }
-
-        scheduleWalletBalanceUpdate();
-        scheduleWalletSyncTask();
-        fetchOwnChannels();
-        fetchOwnClaims();
-
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean firstRunCompleted = sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED, false);
-        if (firstRunCompleted) {
-            checkAndClaimNewAndroidReward();
         }
     }
 
