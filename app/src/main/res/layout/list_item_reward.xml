@@ -35,7 +35,7 @@
                 android:visibility="invisible" />
         </RelativeLayout>
         <LinearLayout
-            android:layout_weight="7"
+            android:layout_weight="6"
             android:layout_width="0dp"
             android:orientation="vertical"
             android:layout_height="wrap_content"
@@ -96,10 +96,11 @@
                 android:visibility="gone" />
         </LinearLayout>
         <LinearLayout
-            android:layout_weight="2"
+            android:layout_weight="3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
+            android:layout_marginEnd="8dp"
             android:orientation="vertical">
             <TextView
                 android:id="@+id/reward_item_up_to"
@@ -111,30 +112,13 @@
                 android:textSize="10sp"
                 android:textFontWeight="300"
                 android:visibility="gone" />
-            <TextView
+            <com.odysee.app.views.CreditsBalanceView
                 android:id="@+id/reward_item_lbc_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:fontFamily="@font/inter"
-                android:textSize="24sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:fontFamily="@font/inter"
-                android:textSize="12sp"
-                android:text="@string/lbc"
-                android:textFontWeight="300" />
-            <TextView
-                android:id="@+id/reward_item_usd_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_gravity="center_horizontal"
-                android:fontFamily="@font/inter"
-                android:textSize="12sp"
-                android:textFontWeight="300" />
+                android:layout_gravity="end"
+                app:textSize="14sp"
+                app:iconSize="20dp"/>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

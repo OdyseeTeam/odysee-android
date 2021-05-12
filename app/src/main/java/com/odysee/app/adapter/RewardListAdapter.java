@@ -24,6 +24,8 @@ import com.odysee.app.R;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.views.CreditsBalanceView;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -90,8 +92,7 @@ public class RewardListAdapter extends RecyclerView.Adapter<RewardListAdapter.Vi
         protected final View upTo;
         protected final TextView textTitle;
         protected final TextView textDescription;
-        protected final TextView textLbcValue;
-        protected final TextView textUsdValue;
+        protected final CreditsBalanceView lbcValue;
         protected final TextView textLinkTransaction;
         protected final EditText inputCustomCode;
         protected final MaterialButton buttonClaimCustom;
@@ -102,9 +103,8 @@ public class RewardListAdapter extends RecyclerView.Adapter<RewardListAdapter.Vi
             loading = v.findViewById(R.id.reward_item_loading);
             textTitle = v.findViewById(R.id.reward_item_title);
             textDescription = v.findViewById(R.id.reward_item_description);
-            textLbcValue = v.findViewById(R.id.reward_item_lbc_value);
+            lbcValue = v.findViewById(R.id.reward_item_lbc_value);
             textLinkTransaction = v.findViewById(R.id.reward_item_tx_link);
-            textUsdValue = v.findViewById(R.id.reward_item_usd_value);
             inputCustomCode = v.findViewById(R.id.reward_item_custom_code_input);
             buttonClaimCustom = v.findViewById(R.id.reward_item_custom_claim_button);
         }
@@ -145,7 +145,7 @@ public class RewardListAdapter extends RecyclerView.Adapter<RewardListAdapter.Vi
         vh.textTitle.setText(reward.getRewardTitle());
         vh.textDescription.setText(reward.getRewardDescription());
         vh.upTo.setVisibility(reward.shouldDisplayRange() ? View.VISIBLE : View.GONE);
-        vh.textLbcValue.setText(reward.isCustom() ? "?" : Helper.LBC_CURRENCY_FORMAT.format(Helper.parseDouble(reward.getDisplayAmount(), 0)));
+        vh.lbcValue.setText(reward.isCustom() ? "?" : Helper.LBC_CURRENCY_FORMAT.format(Helper.parseDouble(reward.getDisplayAmount(), 0)));
         vh.textLinkTransaction.setVisibility(hasTransaction ? View.VISIBLE : View.GONE);
         vh.textLinkTransaction.setText(hasTransaction ? reward.getTransactionId().substring(0, 7) : null);
         vh.textLinkTransaction.setOnClickListener(new View.OnClickListener() {
@@ -157,9 +157,6 @@ public class RewardListAdapter extends RecyclerView.Adapter<RewardListAdapter.Vi
                 }
             }
         });
-
-        vh.textUsdValue.setText(reward.isCustom() || Lbryio.LBCUSDRate == 0 ? null :
-                String.format("≈$%s", Helper.SIMPLE_CURRENCY_FORMAT.format(rewardAmount * Lbryio.LBCUSDRate)));
 
         vh.itemView.setOnClickListener(new View.OnClickListener() {
             @Override

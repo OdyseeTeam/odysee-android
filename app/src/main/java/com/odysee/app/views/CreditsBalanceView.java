@@ -38,6 +38,7 @@ public class CreditsBalanceView extends TextView {
             iconSize = a.getDimension(R.styleable.CreditsBalanceView_iconSize, 20f);
 
             this.setTextSize((int) textFontSize);
+            this.setTextColor(getResources().getColor(R.color.credits_view, context.getTheme()));
 
             DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
             float px = 8 * (metrics.densityDpi / 160f);

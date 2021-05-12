@@ -68,4 +68,6 @@
     <color name="joinodysee_text">#000000</color>
     <color name="signin_text">@android:color/background_dark</color>
     <color name="signin_background">@android:color/darker_gray</color>
+
+    <color name="credits_view">@android:color/background_dark</color>
 </resources>
