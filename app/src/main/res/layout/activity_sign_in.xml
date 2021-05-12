@@ -41,6 +41,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             android:text="Join Odysee"
             android:textColor="@color/joinodysee_text"
             android:textSize="36sp" />
@@ -48,11 +49,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/email"
-            android:textSize="24sp"
+            style="@style/Verification_Labels"
             android:labelFor="@id/verification_email_input"/>
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -65,11 +67,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/password"
-            android:textSize="24sp"
+            style="@style/Verification_Labels"
             android:labelFor="@id/signin_password"/>
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             android:id="@+id/signin_password"
             style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
             android:enabled="false">
@@ -194,4 +197,8 @@
                 android:textFontWeight="300" />
         </LinearLayout>
     </LinearLayout>
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/signin_monsters" />
 </LinearLayout>

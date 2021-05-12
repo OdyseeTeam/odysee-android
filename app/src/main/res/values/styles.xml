@@ -43,4 +43,9 @@
         <item name="android:backgroundTint">@color/signin_background</item>
         <item name="cornerRadius">8dp</item>
     </style>
+
+    <style name="Verification_Labels">
+        <item name="android:textSize">16sp</item>
+        <item name="android:layout_marginBottom">16dp</item>
+    </style>
 </resources>
