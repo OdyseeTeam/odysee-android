@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#40B887</color>
+    <color name="colorPrimary">#FFE50054</color>
     <color name="colorPrimaryDark">#2F9176</color>
     <color name="colorAccent">#38D9A9</color>
 
@@ -58,4 +58,11 @@
 
     <color name="codeTagText">#E8B692</color>
     <color name="codeTagBackground">#464B50</color>
+
+    <color name="close_button">@android:color/white</color>
+    <color name="closeimagebutton_outline">@android:color/transparent</color>
+    <color name="signin_close_background">#12E50054</color>
+    <color name="joinodysee_text">#ffffff</color>
+    <color name="signin_text">@android:color/white</color>
+    <color name="signin_background">@android:color/black</color>
 </resources>

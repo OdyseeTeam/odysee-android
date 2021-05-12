@@ -7,8 +7,11 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.transition.TransitionManager;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -33,6 +36,7 @@ public class SignInActivity extends Activity {
     private View layoutCollect;
     private View layoutVerify;
     private TextView textAddedEmail;
+    private View buttonEdit;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
@@ -43,19 +47,45 @@ public class SignInActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
 
-        layoutCollect = findViewById(R.id.verification_email_collect_container);
+        layoutCollect = findViewById(R.id.signin_form);
         layoutVerify = findViewById(R.id.verification_email_verify_container);
         textAddedEmail = findViewById(R.id.verification_email_added_address);
         inputEmail = findViewById(R.id.verification_email_input);
         emailAddProgress = findViewById(R.id.verification_email_add_progress);
-        buttonContinue = findViewById(R.id.verification_email_continue_button);
+        Button buttonSignIn = findViewById(R.id.signin_button);
 
-        buttonContinue.setOnClickListener(new View.OnClickListener() {
+        buttonSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 addEmail();
             }
         });
+
+        ImageButton closeButton = findViewById(R.id.signin_close);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finishSignInActivity();
+            }
+        });
+
+        buttonEdit = findViewById(R.id.verification_email_edit_button);
+        buttonEdit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                editEmail();
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (layoutVerify.getVisibility() != View.VISIBLE) {
+            finishSignInActivity();
+            super.onBackPressed();
+        } else {
+            editEmail();
+        }
     }
 
     private void addEmail() {
@@ -82,6 +112,7 @@ public class SignInActivity extends Activity {
 
             @Override
             public void onSuccess() {
+                TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
                 layoutCollect.setVisibility(View.GONE);
                 layoutVerify.setVisibility(View.VISIBLE);
                 Helper.setViewText(textAddedEmail, currentEmail);
@@ -142,10 +173,25 @@ public class SignInActivity extends Activity {
                 Account act = accountManager.getAccounts()[0];
                 accountManager.setAuthToken(act, ARG_AUTH_TYPE, Lbryio.AUTH_TOKEN);
 
-                overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
-                finish();
+                finishSignInActivity();
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void finishSignInActivity() {
+        finish();
+        overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
+    }
+
+    private void editEmail() {
+        if (emailVerifyCheckScheduler != null) {
+            emailVerifyCheckScheduler.shutdownNow();
+            emailVerifyCheckScheduler = null;
+        }
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
+        layoutVerify.setVisibility(View.GONE);
+        layoutCollect.setVisibility(View.VISIBLE);
     }
 }

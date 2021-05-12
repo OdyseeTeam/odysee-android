@@ -37,4 +37,10 @@
     <style name="Claim_Duration">
         <item name="android:textSize">@dimen/claim_duration_text_size</item>
     </style>
+
+    <style name="VerificationButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/colorPrimary</item>
+        <item name="android:backgroundTint">@color/signin_background</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
 </resources>

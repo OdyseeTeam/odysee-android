@@ -61,4 +61,11 @@
 
     <color name="codeTagText">#2E3439</color>
     <color name="codeTagBackground">#D0E8FF</color>
+
+    <color name="close_button">#ff000000</color>
+    <color name="closeimagebutton_outline">#000000</color>
+    <color name="signin_close_background">@android:color/transparent</color>
+    <color name="joinodysee_text">#000000</color>
+    <color name="signin_text">@android:color/background_dark</color>
+    <color name="signin_background">@android:color/darker_gray</color>
 </resources>

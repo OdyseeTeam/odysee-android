@@ -1,84 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/verification_activity"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/ua_background">
+    android:orientation="vertical">
 
-    <LinearLayout
-        android:id="@+id/verification_email_collect_container"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_margin="36dp"
-        android:orientation="vertical"
-        android:visibility="visible">
+        android:orientation="horizontal"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
+
+        <ImageView
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:src="@drawable/odysee_brand" />
+
+        <ImageButton android:id="@+id/signin_close"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:backgroundTint="@color/signin_close_background"
+            android:scaleX="1.5"
+            android:scaleY="1.5"
+            android:src="@drawable/ic_close_signin"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/close_button" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout android:id="@+id/signin_form"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:fontFamily="@font/inter"
+            android:text="Join Odysee"
+            android:textColor="@color/joinodysee_text"
+            android:textSize="36sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/email"
-            android:textColor="@color/white"
-            android:textFontWeight="300"
-            android:textSize="28sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/provide_email_address"
-            android:textColor="@color/white"
-            android:textFontWeight="300"
-            android:textSize="16sp" />
-
+            android:textSize="24sp"
+            android:labelFor="@id/verification_email_input"/>
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/verification_email_input_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:boxStrokeColor="@null">
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/verification_email_input"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:fontFamily="@font/inter"
-                android:gravity="center"
-                android:hint="@string/email_placeholder"
-                android:singleLine="true"
-                android:textAlignment="center"
-                android:textFontWeight="300"
-                android:textColor="@color/white"
-                android:textSize="20sp" />
+                android:layout_height="match_parent"
+                android:id="@+id/verification_email_input"
+                android:inputType="textEmailAddress" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/password"
+            android:textSize="24sp"
+            android:labelFor="@id/signin_password"/>
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/signin_password"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:enabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:inputType="textPassword" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="16dp">
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:orientation="horizontal"
+            android:layout_weight="2">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/verification_email_continue_button"
-                android:layout_width="match_parent"
+                android:id="@+id/signup_button"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
                 android:fontFamily="@font/inter"
-                android:text="@string/continue_text" />
+                android:text="@string/sign_up"
+                android:textColor="@color/white"
+                app:cornerRadius="8dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/signin_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/VerificationButton"
+                android:layout_weight="1"
+                android:textColor="@color/signin_text"
+                android:fontFamily="@font/inter"
+                android:text="@string/sign_in" />
 
-            <ProgressBar
-                android:id="@+id/verification_email_add_progress"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_centerInParent="true"
-                android:visibility="gone" />
-        </RelativeLayout>
+        </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/verification_email_verify_container"
+    <LinearLayout android:id="@+id/verification_email_verify_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
@@ -92,7 +124,7 @@
             android:layout_marginBottom="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/sign_in"
-            android:textColor="@color/white"
+            android:textColor="@color/signin_text"
             android:textFontWeight="300"
             android:textSize="28sp" />
 
@@ -101,7 +133,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/email_sent_to"
-            android:textColor="@color/white"
+            android:textColor="@color/signin_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -114,7 +146,7 @@
             android:fontFamily="@font/inter"
             android:singleLine="true"
             android:textAlignment="center"
-            android:textColor="@color/white"
+            android:textColor="@color/signin_text"
             android:textFontWeight="300"
             android:textSize="20sp" />
 
@@ -124,7 +156,7 @@
             android:layout_marginTop="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/please_click_link"
-            android:textColor="@color/white"
+            android:textColor="@color/signin_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -158,8 +190,8 @@
                 android:fontFamily="@font/inter"
                 android:gravity="right"
                 android:text="@string/edit"
-                android:textColor="@color/white"
+                android:textColor="@color/signin_text"
                 android:textFontWeight="300" />
         </LinearLayout>
     </LinearLayout>
-</RelativeLayout>
+</LinearLayout>
