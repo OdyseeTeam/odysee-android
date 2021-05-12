@@ -14,7 +14,6 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:textColor="@color/white"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -26,7 +25,6 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:textColor="@color/white"
         android:textSize="12sp"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/detail"
@@ -49,6 +47,7 @@
         android:layout_marginEnd="8dp"
         android:background="@android:color/transparent"
         android:src="@drawable/ic_lock"
+        app:tint="@color/signin_text"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/wallet_supporting_balance"
@@ -61,7 +60,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:textColor="@color/white"
         lbry:iconSize="18dp"
         lbry:textSize="@dimen/wallet_detail_balance_font_size" />
 

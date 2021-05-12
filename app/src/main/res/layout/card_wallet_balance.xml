@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
         <LinearLayout
-            android:background="@drawable/stripe_2x"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
@@ -22,7 +21,6 @@
                 android:layout_height="wrap_content"
                 lbry:textSize="@dimen/wallet_total_balance_font_size"
                 lbry:iconSize="24dp"
-                android:textColor="@color/white"
                 android:textFontWeight="300" />
 
             <TextView
@@ -30,7 +28,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter"
-                android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textFontWeight="300" />
 
@@ -40,7 +37,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/inter"
-                android:textColor="@color/white"
                 android:textFontWeight="300"
                 android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
@@ -62,7 +58,6 @@
                     android:layout_height="wrap_content"
                     lbry:textSize="@dimen/wallet_detail_balance_font_size"
                     lbry:iconSize="14dp"
-                    android:textColor="@color/white"
                     android:textFontWeight="300" />
 
                 <TextView
@@ -72,7 +67,6 @@
                     android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/immediately_spendable"
-                    android:textColor="@color/white"
                     android:textFontWeight="300"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
             </LinearLayout>
@@ -88,7 +82,6 @@
                     android:layout_height="wrap_content"
                     lbry:textSize="@dimen/wallet_detail_balance_font_size"
                     lbry:iconSize="14dp"
-                    android:textColor="@color/white"
                     android:textFontWeight="300" />
 
                 <TextView
@@ -97,7 +90,6 @@
                     android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/boosting_content"
-                    android:textColor="@color/white"
                     android:textFontWeight="300"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
@@ -107,9 +99,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="18dp"
                     android:drawableEnd="@drawable/ic_arrow_dropdown"
+                    android:drawableTint="@color/signin_text"
                     android:gravity="end"
                     android:text="@string/view_more"
-                    android:textColor="@color/white"
                     android:textSize="@dimen/wallet_detail_balance_font_size" />
             </LinearLayout>
 
