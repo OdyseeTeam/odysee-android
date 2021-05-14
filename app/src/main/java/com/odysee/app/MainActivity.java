@@ -558,6 +558,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.wallet_balance_container).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                hideNotifications();
                 bottomNavigation.setSelectedItemId(R.id.action_wallet_menu);
             }
         });
@@ -621,6 +622,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         closeButton.performClick();
+                        hideNotifications();
                         openFragment(RewardsFragment.class, true, null);
                     }
                 });
