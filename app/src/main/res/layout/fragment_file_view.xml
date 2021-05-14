@@ -227,6 +227,7 @@
                             android:fontFamily="@font/inter"
                             android:textSize="16sp"
                             android:textStyle="bold"
+                            android:textColor="?android:attr/textColorPrimary"
                             tools:text="This is a test title"/>
 
                         <LinearLayout

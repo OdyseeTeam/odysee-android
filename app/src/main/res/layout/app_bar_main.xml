@@ -72,7 +72,7 @@
                             android:layout_marginStart="2dp"
                             android:fontFamily="@font/inter"
                             tools:text="543.2"
-                            android:textColor="@color/exo_black_opacity_70"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textFontWeight="300"
                             android:textSize="18sp"
                             android:textStyle="bold" />

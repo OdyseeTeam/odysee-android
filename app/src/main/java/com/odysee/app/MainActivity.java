@@ -410,14 +410,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } catch (Exception ex) {
             // pass (don't fail initialization on some _weird_ device implementations)
         }
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+//        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
 
         initKeyStore();
         loadAuthToken();
 
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        }
+//        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
+//            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+//        }
         initSpecialRouteMap();
 
         LbryAnalytics.init(this);
