@@ -1,5 +1,6 @@
 package com.odysee.app.utils;
 
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -82,6 +83,12 @@ public final class Lbryio {
     public static Response call(String resource, String action, Map<String, String> options, String method, Context context)
             throws LbryioRequestException, LbryioResponseException {
         String authToken = AUTH_TOKEN;
+
+        if (context != null) {
+            AccountManager am = AccountManager.get(context);
+            if (am.getAccounts().length > 0)
+                authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+        }
         if (Helper.isNullOrEmpty(authToken) && !generatingAuthToken) {
             // Only call getAuthToken if not calling /user/new
             authToken = getAuthToken(context);

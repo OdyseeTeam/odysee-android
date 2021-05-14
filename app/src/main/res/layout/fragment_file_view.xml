@@ -226,7 +226,8 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="This is a test title"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -328,6 +329,7 @@
                                 android:layout_height="24dp"
                                 android:layout_centerInParent="true"
                                 android:src="@drawable/ic_slime"
+                                app:tint="@color/foreground"
                                 android:contentDescription="@string/dislike_desc"
                                 />
                         </RelativeLayout>

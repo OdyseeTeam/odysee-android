@@ -83,6 +83,8 @@ public class Claim {
     private GenericMetadata value;
     private LbryFile file; // associated file if it exists
 
+    private boolean liked;
+    private boolean disliked;
     // device it was viewed on (for view history)
     private String device;
 
@@ -412,6 +414,14 @@ public class Claim {
         claim.setPermanentUrl(claimUri.toString());
 
         return claim;
+    }
+
+    public void setLiked(boolean l) {
+        this.liked = l;
+    }
+
+    public void setDisliked(boolean d) {
+        this.disliked = d;
     }
 
     @Data

@@ -1,6 +1,7 @@
 package com.odysee.app.ui.findcontent;
 
 import android.Manifest;
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -1021,6 +1022,26 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
+        root.findViewById(R.id.file_view_action_like).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AccountManager am = AccountManager.get(root.getContext());
+
+                if (claim != null && am.getAccounts().length > 0) {
+                    react(claim, true);
+                }
+            }
+        });
+        root.findViewById(R.id.file_view_action_dislike).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AccountManager am = AccountManager.get(root.getContext());
+
+                if (claim != null && am.getAccounts().length > 0) {
+                    react(claim, false);
+                }
+            }
+        });
         root.findViewById(R.id.file_view_action_share).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -1877,8 +1898,10 @@ public class FileViewFragment extends BaseFragment implements
                     if (othersReactions.has(claim.getClaimId())) {
                         Integer likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
                         reactions[2] = likes;
+                        c.setLiked(likes > 0);
                         Integer dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
                         reactions[3] = dislikes;
+                        c.setDisliked(dislikes > 0);
                         // We want to show total amount, not just other's reactions
                         reactions[0] = reactions[0] + reactions[2];
                         reactions[1] = reactions[1] + reactions[3];
@@ -1940,7 +1963,7 @@ public class FileViewFragment extends BaseFragment implements
             params.put("comment_ids", String.join(",", commentIds));
 
             JSONObject response = (JSONObject) Lbry.parseResponse(Lbry.apiCall("comment_react_list", params, "https://api.lbry.tv/api/v1/proxy"));
-            JSONObject responseOthersReactions = (JSONObject) response.getJSONObject("others_reactions");
+            JSONObject responseOthersReactions = response.getJSONObject("others_reactions");
             Map<String, Integer[]> result = new HashMap<>();
 
             responseOthersReactions.keys().forEachRemaining(key -> {
@@ -3283,6 +3306,40 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void react(Claim claim, boolean like) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        Callable<Boolean> callable = () -> {
+            Map<String, String> options = new HashMap<String, String>();
+            options.put("claim_ids", claim.getClaimId());
+            options.put("type", like ? "like" : "dislike");
+            options.put("clear_types", like ? "dislike" : "like");
+
+            if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
+                options.put("remove", "true");
+
+            JSONObject data = null;
+            try {
+                data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
+            } catch (LbryioRequestException | LbryioResponseException e) {
+                e.printStackTrace();
+            }
+            return data != null && data.has(claim.getClaimId());
+        };
+
+        Future<Boolean> futureReactions = executor.submit(callable);
+
+        Boolean result = null;
+
+        try {
+            result = futureReactions.get();
+            if (result)
+                loadReactions();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     class CodeAttributeProvider implements AttributeProvider {
