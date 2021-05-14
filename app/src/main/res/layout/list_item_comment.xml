@@ -118,7 +118,7 @@
                         android:fontFamily="@font/inter"
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
-                        android:drawableStart="@drawable/ic_fire"/>
+                        android:drawableStart="@drawable/ic_fire_bw"/>
 
                     <TextView
                         android:id="@+id/comment_dislikes_count"
@@ -128,7 +128,7 @@
                         android:fontFamily="@font/inter"
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
-                        android:drawableStart="@drawable/ic_slime"/>
+                        android:drawableStart="@drawable/ic_slime_bw"/>
 
                 </LinearLayout>
             </LinearLayout>

@@ -295,7 +295,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_centerInParent="true"
-                                android:src="@drawable/ic_fire"
+                                android:src="@drawable/ic_fire_bw"
                                 android:contentDescription="@string/like_desc"
                                 app:tint="@color/foreground" />
                         </RelativeLayout>
@@ -329,7 +329,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_centerInParent="true"
-                                android:src="@drawable/ic_slime"
+                                android:src="@drawable/ic_slime_bw"
                                 app:tint="@color/foreground"
                                 android:contentDescription="@string/dislike_desc"
                                 />
