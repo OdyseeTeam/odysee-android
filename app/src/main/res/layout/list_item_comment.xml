@@ -118,6 +118,7 @@
                         android:fontFamily="@font/inter"
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
+                        app:drawableTint="@color/foreground"
                         android:drawableStart="@drawable/ic_fire_bw"/>
 
                     <TextView
@@ -128,6 +129,7 @@
                         android:fontFamily="@font/inter"
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
+                        app:drawableTint="@color/foreground"
                         android:drawableStart="@drawable/ic_slime_bw"/>
 
                 </LinearLayout>
