@@ -110,9 +110,9 @@
             </intent-filter>
         </service>
         <service
-            android:name=".OdyseeAccountAuthenticatorService"
+            android:name=".service.OdyseeAccountAuthenticatorService"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
@@ -120,6 +120,12 @@
             <meta-data
                 android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenticator" />
+        </service>
+        <service android:exported="false" android:name=".service.SyncService">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter" android:resource="@xml/sync_adapter"/>
         </service>
         <provider
             android:name=".LocalFileProvider"
