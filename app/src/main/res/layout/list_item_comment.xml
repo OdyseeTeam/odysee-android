@@ -100,7 +100,7 @@
                     android:fontFamily="@font/inter"
                     android:gravity="center_vertical"
                     android:text="@string/reply"
-                    android:textColor="@color/lbryGreen"
+                    android:textColor="@color/colorPrimary"
                     android:textFontWeight="300"
                     android:textSize="16sp" />
 
