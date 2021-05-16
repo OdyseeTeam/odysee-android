@@ -569,10 +569,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // Hide bottom navigation
                 // Hide main bar
                 // Show PublishFragment.class
-                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment()).addToBackStack("publish_claim").commit();
-                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
-                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
-                hideActionBar();
+//                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment()).addToBackStack("publish_claim").commit();
+//                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
+//                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+//                hideActionBar();
+                startActivity(new Intent(view.getContext(), ComingSoon.class));
             }
         });
 
