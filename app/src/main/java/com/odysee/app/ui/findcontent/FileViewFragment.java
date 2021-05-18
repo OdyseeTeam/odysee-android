@@ -31,6 +31,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -215,8 +216,10 @@ public class FileViewFragment extends BaseFragment implements
     private WebView webView;
     private boolean webViewAdded;
 
+    private ImageButton expandButton;
     private Comment replyToComment;
     private View containerReplyToComment;
+    private View containerCommentForm;
     private TextView textReplyingTo;
     private TextView textReplyToBody;
     private View buttonClearReplyToComment;
@@ -264,6 +267,9 @@ public class FileViewFragment extends BaseFragment implements
 
         tipButton = root.findViewById(R.id.file_view_action_tip);
 
+        expandButton = root.findViewById(R.id.expand_commentarea_button);
+
+        containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
         textReplyingTo = root.findViewById(R.id.comment_form_replying_to_text);
         textReplyToBody = root.findViewById(R.id.comment_form_reply_to_body);
@@ -1291,6 +1297,13 @@ public class FileViewFragment extends BaseFragment implements
         commentChannelSpinnerAdapter.addPlaceholder(false);
 
         initCommentForm(root);
+        expandButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                switchCommentListVisibility(commentListAdapter.contracted);
+                commentListAdapter.switchExpandedState();
+            }
+        });
         setupInlineChannelCreator(
                 inlineChannelCreator,
                 inlineChannelCreatorInputName,
@@ -1671,15 +1684,14 @@ public class FileViewFragment extends BaseFragment implements
         View root = getView();
         if (root != null) {
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
-            View commentForm = root.findViewById(R.id.container_comment_form);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
             if (claim.getTags().contains("disable-comments") || claim.getSigningChannel().getTags().contains("disable-comments")) {
+                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
                 Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentForm, View.GONE);
                 Helper.setViewVisibility(commentsList, View.GONE);
             } else {
+                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
                 Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentForm, View.VISIBLE);
                 Helper.setViewVisibility(commentsList, View.VISIBLE);
                 if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
                     loadComments();
@@ -3257,6 +3269,28 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewText(textReplyToBody, null);
         Helper.setViewVisibility(containerReplyToComment, View.GONE);
         replyToComment = null;
+    }
+
+    private void switchCommentListVisibility(Boolean isExpanded) {
+        View root = getView();
+        View relatedContentArea = root.findViewById(R.id.file_view_related_content_area);
+        View actionsArea = root.findViewById(R.id.file_view_actions_area);
+        View publisherArea = root.findViewById(R.id.file_view_publisher_area);
+        ImageButton expandButton = root.findViewById(R.id.expand_commentarea_button);
+
+        if (isExpanded) {
+            Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
+            Helper.setViewVisibility(relatedContentArea, View.GONE);
+            Helper.setViewVisibility(actionsArea, View.GONE);
+            Helper.setViewVisibility(publisherArea, View.GONE);
+            expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, getContext().getTheme()));
+        } else {
+            Helper.setViewVisibility(containerCommentForm, View.GONE);
+            Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
+            Helper.setViewVisibility(actionsArea, View.VISIBLE);
+            Helper.setViewVisibility(publisherArea, View.VISIBLE);
+            expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_expand, getContext().getTheme()));
+        }
     }
 
     private void postComment() {

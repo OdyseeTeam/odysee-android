@@ -34,7 +34,14 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     @Setter
     private ClaimListAdapter.ClaimListItemListener listener;
     @Setter
+    public Boolean contracted = true;
+    @Setter
+    private ExpandingViewListener expandingViewListener;
+    @Setter
     private ReplyClickListener replyListener;
+
+    private int previousExpandedPosition = -1;
+    private int expandedPosition = -1;
 
     public CommentListAdapter(List<Comment> items, Context context) {
         this(items, context, false);
@@ -112,6 +119,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         protected final TextView dislikesCount;
         protected final View replyLink;
         protected final RecyclerView repliesList;
+        protected final View commentActions;
 
         public ViewHolder (View v) {
             super(v);
@@ -125,6 +133,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             noThumbnailView = v.findViewById(R.id.comment_no_thumbnail);
             alphaView = v.findViewById(R.id.comment_thumbnail_alpha);
             repliesList = v.findViewById(R.id.comment_replies);
+            commentActions = v.findViewById(R.id.comment_actions_area);
         }
     }
 
@@ -175,6 +184,43 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
+        if (position == 0) {
+            if (contracted) {
+                holder.commentTimeView.setVisibility(View.GONE);
+                holder.commentActions.setVisibility(View.GONE);
+//                holder.itemView.setOnClickListener(new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View view) {
+//                        switchExpandedState();
+//                    }
+//                });
+                ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                holder.itemView.setLayoutParams(lp);
+                holder.itemView.setVisibility(View.VISIBLE);
+            } else {
+                holder.commentTimeView.setVisibility(View.VISIBLE);
+                holder.commentActions.setVisibility(View.VISIBLE);
+            }
+
+            if (expandingViewListener != null)
+                expandingViewListener.onCommentExpandedStateChanged(!contracted);
+        } else {
+            ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
+            if (contracted) {
+                holder.itemView.setVisibility(View.GONE);
+                lp.height = 0;
+                lp.width = 0;
+                holder.itemView.setLayoutParams(lp);
+            } else {
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                holder.itemView.setLayoutParams(lp);
+                holder.itemView.setVisibility(View.VISIBLE);
+            }
+        }
+
         Comment comment = items.get(position);
         holder.itemView.setPadding(
                 nested ? Helper.getScaledValue(56, scale) : holder.itemView.getPaddingStart(),
@@ -231,7 +277,16 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         });
     }
 
+    public void switchExpandedState() {
+        contracted = !contracted;
+        notifyDataSetChanged();
+    }
+
     public interface ReplyClickListener {
         void onReplyClicked(Comment comment);
+    }
+
+    public interface ExpandingViewListener {
+        void onCommentExpandedStateChanged(Boolean isExpanded);
     }
 }

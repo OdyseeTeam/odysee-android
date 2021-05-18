@@ -85,7 +85,7 @@
                 android:textIsSelectable="true"
                 android:textSize="14sp" />
 
-            <LinearLayout
+            <LinearLayout android:id="@+id/comment_actions_area"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"

@@ -819,6 +819,87 @@
                         android:background="@color/divider" />
                 </LinearLayout>
 
+                <LinearLayout android:id="@+id/file_view_comments_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingBottom="16dp">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp">
+
+                        <ProgressBar
+                            android:id="@+id/file_view_comments_progress"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_centerHorizontal="true"
+                            android:layout_centerVertical="true"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerVertical="true"
+                            android:fontFamily="@font/inter"
+                            android:text="@string/comments"
+                            android:textSize="16sp" />
+
+                        <ImageButton android:id="@+id/expand_commentarea_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            app:tint="@color/colorPrimary"
+                            android:background="?attr/selectableItemBackground"
+                            android:src="@drawable/ic_expand"/>
+
+                    </RelativeLayout>
+
+                    <include android:id="@+id/container_comment_form"
+                        layout="@layout/container_comment_form"
+                        android:visibility="gone"/>
+
+                    <TextView
+                        android:id="@+id/file_view_disabled_comments"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="16dp"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/creator_disabled_comments"
+                        android:textFontWeight="300"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/file_view_no_comments"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="16dp"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/no_comments"
+                        android:textFontWeight="300"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/file_view_comments_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:overScrollMode="never" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/divider" />
+
                 <LinearLayout
                     android:id="@+id/file_view_related_content_area"
                     android:layout_width="match_parent"
@@ -869,77 +950,6 @@
                         android:overScrollMode="never" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="0.5dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@color/divider" />
-
-                <LinearLayout
-                    android:id="@+id/file_view_comments_area"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:paddingBottom="16dp">
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp">
-
-                        <ProgressBar
-                            android:id="@+id/file_view_comments_progress"
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_centerHorizontal="true"
-                            android:layout_centerVertical="true"
-                            android:visibility="gone" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_centerVertical="true"
-                            android:fontFamily="@font/inter"
-                            android:text="@string/comments"
-                            android:textSize="16sp" />
-                    </RelativeLayout>
-
-                    <include layout="@layout/container_comment_form"
-                        android:id="@+id/container_comment_form"/>
-
-                    <TextView
-                        android:id="@+id/file_view_disabled_comments"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="16dp"
-                        android:fontFamily="@font/inter"
-                        android:text="@string/creator_disabled_comments"
-                        android:textFontWeight="300"
-                        android:textSize="14sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/file_view_no_comments"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="16dp"
-                        android:fontFamily="@font/inter"
-                        android:text="@string/no_comments"
-                        android:textFontWeight="300"
-                        android:textSize="14sp"
-                        android:visibility="gone" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/file_view_comments_list"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:overScrollMode="never" />
-                </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
