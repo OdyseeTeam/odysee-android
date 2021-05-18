@@ -2487,8 +2487,8 @@ public class FileViewFragment extends BaseFragment implements
                             }
                         });
 
-                        RecyclerView relatedContentList = root.findViewById(R.id.file_view_comments_list);
-                        relatedContentList.setAdapter(commentListAdapter);
+                        RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
+                        commentsList.setAdapter(commentListAdapter);
                         commentListAdapter.notifyDataSetChanged();
 
                         scrollToCommentHash();
@@ -2499,7 +2499,8 @@ public class FileViewFragment extends BaseFragment implements
 
                 @Override
                 public void onError(Exception error) {
-                    // pass
+                    error.printStackTrace();
+                    checkNoComments();
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -2525,6 +2526,8 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             Helper.setViewVisibility(root.findViewById(R.id.file_view_no_comments),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+            Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
+                    commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
         }
     }
 
