@@ -2558,10 +2558,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void hideNotifications() {
+        hideNotifications(true);
+    }
+    public void hideNotifications(boolean hideSingleContentView) {
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.actionBarForeground));
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.GONE);
-        if (!isInPictureInPictureMode()) {
+        if (!isInPictureInPictureMode() && hideSingleContentView) {
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
             showBottomBavigation();
         }
@@ -3427,7 +3430,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 }
                             }
                         }
-                        hideNotifications();
+                        hideNotifications(false);
                     }
                 });
             }
