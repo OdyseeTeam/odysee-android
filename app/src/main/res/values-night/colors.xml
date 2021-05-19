@@ -66,5 +66,7 @@
     <color name="signin_text">@android:color/white</color>
     <color name="signin_background">@android:color/black</color>
 
+    <color name="profile_username">@android:color/black</color>
+
     <color name="credits_view">@android:color/white</color>
 </resources>
