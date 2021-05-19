@@ -26,13 +26,16 @@
             <include layout="@layout/card_wallet_receive_credits" />
 
             <!-- Send credits card -->
-            <include layout="@layout/card_wallet_send_credits" />
+            <include layout="@layout/card_wallet_send_credits"
+                android:visibility="gone"/>
 
             <!-- Recent transactions card -->
-            <include layout="@layout/card_wallet_recent_transactions" />
+            <include layout="@layout/card_wallet_recent_transactions"
+                android:visibility="gone"/>
 
             <!-- Wallet sync card -->
-            <include layout="@layout/card_wallet_sync" />
+            <include layout="@layout/card_wallet_sync"
+                android:visibility="gone"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
