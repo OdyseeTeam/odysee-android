@@ -10,7 +10,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp">
+        android:layout_marginTop="16dp"
+        android:visibility="gone">
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -345,12 +346,4 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <RelativeLayout
-        android:id="@+id/container_library_sdk_initializing"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/library_filter_card"
-        android:visibility="gone">
-        <include layout="@layout/container_sdk_initializing" android:visibility="visible" />
-    </RelativeLayout>
 </RelativeLayout>

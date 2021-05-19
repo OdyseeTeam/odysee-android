@@ -65,7 +65,6 @@ public class LibraryFragment extends BaseFragment implements
     private ActionMode actionMode;
     private int currentFilter;
     private List<LbryFile> currentFiles;
-    private View layoutSdkInitializing;
     private RecyclerView contentList;
     private ClaimListAdapter contentListAdapter;
     private ProgressBar listLoading;
@@ -108,8 +107,6 @@ public class LibraryFragment extends BaseFragment implements
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_library, container, false);
-
-        layoutSdkInitializing = root.findViewById(R.id.container_library_sdk_initializing);
 
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         contentList = root.findViewById(R.id.library_list);
@@ -219,8 +216,7 @@ public class LibraryFragment extends BaseFragment implements
             activity.addDownloadActionListener(this);
         }
 
-        layoutSdkInitializing.setVisibility(
-                !Lbry.SDK_READY && currentFilter == FILTER_DOWNLOADS ? View.VISIBLE : View.GONE);
+        showHistory(); // For now, only History can be shown
     }
 
     public void onPause() {
@@ -233,7 +229,6 @@ public class LibraryFragment extends BaseFragment implements
     }
 
     public void onSdkReady() {
-        layoutSdkInitializing.setVisibility(View.GONE);
         if (currentFilter == FILTER_DOWNLOADS) {
             showDownloads();
         } else if (currentFilter == FILTER_HISTORY) {
@@ -256,7 +251,6 @@ public class LibraryFragment extends BaseFragment implements
         listReachedEnd = false;
 
         checkStatsLink();
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
         currentPage = 1;
         currentFiles = new ArrayList<>();
         if (Lbry.SDK_READY) {
@@ -311,7 +305,6 @@ public class LibraryFragment extends BaseFragment implements
         cardStats.setVisibility(View.GONE);
         checkStatsLink();
 
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
         currentPage = 1;
         if (Lbry.SDK_READY) {
             fetchPurchases();
@@ -336,7 +329,6 @@ public class LibraryFragment extends BaseFragment implements
         cardStats.setVisibility(View.GONE);
         checkStatsLink();
 
-        layoutSdkInitializing.setVisibility(View.GONE);
         lastDate = null;
         fetchHistory();
     }
