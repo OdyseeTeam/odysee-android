@@ -119,6 +119,7 @@
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
                         app:drawableTint="@color/foreground"
+                        android:drawablePadding="8dp"
                         android:drawableStart="@drawable/ic_fire_bw"/>
 
                     <TextView
@@ -130,6 +131,7 @@
                         android:text="0"
                         style="@style/AppTheme.Small_Drawable"
                         app:drawableTint="@color/foreground"
+                        android:drawablePadding="8dp"
                         android:drawableStart="@drawable/ic_slime_bw"/>
 
                 </LinearLayout>
