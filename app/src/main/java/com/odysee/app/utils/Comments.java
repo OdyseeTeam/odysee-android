@@ -25,7 +25,13 @@ public class Comments {
     public static final String COMMENT_SERVER_ENDPOINT = "https://comments.lbry.com/api/v2";
 
     public static JSONObject channelSign(JSONObject commentBody, String channelId, String channelName) throws ApiCallException, JSONException {
-        byte[] commentBodyBytes = commentBody.getString("comment").getBytes(StandardCharsets.UTF_8);
+        byte[] commentBodyBytes;
+
+        if (commentBody.has("comment"))
+            commentBodyBytes = commentBody.getString("comment").getBytes(StandardCharsets.UTF_8);
+        else
+            commentBodyBytes = channelName.getBytes(StandardCharsets.UTF_8);
+
         String encodedCommentBody;
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)
@@ -38,7 +44,10 @@ public class Comments {
         signingParams.put("channel_id", channelId);
         signingParams.put("channel_name", channelName);
 
-        return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
+        if (commentBody.has("auth_token"))
+            return (JSONObject) Lbry.directApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
+        else
+            return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
     }
 
     /**

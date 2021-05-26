@@ -109,6 +109,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.google.gson.JsonObject;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
@@ -117,6 +118,8 @@ import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
+import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
@@ -161,11 +164,13 @@ import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.tasks.lbryinc.LogFileViewTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.controls.SolidIconView;
+import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.squareup.okhttp.Response;
 
 import static com.odysee.app.utils.Lbry.TAG;
 
@@ -199,6 +204,7 @@ public class FileViewFragment extends BaseFragment implements
     private BroadcastReceiver sdkReceiver;
     private Player.EventListener fileViewPlayerListener;
 
+    private NestedScrollView scrollView;
     private long elapsedDuration = 0;
     private long totalDuration = 0;
     private boolean elapsedPlaybackScheduled;
@@ -370,6 +376,7 @@ public class FileViewFragment extends BaseFragment implements
             }
         };
 
+        scrollView = root.findViewById(R.id.file_view_scroll_view);
         return root;
     }
 
@@ -1979,43 +1986,69 @@ public class FileViewFragment extends BaseFragment implements
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Map<String, Reactions>> future = executor.submit(() -> {
-            Map<String, Object> params = new HashMap<>();
-            params.put("comment_ids", String.join(",", commentIds));
+            Comments.checkCommentsEndpointStatus();
+            JSONObject jsonParams = new JSONObject();
+            jsonParams.put("comment_ids", String.join(",", commentIds));
 
             AccountManager am = AccountManager.get(getContext());
-            params.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            if (am.getAccounts().length > 0) {
+                jsonParams.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            }
 
-            if (Lbry.ownChannels.size() > 0)
-                params.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+            if (Lbry.ownChannels.size() > 0) {
+                jsonParams.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+                jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
+
+                JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
+
+                if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                    jsonParams.put("signature", jsonChannelSign.getString("signature"));
+                    jsonParams.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                }
+            }
 
             Map<String, Reactions> result = new HashMap<>();
-            JSONObject response = (JSONObject) Lbry.parseResponse(Lbry.apiCall("comment_react_list", params, "https://api.lbry.tv/api/v1/proxy"));
-            JSONObject responseOthersReactions = response.getJSONObject("others_reactions");
+            try {
+                okhttp3.Response response = Comments.performRequest(jsonParams, "reaction.List");
+                String responseString = response.body().string();
+                response.close();
 
-            responseOthersReactions.keys().forEachRemaining(key -> {
-                try {
-                    JSONObject value = (JSONObject) responseOthersReactions.get(key);
-                    Reactions reactions = new Reactions(value.getInt("like"), value.getInt("dislike"));
+                JSONObject jsonResponse = new JSONObject(responseString);
 
-                    if (response.has("my_reactions")) {
-                        JSONObject responseMyReactions = response.getJSONObject("my_reactions");
-                        if (responseMyReactions != null && responseMyReactions.has(key)) {
-                            JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
-                            reactions.setLiked(myReaction.getInt("like") > 0);
-                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
-                        }
+                if (jsonResponse.has("result")) {
+                    JSONObject jsonResult = jsonResponse.getJSONObject("result");
+                    if (jsonResult.has("others_reactions")) {
+                        JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
+                        responseOthersReactions.keys().forEachRemaining(key -> {
+                            try {
+                                JSONObject value = (JSONObject) responseOthersReactions.get(key);
+                                Reactions reactions = new Reactions(value.getInt("like"), value.getInt("dislike"));
+
+                                if (jsonResult.has("my_reactions")) {
+                                    JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
+                                    if (responseMyReactions != null && responseMyReactions.has(key)) {
+                                        JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
+                                        reactions.setLiked(myReaction.getInt("like") > 0);
+                                        reactions.setDisliked(myReaction.getInt("dislike") > 0);
+                                    }
+                                }
+                                result.put(key, reactions);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     }
-                    result.put(key, reactions);
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
-            });
+            } catch (IOException e) {
+                Log.e("LoadingReactions", e.getLocalizedMessage());
+                e.printStackTrace();
+            }
             return result;
         });
 
         try {
-             return future.get();
-        } catch (InterruptedException | ExecutionException e) {
+            return future.get();
+        } catch (InterruptedException | ExecutionException e ) {
             e.printStackTrace();
             return null;
         }
@@ -3378,26 +3411,46 @@ public class FileViewFragment extends BaseFragment implements
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         Callable<Boolean> callable = () -> {
-            Map<String, Object> options = new HashMap<String, Object>();
+            Comments.checkCommentsEndpointStatus();
+            JSONObject options = new JSONObject();
             options.put("comment_ids", comment.getId());
-            options.put("react_type", like ? "like" : "dislike");
+            options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
 
             if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
                 options.put("remove", true);
 
-            if (Lbry.ownChannels.size() > 0)
+            AccountManager am = AccountManager.get(getContext());
+            if (am.getAccounts().length > 0) {
+                options.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            }
+
+            if (Lbry.ownChannels.size() > 0) {
                 options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+                options.put("channel_name", Lbry.ownChannels.get(0).getName());
+
+                JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
+
+                if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                    options.put("signature", jsonChannelSign.getString("signature"));
+                    options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                }
+            }
 
             JSONObject data = null;
             try {
-                AccountManager am = AccountManager.get(getContext());
-
                 if (am != null && am.getAccounts().length > 0) {
-                    Object response = Lbry.directApiCall(Lbry.METHOD_COMMENT_REACT, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+                    okhttp3.Response response = Comments.performRequest(options, "reaction.React");
+                    String responseString = response.body().string();
+                    response.close();
 
-                    data = new JSONObject(response.toString());
-//                    data = (JSONObject) Lbryio.parseResponse(response);
+                    JSONObject jsonResponse = new JSONObject(responseString);
+
+                    if (jsonResponse.has("result")) {
+                        data = jsonResponse.getJSONObject("result");
+                    } else {
+                        Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "react: ".concat(e.getLocalizedMessage()));
@@ -3414,6 +3467,7 @@ public class FileViewFragment extends BaseFragment implements
             result = futureReactions.get();
             if (result) {
               expandButton.performClick();
+              scrollView.scrollTo(0, 0);
               checkAndLoadComments(true);
             }
         } catch (InterruptedException | ExecutionException e) {
