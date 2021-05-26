@@ -19,8 +19,7 @@ public class Comment implements Comparable<Comment> {
     private long timestamp;
     private String channelId;
     private String channelName, text, id, parentId;
-    private Integer likesCount;
-    private Integer dislikesCount;
+    private Reactions reactions;
 
     public Comment(String channelId, String channelName, String text, String id, String parentId) {
         this.channelId = channelId;

@@ -19,6 +19,7 @@ import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -130,6 +131,7 @@ import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
 import com.odysee.app.model.Fee;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.Reactions;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.WalletBalance;
@@ -164,6 +166,8 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+
+import static com.odysee.app.utils.Lbry.TAG;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -1681,6 +1685,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndLoadComments() {
+        checkAndLoadComments(false);
+    }
+
+    private void checkAndLoadComments(boolean forceReload) {
         View root = getView();
         if (root != null) {
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
@@ -1693,7 +1701,7 @@ public class FileViewFragment extends BaseFragment implements
                 root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
                 Helper.setViewVisibility(commentsDisabledText, View.GONE);
                 Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
+                if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
                     loadComments();
                 }
             }
@@ -1954,7 +1962,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private Map<String, Integer[]> loadReactions(List<Comment> comments) {
+    private Map<String, Reactions> loadReactions(List<Comment> comments) {
         List<String> commentIds = new ArrayList<>();
 
         for (Comment c: comments) {
@@ -1970,20 +1978,33 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Map<String, Integer[]>> future = executor.submit(() -> {
+        Future<Map<String, Reactions>> future = executor.submit(() -> {
             Map<String, Object> params = new HashMap<>();
             params.put("comment_ids", String.join(",", commentIds));
 
+            AccountManager am = AccountManager.get(getContext());
+            params.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+
+            if (Lbry.ownChannels.size() > 0)
+                params.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+
+            Map<String, Reactions> result = new HashMap<>();
             JSONObject response = (JSONObject) Lbry.parseResponse(Lbry.apiCall("comment_react_list", params, "https://api.lbry.tv/api/v1/proxy"));
             JSONObject responseOthersReactions = response.getJSONObject("others_reactions");
-            Map<String, Integer[]> result = new HashMap<>();
 
             responseOthersReactions.keys().forEachRemaining(key -> {
                 try {
                     JSONObject value = (JSONObject) responseOthersReactions.get(key);
-                    Integer[] reactions = new Integer[2];
-                    reactions[0] = value.getInt("like");
-                    reactions[1] = value.getInt("dislike");
+                    Reactions reactions = new Reactions(value.getInt("like"), value.getInt("dislike"));
+
+                    if (response.has("my_reactions")) {
+                        JSONObject responseMyReactions = response.getJSONObject("my_reactions");
+                        if (responseMyReactions != null && responseMyReactions.has(key)) {
+                            JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
+                            reactions.setLiked(myReaction.getInt("like") > 0);
+                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
+                        }
+                    }
                     result.put(key, reactions);
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -2460,11 +2481,12 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
-                    Map<String, Integer[]> commentReactions = loadReactions(comments);
+                    Map<String, Reactions> commentReactions = loadReactions(comments);
 
-                    for (Comment c: comments) {
-                        c.setLikesCount(commentReactions.get(c.getId())[0]);
-                        c.setDislikesCount(commentReactions.get(c.getId())[1]);
+                    if (commentReactions != null) {
+                        for (Comment c: comments) {
+                            c.setReactions(commentReactions.get(c.getId()));
+                        }
                     }
                     Context ctx = getContext();
                     View root = getView();
@@ -2484,6 +2506,13 @@ public class FileViewFragment extends BaseFragment implements
                             @Override
                             public void onReplyClicked(Comment comment) {
                                 setReplyToComment(comment);
+                            }
+                        });
+
+                        commentListAdapter.setReactListener(new CommentListAdapter.ReactClickListener() {
+                            @Override
+                            public void onCommentReactClicked(Comment c, boolean liked) {
+                                react(c, liked);
                             }
                         });
 
@@ -3343,6 +3372,53 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void react(Comment comment, boolean like) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        Callable<Boolean> callable = () -> {
+            Map<String, Object> options = new HashMap<String, Object>();
+            options.put("comment_ids", comment.getId());
+            options.put("react_type", like ? "like" : "dislike");
+            options.put("clear_types", like ? "dislike" : "like");
+
+            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
+                options.put("remove", true);
+
+            if (Lbry.ownChannels.size() > 0)
+                options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+
+            JSONObject data = null;
+            try {
+                AccountManager am = AccountManager.get(getContext());
+
+                if (am != null && am.getAccounts().length > 0) {
+                    Object response = Lbry.directApiCall(Lbry.METHOD_COMMENT_REACT, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+
+                    data = new JSONObject(response.toString());
+//                    data = (JSONObject) Lbryio.parseResponse(response);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "react: ".concat(e.getLocalizedMessage()));
+                e.printStackTrace();
+            }
+            return data != null && !data.has("error");
+        };
+
+        Future<Boolean> futureReactions = executor.submit(callable);
+
+        Boolean result = null;
+
+        try {
+            result = futureReactions.get();
+            if (result) {
+              expandButton.performClick();
+              checkAndLoadComments(true);
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     private void react(Claim claim, boolean like) {

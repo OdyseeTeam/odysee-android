@@ -1,6 +1,10 @@
 package com.odysee.app.adapter;
 
+import android.accounts.AccountManager;
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,8 +13,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,12 +30,19 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
 import com.odysee.app.R;
+import com.odysee.app.exceptions.LbryioRequestException;
+import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
+import com.odysee.app.model.Reactions;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
+
+import org.json.JSONObject;
+
 import lombok.Setter;
 
 public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.ViewHolder> {
@@ -39,9 +58,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     private ExpandingViewListener expandingViewListener;
     @Setter
     private ReplyClickListener replyListener;
-
-    private int previousExpandedPosition = -1;
-    private int expandedPosition = -1;
+    @Setter
+    private ReactClickListener reactListener;
 
     public CommentListAdapter(List<Comment> items, Context context) {
         this(items, context, false);
@@ -234,10 +252,63 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         holder.commentText.setText(comment.getText());
         holder.replyLink.setVisibility(!nested ? View.VISIBLE : View.GONE);
 
-        String likesAmount = comment.getLikesCount() != null ? comment.getLikesCount().toString() : "0";
-        String dislikesAmount = comment.getDislikesCount() != null ? comment.getDislikesCount().toString() : "0";
-        holder.likesCount.setText(likesAmount);
-        holder.dislikesCount.setText(dislikesAmount);
+        Reactions commentReactions = comment.getReactions();
+        if (commentReactions != null) {
+            String likesAmount = String.valueOf(commentReactions.getOthersLikes());
+            String dislikesAmount = String.valueOf(commentReactions.getOthersDislikes());
+
+            if (commentReactions.isLiked()) {
+                holder.likesCount.setText(String.valueOf(Integer.valueOf(likesAmount) + 1));
+                holder.likesCount.setTextColor(R.color.fireActive);
+                for (Drawable d: holder.likesCount.getCompoundDrawablesRelative()) {
+                    if (d != null) {
+                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.likesCount.getContext(), R.color.fireActive), PorterDuff.Mode.SRC_IN));
+                    }
+                }
+            } else if (commentReactions.isDisliked()) {
+                holder.dislikesCount.setText(String.valueOf(Integer.valueOf(dislikesAmount) + 1));
+                holder.dislikesCount.setTextColor(R.color.slimeActive);
+                for (Drawable d: holder.dislikesCount.getCompoundDrawablesRelative()) {
+                    if (d != null) {
+                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.dislikesCount.getContext(), R.color.slimeActive), PorterDuff.Mode.SRC_IN));
+                    }
+                }
+            } else {
+                holder.likesCount.setText(likesAmount);
+                holder.dislikesCount.setText(dislikesAmount);
+                for (Drawable d: holder.likesCount.getCompoundDrawablesRelative()) {
+                    if (d != null) {
+                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.likesCount.getContext(), R.color.foreground), PorterDuff.Mode.SRC_IN));
+                    }
+                }
+                for (Drawable d: holder.dislikesCount.getCompoundDrawablesRelative()) {
+                    if (d != null) {
+                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.dislikesCount.getContext(), R.color.foreground), PorterDuff.Mode.SRC_IN));
+                    }
+                }
+            }
+        }
+
+        holder.likesCount.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AccountManager am = AccountManager.get(context);
+
+                if (am.getAccounts().length > 0 && comment.getClaimId() != null && reactListener != null) {
+                    reactListener.onCommentReactClicked(comment, true);
+                }
+            }
+        });
+        holder.dislikesCount.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AccountManager am = AccountManager.get(context);
+
+                if (am.getAccounts().length > 0 && comment.getClaimId() != null && reactListener != null) {
+                    reactListener.onCommentReactClicked(comment, false);
+                }
+            }
+        });
 
         boolean hasThumbnail = comment.getPoster() != null && !Helper.isNullOrEmpty(comment.getPoster().getThumbnailUrl());
         holder.thumbnailView.setVisibility(hasThumbnail ? View.VISIBLE : View.INVISIBLE);
@@ -286,6 +357,9 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         void onReplyClicked(Comment comment);
     }
 
+    public interface ReactClickListener {
+        void onCommentReactClicked(Comment c, boolean liked);
+    }
     public interface ExpandingViewListener {
         void onCommentExpandedStateChanged(Boolean isExpanded);
     }

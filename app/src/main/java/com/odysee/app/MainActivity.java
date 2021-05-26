@@ -1998,6 +1998,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public void onAccountsUpdated(Account[] accounts) {
         if (accounts.length > 0) {
+            fetchOwnChannels();
             Account act = accounts[0];
             AccountManager am = AccountManager.get(this);
             String email = am.getUserData(act, "email");
@@ -3263,6 +3264,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void fetchOwnChannels() {
+        AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
@@ -3274,9 +3276,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             @Override
             public void onError(Exception error) {
-                // pass
+                Log.e("FetchingChannels", "onError: ".concat(error.getLocalizedMessage()));
             }
-        });
+        }, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

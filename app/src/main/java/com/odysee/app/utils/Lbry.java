@@ -92,6 +92,7 @@ public final class Lbry {
     public static final String METHOD_PREFERENCE_SET = "preference_set";
 
     public static final String METHOD_COMMENT_CREATE = "comment_create";
+    public static final String METHOD_COMMENT_REACT = "comment_react";
 
     public static final String METHOD_TXO_LIST = "txo_list";
     public static final String METHOD_TXO_SPEND = "txo_spend";
@@ -524,6 +525,16 @@ public final class Lbry {
         Object response = null;
         try {
             response = parseResponse(apiCall(method, params, LBRY_TV_CONNECTION_STRING));
+        } catch (LbryRequestException | LbryResponseException ex) {
+            throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
+        }
+        return response;
+    }
+    public static Object directApiCall(String method, Map<String, Object> p, String authToken) throws ApiCallException {
+        p.put("auth_token", authToken);
+        Object response = null;
+        try {
+            response = parseResponse(apiCall(method, p, LBRY_TV_CONNECTION_STRING));
         } catch (LbryRequestException | LbryResponseException ex) {
             throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
         }

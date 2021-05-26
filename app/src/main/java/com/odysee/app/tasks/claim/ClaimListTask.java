@@ -17,13 +17,19 @@ import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.Lbryio;
 
 public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
     private final List<String> types;
     private final View progressView;
     private final ClaimListResultHandler handler;
     private Exception error;
+    private String authToken;
 
+    public ClaimListTask(String type, View progressView, ClaimListResultHandler handler, String token) {
+        this(Arrays.asList(type), progressView, handler);
+        this.authToken = token;
+    }
     public ClaimListTask(String type, View progressView, ClaimListResultHandler handler) {
         this(Arrays.asList(type), progressView, handler);
     }
@@ -47,7 +53,11 @@ public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
             options.put("page_size", 999);
             options.put("resolve", true);
 
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_CLAIM_LIST, options);
+            JSONObject result;
+            if (authToken != "")
+                result = (JSONObject) Lbry.directApiCall(Lbry.METHOD_CLAIM_LIST, options, authToken);
+            else
+                result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_CLAIM_LIST, options);
             JSONArray items = result.getJSONArray("items");
             claims = new ArrayList<>();
             for (int i = 0; i < items.length(); i++) {
