@@ -41,7 +41,9 @@
 
     <style name="VerificationButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="strokeColor">@color/colorPrimary</item>
-        <item name="android:backgroundTint">@color/signin_background</item>
+<!--        <item name="android:backgroundTint">@color/signin_background</item>-->
+        <item name="android:backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/white</item>
         <item name="cornerRadius">8dp</item>
     </style>
 

@@ -66,7 +66,8 @@
     <color name="closeimagebutton_outline">#000000</color>
     <color name="signin_close_background">@android:color/transparent</color>
     <color name="joinodysee_text">#000000</color>
-    <color name="signin_text">@android:color/background_dark</color>
+<!--    <color name="signin_text">@android:color/background_dark</color>-->
+    <color name="signin_text">@android:color/white</color>
     <color name="signin_background">@android:color/darker_gray</color>
 
     <color name="profile_username">@android:color/white</color>

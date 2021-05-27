@@ -3,10 +3,10 @@ package com.odysee.app;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.method.LinkMovementMethod;
 import android.transition.TransitionManager;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -53,6 +53,9 @@ public class SignInActivity extends Activity {
         inputEmail = findViewById(R.id.verification_email_input);
         emailAddProgress = findViewById(R.id.verification_email_add_progress);
         Button buttonSignIn = findViewById(R.id.signin_button);
+
+        TextView agreeToTerms = findViewById(R.id.agree_to_terms_note);
+        agreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
 
         buttonSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
