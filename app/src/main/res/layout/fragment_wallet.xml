@@ -30,8 +30,7 @@
                 android:visibility="gone"/>
 
             <!-- Recent transactions card -->
-            <include layout="@layout/card_wallet_recent_transactions"
-                android:visibility="gone"/>
+            <include layout="@layout/card_wallet_recent_transactions" />
 
             <!-- Wallet sync card -->
             <include layout="@layout/card_wallet_sync"

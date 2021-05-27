@@ -13,6 +13,7 @@ import com.odysee.app.utils.Lbry;
 public class TransactionListTask extends AsyncTask<Void, Void, List<Transaction>> {
     private final int page;
     private final int pageSize;
+    private String authToken;
     private final View progressView;
     private final TransactionListHandler handler;
     private Exception error;
@@ -24,13 +25,21 @@ public class TransactionListTask extends AsyncTask<Void, Void, List<Transaction>
         this.handler = handler;
     }
 
+    public TransactionListTask(int page, int pageSize, String authToken, View progressView, TransactionListHandler handler) {
+        this(page, pageSize, progressView, handler);
+        this.authToken = authToken;
+    }
+
     protected void onPreExecute() {
         Helper.setViewVisibility(progressView, View.VISIBLE);
     }
     protected List<Transaction> doInBackground(Void... params) {
         List<Transaction> transactions = null;
         try {
-            transactions = Lbry.transactionList(page, pageSize);
+            if (authToken != null)
+                transactions = Lbry.transactionList(page, pageSize, authToken);
+            else
+                transactions = Lbry.transactionList(page, pageSize, "");
         } catch (ApiCallException ex) {
             error = ex;
         }

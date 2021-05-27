@@ -1,5 +1,7 @@
 package com.odysee.app.ui.wallet;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -169,7 +171,10 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         }
 
         Helper.setViewVisibility(textNoRecentTransactions, View.GONE);
-        TransactionListTask task = new TransactionListTask(1, 5, loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+
+        AccountManager am = AccountManager.get(getContext());
+
+        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 hasFetchedRecentTransactions = true;
@@ -523,6 +528,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Wallet", "Wallet");
         }
+        fetchRecentTransactions();
     }
 
     public void onPause() {

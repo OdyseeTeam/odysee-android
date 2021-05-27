@@ -292,7 +292,7 @@ public final class Lbry {
 
         return claims;
     }
-    public static List<Transaction> transactionList(int page, int pageSize) throws ApiCallException {
+    public static List<Transaction> transactionList(int page, int pageSize, String authToken) throws ApiCallException {
         List<Transaction> transactions = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (page > 0) {
@@ -301,8 +301,11 @@ public final class Lbry {
         if (pageSize > 0) {
             params.put("page_size", pageSize);
         }
+        if (authToken != "") {
+            params.put("auth_token", authToken);
+        }
         try {
-            JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_TRANSACTION_LIST, params, SDK_CONNECTION_STRING));
+            JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_TRANSACTION_LIST, params, LBRY_TV_CONNECTION_STRING));
             JSONArray items = result.getJSONArray("items");
             for (int i = 0; i < items.length(); i++) {
                 Transaction tx = Transaction.fromJSONObject(items.getJSONObject(i));
