@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container_inline_channel_form_create"
     android:layout_marginTop="16dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:visibility="gone">
+    android:visibility="gone"
+    tools:visibility="visible">
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -16,6 +18,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:hint="@string/channel_name"
+            tools:text="channel"
             android:textFontWeight="300"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
