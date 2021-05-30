@@ -216,6 +216,7 @@ public class LibraryFragment extends BaseFragment implements
             activity.addDownloadActionListener(this);
         }
 
+        // renderFilter(); // Show tab according to selected filter
         showHistory(); // For now, only History can be shown
     }
 
@@ -228,7 +229,10 @@ public class LibraryFragment extends BaseFragment implements
         super.onPause();
     }
 
-    public void onSdkReady() {
+    /**
+     * Shows tab according to the filter which is selected
+     */
+    private void renderFilter() {
         if (currentFilter == FILTER_DOWNLOADS) {
             showDownloads();
         } else if (currentFilter == FILTER_HISTORY) {

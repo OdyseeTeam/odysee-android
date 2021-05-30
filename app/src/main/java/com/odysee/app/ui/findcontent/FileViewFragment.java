@@ -652,14 +652,6 @@ public class FileViewFragment extends BaseFragment implements
         resetPlayer();
     }
 
-    public void onSdkReady() {
-        if (loadFilePending) {
-            loadFile();
-        }
-        checkOwnClaim();
-        fetchChannels();
-    }
-
     private String getStreamingUrl() {
         LbryFile lbryFile = claim.getFile();
         if (lbryFile != null) {
@@ -797,6 +789,8 @@ public class FileViewFragment extends BaseFragment implements
             updatePlaybackSpeedView(root);
             loadAndScheduleDurations();
         }
+        checkOwnClaim();
+        fetchChannels();
     }
 
     public void onPause() {

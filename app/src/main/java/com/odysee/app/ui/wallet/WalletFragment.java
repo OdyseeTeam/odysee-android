@@ -526,8 +526,11 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         Helper.setWunderbarValue(null, context);
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.syncWalletAndLoadPreferences();
             LbryAnalytics.setCurrentScreen(activity, "Wallet", "Wallet");
         }
+        checkReceiveAddress();
+        checkRewardsDriver();
         fetchRecentTransactions();
     }
 
@@ -553,18 +556,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             activity.removeWalletBalanceListener(this);
         }
         super.onStop();
-    }
-
-    public void onSdkReady() {
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.syncWalletAndLoadPreferences();
-        }
-
-        checkReceiveAddress();
-        checkRewardsDriver();
-        fetchRecentTransactions();
     }
 
     public void generateNewAddress() {

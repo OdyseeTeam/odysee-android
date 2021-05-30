@@ -873,6 +873,7 @@ public class PublishFormFragment extends BaseFragment implements
         checkParams();
         checkRewardsDriver();
         updateFieldsFromCurrentClaim();
+        fetchChannels();
 
         if (currentClaim == null && (currentGalleryItem != null || !Helper.isNullOrEmpty(currentFilePath))) {
             // load file information
@@ -892,10 +893,6 @@ public class PublishFormFragment extends BaseFragment implements
 
         String filterText = Helper.getValue(inputTagFilter.getText());
         updateSuggestedTags(filterText, SUGGESTED_LIMIT, true);
-    }
-
-    public void onSdkReady() {
-        fetchChannels();
     }
 
     private void fetchChannels() {

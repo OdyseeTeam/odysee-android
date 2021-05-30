@@ -99,10 +99,6 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Channel Manager", "ChannelManager");
         }
-    }
-
-    public void onSdkReady() {
-        Helper.setViewVisibility(fabNewChannel, View.VISIBLE);
         if (adapter != null && channelList != null) {
             channelList.setAdapter(adapter);
         }

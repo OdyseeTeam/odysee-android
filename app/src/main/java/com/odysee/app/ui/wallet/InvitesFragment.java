@@ -306,9 +306,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         }
 
         fetchInviteStatus();
-    }
-
-    public void onSdkReady() {
         fetchChannels();
     }
 

@@ -99,10 +99,6 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
             activity.setWunderbarValue(null);
             LbryAnalytics.setCurrentScreen(activity, "Publishes", "Publishes");
         }
-    }
-
-    public void onSdkReady() {
-        Helper.setViewVisibility(fabNewPublish, View.VISIBLE);
         if (adapter != null && contentList != null) {
             contentList.setAdapter(adapter);
         }
