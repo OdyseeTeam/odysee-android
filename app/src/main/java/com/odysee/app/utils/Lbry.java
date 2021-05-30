@@ -135,10 +135,6 @@ public final class Lbry {
         }
     }
 
-    public static Response apiCall(String method) throws LbryRequestException {
-        return apiCall(method, null);
-    }
-
     public static Response apiCall(String method, Map<String, Object> params) throws LbryRequestException {
         return apiCall(method, params, SDK_CONNECTION_STRING);
     }
