@@ -109,7 +109,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.google.gson.JsonObject;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
@@ -118,8 +117,6 @@ import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
-import com.odysee.app.exceptions.ApiCallException;
-import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
@@ -147,7 +144,6 @@ import com.odysee.app.tasks.CommentListTask;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.LighthouseSearchTask;
 import com.odysee.app.tasks.ReadTextFileTask;
-import com.odysee.app.tasks.SetSdkSettingTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.AbandonStreamTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -170,7 +166,6 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
-import com.squareup.okhttp.Response;
 
 import static com.odysee.app.utils.Lbry.TAG;
 
@@ -1421,14 +1416,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     public void onStoragePermissionGranted() {
-        Context context = getContext();
-        SetSdkSettingTask task = null;
-        if (startDownloadPending) {
-        } else if (fileGetPending) {
-        }
-        if (task != null) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
+
     }
     public void onStoragePermissionRefused() {
         storagePermissionRefusedOnce = true;
