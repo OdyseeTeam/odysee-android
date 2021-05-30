@@ -61,7 +61,6 @@
     <string name="related_content">Contenuti connessi</string>
     <string name="comments">Commenti</string>
     <string name="no_comments">Nessun commento al momento.</string>
-    <string name="sdk_initializing_comments">I commenti verranno visualizzati dopo l\'inizializzazione del servizio in background.</string>
     <string name="comment_error">Il tuo commento non può essere inviato al momento. Riprova più tardi.</string>
     <string name="share_lbry_content">Condividi contenuti LBRY</string>
     <string name="view">Guarda</string>
@@ -154,7 +153,6 @@
     <string name="video_optimized">Il tuo video è stato ottimizzato per una resa migliore con il maggior numero possibile di dispositivi. Procedi con la pubblicazione del tuo contenuto.</string>
     <string name="video_optimize_failed">Il tuo video non può essere ottimizzato. Il file verrà caricato senza modifiche.</string>
     <string name="completed_video_duration">Durata complessiva del video: %1$s</string>
-    <string name="sdk_initializing_publish">Non puoi pubblicare il contenuto al momento perché il servizio in background è ancora in avviamento.</string>
     <string name="publish_successful">Il tuo contenuto è stato pubblicato con successo. Servirà qualche momento prima che appaia nella blockchain.</string>
     <string name="transcode_in_progress">L\'ottimizzazione del video è in corso. Se desideri annullarla, fai clic su Annulla alla fine della pagina.</string>
     <string name="optimization_in_progress">L\'ottimizzazione video è in corso.</string>
@@ -245,7 +243,6 @@
     <string name="content_interests">Interessi sui contenuti</string>
     <string name="mini_player_bottom_spacing">Spazio inferiore mini-player</string>
 
-    <string name="keep_sdk_in_background">Per migliori performance del portafoglio e della rete mantenere il servizio LBRY attivo in background</string>
     <string name="participate_in_data_network">Contribuisci alla rete dati (richede il riavvio dell\'app e del servizio in background)</string>
     <string name="send_buffering_events">Invio buffer eventi al server LBRY</string>
 
@@ -266,9 +263,6 @@
     <string name="balance">Saldo</string>
     <string name="convert_credits">Puoi convertire i tuoi crediti in USD e trasferire il valore convertito utilizzando un cambio. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Vedi altro&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converti crediti in USD su Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">Avvio servizio in background...</string>
-    <string name="sdk_still_initializing">Il servizio in background è ancora in avvio. Puoi esplorare e visualizzare contenuti nel frattempo.</string>
-    <string name="sdk_initializing_functionality">Non puoi fare questo al momento perché il servizio in background è ancora in avviamento.</string>
 
     <string name="backup_synced">Un backup del tuo portafoglio è sincronizzato con lbry.tv</string>
     <string name="backup_notsynced">Il tuo portafoglio non è sincronizzato con lbry.tv. Sei responsabile del backup del tuo portafoglio.</string>
@@ -611,7 +605,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Aggiorna preferenze messaggi</string>
     <string name="app_version">Versione app</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Piattaforma</string>
     <string name="installation_id">ID installazione</string>
     <string name="firebase_token">Token Firebase</string>

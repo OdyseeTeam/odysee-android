@@ -58,7 +58,6 @@
     <string name="related_content">Alakalı İçerik</string>
     <string name="comments">Yorumlar</string>
     <string name="no_comments">Şu anda gösterilecek bir yorum yok.</string>
-    <string name="sdk_initializing_comments">Yorumlar, arka plan hizmeti başlatıldıktan sonra görüntülenecektir. </string>
     <string name="comment_error">Yorumunuz şu anda gönderilemedi. Lütfen daha sonra tekrar deneyiniz.</string>
     <string name="share_lbry_content">LBRY içeriği paylaş</string>
     <string name="view">Görüntülenme</string>
@@ -148,7 +147,6 @@
     <string name="video_optimized">Videonuz mümkün olduğunca çok cihazda daha iyi oynatılmak için başarıyla optimize edildi. Lütfen içeriğinizi yayınlamaya devam edin.</string>
     <string name="video_optimize_failed">Videonuz optimize edilemedi. Dosya hiçbir değişiklik yapılmadan yüklenecek.</string>
     <string name="completed_video_duration">Tamamlanan Video Süresi: %1$s</string>
-    <string name="sdk_initializing_publish">Arka plan hizmeti henüz başlatılmadığından şu anda içerik yayınlayamazsınız.</string>
     <string name="publish_successful">İçeriğiniz başarıyla yayınlandı. Blok zincirde görünmesi birkaç dakika sürebilir.</string>
     <string name="transcode_in_progress">Video optimizasyonu devam ediyor. İptal etmek isterseniz, sayfanın altındaki İptal düğmesine basın.</string>
     <string name="optimization_in_progress">Video optimizasyonu devam ediyor.</string>
@@ -235,7 +233,6 @@
     <string name="notifications">Bildirimler</string>
     <string name="subscriptions">Abonelikler</string>
     <string name="content_interests">İçerik Alanları</string>
-    <string name="keep_sdk_in_background">Gelişmiş cüzdan ve ağ performansı için LBRY servisini arkada açık bırakın</string>
     <string name="participate_in_data_network">Veri ağına katılın (uygulama ve arka plan hizmetinin yeniden başlatılmasını gerektirir)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Ara</string>
@@ -254,8 +251,6 @@
     <string name="balance">Bakiye</string>
     <string name="convert_credits">Kredilerinizi USD\'ye çevirebilir ve döviz hizmeti ile paranızı çekebilirsiniz. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Arkaplan servisi hala başlatılıyor. Bu arada siz içerikleri keşfedebilir ve izleyebilirsiniz.</string>
-    <string name="sdk_initializing_functionality">Bunu şu an yapamazsınız çünkü arkaplan servisi hala başlatılıyor.</string>
 
     <string name="backup_synced">Cüzdanınızın yedeği lbry.tv ile eşlendi.</string>
     <string name="backup_notsynced">Cüzdanınız şu an lbry.tv ile eşlenmemiş. Cüzdanınızı yedeklemeniz sizin sorumluluğunuzdadır.</string>
@@ -560,7 +555,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Mail seçeneklerini güncelle</string>
     <string name="app_version">Uygulama versiyonu</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platform</string>
     <string name="installation_id">Kurulum Kimliği</string>
     <string name="firebase_token">Firebase Anahtarı</string>

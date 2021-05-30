@@ -61,7 +61,6 @@
     <string name="related_content">संबंधित सामग्री</string>
     <string name="comments">टिप्पणियां</string>
     <string name="no_comments">इस समय प्रदर्शित करने के लिए कोई कमेंट्स नहीं हैं।</string>
-    <string name="sdk_initializing_comments">पृष्ठभूमि सेवाएं शुरू होने के बाद कमैंट्स प्रदर्शित किए जाएंगे।</string>
     <string name="comment_error">आपका कमेंट अभी पोस्ट नहीं किया जा सका है। कृपया कुछ देर बाद प्रयास करें।</string>
     <string name="share_lbry_content">लाइब्रेरी सामग्री को शेयर करें</string>
     <string name="view">व्यू</string>
@@ -154,7 +153,6 @@
     <string name="video_optimized">विभिन्न प्रकार की डिवाइसेस पर चलने हेतु आपके वीडियो को सफलतापूर्वक अनुकूलित कर दिया गया है। कृपया अपनी सामग्री को पब्लिश करने हेतु आगे बढ़े।</string>
     <string name="video_optimize_failed">आपका वीडियो अनुकूलित नहीं किया जा सका। आपकी फाइल बिना किसी बदलाव के साथ अपलोड कर दी जाएगी</string>
     <string name="completed_video_duration">संपूरित वीडियो अवधि: %1$s</string>
-    <string name="sdk_initializing_publish">आप अभी सामग्री प्रकाशित नहीं कर सकते क्योंकि पृष्ठभूमि सेवाएं अभी आरंभ हो रही हैं</string>
     <string name="publish_successful">आपकी सामग्री सफलतापूर्वक प्रकाशित हो गई है। इन्हें ब्लॉकचेन पर प्रदर्शित होने में कुछ समय लग सकता है</string>
     <string name="transcode_in_progress">वीडियो अनुकूलन प्रगति में है। अगर आप इसे रोकना चाहते हैं तो पेज के अंत में कैंसिल दबाएं।</string>
     <string name="optimization_in_progress">वीडियो अनुकूलन प्रकृति में है</string>
@@ -245,7 +243,6 @@
     <string name="content_interests">सामग्री रुचियां</string>
     <string name="mini_player_bottom_spacing">मिनी खिलाड़ी नीचे रिक्ति</string>
 
-    <string name="keep_sdk_in_background">बेहतर वॉलेट और नेटवर्क प्रदर्शन के लिए लाइब्रेरी सेवाओं को पृष्ठभूमि में चलने दें</string>
     <string name="participate_in_data_network">डाटा नेटवर्क में भाग लें (इसके लिए ऐप एवं पृष्ठभूमि सेवाओं का पुनः शुरू होना आवश्यक है)</string>
     <string name="send_buffering_events">LBRY सर्वर पर बफ़रिंग ईवेंट भेजें</string>
 
@@ -266,9 +263,6 @@
     <string name="balance">बैलेंस</string>
     <string name="convert_credits"> आप अपने क्रेडिटस को यूसडी में बदल सकते हैं और उन्हें एक्सचेंज की मदद से निकाल भी सकते हैं। &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt; क्रेडिटस को यूसडी में बदलें बिट्रिक्स पर&lt;/a&gt;</string>
-    <string name="sdk_initializing">पृष्ठभूमि सेवा प्रारंभ कर रहा है ...</string>
-    <string name="sdk_still_initializing">पृष्ठभूमि सेवाएं अभी भी शुरू हो रही है। इस दौरान आप अन्य सामग्री को खोज एवं देख सकते हैं।</string>
-    <string name="sdk_initializing_functionality">आप यह अभी नहीं कर सकते हैं क्योंकि पृष्ठभूमि सेवाएं अभी भी शुरू हो रही है</string>
 
     <string name="backup_synced">आपके वॉलेट का एक बैक आप लाइब्रेरी टीवी के साथ पूर्णतया सिंक है</string>
     <string name="backup_notsynced">आपका वॉलेट लाइब्रेरी टीवी के साथ पूर्ण रूप से सिंक नहीं है। अपने वॉलेट के बैक अप के लिए आप खुद जिम्मेदार हैं</string>
@@ -611,7 +605,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">मेलिंग प्राथमिकताएँ अपडेट करें</string>
     <string name="app_version">एप्लिकेशन वर्ज़न</string>
-    <string name="lbry_sdk">LBRY एसडीके</string>
     <string name="platform">मंच</string>
     <string name="installation_id">स्थापना आईडी</string>
     <string name="firebase_token">फायरबेस टोकन</string>

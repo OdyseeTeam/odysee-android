@@ -63,19 +63,6 @@
                 android:textSize="14sp"
                 android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/channel_comments_sdk_initializing"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
-                android:text="@string/sdk_initializing_comments"
-                android:textFontWeight="300"
-                android:textSize="14sp"
-                android:visibility="gone" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/channel_comments_list"
                 android:layout_width="match_parent"

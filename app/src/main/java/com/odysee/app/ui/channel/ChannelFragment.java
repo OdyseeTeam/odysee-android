@@ -178,11 +178,6 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonTip.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(getView(), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
                         double sentAmount = amount.doubleValue();

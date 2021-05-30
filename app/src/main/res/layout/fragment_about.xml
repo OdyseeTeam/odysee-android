@@ -251,41 +251,6 @@
                         android:ellipsize="end"
                         android:fontFamily="@font/inter"
                         android:singleLine="true"
-                        android:text="@string/lbry_sdk"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                    <TextView
-                        android:id="@+id/about_lbry_sdk"
-                        android:layout_weight="6"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:fontFamily="@font/inter"
-                        android:singleLine="true"
-                        android:text="@string/loading"
-                        android:textFontWeight="300"
-                        android:textIsSelectable="true"
-                        android:textSize="14sp"  />
-                </LinearLayout>
-
-                <View
-                    android:background="@color/divider"
-                    android:layout_width="match_parent"
-                    android:layout_height="0.5dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_weight="10"
-                    android:padding="12dp">
-                    <TextView
-                        android:layout_weight="4"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:fontFamily="@font/inter"
-                        android:singleLine="true"
                         android:text="@string/platform"
                         android:textSize="14sp"
                         android:textStyle="bold" />

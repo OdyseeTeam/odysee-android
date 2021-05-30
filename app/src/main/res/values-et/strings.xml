@@ -120,7 +120,6 @@
     <string name="video_optimized">Sinu video sai edukalt optimeeritud. Jätka oma postituse avaldamisega.</string>
     <string name="video_optimize_failed">Sinu videot ei saanud optimeerida. Fail laetakse üles algsel kujul.</string>
     <string name="completed_video_duration">Video töödeldud: %1$s</string>
-    <string name="sdk_initializing_publish">Hetkel ei saa postitada, taustateenused pole veel käivitunud.</string>
     <string name="publish_successful">Sinu postitus sai eddukalt avaldatud. See võib võtta paar minutit, et plokiahelas kajastuda.</string>
     <string name="transcode_in_progress">Video optimeerimine on käimas. Kui soovid, võid selle peatada, vajutades Loobu -nuppu lehe allservas.</string>
     <string name="optimization_in_progress">Video optimeerimine käib.</string>
@@ -204,7 +203,6 @@
     <string name="notifications">Teavitused</string>
     <string name="subscriptions">Tellimused</string>
     <string name="content_interests">Sisuhuvid</string>
-    <string name="keep_sdk_in_background">Hoia LBRY taustateenus käimas peale rakenduse sulgemist, abistamaks parandada LBRY võrgu jõudlust.</string>
     <string name="participate_in_data_network">Osale LBRY andmeside võrgus (vajab rakenduse ja taustateenuste restarti)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - otsing</string>
@@ -223,8 +221,6 @@
     <string name="balance">Saldo</string>
     <string name="convert_credits">Valuutavahetustes saad vahetada oma LBC raha USD vastu ja selle välja võtta. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Loe lisa&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Valuutavahetus Bittrex LBC > USD&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Taustateenus veel stardib. Võid seniks postitusi sirvida.</string>
-    <string name="sdk_initializing_functionality">Seda ei saa hetkel teha, kuna taustateenus pole veel käivitunud.</string>
 
     <string name="backup_synced">Rahakoti varukoopia on sünkroniseeritud lbry.tv saidiga.</string>
     <string name="backup_notsynced">Hetkel pole sinu rahakott sünkroniseeritud lbry.tv -ga. Sinu vastutada jääb rahakotist varukoopia tegemine.</string>
@@ -512,7 +508,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Uuenda emaili-eelistusi</string>
     <string name="app_version">Rakenduse versioon</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platvorm</string>
     <string name="installation_id">Installatsiooni ID</string>
     <string name="firebase_token">Firebase sümbol</string>

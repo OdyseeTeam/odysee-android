@@ -149,11 +149,6 @@ public class PublishFragment extends BaseFragment implements
     }
 
     private void checkCameraPermissionAndRecord() {
-        if (!Lbry.SDK_READY) {
-            Snackbar.make(getView(), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-            return;
-        }
-
         Context context = getContext();
         if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
             recordPending = true;
@@ -169,11 +164,6 @@ public class PublishFragment extends BaseFragment implements
     }
 
     private void checkCameraPermissionAndTakePhoto() {
-        if (!Lbry.SDK_READY) {
-            Snackbar.make(getView(), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-            return;
-        }
-
         Context context = getContext();
         if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
             takePhotoPending = true;
@@ -205,11 +195,6 @@ public class PublishFragment extends BaseFragment implements
     }
 
     private void checkStoragePermissionAndLaunchFilePicker() {
-        if (!Lbry.SDK_READY) {
-            Snackbar.make(getView(), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-            return;
-        }
-
         Context context = getContext();
         if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
             launchFilePickerPending = false;
@@ -302,11 +287,6 @@ public class PublishFragment extends BaseFragment implements
                         adapter.setListener(new GalleryGridAdapter.GalleryItemClickListener() {
                             @Override
                             public void onGalleryItemClicked(GalleryItem item) {
-                                if (!Lbry.SDK_READY) {
-                                    Snackbar.make(getView(), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                                    return;
-                                }
-
                                 Context context = getContext();
                                 if (context instanceof MainActivity) {
                                     Map<String, Object> params = new HashMap<>();

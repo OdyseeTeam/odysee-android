@@ -869,10 +869,6 @@ public class PublishFormFragment extends BaseFragment implements
 
     public void onResume() {
         super.onResume();
-        if (!Lbry.SDK_READY) {
-            cancelOnFatalCondition(getString(R.string.sdk_initializing_functionality));
-            return;
-        }
 
         checkParams();
         checkRewardsDriver();

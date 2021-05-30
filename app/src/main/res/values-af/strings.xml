@@ -58,7 +58,6 @@
     <string name="related_content">Verwante Content</string>
     <string name="comments">Kommentaar</string>
     <string name="no_comments">Op die oomblik is daar geen kommentaar om te vertoon nie.</string>
-    <string name="sdk_initializing_comments">Opmerkings sal vertoon word nadat die agtergronddiens geïnialiseer is.</string>
     <string name="comment_error">U opmerking kon tans nie geplaas word nie. Probeer asseblief weer later.</string>
     <string name="share_lbry_content">Deel LBRY-inhoud</string>
     <string name="view">Beskou</string>
@@ -148,7 +147,6 @@
     <string name="video_optimized">U video is suksesvol geoptimaliseer vir beter afspeel op soveel toestelle as moontlik. Gaan asseblief voort om u inhoud te publiseer.</string>
     <string name="video_optimize_failed">U video kon nie geoptimaliseer word nie. Die lêer sal sonder veranderinge opgelaai word.</string>
     <string name="completed_video_duration">Voltooide Videoduur: %1$s</string>
-    <string name="sdk_initializing_publish">U kan nie op die oomblik inhoud publiseer nie, omdat die agtergronddiens steeds initialiseer.</string>
     <string name="publish_successful">U inhoud is suksesvol gepubliseer. Dit kan \'n paar oomblikke neem om op die blockchain te verskyn.</string>
     <string name="transcode_in_progress">Videooptimalisering is aan die gang. Druk Annuleer onderaan die bladsy as u wil kanselleer.</string>
     <string name="optimization_in_progress">Videooptimalisering is aan die gang.</string>
@@ -235,7 +233,6 @@
     <string name="notifications">Kennisgewings</string>
     <string name="subscriptions">Abonnementen</string>
     <string name="content_interests">Contentsbelangstellings</string>
-    <string name="keep_sdk_in_background">Hou die LBRY-diens op die agtergrond vir verbeterde beursie- en netwerkprestasie</string>
     <string name="participate_in_data_network">Neem deel aan die datanetwerk (benodig weer app en agtergronddiens)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Soek</string>
@@ -254,8 +251,6 @@
     <string name="balance">Balans</string>
     <string name="convert_credits">U kan u krediete in USD omskakel en die omgeskakelde bedrag met \'n uitruil onttrek. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Skakel krediete na USD op Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Die agtergronddiens word steeds geïnitialiseer. U kan die inhoud intussen verken en kyk.</string>
-    <string name="sdk_initializing_functionality">U kan dit nie nou doen nie, want die agtergronddiens is nog besig om te initialiseer.</string>
 
     <string name="backup_synced">\'N Rugsteun van u beursie word met lbry.tv gesinkroniseer</string>
     <string name="backup_notsynced">U beursie is tans nie met lbry.tv gesinkroniseer nie. U is verantwoordelik vir die rugsteun van u beursie.</string>
@@ -560,7 +555,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Dateer posvoorkeure op</string>
     <string name="app_version">Programweergawe</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platform</string>
     <string name="installation_id">Installasie ID</string>
     <string name="firebase_token">Firebase Token</string>

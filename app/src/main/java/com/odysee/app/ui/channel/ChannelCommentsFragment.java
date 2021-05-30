@@ -366,11 +366,6 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         buttonPostComment.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.channel_comments_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 validateAndCheckPostComment();
             }
         });

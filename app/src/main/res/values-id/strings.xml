@@ -61,7 +61,6 @@
     <string name="related_content">Konten terkait</string>
     <string name="comments">Komentar</string>
     <string name="no_comments">Tidak ada komentar untuk ditampilkan saat ini.</string>
-    <string name="sdk_initializing_comments">Komentar akan ditampilkan setelah layanan latar belakang diinisialisasi.</string>
     <string name="comment_error">Komentar Anda tidak dapat diposkan saat ini. Silakan coba lagi nanti.</string>
     <string name="share_lbry_content">Bagikan konten LBRY</string>
     <string name="view">Lihat</string>
@@ -148,7 +147,6 @@
     <string name="video_optimized">Video Anda berhasil dioptimalkan untuk pemutaran yang lebih baik di banyak perangkat sebanyak mungkin. Silakan lanjutkan untuk mempublikasikan konten Anda.</string>
     <string name="video_optimize_failed">Video Anda tidak dapat dioptimalkan. File akan diunggah tanpa perubahan.</string>
     <string name="completed_video_duration">Durasi Video Lengkap: %1$s</string>
-    <string name="sdk_initializing_publish">Anda tidak dapat mempublikasikan konten sekarang karena layanan latar belakang masih diinisialisasi.</string>
     <string name="publish_successful">Konten Anda berhasil diterbitkan. Mungkin diperlukan beberapa saat untuk muncul di blockchain.</string>
     <string name="transcode_in_progress">Pengoptimalan video sedang berlangsung. Jika Anda ingin membatalkan, tekan Batal di bagian bawah halaman.</string>
     <string name="optimization_in_progress">Pengoptimalan video sedang berlangsung.</string>
@@ -237,7 +235,6 @@
     <string name="content_interests">Minat Konten</string>
     <string name="mini_player_bottom_spacing">Jarak bawah pemutar mini</string>
 
-    <string name="keep_sdk_in_background">Tetap menjalankan layanan LBRY di latar belakang untuk meningkatkan kinerja dompet dan jaringan</string>
     <string name="participate_in_data_network">Berpartisipasi dalam jaringan data (membutuhkan restart aplikasi dan layanan latar belakang)</string>
     <string name="send_buffering_events">Kirim peristiwa buffering ke server LBRY</string>
 
@@ -258,9 +255,6 @@
     <string name="balance">Saldo</string>
     <string name="convert_credits">Anda dapat mengonversi kredit Anda ke USD dan menarik jumlah yang dikonversi menggunakan pertukaran. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">Layanan latar belakang sedang menginisialisasi...</string>
-    <string name="sdk_still_initializing">Layanan latar belakang masih diinisialisasi. Anda dapat menjelajahi dan menonton konten dalam waktu yang bersamaan.</string>
-    <string name="sdk_initializing_functionality">Anda tidak dapat melakukan ini sekarang karena layanan latar belakang masih diinisialisasi.</string>
 
     <string name="backup_synced">Cadangan dompet Anda disinkronkan dengan lbry.tv</string>
     <string name="backup_notsynced">Dompet Anda saat ini tidak disinkronkan dengan lbry.tv. Anda bertanggung jawab untuk mencadangkan dompet Anda.</string>
@@ -590,7 +584,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Perbarui preferensi pengiriman surat</string>
     <string name="app_version">Versi App</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platform</string>
     <string name="installation_id">ID Instalasi</string>
     <string name="firebase_token">Firebase Token</string>

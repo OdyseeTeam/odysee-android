@@ -61,7 +61,6 @@
     <string name="related_content">相關內容</string>
     <string name="comments">留言</string>
     <string name="no_comments">目前沒有可顯示的留言。</string>
-    <string name="sdk_initializing_comments">留言將會在背景程式完成初始化後顯示。</string>
     <string name="comment_error">現在無法張貼你的留言，請稍後再試。</string>
     <string name="share_lbry_content">分享內容</string>
     <string name="view">檢視</string>
@@ -148,7 +147,6 @@
     <string name="video_optimized">你的影片已完成最佳化處理，以盡可能地在各種裝置播放。請繼續發佈你的內容。</string>
     <string name="video_optimize_failed">你的影片未能最佳化。檔案將會上傳無變更版本。</string>
     <string name="completed_video_duration">已完成片長：%1$s</string>
-    <string name="sdk_initializing_publish">你目前還不能發佈內容，因為背景程式仍在初始化。</string>
     <string name="publish_successful">你的內容已發佈成功。不過可能需要等一會才出現於區塊鏈上。</string>
     <string name="transcode_in_progress">影片正在進行最佳化。如你想取消，請按頁底的取消按鈕。</string>
     <string name="optimization_in_progress">影片最佳化進行中。</string>
@@ -237,7 +235,6 @@
     <string name="content_interests">感興趣的內容</string>
     <string name="mini_player_bottom_spacing">迷你影片播放器的底部間距</string>
 
-    <string name="keep_sdk_in_background">將 LBRY 維持背景執行狀態以改善錢包及網路效能。</string>
     <string name="participate_in_data_network">參與數據網路（需重啟程式及背景服務）</string>
     <string name="send_buffering_events">發送緩衝事件到 LBRY 伺服器</string>
 
@@ -258,9 +255,6 @@
     <string name="balance">餘額</string>
     <string name="convert_credits">你可以把信用額兌換為美元然後到交易所提取。&lt;a href=\"https://lbry.com/faq/exchanges\"&gt;了解更多&lt;/a&gt;。</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;在Bittrex上轉換美元&lt;/a&gt;</string>
-    <string name="sdk_initializing">背景程式執行初始化中……</string>
-    <string name="sdk_still_initializing">背景程式仍在初始化。與此同時，你可以探索和觀看內容。</string>
-    <string name="sdk_initializing_functionality">你目前還不能執行這動作，因為背景程式仍在初始化。</string>
 
     <string name="backup_synced">你的錢包備份已與 lbry.tv 同步</string>
     <string name="backup_notsynced">你的錢包目前未與 lbry.tv 同步。\n你需負責自行備份。</string>
@@ -590,7 +584,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">更新郵件設定</string>
     <string name="app_version">程式版本</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">平台</string>
     <string name="installation_id">裝置識別碼</string>
     <string name="firebase_token">Firebase 憑證</string>

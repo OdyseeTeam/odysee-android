@@ -59,7 +59,6 @@
     <string name="related_content">Ähnliche Inhalte</string>
     <string name="comments">Kommentare</string>
     <string name="no_comments">Derzeit gibt es keine anzeigbaren Kommentare.</string>
-    <string name="sdk_initializing_comments">Kommentare werden angezeigt, nachdem der Hintergrunddienst initialisiert wurde.</string>
     <string name="comment_error">Ihr Kommentar konnte zu diesem Zeitpunkt nicht veröffentlicht werden. Bitte versuchen Sie es später noch einmal.</string>
     <string name="share_lbry_content">Neue Inhalte</string>
     <string name="view">Ansehen</string>
@@ -150,7 +149,6 @@ Bitte versuche es später erneut.</string>
     <string name="video_optimized">Dein Video wurde erfolgreich für eine bessere Wiedergabe auf so vielen Geräten wie möglich optimiert. Bitte veröffentliche Deinen Inhalt jetzt.</string>
     <string name="video_optimize_failed">Dein Video konnte nicht optimiert werden. Die Datei wird ohne Änderungen hochgeladen.</string>
     <string name="completed_video_duration">Abgeschlossene Videodauer: %1$s</string>
-    <string name="sdk_initializing_publish">Sie können derzeit keine Inhalte veröffentlichen, da der Hintergrunddienst noch initialisiert wird.</string>
     <string name="publish_successful">Dein Inhalt wurde erfolgreich veröffentlicht. Es kann einen Moment dauern, bis er in der Blockchain angezeigt wird.</string>
     <string name="transcode_in_progress">Die Videooptimierung ist im Gange. Wenn Sie abbrechen möchten, klicken Sie unten auf der Seite auf Abbrechen.</string>
     <string name="optimization_in_progress">Die Videooptimierung ist im Gange.</string>
@@ -238,7 +236,6 @@ Bitte versuche es später erneut.</string>
     <string name="notifications">Benachrichtigungen</string>
     <string name="subscriptions">Abonnements</string>
     <string name="content_interests">Inhaltsinteressen</string>
-    <string name="keep_sdk_in_background">Lasse den LBRY-Dienst im Hintergrund laufen, um die Leistung des Portemonnaie und des Netzwerks zu verbessern</string>
     <string name="participate_in_data_network">Teilnahme am Datennetzwerk (Neustart der App und des Hintergrunddienstes erforderlich)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Suchen</string>
@@ -257,8 +254,6 @@ Bitte versuche es später erneut.</string>
     <string name="balance">Kontostand</string>
     <string name="convert_credits">Sie können Ihr Guthaben in USD umrechnen und den umgerechneten Betrag über einen Umtausch abheben. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Der Hintergrunddienst wird noch initialisiert. In der Zwischenzeit können Sie Inhalte erkunden und ansehen.</string>
-    <string name="sdk_initializing_functionality">Sie können dies derzeit nicht tun, da der Hintergrunddienst noch initialisiert wird.</string>
 
     <string name="backup_synced">Ein Backup Ihrer Portemonnaie wird mit lbry.tv synchronisiert</string>
     <string name="backup_notsynced">Ihre Portemonnaie ist derzeit nicht mit lbry.tv synchronisiert. Sie sind für die Sicherung Ihrer Portemonnaie verantwortlich.</string>
@@ -568,7 +563,6 @@ Bitte versuche es später erneut.</string>
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Aktualisiere E-Mail-Einstellungen</string>
     <string name="app_version">Anwendungsversion</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Plattform</string>
     <string name="installation_id">Installations ID</string>
     <string name="firebase_token">Firebase Token</string>

@@ -58,7 +58,6 @@
     <string name="related_content">સંબંધિત સામગ્રી</string>
     <string name="comments">ટિપ્પણીઓ</string>
     <string name="no_comments">આ સમયે પ્રદર્શિત કરવા માટે કોઈ ટિપ્પણી નથી.</string>
-    <string name="sdk_initializing_comments">ટિપ્પણીઓ પૃષ્ઠભૂમિ સેવા પ્રારંભ થયા પછી પ્રદર્શિત થશે.</string>
     <string name="comment_error">તમારી ટિપ્પણી આ સમયે પોસ્ટ કરી શકાતી નથી. પછીથી ફરી પ્રયત્ન કરો.</string>
     <string name="share_lbry_content">LBRY સામગ્રી શેર કરો</string>
     <string name="view">જુઓ</string>
@@ -148,7 +147,6 @@
     <string name="video_optimized">શક્ય તેટલા ઉપકરણો પર તમારી વિડિઓને વધુ સારી પ્લેબેક માટે સફળતાપૂર્વક ઑપ્ટિમાઇઝ કરવામાં આવી હતી. કૃપા કરી તમારી સામગ્રી પ્રકાશિત કરો.</string>
     <string name="video_optimize_failed">તમારી વિડિઓ ઑપ્ટિમાઇઝ કરી શકાઈ નથી. ફાઇલ કોઈ ફેરફાર વિના અપલોડ કરવામાં આવશે.</string>
     <string name="completed_video_duration">પૂર્ણ વિડિઓ અવધિ: %1$s</string>
-    <string name="sdk_initializing_publish">તમે અત્યારે સામગ્રી પ્રકાશિત કરી શકતા નથી કારણ કે પૃષ્ઠભૂમિ સેવા હજી પ્રારંભ થઈ રહી છે.</string>
     <string name="publish_successful">તમારી સામગ્રી સફળતાપૂર્વક પ્રકાશિત થઈ હતી. બ્લોકચેન પર દેખાવામાં થોડી ક્ષણો લાગી શકે છે.</string>
     <string name="transcode_in_progress">વિડિઓ ઓપ્ટિમાઇઝેશન પ્રક્રિયા ચાલુ છે. જો તમે રદ કરવા માંગો છો, તો પૃષ્ઠની નીચે રદ કરો દબાવો.</string>
     <string name="optimization_in_progress">વિડિઓ ઓપ્ટિમાઇઝેશન પ્રક્રિયા ચાલુ છે.</string>
@@ -235,7 +233,6 @@
     <string name="notifications">સૂચનાઓ</string>
     <string name="subscriptions">સબ્સ્ક્રિપ્શન્સ</string>
     <string name="content_interests">સામગ્રી રુચિઓ</string>
-    <string name="keep_sdk_in_background">સુધારેલ વૉલેટ અને નેટવર્ક પ્રદર્શન માટે પૃષ્ઠભૂમિમાં ચાલતી LBRY સેવાને ચાલુ રાખો</string>
     <string name="participate_in_data_network">ડેટા નેટવર્કમાં ભાગ લેવો (એપ્લિકેશન અને પૃષ્ઠભૂમિ સેવા ફરીથી પ્રારંભ કરવાની જરૂર છે)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - શોધો</string>
@@ -254,8 +251,6 @@
     <string name="balance">બેલેન્સ</string>
     <string name="convert_credits">તમે તમારા ક્રેડિટને USD માં કન્વર્ટ કરી શકો છો અને એક્સચેંજનો ઉપયોગ કરીને રૂપાંતરિત રકમ પાછા ખેંચી શકો છો. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">પૃષ્ઠભૂમિ સેવા હજી પ્રારંભ થઈ રહી છે. તમે સરેરાશ સમયમાં અન્વેષણ કરી શકો છો અને સામગ્રી જોઈ શકો છો.</string>
-    <string name="sdk_initializing_functionality">તમે હમણાં આ કરી શકતા નથી કારણ કે પૃષ્ઠભૂમિ સેવા હજી પ્રારંભ થઈ રહી છે.</string>
 
     <string name="backup_synced">તમારા વૉલેટનો બેકઅપ lbry.tv સાથે સમન્વયિત થાય છે</string>
     <string name="backup_notsynced">તમારું વૉલેટ હાલમાં lbry.tv. સાથે સમન્વયિત નથી. તમે તમારા વૉલેટનો બેકઅપ લેવા માટે જવાબદાર છો.</string>
@@ -560,7 +555,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">મેઇલિંગ પસંદગીઓને અપડેટ કરો</string>
     <string name="app_version">એપ્લિકેશન સંસ્કરણ</string>
-    <string name="lbry_sdk">LBRY એસડીકે</string>
     <string name="platform">પ્લેટફોર્મ</string>
     <string name="installation_id">ઇન્સ્ટોલેશન આઈડી</string>
     <string name="firebase_token">ફાયરબેસ ટોકન</string>

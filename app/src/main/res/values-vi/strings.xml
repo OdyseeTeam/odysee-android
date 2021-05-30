@@ -59,7 +59,6 @@
     <string name="related_content">Nội dung liên quan</string>
     <string name="comments">Bình luận</string>
     <string name="no_comments">Không có bình luận để hiển thị tại thời điểm này</string>
-    <string name="sdk_initializing_comments">Nhận xét sẽ hiển thị sau khi dịch vụ nền được khởi tạo.</string>
     <string name="comment_error">Bình luận của bạn không thể được đăng vào thời điểm này. Vui lòng thử lại sau.</string>
     <string name="share_lbry_content">Chia sẻ nội dung LBRY</string>
     <string name="view">Lượt xem</string>
@@ -143,7 +142,6 @@
     <string name="video_optimized">Video của bạn đã được tối ưu hóa thành công để phát lại tốt hơn trên càng nhiều thiết bị càng tốt. Vui lòng tiến hành xuất bản nội dung của bạn.</string>
     <string name="video_optimize_failed">Video của bạn không thể được tối ưu hóa. Các tập tin sẽ được tải lên mà không có thay đổi.</string>
     <string name="completed_video_duration">Thời lượng video đã hoàn thành:%1$s</string>
-    <string name="sdk_initializing_publish">Bạn không thể xuất bản nội dung ngay bây giờ vì dịch vụ nền vẫn đang khởi tạo.</string>
     <string name="publish_successful">Nội dung của bạn đã được xuất bản thành công. Có thể mất vài phút để xuất hiện trên blockchain.</string>
     <string name="transcode_in_progress">Tối ưu hóa video đang được tiến hành. Nếu bạn muốn hủy, bấm Hủy ở cuối trang.</string>
     <string name="optimization_in_progress">Đang tối ưu hóa video</string>
@@ -228,7 +226,6 @@
     <string name="notifications">Thông báo</string>
     <string name="subscriptions">Đăng ký</string>
     <string name="content_interests">Sở thích nội dung</string>
-    <string name="keep_sdk_in_background">Giữ dịch vụ LBRY chạy trong nền để cải thiện hiệu suất của ví và mạng</string>
     <string name="participate_in_data_network">Tham gia vào mạng dữ liệu (yêu cầu khởi động lại ứng dụng và dịch vụ nền)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Tìm</string>
@@ -247,8 +244,6 @@
     <string name="balance">Tài khoản</string>
     <string name="convert_credits">Bạn có thể chuyển đổi tín dụng của mình sang USD và rút số tiền đã chuyển đổi bằng cách sử dụng một trao đổi.  &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Đổi LBC sang USD tại Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Dịch vụ nền vẫn đang khởi tạo. Bạn có thể khám phá và xem nội dung trong thời gian trung bình.</string>
-    <string name="sdk_initializing_functionality">Bạn không thể làm điều này ngay bây giờ vì dịch vụ nền vẫn đang khởi tạo.</string>
 
     <string name="backup_synced">Một bản sao lưu ví của bạn được đồng bộ hóa với lbry.tv</string>
     <string name="backup_notsynced">Ví của bạn hiện không được đồng bộ hóa với lbry.tv. Bạn có trách nhiệm sao lưu ví của bạn.</string>
@@ -559,7 +554,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Cập nhật tùy chọn gửi mail</string>
     <string name="app_version">Phiên bản ứng dụng</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platform</string>
     <string name="installation_id">Installation ID</string>
     <string name="firebase_token">Firebase Token</string>

@@ -61,7 +61,6 @@
     <string name="related_content">תכנים דומים</string>
     <string name="comments">תגובות</string>
     <string name="no_comments">אין תגובות להצגה בזמן זה.</string>
-    <string name="sdk_initializing_comments">תגובות יוצגו לאחר ששירות הרקע יאותחל.</string>
     <string name="comment_error">תגובתך לא ניתנת לפרסום בזמן זה. אנא נסה שנית מאוחר יותר.</string>
     <string name="share_lbry_content">שתף תוכן מ-LBRY</string>
     <string name="view">צפה</string>
@@ -166,7 +165,6 @@
     <string name="video_optimized">הסרטון שלך עבר תהליך אופטימיזציה בהצלחה על מנת שייתנגן על גבי מספר מרבי של מכשירים. אנא המשך בפרסום התוכן שלך.</string>
     <string name="video_optimize_failed">לא היה ניתן לבצע אופטימיזציה לסרטון שלך. הקובץ יעבור העלאה ללא שינויים.</string>
     <string name="completed_video_duration">אורך הסרטון שהושלם: %1$s</string>
-    <string name="sdk_initializing_publish">אינך יכול לפרסם תוכן זה כעת בגלל שתהליך הרקע עדיין מתאתחל.</string>
     <string name="publish_successful">התוכן שלך פורסם בהצלחה. ייתכן וייקחו כמה רגעים עד שהתוכן יופיע בבלוקצ\'יין.</string>
     <string name="transcode_in_progress">אופטימיזציית סרטון בתהליך. אם ברצונך לבטל, לחץ על בטל בתחתית העמוד.</string>
     <string name="optimization_in_progress">אופטימיזציית סרטון בתהליך.</string>
@@ -261,7 +259,6 @@
     <string name="content_interests">הצעות תוכן</string>
     <string name="mini_player_bottom_spacing">מרווח תחתון של נגן ממוזער</string>
 
-    <string name="keep_sdk_in_background">אפשר לתהליך LBRY לפעול ברקע לשיפור ביצועי ארנק ותעבורת רשת</string>
     <string name="participate_in_data_network">השתתף ברשת הנתונים (דורש הפעלה מחדש של האפליקציה ותהליך הרקע)</string>
     <string name="send_buffering_events">שלח אירועי טעינה לשרתים של LBRY</string>
 
@@ -282,9 +279,6 @@
     <string name="balance">מאזן</string>
     <string name="convert_credits">ביכולתך להמיר את הקרדיט שלך ל-USD ולמשוך את הסכום המומר באמצעות חלפניה. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;למדו עוד&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;המר קרדיט ל-USD באתר Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">תהליך הרקע כרגע מתאתחל…</string>
-    <string name="sdk_still_initializing">תהליך הרקע כרגע מתאתחל. אתה יכול לבצע סקירה ולצפות בתכנים בינתיים.</string>
-    <string name="sdk_initializing_functionality">אינך יכול לבצע זאת בינתיים משום שתהליך הרקע עדיין מתאתחל.</string>
 
     <string name="backup_synced">גיבוי של הארנק שלך מסונכרן עם lbry.tv</string>
     <string name="backup_notsynced">הארנק שלך לא מסונכרן כרגע עם lbry.tv. אתה כרגע אחראי לגיבוי שלו.</string>
@@ -653,7 +647,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">עדכן העדפות דיוור</string>
     <string name="app_version">גרסת אפליקציה</string>
-    <string name="lbry_sdk">‏‭LBRY SDK</string>
     <string name="platform">פלטפורמה</string>
     <string name="installation_id">מזהה התקנה</string>
     <string name="firebase_token">אסימון Firebase</string>

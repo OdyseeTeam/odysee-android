@@ -61,7 +61,6 @@
     <string name="related_content">Sličan Sadržaj</string>
     <string name="comments">Komentari</string>
     <string name="no_comments">Trenutno nema komentara.</string>
-    <string name="sdk_initializing_comments">Komentari će biti prikazani nakon pokretanja pozadinskog servisa.</string>
     <string name="comment_error">Vaš komentar nije moguće objaviti trenutno. Molimo pokušajte kasnije.</string>
     <string name="share_lbry_content">Podeli LBRY sadržaj</string>
     <string name="view">Pregled</string>
@@ -160,7 +159,6 @@
     <string name="video_optimized">Vaš video je uspešno optimizovan za bolju reprodukciju na što većem broju uređaja.  Molimo vas nastavite sa objavom vašeg sadržaja.</string>
     <string name="video_optimize_failed">Vaš video ne može biti optimizovan. Otpremićemo ga u originalu.</string>
     <string name="completed_video_duration">Optimizacija Video Snimka %1$s</string>
-    <string name="sdk_initializing_publish">Ne možete objavljivati sadržaj za vreme učitavanja pozadinskog servisa.</string>
     <string name="publish_successful">Vaš sadržaj je uspešno objavljen. Potrajaće par trenutaka dok se ne pojavi na blockchain-u.</string>
     <string name="transcode_in_progress">Video optimizacija je u toku. Ukoliko želite da otkažete, pritisnite Otkaži na dnu stranice.</string>
     <string name="optimization_in_progress">Video optimizacija je u toku.</string>
@@ -253,7 +251,6 @@
     <string name="content_interests">Zanimljivi sadržaji</string>
     <string name="mini_player_bottom_spacing">Razmak Mini-plejera</string>
 
-    <string name="keep_sdk_in_background">Dozvoli LBRY servisu da radi u pozadini i time povećaj funkcionalnost novčanika i same mreže</string>
     <string name="participate_in_data_network">Budi deo mreže podataka (ovo zahteva restart aplikacije i pozadinskog servisa)</string>
     <string name="send_buffering_events">Šalji podatke o učitavanju na LBRY servere</string>
 
@@ -274,9 +271,6 @@
     <string name="balance">Balans</string>
     <string name="convert_credits">Možete konvertovati vaše kredite u USD i unovčiti konvertovani iznos koristeći menjačnicu. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">Pozadinski servis se pokreće...</string>
-    <string name="sdk_still_initializing">Pokretanje pozadinskog servisa je i dalje u toku. Za to vreme možete istraživati i gledati sadržaje.</string>
-    <string name="sdk_initializing_functionality">Ne možete uraditi ovo za vreme učitavanja pozadinskog servisa.</string>
 
     <string name="backup_synced">Sigurnosna kopija Vašeg novčanika je sinhronizovana sa lbry.tv</string>
     <string name="backup_notsynced">Vaš novčanik trenutno nije sinhronizovan sa lbry.tv. Vi ste odgovorni za rezervnu kopiju Vašeg novčanika.</string>
@@ -632,7 +626,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Ažurirajte obaveštenja koja dobijate na email</string>
     <string name="app_version">Verzija Aplikacije</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platforma</string>
     <string name="installation_id">ID Instalacije</string>
     <string name="firebase_token">Firebase Token</string>

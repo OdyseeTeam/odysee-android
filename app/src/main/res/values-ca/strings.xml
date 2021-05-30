@@ -61,7 +61,6 @@
     <string name="related_content">Contingut relacionat</string>
     <string name="comments">Comentaris</string>
     <string name="no_comments">No hi ha comentaris per mostrar en aquest moment.</string>
-    <string name="sdk_initializing_comments">Els comentaris es mostraran quan el servei s\'hagi inicialitzat en segon pla.</string>
     <string name="comment_error">El teu comentari no s\'ha pogut publicar en aquest moment. Sisplau, torna a intentar-ho més tard.</string>
     <string name="share_lbry_content">Comparteix contingut de LBRY</string>
     <string name="view">Visualitza</string>
@@ -154,7 +153,6 @@
     <string name="video_optimized">El teu vídeo s\'ha optimitzat correctament per una millor reproducció en tants dispositius com sigui possible. Sisplau, continua per publicar el teu contingut.</string>
     <string name="video_optimize_failed">El teu vídeo no s\'ha pogut optimitzar. El fitxer es pujarà sense cap canvi.</string>
     <string name="completed_video_duration">Durada del vídeo complet: %1$s</string>
-    <string name="sdk_initializing_publish">No pots publicar contingut ara mateix perquè el servei encara s\'està inicialitzant en segon pla.</string>
     <string name="publish_successful">El teu contingut s\'ha publicat correctament. Pot trigar uns moments a aparèixer a la cadena de blocs.</string>
     <string name="transcode_in_progress">L\'optimització del vídeo està en progrés. Si vols cancel·lar, pitja Cancel·la al final de la pàgina.</string>
     <string name="optimization_in_progress">L\'optimització del vídeo està en progrés.</string>
@@ -245,7 +243,6 @@
     <string name="content_interests">Contingut interessant</string>
     <string name="mini_player_bottom_spacing">Marge pel mini-reproductor inferior</string>
 
-    <string name="keep_sdk_in_background">Deixa el servei de LBRY executant-se en segon pla per millorar el rendiment de la cartera i de la xarxa</string>
     <string name="participate_in_data_network">Participa en la xarxa de dades (requereix reiniciar l\'aplicació i el servei en segon pla)</string>
     <string name="send_buffering_events">Envia esdeveniments de \"buffering\" als servidors de LBRY</string>
 
@@ -266,9 +263,6 @@
     <string name="balance">Balanç</string>
     <string name="convert_credits">Pots convertir els teus crèdits a USD i retirar la quantitat convertida emprant un intercanvi. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Aprèn-ne més&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converteix crèdits a USD a Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">El servei en segon pla s\'està inicialitzant...</string>
-    <string name="sdk_still_initializing">El servei en segon pla encara s\'està inicialitzant. Pots explorar i veure contingut mentrestant.</string>
-    <string name="sdk_initializing_functionality">No pots fer això ara perquè el servei en segon pla encara s\'està inicialitzant.</string>
 
     <string name="backup_synced">Una còpia de seguretat de la teva cartera està sincronitzada amb lbry.tv.</string>
     <string name="backup_notsynced">La teva cartera no està sincronitzada amb lbry.tv ara mateix. Ets responsable de mantenir les còpies de seguretat de la teva cartera.</string>
@@ -611,7 +605,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Actualitza la configuració de correu</string>
     <string name="app_version">Versió de l\'aplicació</string>
-    <string name="lbry_sdk">SDK de LBRY</string>
     <string name="platform">Plataforma</string>
     <string name="installation_id">ID d\'instal·lació</string>
     <string name="firebase_token">Token de Firebase</string>

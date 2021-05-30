@@ -1081,11 +1081,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_tip).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
                         double sentAmount = amount.doubleValue();
@@ -1105,11 +1100,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_repost).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     RepostClaimDialogFragment dialog = RepostClaimDialogFragment.newInstance(claim, claim -> {
                         Context context = getContext();
@@ -1128,11 +1118,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_edit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 Context context = getContext();
                 if (claim != null && context instanceof MainActivity) {
                     ((MainActivity) context).openPublishForm(claim);
@@ -1143,11 +1128,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_delete).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_file).
@@ -1166,11 +1146,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_unpublish).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_content).
@@ -1189,11 +1164,6 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_download).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 if (claim != null) {
                     if (downloadInProgress) {
                         onDownloadAborted();
@@ -2051,26 +2021,8 @@ public class FileViewFragment extends BaseFragment implements
                 root.findViewById(R.id.file_view_main_action_loading).setVisibility(View.VISIBLE);
             }
             if (claim.getFile() == null && !claim.isFree()) {
-                if (!Lbry.SDK_READY) {
-                    if (root != null) {
-                        Snackbar.make(root.findViewById(R.id.file_view_global_layout),
-                                R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    }
-                    restoreMainActionButton();
-                    return;
-                }
-
                 checkAndConfirmPurchaseUrl();
             } else {
-                if (claim != null && !claim.isPlayable() && !Lbry.SDK_READY) {
-                    if (root != null) {
-                        Snackbar.make(root.findViewById(R.id.file_view_global_layout),
-                                R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    }
-                    restoreMainActionButton();
-                    return;
-                }
-
                 handleMainActionForClaim();
             }
         } else {
@@ -2206,8 +2158,6 @@ public class FileViewFragment extends BaseFragment implements
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
                 playMedia();
-            } else {
-                Snackbar.make(getView().findViewById(R.id.file_view_global_layout), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
             }
         }
     }
@@ -3186,11 +3136,6 @@ public class FileViewFragment extends BaseFragment implements
         buttonPostComment.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Lbry.SDK_READY) {
-                    Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), R.string.sdk_initializing_functionality, Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-
                 validateAndCheckPostComment();
             }
         });

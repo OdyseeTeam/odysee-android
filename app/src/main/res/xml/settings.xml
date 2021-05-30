@@ -65,12 +65,6 @@
         android:title="@string/other"
         app:iconSpaceReserved="false">
         <SwitchPreferenceCompat
-            app:key="com.odysee.app.preference.other.KeepSdkInBackground"
-            app:title="@string/keep_sdk_in_background"
-            android:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false" />
-        <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.other.ParticipateInDataNetwork"
             app:title="@string/participate_in_data_network"
             app:iconSpaceReserved="false"

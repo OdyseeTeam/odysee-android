@@ -58,7 +58,6 @@
     <string name="related_content">Схожий контент</string>
     <string name="comments">Коментарі </string>
     <string name="no_comments">Нема коментарів, щоби показати зараз. </string>
-    <string name="sdk_initializing_comments">Коментарі будуть показані після ініціалізації сервісів. </string>
     <string name="comment_error">Ваш коментар не може бути опублікованим зараз. Будь ласка, спробуйте ще раз пізніше. </string>
     <string name="share_lbry_content">Поділитися контентом LBRY</string>
     <string name="view">Подивитись </string>
@@ -160,7 +159,6 @@
     <string name="video_optimized">Відео було успішно оптимізоване для кращого відображення на різних пристроях. Будь ласка, продовжіть для публікації Вашого контенту.</string>
     <string name="video_optimize_failed">Відео не може бути оптимізовано. Файл буде завантажений без змін.</string>
     <string name="completed_video_duration">Загальна тривалість відео: %1$s</string>
-    <string name="sdk_initializing_publish">Ви не можете публікувати контент прямо зараз, тому що фоновий сервіс все ще ініціалізується.</string>
     <string name="publish_successful">Ваш контент був успішно опублікований. Його поява у блокчейні може вимагати деякого часу. </string>
     <string name="transcode_in_progress">Відбувається оптимізація відео. Якщо хочете відмінити, нажміть Відмінити знизу. </string>
     <string name="optimization_in_progress">Відбувається оптимізація відео.</string>
@@ -251,7 +249,6 @@
     <string name="notifications">Повідомлення</string>
     <string name="subscriptions">Підписки</string>
     <string name="content_interests">Вподобання</string>
-    <string name="keep_sdk_in_background">Залишайте сервіс LBRY працювати у фоновому режимі для покращення роботи гаманця та мережі</string>
     <string name="participate_in_data_network">Приймати участь у мережі даних (потребує перезапуску додатку)</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Пошук</string>
@@ -270,8 +267,6 @@
     <string name="balance">Рахунок </string>
     <string name="convert_credits">Ви можете обміняти кредити на долари США та зняти ці гроші за допомогою обміннику. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Фоновий сервіс все ще ініціалізується. Ви можете шукати та переглядати у цей час.</string>
-    <string name="sdk_initializing_functionality">Ви не можете публікувати контент прямо зараз, тому що фоновий сервіс все ще ініціалізується.</string>
 
     <string name="backup_synced">Резервна копія вашого гаманця синхронізується з lbry.tv</string>
     <string name="backup_notsynced">На даний момент ваш гаманець не синхронізовано з lbry.tv. Ви несете відповідальність за створення резервної копії гаманця.</string>
@@ -618,7 +613,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Змінити налаштування надсилання повідомлень на пошту</string>
     <string name="app_version">Версія додатку</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Платформа</string>
     <string name="installation_id">ID інсталяції</string>
     <string name="firebase_token">Firebase Token</string>

@@ -58,7 +58,6 @@
     <string name="related_content">Conţinut asemănător</string>
     <string name="comments">Comentarii</string>
     <string name="no_comments">Nu sunt comentarii de afișat.</string>
-    <string name="sdk_initializing_comments">Comentariile vor fi afișate după inițializarea serviciului din fundal.</string>
     <string name="comment_error">Comentariul nu a putut fi publicat. Reîncearcă mai târziu.</string>
     <string name="share_lbry_content">Partajare conținut LBRY</string>
     <string name="view">Afişare</string>
@@ -154,7 +153,6 @@
     <string name="video_optimized">Videoclipul a fost optimizat pentru o redare mai bună pe cât mai multe dispozitive posibile. Continuă publicarea conținutului.</string>
     <string name="video_optimize_failed">Videoclipul nu a putut fi optimizat. Fișierul va fi încărcat fără modificări.</string>
     <string name="completed_video_duration">Durată videoclip finalizat: %1$s</string>
-    <string name="sdk_initializing_publish">Așteaptă finalizarea inițializării serviciului din fundal pentru a putea publica.</string>
     <string name="publish_successful">Conținutul a fost publicat. Mai durează puțin până când apare în rețea.</string>
     <string name="transcode_in_progress">Optimizarea videoclipului se execută. Dacă dorești anularea, apasă pe «Anulare» mai jos.</string>
     <string name="optimization_in_progress">Optimizarea videoclipului se execută.</string>
@@ -243,7 +241,6 @@
     <string name="notifications">Notificări</string>
     <string name="subscriptions">Abonări</string>
     <string name="content_interests">Conţinut preferat</string>
-    <string name="keep_sdk_in_background">Păstrează serviciul LBRY activ în fundal pentru o performanţă a portofelului şi reţelei  mai bună</string>
     <string name="participate_in_data_network">Participă la rețeaua de date (aplicația și serviciul din fundal trebuie repornite).</string>
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Căutare</string>
@@ -262,8 +259,6 @@
     <string name="balance">Sold</string>
     <string name="convert_credits">Îţi poţi converti creditele în USD şi să retragi suma folosind o casă de schimb. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Detalii&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Schimbă creditele în USD la Bittrex&lt;/a&gt;</string>
-    <string name="sdk_still_initializing">Serviciul din fundal încă se iniţializează. Poţi explora şi vedea conţinut între timp.</string>
-    <string name="sdk_initializing_functionality">Nu poţi face asta acum deoarce serviciul din fundal încă se iniţializează.</string>
 
     <string name="backup_synced">O copie a portofelului este sincronizată cu lbry.tv</string>
     <string name="backup_notsynced">Portofelul nu este sincronizat cu lbry.tv. Ești răspunzător de conservarea sa. Fă-i o copie de siguranţă.</string>
@@ -580,7 +575,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Actualizare preferințe e-mail</string>
     <string name="app_version">Versiune</string>
-    <string name="lbry_sdk">SDK LBRY</string>
     <string name="platform">Platforma</string>
     <string name="installation_id">ID instalare</string>
     <string name="firebase_token">Cheie Firebase</string>

@@ -61,7 +61,6 @@
     <string name="related_content">Conteúdo Relacionado</string>
     <string name="comments">Comentarios</string>
     <string name="no_comments">Não há comentários para exibir no momento.</string>
-    <string name="sdk_initializing_comments">Os comentários serão exibidos depois que o serviço de segundo plano for inicializado.</string>
     <string name="comment_error">Seu comentário não pôde ser postado neste momento. Por favor, tente novamente mais tarde.</string>
     <string name="share_lbry_content">Compartilhe conteúdo LBRY</string>
     <string name="view">Visualização</string>
@@ -154,7 +153,6 @@
     <string name="video_optimized">Seu vídeo foi otimizado com sucesso para melhor reprodução em tantos dispositivos quanto possível. Prossiga para publicar seu conteúdo.</string>
     <string name="video_optimize_failed">Seu vídeo não pôde ser otimizado. O arquivo será carregado sem alterações.</string>
     <string name="completed_video_duration">Duração do vídeo concluído: %1$s</string>
-    <string name="sdk_initializing_publish">Você não pode publicar conteúdo agora porque o serviço de segundo plano ainda está inicializando.</string>
     <string name="publish_successful">Seu conteúdo foi publicado com sucesso. Pode demorar alguns minutos para aparecer na blockchain.</string>
     <string name="transcode_in_progress">A otimização do vídeo está em andamento. Se você deseja cancelar, pressione Cancelar na parte inferior da página.</string>
     <string name="optimization_in_progress">A otimização do vídeo está em andamento.</string>
@@ -245,7 +243,6 @@
     <string name="content_interests">Interesses de Conteúdo</string>
     <string name="mini_player_bottom_spacing">Espaçamento inferior do mini player</string>
 
-    <string name="keep_sdk_in_background">Mantenha o serviço LBRY em execução em segundo plano para melhorar o desempenho da carteira e da rede</string>
     <string name="participate_in_data_network">Participar da rede de dados (requer reinicialização do aplicativo e do serviço em segundo plano)</string>
     <string name="send_buffering_events">Envie eventos de buffer para servidores LBRY</string>
 
@@ -266,9 +263,6 @@
     <string name="balance">Saldo</string>
     <string name="convert_credits">Você pode converter seus créditos em USD e retirar o valor convertido usando uma exchange. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Saiba mais&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converter creditos para USD no Bittrex&lt;/a&gt;</string>
-    <string name="sdk_initializing">O serviço de segundo plano está sendo inicializado....</string>
-    <string name="sdk_still_initializing">O serviço de segundo plano ainda está sendo inicializado. Você pode explorar conteúdos incríveis nesse meio tempo.</string>
-    <string name="sdk_initializing_functionality">Você não pode fazer isso agora porque o serviço de segundo plano ainda está sendo inicializado.</string>
 
     <string name="backup_synced">Um backup de sua carteira é sincronizado com lbry.tv</string>
     <string name="backup_notsynced">Sua carteira não está sincronizada com lbry.tv. Você é responsável por fazer o backup de sua carteira.</string>
@@ -611,7 +605,6 @@
     <string name="about_link_twitter">&lt;a href=\"https://twitter.com/LBRYio\"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Atualize as preferências do email</string>
     <string name="app_version">Versão do App</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Plataforma</string>
     <string name="installation_id">ID de instalação</string>
     <string name="firebase_token">Firebase Token</string>

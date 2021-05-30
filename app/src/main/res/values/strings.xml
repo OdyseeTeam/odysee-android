@@ -76,7 +76,6 @@
     <string name="related_content">Related Content</string>
     <string name="comments">Comments</string>
     <string name="no_comments">No comments to display at this time.</string>
-    <string name="sdk_initializing_comments">Comments will display after the background service is initialized.</string>
     <string name="comment_error">Your comment could not be posted at this time. Please try again later.</string>
     <string name="channel_disabled_comments">This channel has disabled comments on their page.</string>
     <string name="creator_disabled_comments">The creator of this content has disabled comments.</string>
@@ -177,7 +176,6 @@
     <string name="video_optimized">Your video was successfully optimized for better playback across as many devices as possible. Please proceed to publish your content.</string>
     <string name="video_optimize_failed">Your video could not be optimized. The file will be uploaded with no changes.</string>
     <string name="completed_video_duration">Completed Video Duration: %1$s</string>
-    <string name="sdk_initializing_publish">You cannot publish content right now because the background service is still initializing.</string>
     <string name="publish_successful">Your content was successfully published. It may take a few moments to appear on the blockchain.</string>
     <string name="transcode_in_progress">Video optimization is in progress. If you wish to cancel, press Cancel at the bottom of the page.</string>
     <string name="optimization_in_progress">Video optimization is in progress.</string>
@@ -272,7 +270,6 @@
     <string name="content_interests">Content Interests</string>
     <string name="mini_player_bottom_spacing">Mini-player bottom spacing</string>
 
-    <string name="keep_sdk_in_background">Keep the LBRY service running in the background for improved wallet and network performance</string>
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
     <string name="send_buffering_events">Send buffering events to LBRY servers</string>
 
@@ -304,9 +301,6 @@
     <string name="unlock_to_spend">(Unlock to spend)</string>
     <string name="delete_or_edit_past_content">(Delete or edit past content to spend)</string>
     <string name="delete_supports_to_spend">(Delete supports to spend)</string>
-    <string name="sdk_initializing">The background service is initializing…</string>
-    <string name="sdk_still_initializing">The background service is still initializing. You can explore and watch content in the mean time.</string>
-    <string name="sdk_initializing_functionality">You cannot do this right now because the background service is still initializing.</string>
 
     <string name="backup_synced">A backup of your wallet is synced with lbry.tv</string>
     <string name="backup_notsynced">Your wallet is not currently synced with lbry.tv. You are responsible for backing up your wallet.</string>
@@ -656,7 +650,6 @@
     <string name="about_link_twitter">&lt;a href="https://twitter.com/LBRYio"&gt;Twitter&lt;/a&gt;</string>
     <string name="update_mailing_preferences">Update mailing preferences</string>
     <string name="app_version">App version</string>
-    <string name="lbry_sdk">LBRY SDK</string>
     <string name="platform">Platform</string>
     <string name="installation_id">Installation ID</string>
     <string name="firebase_token">Firebase Token</string>
