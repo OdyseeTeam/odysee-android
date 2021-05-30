@@ -1,34 +1,29 @@
-# LBRY Android
-[![pipeline status](https://ci.lbry.tech/lbry/lbry-android/badges/master/pipeline.svg)](https://ci.lbry.tech/lbry/lbry-android/commits/master)
-[![GitHub license](https://img.shields.io/github/license/lbryio/lbry-android)](https://github.com/lbryio/lbry-android/blob/master/LICENSE)
+# Odysee Android
 
-An Android browser and wallet for the [LBRY](https://lbry.com) network.
+## Release
+To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit app/build.gradle file the following way:
 
+``
+android {
+    signingConfigs {
+        release {
+            storeFile file('<<put full path to the .JKS Java keychain file>>')
+            storePassword '<<password of the file>>'
+            keyAlias '<<the alias you chose for the digital signature>>'
+            keyPassword '<<the password for the key>>'
+        }
+    }
+(...)
 
-<img src="https://spee.ch/@lbry:3f/android-08-homepage.gif" alt="LBRY Android GIF" width="384px" />
+    buildTypes {
+      release {
+          (...)
+          debuggable false
+          signingConfig signingConfigs.release
+      }
+``
 
-
-## Installation
-The minimum supported Android version is 5.0 Lollipop. There are two ways to install:
-
-1. Via the Google Play Store. Anyone can join the [open beta](https://play.google.com/apps/testing/io.lbry.browser) in order to install the app from the Play Store.
-1. Direct APK install available at [http://build.lbry.io/android/latest.apk](http://build.lbry.io/android/latest.apk). You will need to enable installation from third-party sources on your device in order to install from this source.
-
-## Usage
-The app can be launched by opening **LBRY** from the device's app drawer or via the shortcut on the home screen if that was created upon installation.
-
-## Running from Source
-Clone the repository and open the project in Android Studio. Android Studio will automatically run the initial build process.
-
-Create file 'twitter.properties' in app/ folder with the following content:
-
-```
-twitterConsumerKey=XXXXXX
-
-twitterConsumerSecret=XXXXXX
-```
-
-Click the Sync button and when process finishes, the Run button to launch the app on your simulator or connected debugging device after the build process is complete.
+Then you will be able to build a signed APK file via Build/Generate Signed Bundle/APK... menu item on Android Studio
 
 ## Contributing
 Contributions to this project are welcome, encouraged, and compensated. For more details, see https://lbry.io/faq/contributing
