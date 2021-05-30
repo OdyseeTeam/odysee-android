@@ -28,8 +28,6 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <include layout="@layout/container_sdk_initializing" />
-
     <RelativeLayout
         android:id="@+id/invites_account_driver_container"
         android:background="@color/lbryGreen"

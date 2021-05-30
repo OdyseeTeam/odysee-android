@@ -63,14 +63,11 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
         fabNewChannel.setOnClickListener(newChannelClickListener);
 
         emptyView = root.findViewById(R.id.channel_manager_empty_container);
-        layoutSdkInitializing = root.findViewById(R.id.container_sdk_initializing);
         channelList = root.findViewById(R.id.channel_manager_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         channelList.setLayoutManager(llm);
         loading = root.findViewById(R.id.channel_manager_list_loading);
         bigLoading = root.findViewById(R.id.channel_manager_list_big_loading);
-
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
 
         return root;
     }
@@ -105,7 +102,6 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
     }
 
     public void onSdkReady() {
-        Helper.setViewVisibility(layoutSdkInitializing, View.GONE);
         Helper.setViewVisibility(fabNewChannel, View.VISIBLE);
         if (adapter != null && channelList != null) {
             channelList.setAdapter(adapter);

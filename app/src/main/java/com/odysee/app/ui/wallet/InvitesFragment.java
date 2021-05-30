@@ -87,7 +87,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         View root = inflater.inflate(R.layout.fragment_invites, container, false);
 
         layoutAccountDriver = root.findViewById(R.id.invites_account_driver_container);
-        layoutSdkInitializing = root.findViewById(R.id.container_sdk_initializing);
         textLearnMoreLink = root.findViewById(R.id.invites_account_driver_learn_more);
         buttonGetStarted = root.findViewById(R.id.invites_get_started_button);
         rewardDriverCard = root.findViewById(R.id.reward_driver_card);
@@ -124,7 +123,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
     private void initUi() {
         layoutAccountDriver.setVisibility(Lbryio.isSignedIn() ? View.GONE : View.VISIBLE);
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
         Helper.applyHtmlForTextView(textLearnMoreLink);
 
         rewardDriverCard.setOnClickListener(new View.OnClickListener() {
@@ -311,7 +309,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
     }
 
     public void onSdkReady() {
-        Helper.setViewVisibility(layoutSdkInitializing, View.GONE);
         fetchChannels();
     }
 

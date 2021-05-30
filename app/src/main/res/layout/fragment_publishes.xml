@@ -61,7 +61,6 @@
                 android:text="@string/new_publish"  />
         </LinearLayout>
     </RelativeLayout>
-    <include layout="@layout/container_sdk_initializing" />
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/publishes_fab_new_publish"
         android:layout_width="wrap_content"

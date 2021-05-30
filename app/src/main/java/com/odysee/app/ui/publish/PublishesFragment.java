@@ -62,14 +62,11 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
         fabNewPublish.setOnClickListener(newPublishClickListener);
 
         emptyView = root.findViewById(R.id.publishes_empty_container);
-        layoutSdkInitializing = root.findViewById(R.id.container_sdk_initializing);
         contentList = root.findViewById(R.id.publishes_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         contentList.setLayoutManager(llm);
         loading = root.findViewById(R.id.publishes_list_loading);
         bigLoading = root.findViewById(R.id.publishes_list_big_loading);
-
-        layoutSdkInitializing.setVisibility(Lbry.SDK_READY ? View.GONE : View.VISIBLE);
 
         return root;
     }
