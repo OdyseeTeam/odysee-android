@@ -77,13 +77,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:id="@+id/signin_password"
             style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
-            android:enabled="false">
+            android:enabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:id="@+id/signin_password"
                 android:inputType="textPassword" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -147,7 +147,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/email_sent_to"
-            android:textColor="@color/signin_text"
+            android:textColor="@color/joinodysee_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -160,7 +160,7 @@
             android:fontFamily="@font/inter"
             android:singleLine="true"
             android:textAlignment="center"
-            android:textColor="@color/signin_text"
+            android:textColor="@color/joinodysee_text"
             android:textFontWeight="300"
             android:textSize="20sp" />
 
@@ -170,7 +170,7 @@
             android:layout_marginTop="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/please_click_link"
-            android:textColor="@color/signin_text"
+            android:textColor="@color/joinodysee_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -204,7 +204,7 @@
                 android:fontFamily="@font/inter"
                 android:gravity="right"
                 android:text="@string/edit"
-                android:textColor="@color/signin_text"
+                android:textColor="@color/joinodysee_text"
                 android:textFontWeight="300" />
         </LinearLayout>
     </LinearLayout>

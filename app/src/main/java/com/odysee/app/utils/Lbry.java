@@ -144,7 +144,7 @@ public final class Lbry {
 
         String authToken = "";
 
-        if (params != null && params.containsKey("auth_token")) {
+        if (params != null && params.containsKey("auth_token") && params.get("auth_token") != null) {
             authToken = params.get("auth_token").toString();
             params.remove("auth_token");
         }
