@@ -206,6 +206,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             if (contracted) {
                 holder.commentTimeView.setVisibility(View.GONE);
                 holder.commentActions.setVisibility(View.GONE);
+                holder.channelName.setVisibility(View.GONE);
 //                holder.itemView.setOnClickListener(new View.OnClickListener() {
 //                    @Override
 //                    public void onClick(View view) {
@@ -220,6 +221,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             } else {
                 holder.commentTimeView.setVisibility(View.VISIBLE);
                 holder.commentActions.setVisibility(View.VISIBLE);
+                holder.channelName.setVisibility(View.VISIBLE);
             }
 
             if (expandingViewListener != null)
