@@ -145,6 +145,11 @@ public class SignInActivity extends Activity {
     }
 
     private void performSignIn(String email, String password, String authToken) {
+        View progressView = findViewById(R.id.password_signin_progress);
+        TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
+        findViewById(R.id.signin_buttons).setVisibility(View.GONE);
+        progressView.setVisibility(View.VISIBLE);
+
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Callable<Boolean> callable = () -> {
             Map<String, String> options = new HashMap<String, String>();
@@ -183,6 +188,8 @@ public class SignInActivity extends Activity {
                     @Override
                     public void onSuccess() {
                         TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
+                        findViewById(R.id.signin_buttons).setVisibility(View.VISIBLE);
+                        progressView.setVisibility(View.GONE);
                         layoutCollect.setVisibility(View.GONE);
                         layoutVerify.setVisibility(View.VISIBLE);
                         Helper.setViewText(textAddedEmail, currentEmail);

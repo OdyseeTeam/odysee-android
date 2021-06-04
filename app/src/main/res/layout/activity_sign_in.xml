@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/verification_activity"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -88,6 +89,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
+            android:id="@+id/signin_buttons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
@@ -116,6 +118,13 @@
                 android:text="@string/sign_in" />
 
         </LinearLayout>
+        <ProgressBar
+            android:id="@+id/password_signin_progress"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true" />
         <TextView
             android:id="@+id/agree_to_terms_note"
             android:layout_width="match_parent"
