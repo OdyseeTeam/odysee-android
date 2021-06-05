@@ -3,7 +3,6 @@ package com.odysee.app.ui.findcontent;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,8 +12,10 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
@@ -66,7 +67,7 @@ import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.ui.PlayerControlView;
+//import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
@@ -87,6 +88,7 @@ import org.commonmark.renderer.html.AttributeProvider;
 import org.commonmark.renderer.html.AttributeProviderContext;
 import org.commonmark.renderer.html.AttributeProviderFactory;
 import org.commonmark.renderer.html.HtmlRenderer;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -98,6 +100,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -167,6 +170,8 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
+import okhttp3.Response;
+
 import static com.odysee.app.utils.Lbry.TAG;
 
 public class FileViewFragment extends BaseFragment implements
@@ -181,22 +186,21 @@ public class FileViewFragment extends BaseFragment implements
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
 
-    private PlayerControlView castControlView;
+//    private PlayerControlView castControlView;
     private Player currentPlayer;
     private boolean loadingNewClaim;
-    private boolean startDownloadPending;
-    private boolean fileGetPending;
+//    private boolean startDownloadPending;
+//    private boolean fileGetPending;
     private boolean downloadInProgress;
     private boolean downloadRequested;
-    private boolean loadFilePending;
+//    private boolean loadFilePending;
     private boolean isPlaying;
-    private boolean resolving;
-    private boolean initialFileLoadDone;
+//    private boolean resolving;
+//    private boolean initialFileLoadDone;
     private Claim claim;
     private String currentUrl;
     private ClaimListAdapter relatedContentAdapter;
     private CommentListAdapter commentListAdapter;
-    private BroadcastReceiver sdkReceiver;
     private Player.EventListener fileViewPlayerListener;
 
     private NestedScrollView scrollView;
@@ -461,7 +465,7 @@ public class FileViewFragment extends BaseFragment implements
                 onNewClaim(currentUrl);
                 if (Lbry.claimCache.containsKey(key)) {
                     claim = Lbry.claimCache.get(key);
-                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
+                    if (claim != null && Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
                         claim = claim.getRepostedClaim();
                         if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
                             // Invalid repost, probably
@@ -504,7 +508,7 @@ public class FileViewFragment extends BaseFragment implements
                 if (claim.getFile() == null) {
                     loadFile();
                 } else {
-                    initialFileLoadDone = true;
+//                    initialFileLoadDone = true;
                 }
             }
         }
@@ -563,19 +567,17 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NotNull View v, Bundle savedInstanceState) {
+        super.onViewCreated(v, savedInstanceState);
         if (savedInstanceState != null) {
             currentUrl = savedInstanceState.getString("url");
         }
     }
 
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
+    public void onSaveInstanceState(@NotNull Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
-        if (savedInstanceState != null) {
-            savedInstanceState.putString("url", currentUrl);
-        }
+        savedInstanceState.putString("url", currentUrl);
     }
 
     private void initWebView(View root) {
@@ -628,7 +630,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void onNewClaim(String url) {
         loadingNewClaim = true;
-        initialFileLoadDone = false;
+//        initialFileLoadDone = false;
         playbackStarted = false;
         currentUrl = url;
         logUrlEvent(url);
@@ -677,11 +679,11 @@ public class FileViewFragment extends BaseFragment implements
     private void loadFile() {
         if (!Lbry.SDK_READY) {
             // make use of the lbry.tv streaming URL
-            loadFilePending = true;
+//            loadFilePending = true;
             return;
         }
 
-        loadFilePending = false;
+//        loadFilePending = false;
         String claimId = claim.getClaimId();
         FileListTask task = new FileListTask(claimId, null, new FileListTask.FileListResultHandler() {
             @Override
@@ -698,17 +700,17 @@ public class FileViewFragment extends BaseFragment implements
                     }
                 }
 
-                initialFileLoadDone = true;
+//                initialFileLoadDone = true;
             }
 
             @Override
             public void onError(Exception error) {
-                initialFileLoadDone = true;
+//                initialFileLoadDone = true;
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
-
+/*
     public void openClaimUrl(String url) {
         resetViewCount();
         resetFee();
@@ -756,7 +758,7 @@ public class FileViewFragment extends BaseFragment implements
         }
         resetPlayer();
     }
-
+*/
     public void onResume() {
         super.onResume();
         checkParams();
@@ -889,12 +891,12 @@ public class FileViewFragment extends BaseFragment implements
                             .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    doFollowUnfollow(isFollowing, view);
+                                    doFollowUnfollow(true, view);
                                 }
                             }).setNegativeButton(R.string.no, null);
                     builder.show();
                 } else {
-                    doFollowUnfollow(isFollowing, view);
+                    doFollowUnfollow(false, view);
                 }
             }
         }
@@ -935,7 +937,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void resolveUrl(String url) {
-        resolving = true;
+//        resolving = true;
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
@@ -985,7 +987,7 @@ public class FileViewFragment extends BaseFragment implements
 
             @Override
             public void onError(Exception error) {
-                resolving = false;
+//                resolving = false;
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -1342,7 +1344,7 @@ public class FileViewFragment extends BaseFragment implements
                 return;
             }
 
-            startDownloadPending = true;
+//            startDownloadPending = true;
             MainActivity.requestPermission(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
@@ -1363,7 +1365,7 @@ public class FileViewFragment extends BaseFragment implements
 
             try {
                 if (context != null) {
-                    fileGetPending = true;
+//                    fileGetPending = true;
                     MainActivity.requestPermission(
                             Manifest.permission.WRITE_EXTERNAL_STORAGE,
                             MainActivity.REQUEST_STORAGE_PERMISSION,
@@ -1384,8 +1386,8 @@ public class FileViewFragment extends BaseFragment implements
     }
     public void onStoragePermissionRefused() {
         storagePermissionRefusedOnce = true;
-        fileGetPending = false;
-        startDownloadPending = false;
+//        fileGetPending = false;
+//        startDownloadPending = false;
         onDownloadAborted();
 
         showStoragePermissionRefusedError();
@@ -1767,19 +1769,17 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         // View management.
-        if (currentPlayer == MainActivity.appPlayer) {
-            //localPlayerView.setVisibility(View.VISIBLE);
-            castControlView.hide();
-            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast);
-        } else /* currentPlayer == castPlayer */ {
-            castControlView.show();
-            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast_connected);
-        }
+//        if (currentPlayer == MainActivity.appPlayer) {
+//            //localPlayerView.setVisibility(View.VISIBLE);
+//            castControlView.hide();
+//            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast);
+//        } else /* currentPlayer == castPlayer */ {
+//            castControlView.show();
+//            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast_connected);
+//        }
 
         // Player state management.
         long playbackPositionMs = C.TIME_UNSET;
-        int windowIndex = C.INDEX_UNSET;
-        boolean playWhenReady = false;
 
         Player previousPlayer = this.currentPlayer;
         if (previousPlayer != null) {
@@ -1787,7 +1787,6 @@ public class FileViewFragment extends BaseFragment implements
             int playbackState = previousPlayer.getPlaybackState();
             if (playbackState != Player.STATE_ENDED) {
                 playbackPositionMs = previousPlayer.getCurrentPosition();
-                playWhenReady = previousPlayer.getPlayWhenReady();
             }
             previousPlayer.stop(true);
         }
@@ -1855,30 +1854,29 @@ public class FileViewFragment extends BaseFragment implements
 
         Callable<Integer[]> callable = () -> {
             Integer[] reactions = { 0, 0, 0, 0};
-            Map<String, String> options = new HashMap<String, String>();
+            Map<String, String> options = new HashMap<>();
             options.put("claim_ids", c.getClaimId());
 
-            JSONObject data = null;
-            Integer likeReactionsCount;
+            JSONObject data;
             try {
                 data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
 
                 if (data != null && data.has("others_reactions")) {
                     JSONObject othersReactions = (JSONObject) data.get("others_reactions");
                     if (othersReactions.has(c.getClaimId())) {
-                        Integer likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                        int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
                         reactions[0] = likesFromOthers;
-                        Integer dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                        int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
                         reactions[1] = dislikesFromOthers;
                     }
                 }
                 if (data != null && data.has("my_reactions")) {
                     JSONObject othersReactions = (JSONObject) data.get("my_reactions");
                     if (othersReactions.has(claim.getClaimId())) {
-                        Integer likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                        int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
                         reactions[2] = likes;
                         c.setLiked(likes > 0);
-                        Integer dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                        int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
                         reactions[3] = dislikes;
                         c.setDisliked(dislikes > 0);
                         // We want to show total amount, not just other's reactions
@@ -1894,27 +1892,39 @@ public class FileViewFragment extends BaseFragment implements
 
         Future<Integer[]> futureReactions = executor.submit(callable);
 
-        Integer[] result = null;
+        Integer[] result;
 
         try {
             result = futureReactions.get();
-            likeReactionAmount.setText(result[0].toString());
-            dislikeReactionAmount.setText(result[1].toString());
+            likeReactionAmount.setText(String.valueOf(result[0]));
+            dislikeReactionAmount.setText(String.valueOf(result[1]));
 
-            if (result[2] != 0) {
-                likeReactionIcon.setColorFilter(getContext().getColor(R.color.fireActive), PorterDuff.Mode.SRC_IN);
-                likeReactionAmount.setTextColor(getContext().getColor(R.color.fireActive));
+            int inactiveColor;
+            int fireActive;
+            int slimeActive;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                inactiveColor = getContext().getColor(R.color.darkForeground);
+                fireActive = getContext().getColor(R.color.fireActive);
+                slimeActive = getContext().getColor(R.color.slimeActive);
             } else {
-                likeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
-                likeReactionAmount.setTextColor(getContext().getColor(R.color.darkForeground));
+                inactiveColor = getResources().getColor(R.color.darkForeground);
+                fireActive = getResources().getColor(R.color.fireActive);
+                slimeActive = getResources().getColor(R.color.slimeActive);
+            }
+            if (result[2] != 0) {
+                likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
+                likeReactionAmount.setTextColor(fireActive);
+            } else {
+                likeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                likeReactionAmount.setTextColor(inactiveColor);
             }
 
             if (result[3] != 0) {
-                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.slimeActive), PorterDuff.Mode.SRC_IN);
-                dislikeReactionAmount.setTextColor(getContext().getColor(R.color.slimeActive));
+                dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
+                dislikeReactionAmount.setTextColor(slimeActive);
             } else {
-                dislikeReactionIcon.setColorFilter(getContext().getColor(R.color.darkForeground), PorterDuff.Mode.SRC_IN);
-                dislikeReactionAmount.setTextColor(getContext().getColor(R.color.darkForeground));
+                dislikeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                dislikeReactionAmount.setTextColor(inactiveColor);
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -1940,7 +1950,7 @@ public class FileViewFragment extends BaseFragment implements
         Future<Map<String, Reactions>> future = executor.submit(() -> {
             Comments.checkCommentsEndpointStatus();
             JSONObject jsonParams = new JSONObject();
-            jsonParams.put("comment_ids", String.join(",", commentIds));
+            jsonParams.put("comment_ids", TextUtils.join(",", commentIds));
 
             AccountManager am = AccountManager.get(getContext());
             if (am.getAccounts().length > 0) {
@@ -1961,7 +1971,7 @@ public class FileViewFragment extends BaseFragment implements
 
             Map<String, Reactions> result = new HashMap<>();
             try {
-                okhttp3.Response response = Comments.performRequest(jsonParams, "reaction.List");
+                Response response = Comments.performRequest(jsonParams, "reaction.List");
                 String responseString = response.body().string();
                 response.close();
 
@@ -1971,24 +1981,48 @@ public class FileViewFragment extends BaseFragment implements
                     JSONObject jsonResult = jsonResponse.getJSONObject("result");
                     if (jsonResult.has("others_reactions")) {
                         JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
-                        responseOthersReactions.keys().forEachRemaining(key -> {
-                            try {
-                                JSONObject value = (JSONObject) responseOthersReactions.get(key);
-                                Reactions reactions = new Reactions(value.getInt("like"), value.getInt("dislike"));
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            responseOthersReactions.keys().forEachRemaining(key -> {
+                                try {
+                                    JSONObject value = (JSONObject) responseOthersReactions.get(key);
+                                    Reactions reactions = getReactionsForValue(value);
 
-                                if (jsonResult.has("my_reactions")) {
-                                    JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
-                                    if (responseMyReactions != null && responseMyReactions.has(key)) {
-                                        JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
-                                        reactions.setLiked(myReaction.getInt("like") > 0);
-                                        reactions.setDisliked(myReaction.getInt("dislike") > 0);
+                                    if (jsonResult.has("my_reactions")) {
+                                        JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
+                                        if (responseMyReactions != null && responseMyReactions.has(key)) {
+                                            JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
+                                            reactions.setLiked(myReaction.getInt("like") > 0);
+                                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
+                                        }
                                     }
+                                    result.put(key, reactions);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
                                 }
-                                result.put(key, reactions);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+                            });
+                        } else {
+                            Iterator<String> itr = responseOthersReactions.keys();
+                            // Android versions prior to API 24 lack forEachRemaining()
+                            while (itr.hasNext()) {
+                                try {
+                                    String nextKey = itr.next();
+                                    JSONObject value = (JSONObject) responseOthersReactions.get(nextKey);
+                                    Reactions reactions = getReactionsForValue(value);
+
+                                    if (jsonResult.has("my_reactions")) {
+                                        JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
+                                        if (responseMyReactions != null && responseMyReactions.has(nextKey)) {
+                                            JSONObject myReaction = (JSONObject) responseMyReactions.get(nextKey);
+                                            reactions.setLiked(myReaction.getInt("like") > 0);
+                                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
+                                        }
+                                    }
+                                    result.put(nextKey, reactions);
+                                } catch (JSONException e) {
+                                    Log.e(TAG, "loadReactions: ".concat(e.getLocalizedMessage()));
+                                }
                             }
-                        });
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -2005,6 +2039,20 @@ public class FileViewFragment extends BaseFragment implements
             return null;
         }
     }
+
+
+    private Reactions getReactionsForValue(JSONObject value) {
+        try {
+            return new Reactions(value.getInt("like"), value.getInt("dislike"));
+        } catch (JSONException e) {
+            Log.e(TAG, "getReactionsForValue: ".concat(e.getLocalizedMessage()));
+            return null;
+        }
+    }
+
+
+
+
     private void onMainActionButtonClicked() {
         // Check if the claim is free
         Claim.GenericMetadata metadata = claim.getValue();
@@ -2442,7 +2490,7 @@ public class FileViewFragment extends BaseFragment implements
     private void loadComments() {
         View root = getView();
         ProgressBar commentsLoading = root.findViewById(R.id.file_view_comments_progress);
-        if (claim != null && root != null) {
+        if (claim != null) {
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
@@ -3366,7 +3414,7 @@ public class FileViewFragment extends BaseFragment implements
 
             JSONObject data = null;
             try {
-                if (am != null && am.getAccounts().length > 0) {
+                if (am.getAccounts().length > 0) {
                     okhttp3.Response response = Comments.performRequest(options, "reaction.React");
                     String responseString = response.body().string();
                     response.close();
@@ -3388,7 +3436,7 @@ public class FileViewFragment extends BaseFragment implements
 
         Future<Boolean> futureReactions = executor.submit(callable);
 
-        Boolean result = null;
+        Boolean result;
 
         try {
             result = futureReactions.get();
@@ -3406,7 +3454,7 @@ public class FileViewFragment extends BaseFragment implements
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         Callable<Boolean> callable = () -> {
-            Map<String, String> options = new HashMap<String, String>();
+            Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
@@ -3425,7 +3473,7 @@ public class FileViewFragment extends BaseFragment implements
 
         Future<Boolean> futureReactions = executor.submit(callable);
 
-        Boolean result = null;
+        Boolean result;
 
         try {
             result = futureReactions.get();
