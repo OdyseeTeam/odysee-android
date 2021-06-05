@@ -20,7 +20,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override
                 public void uncaughtException(Thread thread, Throwable throwable) {
-                    Log.e("Uncaught sync exception, suppressing UI in release build.", throwable.getLocalizedMessage());
+                    Log.e("SyncAdapter", throwable.getLocalizedMessage());
                 }
             });
         }
