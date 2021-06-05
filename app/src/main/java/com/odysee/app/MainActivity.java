@@ -2658,7 +2658,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
-        accountManager.removeAccountExplicitly(accountManager.getAccounts()[0]);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            accountManager.removeAccountExplicitly(accountManager.getAccounts()[0]);
+        } else {
+            accountManager.removeAccount(accountManager.getAccounts()[0], null, null);
+        }
         updateWalletBalance(); // Force wallet to be updated so certain views are no longer shown
 
         try {
