@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.widget.TextView;
@@ -16,6 +17,7 @@ import androidx.annotation.Nullable;
 
 import com.odysee.app.R;
 
+@SuppressLint("AppCompatCustomView")
 public class CreditsBalanceView extends TextView {
     float textFontSize;
     private float iconSize;
@@ -38,7 +40,14 @@ public class CreditsBalanceView extends TextView {
             iconSize = a.getDimension(R.styleable.CreditsBalanceView_iconSize, 20f);
 
             this.setTextSize((int) textFontSize);
-            this.setTextColor(getResources().getColor(R.color.credits_view, context.getTheme()));
+
+            int textColor;
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                textColor = getResources().getColor(R.color.credits_view, context.getTheme());
+            } else {
+                textColor = getResources().getColor(R.color.credits_view);
+            }
+            this.setTextColor(textColor);
 
             DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
             float px = 8 * (metrics.densityDpi / 160f);
