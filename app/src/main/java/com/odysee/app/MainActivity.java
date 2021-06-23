@@ -624,8 +624,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         closeButton.performClick();
                         hideNotifications();
-//                        openFragment(RewardsFragment.class, true, null);
-                        startActivity(new Intent(view.getContext(), ComingSoon.class));
+                        openFragment(RewardsFragment.class, true, null);
+//                        startActivity(new Intent(view.getContext(), ComingSoon.class));
                     }
                 });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
@@ -2085,7 +2085,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                     if (bottomNavigation.getSelectedItemId() == findViewById(R.id.action_wallet_menu).getId()) {
                         Fragment walletFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container_main_activity);
-                        ((WalletFragment) walletFragment).onWalletBalanceUpdated(balance);
+                        if (walletFragment != null) {
+                            ((WalletFragment) walletFragment).onWalletBalanceUpdated(balance);
+                        }
                     }
                 } else {
                     hideWalletBalance();
