@@ -3,7 +3,7 @@
 ## Release
 To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit app/build.gradle file the following way:
 
-``
+```groovy
 android {
     signingConfigs {
         release {
@@ -21,7 +21,7 @@ android {
           debuggable false
           signingConfig signingConfigs.release
       }
-``
+```
 
 Then you will be able to build a signed APK file via Build/Generate Signed Bundle/APK... menu item on Android Studio
 
