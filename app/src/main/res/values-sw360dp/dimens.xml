@@ -3,4 +3,5 @@
     <dimen name="claim_publisher_text_size">14sp</dimen>
     <dimen name="claim_duration_text_size">14sp</dimen>
     <dimen name="claim_title_text_size">16sp</dimen>
+    <dimen name="claim_listitem_title_margin_end">8dp</dimen>
 </resources>
