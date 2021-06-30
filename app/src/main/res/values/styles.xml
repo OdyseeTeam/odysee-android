@@ -50,4 +50,12 @@
         <item name="android:textSize">16sp</item>
         <item name="android:layout_marginBottom">16dp</item>
     </style>
+    <style name="Respost_info_Textviews">
+        <item name="android:textColor">@color/lightForeground</item>
+        <item name="textSize">@dimen/repost_info_textsize</item>
+    </style>
+    <style name="List_item_Layout">
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
 </resources>

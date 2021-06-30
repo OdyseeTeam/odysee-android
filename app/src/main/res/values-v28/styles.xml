@@ -4,8 +4,16 @@
         <item name="android:textFontWeight">300</item>
     </style>
     <style name="Claim_Title">
-        <item name="android:textFontWeight">800</item>
+        <item name="android:textFontWeight">@dimen/claim_title_textfontweight</item>
         <item name="android:textSize">@dimen/claim_title_text_size</item>
         <item name="android:layout_marginEnd">@dimen/claim_listitem_title_margin_end</item>
+    </style>
+    <style name="Respost_info_Textviews">
+        <item name="android:textFontWeight">300</item>
+
+    </style>
+    <style name="List_item_Layout">
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+
     </style>
 </resources>

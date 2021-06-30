@@ -12,4 +12,6 @@
     <dimen name="claim_duration_text_size">12sp</dimen>
     <dimen name="claim_title_text_size">14sp</dimen>
     <dimen name="claim_listitem_title_margin_end">4dp</dimen>
+    <dimen name="claim_title_textfontweight">600</dimen>
+    <dimen name="repost_info_textsize">12sp</dimen>
 </resources>

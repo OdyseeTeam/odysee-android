@@ -3,12 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    style="@style/List_item_Layout"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
     android:background="@drawable/bg_selected_list_item">
     <LinearLayout
         android:id="@+id/claim_repost_info"
@@ -16,7 +15,8 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
         android:orientation="horizontal"
-        android:visibility="gone">
+        android:visibility="gone"
+        tools:visibility="visible">
         <com.odysee.app.ui.controls.SolidIconView
             android:layout_width="16dp"
             android:layout_height="12dp"
@@ -33,9 +33,7 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/inter"
-            android:textColor="@color/lightForeground"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            style="@style/Respost_info_Textviews" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -43,9 +41,7 @@
             android:layout_marginStart="4dp"
             android:fontFamily="@font/inter"
             android:text="@string/reposted"
-            android:textColor="@color/lightForeground"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            style="@style/Respost_info_Textviews" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"

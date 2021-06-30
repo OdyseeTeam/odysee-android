@@ -6,11 +6,9 @@
     android:orientation="vertical"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    style="@style/List_item_Layout"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
     android:background="@drawable/bg_selected_list_item">
     <LinearLayout
         android:id="@+id/claim_repost_info"
@@ -181,8 +179,7 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="600" />
+                style="@style/Claim_Title" />
             <TextView
                 android:id="@+id/claim_publisher"
                 android:background="?attr/selectableItemBackground"
