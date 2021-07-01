@@ -695,6 +695,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         accountManager = AccountManager.get(this);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            this.onBackPressed();
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }
@@ -927,7 +937,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
         }
-//        openFragment(ChannelFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
     }
     public void openChannelUrl(String url) {
         openChannelUrl(url, null);
@@ -2643,6 +2652,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
                 findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+                findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
+                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             }
         } else if (!enterPIPMode()) {
             // we're at the top of the stack
@@ -3259,10 +3270,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             if (allowNavigateBack) {
                 transaction.addToBackStack(null);
             }
+            getSupportActionBar().setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
+
             transaction.commit();
             findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
+            findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.GONE);
         } catch (Exception ex) {
             // pass
         }
