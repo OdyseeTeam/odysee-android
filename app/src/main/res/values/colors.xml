@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#FFE50054</color>
-    <color name="colorPrimaryDark">#2F9176</color>
-    <color name="colorAccent">#38D9A9</color>
+    <color name="colorAccent">#CC190F</color>
 
     <color name="fireActive">#FFFF6635</color>
     <color name="slimeActive">#FF81C554</color>

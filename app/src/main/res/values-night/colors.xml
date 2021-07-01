@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#FFE50054</color>
-    <color name="colorPrimaryDark">#2F9176</color>
-    <color name="colorAccent">#38D9A9</color>
 
     <color name="pageBackground">#101010</color>
     <color name="actionBarBackground">#000000</color>

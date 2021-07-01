@@ -199,6 +199,7 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.UnlockTipsTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
@@ -880,7 +881,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Map<String, Object> params = new HashMap<>();
         params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
         params.put("claim", getCachedClaimForUrl(claim.getPermanentUrl()));
-//        openFragment(ChannelFragment.class, true, NavMenuItem.ID_ITEM_FOLLOWING, params);
+        openFragment(ChannelFragment.class, true, params);
     }
 
     public void openChannelForm(Claim claim) {
@@ -1780,8 +1781,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     keygen.generateKeyPair();
                 } catch (NoSuchProviderException ex) {
                     throw ex;
-                } catch (InvalidAlgorithmParameterException ex) {
-                    throw ex;
                 }
             }
             Lbry.KEYSTORE = ks;
@@ -2550,7 +2549,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
         hideBottomNavigation();
-        ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.lbryGreen));
+        ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.colorAccent));
         if (remoteNotifcationsLastLoaded == null ||
                 (System.currentTimeMillis() - remoteNotifcationsLastLoaded.getTime() > REMOTE_NOTIFICATION_REFRESH_TTL)) {
             loadRemoteNotifications(true);
