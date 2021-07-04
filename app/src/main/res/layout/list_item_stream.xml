@@ -186,7 +186,6 @@
                 android:clickable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/lbryGreen"
                 android:fontFamily="@font/inter"
                 style="@style/Claim_Publisher" />
             <RelativeLayout

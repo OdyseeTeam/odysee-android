@@ -30,10 +30,21 @@
         <item name="android:scaleY">0.5</item>
     </style>
 
+    <style name="Claim_Title">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/claim_title_text_size</item>
+        <item name="android:layout_marginEnd">@dimen/claim_listitem_title_margin_end</item>
+    </style>
     <style name="Claim_Publisher">
         <item name="android:textSize">@dimen/claim_publisher_text_size</item>
+        <item name="android:textColor">@color/colorPrimary</item>
     </style>
     <style name="Claim_Duration">
+        <item name="android:textSize">@dimen/claim_duration_text_size</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="Claim_Fee">
         <item name="android:textSize">@dimen/claim_duration_text_size</item>
     </style>
 

@@ -33,7 +33,8 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/inter"
-            style="@style/Respost_info_Textviews" />
+            style="@style/Respost_info_Textviews"
+            android:focusable="true" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -85,9 +86,7 @@
                 android:layout_marginEnd="4dp"
                 android:layout_marginBottom="4dp"
                 android:fontFamily="@font/inter"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textFontWeight="300"
+                style="@style/Claim_Duration"
                 android:padding="2dp"
                 android:visibility="gone" />
             <LinearLayout
@@ -117,8 +116,7 @@
                     android:layout_marginStart="1dp"
                     android:fontFamily="@font/inter"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    style="@style/Claim_Fee" />
             </LinearLayout>
             <RelativeLayout
                 android:layout_centerHorizontal="true"
@@ -191,9 +189,9 @@
                     android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/lbryGreen"
                     android:fontFamily="@font/inter"
-                    style="@style/Claim_Publisher" />
+                    style="@style/Claim_Publisher"
+                    android:focusable="true" />
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
