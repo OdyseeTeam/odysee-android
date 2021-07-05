@@ -10,6 +10,7 @@ public class Reactions {
     private boolean liked;
     private boolean disliked;
 
+    public Reactions() { }
     public Reactions(int likes, int dislikes) {
         this(likes, dislikes, false, false);
     }

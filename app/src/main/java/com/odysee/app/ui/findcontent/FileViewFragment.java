@@ -1928,8 +1928,9 @@ public class FileViewFragment extends BaseFragment implements
     private void loadReactions(Claim c) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        Callable<Integer[]> callable = () -> {
+        Callable<Reactions> callable = () -> {
             Integer[] reactions = { 0, 0, 0, 0};
+            Reactions r = new Reactions();
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", c.getClaimId());
 
@@ -1941,44 +1942,41 @@ public class FileViewFragment extends BaseFragment implements
                     JSONObject othersReactions = (JSONObject) data.get("others_reactions");
                     if (othersReactions.has(c.getClaimId())) {
                         int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                        reactions[0] = likesFromOthers;
                         int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        reactions[1] = dislikesFromOthers;
+                        r.setOthersLikes(likesFromOthers);
+                        r.setOthersDislikes(dislikesFromOthers);
                     }
                 }
                 if (data != null && data.has("my_reactions")) {
                     JSONObject othersReactions = (JSONObject) data.get("my_reactions");
                     if (othersReactions.has(claim.getClaimId())) {
                         int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                        reactions[2] = likes;
+                        r.setLiked(likes > 0);
                         c.setLiked(likes > 0);
                         int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        reactions[3] = dislikes;
+                        r.setDisliked(dislikes > 0);
                         c.setDisliked(dislikes > 0);
-                        // We want to show total amount, not just other's reactions
-                        reactions[0] = reactions[0] + reactions[2];
-                        reactions[1] = reactions[1] + reactions[3];
                     }
                 }
             } catch (LbryioRequestException | LbryioResponseException e) {
                 e.printStackTrace();
             }
-            return reactions;
+            return r;
         };
 
-        Future<Integer[]> futureReactions = executor.submit(callable);
+        Future<Reactions> futureReactions = executor.submit(callable);
 
-        Integer[] result;
+        Reactions result;
 
         try {
             result = futureReactions.get();
-            likeReactionAmount.setText(String.valueOf(result[0]));
-            dislikeReactionAmount.setText(String.valueOf(result[1]));
+            likeReactionAmount.setText(String.valueOf(result.getOthersLikes()));
+            dislikeReactionAmount.setText(String.valueOf(result.getOthersDislikes()));
 
             int inactiveColor;
             int fireActive;
             int slimeActive;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 inactiveColor = getContext().getColor(R.color.darkForeground);
                 fireActive = getContext().getColor(R.color.fireActive);
                 slimeActive = getContext().getColor(R.color.slimeActive);
@@ -1987,7 +1985,7 @@ public class FileViewFragment extends BaseFragment implements
                 fireActive = getResources().getColor(R.color.fireActive);
                 slimeActive = getResources().getColor(R.color.slimeActive);
             }
-            if (result[2] != 0) {
+            if (result.isLiked()) {
                 likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
                 likeReactionAmount.setTextColor(fireActive);
             } else {
@@ -1995,7 +1993,7 @@ public class FileViewFragment extends BaseFragment implements
                 likeReactionAmount.setTextColor(inactiveColor);
             }
 
-            if (result[3] != 0) {
+            if (result.isDisliked()) {
                 dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
                 dislikeReactionAmount.setTextColor(slimeActive);
             } else {
@@ -2057,7 +2055,7 @@ public class FileViewFragment extends BaseFragment implements
                     JSONObject jsonResult = jsonResponse.getJSONObject("result");
                     if (jsonResult.has("others_reactions")) {
                         JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                             responseOthersReactions.keys().forEachRemaining(key -> {
                                 try {
                                     JSONObject value = (JSONObject) responseOthersReactions.get(key);
