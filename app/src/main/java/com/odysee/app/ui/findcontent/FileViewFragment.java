@@ -1243,8 +1243,7 @@ public class FileViewFragment extends BaseFragment implements
                     Claim publisher = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof  MainActivity) {
-                        ((MainActivity) context).openChannelUrl(
-                                !Helper.isNullOrEmpty(publisher.getShortUrl()) ? publisher.getShortUrl() : publisher.getPermanentUrl());
+                        ((MainActivity) context).openChannelClaim(publisher);
                     }
                 }
             }
@@ -2530,7 +2529,7 @@ public class FileViewFragment extends BaseFragment implements
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;
                                     if (claim.getName().startsWith("@")) {
-                                        activity.openChannelUrl(claim.getPermanentUrl());
+                                        activity.openChannelClaim(claim);
                                     } else {
                                         activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
                                     }
