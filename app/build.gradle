@@ -94,6 +94,7 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.14.1'
     implementation 'com.google.android.exoplayer:extension-cast:2.14.1'
     implementation 'com.google.android.exoplayer:extension-mediasession:2.14.1'
+    implementation 'com.google.android.exoplayer:exoplayer-hls:2.14.1'
 
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 

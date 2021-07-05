@@ -88,6 +88,9 @@ public class Claim {
     // device it was viewed on (for view history)
     private String device;
 
+    private boolean isLive;
+    private String livestreamUrl;
+
     public static Claim claimFromOutput(JSONObject item) {
         // we only need name, permanent_url, txid and nout
         Claim claim = new Claim();
@@ -137,6 +140,14 @@ public class Claim {
             return mediaType;
         }
         return null;
+    }
+
+    public boolean hasSource() {
+        if (value instanceof StreamMetadata) {
+            StreamMetadata metadata = (StreamMetadata) value;
+            return metadata.getSource() != null;
+        }
+        return false;
     }
 
     public boolean isPlayable() {

@@ -58,6 +58,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultControlDispatcher;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
@@ -68,8 +69,10 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.Loader;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory;
@@ -170,6 +173,8 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 
 import static com.odysee.app.utils.Lbry.TAG;
@@ -401,6 +406,7 @@ public class FileViewFragment extends BaseFragment implements
     private void checkParams() {
         boolean updateRequired = false;
         Context context = getContext();
+//        claim.setClaimId(FileViewFragmentArgs.fromBundle(getArguments()).getClaimId());
         Map<String, Object> params = getParams();
         Claim newClaim = null;
         String newUrl = null;
@@ -655,20 +661,6 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private String getStreamingUrl() {
-        LbryFile lbryFile = claim.getFile();
-        if (lbryFile != null) {
-            if (!Helper.isNullOrEmpty(lbryFile.getDownloadPath()) && lbryFile.isCompleted()) {
-                File file = new File(lbryFile.getDownloadPath());
-                if (file.exists()) {
-                    return Uri.fromFile(file).toString();
-                }
-            }
-
-            if (!Helper.isNullOrEmpty(lbryFile.getStreamingUrl()) && (!claim.isFree() || !Lbryio.isSignedIn())) {
-                return lbryFile.getStreamingUrl();
-            }
-        }
-
         return buildLbryTvStreamingUrl();
     }
 
@@ -1453,6 +1445,9 @@ public class FileViewFragment extends BaseFragment implements
             return;
         }
 
+        if (!claim.hasSource()) {
+            // TODO See if the "publisher is not live yet" UI must be shown
+        }
         if (claim.isPlayable() && MainActivity.appPlayer != null) {
             MainActivity.appPlayer.setPlayWhenReady(isPlaying);
         }
@@ -1751,15 +1746,97 @@ public class FileViewFragment extends BaseFragment implements
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
                 String userAgent = Util.getUserAgent(context, getString(R.string.app_name));
-                String mediaSourceUrl = getStreamingUrl();
-                MediaSource mediaSource = new ProgressiveMediaSource.Factory(
-                        new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
-                        new DefaultExtractorsFactory()
-                ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
 
-                MainActivity.appPlayer.setMediaSource(mediaSource, true);
-                MainActivity.appPlayer.prepare();
+                String mediaSourceUrl;
+                DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("Odysee");
+                MediaSource mediaSource = null;
+                if (claim.hasSource()) {
+                    mediaSourceUrl = getStreamingUrl();
+                    mediaSource = new ProgressiveMediaSource.Factory(
+                            new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
+                            new DefaultExtractorsFactory()
+                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
+                } else {
+                    mediaSourceUrl = getLivestreamUrl();
+                    if (mediaSourceUrl != null) {
+                        if (!mediaSourceUrl.equals("notlive")) {
+                            Map<String, String> defaultRequestProperties = new HashMap<>(1);
+                            defaultRequestProperties.put("Referer", "https://bitwave.tv");
+                            dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
+                            mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
+                        } else {
+                            if (claim.getThumbnailUrl() != null) {
+                                ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
+                                Glide.with(context.getApplicationContext()).
+                                        asBitmap().
+                                        load(claim.getThumbnailUrl()).
+                                        apply(RequestOptions.circleCropTransform()).
+                                        into(thumbnailView);
+                            }
+
+                            root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
+                            TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
+                            userNotStreaming.setText(getString(R.string.user_not_live_yet, claim.getPublisherName()));
+                            userNotStreaming.setVisibility(View.VISIBLE);
+                        }
+                    }
+                }
+
+                if (mediaSource != null) {
+                    MainActivity.appPlayer.setMediaSource(mediaSource, true);
+                    MainActivity.appPlayer.prepare();
+                }
             }
+        }
+    }
+
+    private String getLivestreamUrl() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Callable<JSONObject> callable = () -> {
+            String urlBitwave = String.format("https://api.bitwave.tv/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
+
+            Request.Builder builder = new Request.Builder().url(urlBitwave);
+            Request request = builder.build();
+
+            OkHttpClient client = new OkHttpClient.Builder().build();
+
+            try {
+                Response resp = client.newCall(request).execute();
+                String responseString = resp.body().string();
+                resp.close();
+                JSONObject json = new JSONObject(responseString);
+                if (resp.code() >= 200 && resp.code() < 300) {
+                    if (json.isNull("data") || (json.has("success") && !json.getBoolean("success"))) {
+                        return null;
+                    }
+                    Log.d(TAG, "getLivestreamUrl: ".concat(json.get("data").toString()));
+
+                    return (JSONObject) json.get("data");
+                } else {
+                    return null;
+                }
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
+        };
+
+        Future<JSONObject> future = executor.submit(callable);
+        try {
+            JSONObject jsonData = future.get();
+
+            if (jsonData != null && jsonData.has("live")) {
+                if (jsonData.getBoolean("live") && jsonData.has("url")) {
+                    return jsonData.getString("url");
+                } else {
+                    return "notlive";
+                }
+            } else {
+                return null;
+            }
+        } catch (InterruptedException | ExecutionException | JSONException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -2172,7 +2249,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void handleMainActionForClaim() {
-        if (claim.isPlayable() && claim.isFree() && Lbryio.isSignedIn())  {
+        if (claim.isFree() && ((claim.isPlayable() && Lbryio.isSignedIn()) || !claim.hasSource())) {
             // always use lbry.tv streaming when signed in and playabble
             startTimeMillis = System.currentTimeMillis();
             showExoplayerView();

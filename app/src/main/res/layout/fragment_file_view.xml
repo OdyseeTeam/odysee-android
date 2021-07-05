@@ -110,6 +110,19 @@
                 </LinearLayout>
             </RelativeLayout>
 
+            <LinearLayout android:id="@+id/file_view_livestream_not_live"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/mediaContainerBackground"
+                android:padding="36dp"
+                android:visibility="gone">
+                <ImageView android:id="@+id/file_view_livestream_thumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/user_not_live_thumbnail" />
+
+            </LinearLayout>
+
             <RelativeLayout
                 android:id="@+id/file_view_exoplayer_container"
                 android:layout_width="match_parent"
@@ -200,6 +213,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
+
+                <TextView android:id="@+id/user_not_streaming"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:visibility="gone"/>
 
                 <RelativeLayout
                     android:id="@+id/file_view_title_area"

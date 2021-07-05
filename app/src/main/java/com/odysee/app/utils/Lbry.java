@@ -483,7 +483,40 @@ public final class Lbry {
             if (items != null) {
                 for (int i = 0; i < items.length(); i++) {
                     Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
-                    claims.add(claim);
+
+                    // Livestreams don't have a source set. Then request a livestream URL only for
+                    // audio and video, even for reposted claims
+                    if (!claim.hasSource()) {
+                        String urlBitwave = String.format("https://api.bitwave.tv/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
+
+                        Request.Builder builder = new Request.Builder().url(urlBitwave);
+                        Request request = builder.build();
+
+                        OkHttpClient client = new OkHttpClient.Builder().build();
+
+                        try {
+                            Response resp = client.newCall(request).execute();
+                            String responseString = resp.body().string();
+                            resp.close();
+                            JSONObject json = new JSONObject(responseString);
+                            if (resp.code() >= 200 && resp.code() < 300) {
+                                if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
+                                    JSONObject jsonData = (JSONObject) json.get("data");
+                                    if (jsonData.has("live")) {
+                                        claim.setLive(jsonData.getBoolean("live"));
+                                        claim.setLivestreamUrl(jsonData.getString("url"));
+                                    }
+                                }
+                            }
+                        } catch (IOException | JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                    // For now, only claims which are audio, videos or livestreaming right now can be viewed
+                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) || (!claim.hasSource() && claim.isLive()) || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio"))))
+                        claims.add(claim);
 
                     addClaimToCache(claim);
                 }

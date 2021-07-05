@@ -24,6 +24,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -600,6 +602,19 @@ public class FollowingFragment extends BaseFragment implements
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
+
+                // Sort claims so those which are livestreaming now are shwon on the top of the list
+                Collections.sort(claims, new Comparator<Claim>() {
+                    @Override
+                    public int compare(Claim claim, Claim t1) {
+                        if (claim.isLive() && !t1.isLive())
+                            return -1;
+                        else if (!claim.isLive() && t1.isLive())
+                            return 1;
+                        else
+                            return 0;
+                    }
+                });
 
                 if (contentListAdapter == null) {
                     Context context = getContext();
