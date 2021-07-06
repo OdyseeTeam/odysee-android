@@ -402,11 +402,11 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdList = new ArrayList();
+        List<String> channelIdList;
         channelIdList = ContentSources.get(claim_search);
 
         return Lbry.buildClaimSearchOptions(
-                (List) null,
+                null,
                 (currentContentScope == ContentScopeDialogFragment.ITEM_EVERYONE) ? null : tags,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 channelIdList,

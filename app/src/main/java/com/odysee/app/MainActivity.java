@@ -463,8 +463,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 .build();
         establishBillingClientConnection();
 
-        playerNotificationManager = new PlayerNotificationManager(
-                this, "io.lbry.browser.DAEMON_NOTIFICATION_CHANNEL", PLAYBACK_NOTIFICATION_ID, new PlayerNotificationDescriptionAdapter());
+        playerNotificationManager = new PlayerNotificationManager.Builder(
+                this, PLAYBACK_NOTIFICATION_ID, "io.lbry.browser.DAEMON_NOTIFICATION_CHANNEL", new PlayerNotificationDescriptionAdapter()).build();
 
         // TODO: Check Google Play Services availability
         // castContext = CastContext.getSharedInstance(this);

@@ -220,7 +220,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         }
 
         return Lbry.buildClaimSearchOptions(
-                (List) null,
+                null,
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 !Helper.isNullOrEmpty(channelId) ? Arrays.asList(channelId) : null,
