@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true"
@@ -60,9 +61,9 @@
                     android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:textColor="@color/lbryGreen"
-                    android:textSize="14sp" />
+                    tools:text="@TestChannel"
+                    style="@style/Comment_Publisher"
+                    android:fontFamily="@font/inter" />
                 <TextView
                     android:id="@+id/comment_time"
                     android:layout_width="wrap_content"
@@ -70,6 +71,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
                     android:fontFamily="@font/inter"
+                    tools:text="24 m ago"
                     android:textColor="@color/lightGrey"
                     android:textSize="12sp" />
             </RelativeLayout>
@@ -81,6 +83,7 @@
                 android:layout_marginTop="2dp"
                 android:lineSpacingMultiplier="1.1"
                 android:fontFamily="@font/inter"
+                tools:text="This is a test comment"
                 android:textFontWeight="300"
                 android:textIsSelectable="true"
                 android:textSize="14sp" />

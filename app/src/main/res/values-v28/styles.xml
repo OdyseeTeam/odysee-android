@@ -2,18 +2,27 @@
 <resources>
     <style name="Claim_Duration">
         <item name="android:textFontWeight">300</item>
+        <item name="android:textSize">@dimen/claim_duration_text_size</item>
+        <item name="android:textColor">@color/white</item>
     </style>
     <style name="Claim_Title">
         <item name="android:textFontWeight">@integer/claim_title_textfontweight</item>
         <item name="android:textSize">@dimen/claim_title_text_size</item>
         <item name="android:layout_marginEnd">@dimen/claim_listitem_title_margin_end</item>
     </style>
+    <style name="Claim_Publisher_FileView">
+        <item name="android:textSize">@dimen/claim_publisher_fileview_text_size</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
     <style name="Respost_info_Textviews">
         <item name="android:textFontWeight">300</item>
-
+        <item name="android:textColor">@color/lightForeground</item>
+        <item name="textSize">@dimen/repost_info_textsize</item>
     </style>
     <style name="List_item_Layout">
         <item name="android:foreground">?attr/selectableItemBackground</item>
-
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
     </style>
 </resources>

@@ -196,7 +196,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter"
-                    style="@style/Claim_Duration" />
+                    style="@style/Claim_Publish_Time" />
                 <TextView
                     android:id="@+id/claim_pending_text"
                     android:layout_width="wrap_content"

@@ -195,13 +195,14 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp">
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp">
                     <TextView
                         android:id="@+id/claim_publish_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter"
-                        style="@style/Claim_Duration" />
+                        style="@style/Claim_Publish_Time" />
                     <TextView
                         android:id="@+id/claim_pending_text"
                         android:layout_width="wrap_content"

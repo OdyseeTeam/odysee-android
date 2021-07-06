@@ -6,8 +6,10 @@
     <dimen name="wallet_detail_balance_font_size">12sp</dimen>
     <dimen name="wallet_detail_balance_desc_font_size">12sp</dimen>
     <dimen name="claim_publisher_text_size">12sp</dimen>
+    <dimen name="claim_publisher_fileview_text_size">14sp</dimen>
     <dimen name="claim_duration_text_size">12sp</dimen>
     <dimen name="claim_title_text_size">14sp</dimen>
     <dimen name="claim_listitem_title_margin_end">4dp</dimen>
     <dimen name="repost_info_textsize">12sp</dimen>
+    <dimen name="comment_publisher_textsize">14sp</dimen>
 </resources>
