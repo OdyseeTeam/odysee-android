@@ -624,9 +624,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         closeButton.performClick();
-                        hideNotifications();
-                        openFragment(RewardsFragment.class, true, null);
-//                        startActivity(new Intent(view.getContext(), ComingSoon.class));
+//                        hideNotifications();
+//                        openFragment(RewardsFragment.class, true, null);
+                        startActivity(new Intent(view.getContext(), ComingSoon.class));
                     }
                 });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
