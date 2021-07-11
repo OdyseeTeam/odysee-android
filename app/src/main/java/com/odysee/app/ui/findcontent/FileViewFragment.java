@@ -343,7 +343,7 @@ public class FileViewFragment extends BaseFragment implements
                     hideBuffering();
 
                     if (loadingNewClaim) {
-                        MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
+                        MainActivity.appPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
                     }
                 } else if (playbackState == Player.STATE_BUFFERING) {
@@ -2662,6 +2662,9 @@ public class FileViewFragment extends BaseFragment implements
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
+
+            if (commentListAdapter == null)
+                root.findViewById(R.id.container_comment_form).setVisibility(View.VISIBLE);
         }
     }
 
