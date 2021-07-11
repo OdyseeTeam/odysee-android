@@ -1468,10 +1468,12 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewVisibility(layoutLoadingState, View.GONE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
 
+/*
         if (claim.getTags().contains("disable-support") || claim.getSigningChannel().getTags().contains("disable-support"))
             Helper.setViewVisibility(tipButton, View.GONE);
         else
             Helper.setViewVisibility(tipButton, View.VISIBLE);
+*/
 
         loadViewCount();
         loadReactions();
@@ -3130,8 +3132,9 @@ public class FileViewFragment extends BaseFragment implements
             View root = getView();
             if (root != null) {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_report), isOwnClaim ? View.GONE : View.VISIBLE);
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_edit), isOwnClaim ? View.VISIBLE : View.GONE);
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_unpublish), isOwnClaim ? View.VISIBLE : View.GONE);
+                // TODO Re-enable this when implemented
+//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_edit), isOwnClaim ? View.VISIBLE : View.GONE);
+//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_unpublish), isOwnClaim ? View.VISIBLE : View.GONE);
 
 
                 LinearLayout fileViewActionsArea = root.findViewById(R.id.file_view_actions_area);
