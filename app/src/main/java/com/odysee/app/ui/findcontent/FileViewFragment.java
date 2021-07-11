@@ -3,6 +3,7 @@ package com.odysee.app.ui.findcontent;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -92,6 +93,7 @@ import org.commonmark.renderer.html.AttributeProviderContext;
 import org.commonmark.renderer.html.AttributeProviderFactory;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -113,6 +115,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.odysee.app.MainActivity;
@@ -243,6 +247,9 @@ public class FileViewFragment extends BaseFragment implements
     private TextView dislikeReactionAmount;
     private ImageView likeReactionIcon;
     private ImageView dislikeReactionIcon;
+    private ScheduledExecutorService scheduledExecutor;
+    ScheduledFuture<?> futureReactions;
+    Reactions reactions;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -810,6 +817,13 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         closeWebView();
+
+        if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
+            if (futureReactions != null) {
+                futureReactions.cancel(true);
+            }
+            scheduledExecutor.shutdown();
+        }
     }
 
     private void closeWebView() {
@@ -1926,11 +1940,14 @@ public class FileViewFragment extends BaseFragment implements
         loadReactions(claim);
     }
     private void loadReactions(Claim c) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        if (scheduledExecutor == null) {
+            scheduledExecutor = new ScheduledThreadPoolExecutor(1);
+        }
 
-        Callable<Reactions> callable = () -> {
-            Integer[] reactions = { 0, 0, 0, 0};
-            Reactions r = new Reactions();
+        if (reactions == null)
+            reactions = new Reactions();
+
+        Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", c.getClaimId());
 
@@ -1943,65 +1960,71 @@ public class FileViewFragment extends BaseFragment implements
                     if (othersReactions.has(c.getClaimId())) {
                         int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
                         int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        r.setOthersLikes(likesFromOthers);
-                        r.setOthersDislikes(dislikesFromOthers);
+                        reactions.setOthersLikes(likesFromOthers);
+                        reactions.setOthersDislikes(dislikesFromOthers);
                     }
                 }
                 if (data != null && data.has("my_reactions")) {
                     JSONObject othersReactions = (JSONObject) data.get("my_reactions");
                     if (othersReactions.has(claim.getClaimId())) {
                         int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                        r.setLiked(likes > 0);
+                        reactions.setLiked(likes > 0);
                         c.setLiked(likes > 0);
                         int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        r.setDisliked(dislikes > 0);
+                        reactions.setDisliked(dislikes > 0);
                         c.setDisliked(dislikes > 0);
                     }
                 }
-            } catch (LbryioRequestException | LbryioResponseException e) {
+                updateContentReactions();
+            } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
                 e.printStackTrace();
             }
-            return r;
         };
 
-        Future<Reactions> futureReactions = executor.submit(callable);
+        futureReactions = scheduledExecutor.scheduleAtFixedRate(runnable, 0, 5, TimeUnit.SECONDS);
+    }
 
-        Reactions result;
+    private void updateContentReactions() {
+        Activity activity = getActivity();
+        if (activity != null) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    likeReactionAmount.setText(String.valueOf(reactions.getOthersLikes()));
+                    dislikeReactionAmount.setText(String.valueOf(reactions.getOthersDislikes()));
 
-        try {
-            result = futureReactions.get();
-            likeReactionAmount.setText(String.valueOf(result.getOthersLikes()));
-            dislikeReactionAmount.setText(String.valueOf(result.getOthersDislikes()));
+                    int inactiveColor = 0;
+                    int fireActive = 0;
+                    int slimeActive = 0;
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                        Context context = getContext();
+                        if (context != null) {
+                            inactiveColor = getContext().getColor(R.color.darkForeground);
+                            fireActive = getContext().getColor(R.color.fireActive);
+                            slimeActive = getContext().getColor(R.color.slimeActive);
+                        }
+                    } else {
+                        inactiveColor = getResources().getColor(R.color.darkForeground);
+                        fireActive = getResources().getColor(R.color.fireActive);
+                        slimeActive = getResources().getColor(R.color.slimeActive);
+                    }
+                    if (reactions.isLiked()) {
+                        likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
+                        likeReactionAmount.setTextColor(fireActive);
+                    } else {
+                        likeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                        likeReactionAmount.setTextColor(inactiveColor);
+                    }
 
-            int inactiveColor;
-            int fireActive;
-            int slimeActive;
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                inactiveColor = getContext().getColor(R.color.darkForeground);
-                fireActive = getContext().getColor(R.color.fireActive);
-                slimeActive = getContext().getColor(R.color.slimeActive);
-            } else {
-                inactiveColor = getResources().getColor(R.color.darkForeground);
-                fireActive = getResources().getColor(R.color.fireActive);
-                slimeActive = getResources().getColor(R.color.slimeActive);
-            }
-            if (result.isLiked()) {
-                likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
-                likeReactionAmount.setTextColor(fireActive);
-            } else {
-                likeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
-                likeReactionAmount.setTextColor(inactiveColor);
-            }
-
-            if (result.isDisliked()) {
-                dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
-                dislikeReactionAmount.setTextColor(slimeActive);
-            } else {
-                dislikeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
-                dislikeReactionAmount.setTextColor(inactiveColor);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                    if (reactions.isDisliked()) {
+                        dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
+                        dislikeReactionAmount.setTextColor(slimeActive);
+                    } else {
+                        dislikeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                        dislikeReactionAmount.setTextColor(inactiveColor);
+                    }
+                }
+            });
         }
     }
 
@@ -2058,49 +2081,26 @@ public class FileViewFragment extends BaseFragment implements
                         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                             responseOthersReactions.keys().forEachRemaining(key -> {
                                 try {
-                                    JSONObject value = (JSONObject) responseOthersReactions.get(key);
-                                    Reactions reactions = getReactionsForValue(value);
-
-                                    if (jsonResult.has("my_reactions")) {
-                                        JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
-                                        if (responseMyReactions != null && responseMyReactions.has(key)) {
-                                            JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
-                                            reactions.setLiked(myReaction.getInt("like") > 0);
-                                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
-                                        }
-                                    }
-                                    result.put(key, reactions);
+                                    result.put(key, getMyReactions(jsonResult, responseOthersReactions, key));
                                 } catch (JSONException e) {
                                     e.printStackTrace();
                                 }
                             });
-                        } else {
+                        } else { // Android versions prior to API 24 lack forEachRemaining()
                             Iterator<String> itr = responseOthersReactions.keys();
-                            // Android versions prior to API 24 lack forEachRemaining()
                             while (itr.hasNext()) {
                                 try {
                                     String nextKey = itr.next();
-                                    JSONObject value = (JSONObject) responseOthersReactions.get(nextKey);
-                                    Reactions reactions = getReactionsForValue(value);
-
-                                    if (jsonResult.has("my_reactions")) {
-                                        JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
-                                        if (responseMyReactions != null && responseMyReactions.has(nextKey)) {
-                                            JSONObject myReaction = (JSONObject) responseMyReactions.get(nextKey);
-                                            reactions.setLiked(myReaction.getInt("like") > 0);
-                                            reactions.setDisliked(myReaction.getInt("dislike") > 0);
-                                        }
-                                    }
-                                    result.put(nextKey, reactions);
+                                    result.put(nextKey, getMyReactions(jsonResult, responseOthersReactions, nextKey));
                                 } catch (JSONException e) {
-                                    Log.e(TAG, "loadReactions: ".concat(e.getLocalizedMessage()));
+                                    Log.e(TAG, "loadReactions for Comment: ".concat(e.getLocalizedMessage()));
                                 }
                             }
                         }
                     }
                 }
             } catch (IOException e) {
-                Log.e("LoadingReactions", e.getLocalizedMessage());
+                Log.e("LoadingReactions", e.toString());
                 e.printStackTrace();
             }
             return result;
@@ -2112,6 +2112,22 @@ public class FileViewFragment extends BaseFragment implements
             e.printStackTrace();
             return null;
         }
+    }
+
+    @Nullable
+    private Reactions getMyReactions(JSONObject jsonResult, JSONObject responseOthersReactions, String key) throws JSONException {
+        JSONObject value = (JSONObject) responseOthersReactions.get(key);
+        Reactions reactions = getReactionsForValue(value);
+
+        if (jsonResult.has("my_reactions")) {
+            JSONObject responseMyReactions = jsonResult.getJSONObject("my_reactions");
+            if (responseMyReactions.has(key) && reactions != null) {
+                JSONObject myReaction = (JSONObject) responseMyReactions.get(key);
+                reactions.setLiked(myReaction.getInt("like") > 0);
+                reactions.setDisliked(myReaction.getInt("dislike") > 0);
+            }
+        }
+        return reactions;
     }
 
 
@@ -3385,25 +3401,29 @@ public class FileViewFragment extends BaseFragment implements
         replyToComment = null;
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private void switchCommentListVisibility(Boolean isExpanded) {
         View root = getView();
         View relatedContentArea = root.findViewById(R.id.file_view_related_content_area);
         View actionsArea = root.findViewById(R.id.file_view_actions_area);
         View publisherArea = root.findViewById(R.id.file_view_publisher_area);
         ImageButton expandButton = root.findViewById(R.id.expand_commentarea_button);
+        Context context = getContext();
 
         if (isExpanded) {
             Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
             Helper.setViewVisibility(publisherArea, View.GONE);
-            expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, getContext().getTheme()));
+            if (context != null)
+                expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);
-            expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_expand, getContext().getTheme()));
+            if (context != null)
+                expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_expand, context.getTheme()));
         }
     }
 
@@ -3525,9 +3545,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void react(Claim claim, boolean like) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Callable<Boolean> callable = () -> {
+        Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
@@ -3536,24 +3554,16 @@ public class FileViewFragment extends BaseFragment implements
             if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
                 options.put("remove", "true");
 
-            JSONObject data = null;
             try {
-                data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
+                Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext());
             } catch (LbryioRequestException | LbryioResponseException e) {
                 e.printStackTrace();
             }
-            return data != null && data.has(claim.getClaimId());
         };
 
-        Future<Boolean> futureReactions = executor.submit(callable);
-
-        Boolean result;
-
         try {
-            result = futureReactions.get();
-            if (result)
-                loadReactions();
-        } catch (InterruptedException | ExecutionException e) {
+            new Thread(runnable).start();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -3562,8 +3572,8 @@ public class FileViewFragment extends BaseFragment implements
 
         @Override
         public void setAttributes(Node node, String tagName, Map<String, String> attributes) {
-            if (node instanceof Code) {
-                Context context = getContext();
+            Context context = getContext();
+            if (node instanceof Code && context != null) {
                 String colorCodeText = "#".concat(Integer.toHexString(ContextCompat.getColor(context, R.color.codeTagText) & 0x00ffffff));
                 String colorCodeBg = "#".concat(Integer.toHexString(ContextCompat.getColor(context, R.color.codeTagBackground) & 0x00ffffff));
                 String codeStyle = "display: inline-block; border-radius: 0.2rem" +
