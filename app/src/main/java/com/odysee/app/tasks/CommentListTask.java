@@ -5,14 +5,17 @@ import android.view.View;
 import android.widget.ProgressBar;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.model.Comment;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
@@ -80,7 +83,7 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
                     }
                 }
             }
-        } catch (Exception ex) {
+        } catch (JSONException | LbryResponseException | IOException ex) {
             error = ex;
         }
         return comments;
