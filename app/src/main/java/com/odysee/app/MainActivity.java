@@ -663,12 +663,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.wunderbar_notifications).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                startActivity(new Intent(view.getContext(), ComingSoon.class));
+/*
                 View container = findViewById(R.id.notifications_container);
                 if (container.getVisibility() != View.VISIBLE) {
                     showNotifications();
                 } else {
                     hideNotifications();
                 }
+*/
             }
         });
 
@@ -699,7 +702,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             this.onBackPressed();
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            ActionBar actionBar = getSupportActionBar();
+
+            if (actionBar != null)
+                actionBar.setDisplayHomeAsUpEnabled(false);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -766,7 +772,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkNotificationOpenIntent(intent);
     }
 
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(@NotNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         switch (newConfig.orientation) {
             case Configuration.ORIENTATION_PORTRAIT:
