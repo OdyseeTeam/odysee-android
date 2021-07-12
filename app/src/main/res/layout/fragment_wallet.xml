@@ -23,8 +23,7 @@
             <include layout="@layout/card_wallet_balance" />
 
             <!-- Receive credits card -->
-            <include layout="@layout/card_wallet_receive_credits"
-                android:visibility="gone"/>
+            <include layout="@layout/card_wallet_receive_credits" />
 
             <!-- Send credits card -->
             <include layout="@layout/card_wallet_send_credits"
