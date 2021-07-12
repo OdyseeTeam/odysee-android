@@ -26,8 +26,7 @@
             <include layout="@layout/card_wallet_receive_credits" />
 
             <!-- Send credits card -->
-            <include layout="@layout/card_wallet_send_credits"
-                android:visibility="gone"/>
+            <include layout="@layout/card_wallet_send_credits" />
 
             <!-- Recent transactions card -->
             <include layout="@layout/card_wallet_recent_transactions" />

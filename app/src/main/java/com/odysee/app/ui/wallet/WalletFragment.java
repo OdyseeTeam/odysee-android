@@ -43,8 +43,11 @@ import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -59,12 +62,12 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
 import com.odysee.app.callable.WalletGetUnusedAddress;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletDetailItem;
 import com.odysee.app.tasks.wallet.TransactionListTask;
-import com.odysee.app.tasks.wallet.WalletSendTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
@@ -170,7 +173,11 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
 
     private void fetchRecentTransactions() {
-        if (hasFetchedRecentTransactions) {
+        fetchRecentTransactions(false);
+    }
+
+    private void fetchRecentTransactions(boolean forceFetch) {
+        if (hasFetchedRecentTransactions && !forceFetch) {
             return;
         }
 
@@ -411,7 +418,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         View view = getView();
         String recipientAddress = Helper.getValue(inputSendAddress.getText());
         String amountString = Helper.getValue(inputSendAmount.getText());
-        String amount = null;
+        final String amount;
         try {
             amount = new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US)).
                     format(new BigDecimal(amountString).doubleValue());
@@ -434,31 +441,49 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         }
 
         disableSendControls();
-        WalletSendTask task = new WalletSendTask(recipientAddress, amount, walletSendProgress, new WalletSendTask.WalletSendHandler() {
-            @Override
-            public void onSuccess() {
-                double sentAmount = actualSendAmount;
+        Helper.setViewVisibility(walletSendProgress, View.VISIBLE);
+
+        Callable<Boolean> callable = () -> {
+            try {
+                AccountManager am = AccountManager.get(getContext());
+                Map<String, Object> options = new HashMap<>();
+                options.put("addresses", Arrays.asList(recipientAddress));
+                options.put("amount", amount);
+                options.put("blocking", true);
+                Lbry.directApiCall(Lbry.METHOD_WALLET_SEND, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            } catch (ApiCallException ex) {
+                ex.printStackTrace();
+                return false;
+            }
+            return true;
+        };
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<Boolean> future = executorService.submit(callable);
+
+        try {
+            boolean result = future.get();
+
+            if (result) {
                 String message = getResources().getQuantityString(
-                        R.plurals.you_sent_credits, sentAmount == 1.0 ? 1 : 2,
-                        new DecimalFormat("#,###.####").format(sentAmount));
+                        R.plurals.you_sent_credits, actualSendAmount == 1.0 ? 1 : 2,
+                        new DecimalFormat("#,###.####").format(actualSendAmount));
                 Helper.setViewText(inputSendAddress, null);
                 Helper.setViewText(inputSendAmount, null);
                 if (view != null) {
                     Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
                 }
-                enableSendControls();
-            }
-
-            @Override
-            public void onError(Exception error) {
+            } else {
                 if (view != null) {
                     Snackbar.make(view, R.string.send_credit_error, Snackbar.LENGTH_LONG).
                             setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
                 }
-                enableSendControls();
             }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            enableSendControls();
+            Helper.setViewVisibility(walletSendProgress, View.GONE);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     private void checkReceiveAddress() {
@@ -675,6 +700,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
         textWalletBalanceDesc.setText(spendableBalance == totalBalance ? getResources().getString(R.string.your_total_balance) : getResources().getString(R.string.all_of_this_is_yours));
 
+        fetchRecentTransactions(true);
         checkRewardsDriver();
     }
 

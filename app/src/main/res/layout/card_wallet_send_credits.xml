@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:elevation="4dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -93,6 +93,7 @@
                 android:layout_toStartOf="@id/wallet_send"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="8dp"
+                tools:visibility="visible"
                 android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
