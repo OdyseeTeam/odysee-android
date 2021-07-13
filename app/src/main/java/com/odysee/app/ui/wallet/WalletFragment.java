@@ -1,6 +1,8 @@
 package com.odysee.app.ui.wallet;
 
 import android.accounts.AccountManager;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -44,7 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -98,7 +100,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     private View loadingRecentContainer;
     private View inlineBalanceContainer;
     private TextView textWalletInlineBalance;
-    private MaterialButton buttonSignUp;
     private MaterialButton buttonBuyLBC;
     private RecyclerView recentTransactionsList;
     private View linkViewAll;
@@ -240,7 +241,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
         if (!Helper.isNullOrEmpty(amountString)) {
             try {
-                double amountValue = Double.valueOf(amountString);
+                double amountValue = Double.parseDouble(amountString);
                 double availableAmount = Lbry.walletBalance.getAvailable().doubleValue();
                 if (availableAmount < amountValue) {
                     Snackbar.make(getView(), R.string.insufficient_balance, Snackbar.LENGTH_LONG).
@@ -432,7 +433,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         }
 
 
-        double actualSendAmount = Double.valueOf(amount);
+        double actualSendAmount = Double.parseDouble(amount);
         if (actualSendAmount < Helper.MIN_SPEND) {
             if (view != null) {
                 Snackbar.make(view, R.string.min_spend_required, Snackbar.LENGTH_LONG).
@@ -448,7 +449,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             try {
                 AccountManager am = AccountManager.get(getContext());
                 Map<String, Object> options = new HashMap<>();
-                options.put("addresses", Arrays.asList(recipientAddress));
+                options.put("addresses", Collections.singletonList(recipientAddress));
                 options.put("amount", amount);
                 options.put("blocking", true);
                 Lbry.directApiCall(Lbry.METHOD_WALLET_SEND, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
@@ -507,7 +508,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
     public void launchMoonpayFlow() {
         Context context = getContext();
-        String receiveAddress = null;
+        String receiveAddress;
         if (context != null) {
             try {
                 SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
@@ -518,7 +519,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                 }
 
                 long userId = Lbryio.currentUser != null ? Lbryio.currentUser.getId() : 0;
-                String url = String.format(MOONPAY_URL_FORMAT, receiveAddress,
+                @SuppressLint("DefaultLocale") String url = String.format(MOONPAY_URL_FORMAT, receiveAddress,
                         URLEncoder.encode(String.format("android-%d", userId), StandardCharsets.UTF_8.name()));
                 String email = Lbryio.getSignedInEmail();
                 if (!Helper.isNullOrEmpty(email)) {
@@ -569,13 +570,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
     public void onStart() {
         super.onStart();
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.setWunderbarValue(null);
-            // TODO Use a scheduled task here to get updated wallet balance
-//            activity.addWalletBalanceListener(this);
-        }
     }
 
     public void onStop() {
@@ -630,7 +624,15 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             detailListView.setAdapter(detailAdapter);
         }
 
-        WalletDetailItem earnedBalance = new WalletDetailItem(getResources().getString(R.string.earned_from_others), getResources().getString(R.string.unlock_to_spend), Helper.SIMPLE_CURRENCY_FORMAT.format(tipsBalance), tipsBalance != 0, ((MainActivity) getContext()).isUnlockingTips());
+        Activity activity = (Activity) getContext();
+        boolean tipsBeenUnlocked;
+
+        if (activity instanceof MainActivity)
+            tipsBeenUnlocked = ((MainActivity) activity).isUnlockingTips();
+        else
+            tipsBeenUnlocked = false;
+
+        WalletDetailItem earnedBalance = new WalletDetailItem(getResources().getString(R.string.earned_from_others), getResources().getString(R.string.unlock_to_spend), Helper.SIMPLE_CURRENCY_FORMAT.format(tipsBalance), tipsBalance != 0, tipsBeenUnlocked);
         WalletDetailItem initialPublishes = new WalletDetailItem(getResources().getString(R.string.on_initial_publishes), getResources().getString(R.string.delete_or_edit_past_content), Helper.SIMPLE_CURRENCY_FORMAT.format(walletBalance.getClaims().doubleValue()), false, false);
         WalletDetailItem supportingContent = new WalletDetailItem(getResources().getString(R.string.supporting_content), getResources().getString(R.string.delete_supports_to_spend), Helper.SIMPLE_CURRENCY_FORMAT.format(walletBalance.getSupports().doubleValue()), false, false);
 
