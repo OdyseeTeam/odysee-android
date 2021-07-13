@@ -22,6 +22,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
@@ -504,11 +505,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         }
     }
 
-    private boolean hasSkippedAccount() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-        return sp.getBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_SKIP_WALLET_ACCOUNT, false);
-    }
-
     public void launchMoonpayFlow() {
         Context context = getContext();
         String receiveAddress = null;
@@ -540,9 +536,11 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                         StandardCharsets.UTF_8.name());
                 url = String.format("%s&signature=%s", url, URLEncoder.encode(signature, StandardCharsets.UTF_8.name()));
 
-                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setToolbarColor(
-                        ContextCompat.getColor(context, R.color.lbryGreen)
-                );
+                CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+                ctcspb.setToolbarColor(ContextCompat.getColor(context, R.color.colorPrimary));
+                CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
                 CustomTabsIntent intent = builder.build();
                 intent.launchUrl(context, Uri.parse(url));
             } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException ex) {
