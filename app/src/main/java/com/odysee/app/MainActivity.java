@@ -655,15 +655,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.wunderbar_notifications).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(view.getContext(), ComingSoon.class));
-/*
                 View container = findViewById(R.id.notifications_container);
                 if (container.getVisibility() != View.VISIBLE) {
                     showNotifications();
                 } else {
                     hideNotifications();
                 }
-*/
             }
         });
 
