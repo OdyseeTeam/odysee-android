@@ -47,7 +47,7 @@
         android:layout_marginEnd="8dp"
         android:background="@android:color/transparent"
         android:src="@drawable/ic_lock"
-        app:tint="@color/signin_text"
+        app:tint="@color/colorAccent"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/wallet_supporting_balance"

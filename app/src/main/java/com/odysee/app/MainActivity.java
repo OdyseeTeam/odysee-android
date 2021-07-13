@@ -136,7 +136,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -197,7 +201,6 @@ import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
-import com.odysee.app.tasks.wallet.UnlockTipsTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -3327,23 +3330,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (unlockingTips) {
             return;
         }
-        UnlockTipsTask task = new UnlockTipsTask(new GenericTaskHandler() {
-            @Override
-            public void beforeStart() {
-                unlockingTips = true;
-            }
 
-            @Override
-            public void onSuccess() {
-                unlockingTips = false;
-            }
+        Callable<Boolean> callable = () -> {
+            try {
+                Map<String, Object> options = new HashMap<>();
+                options.put("type", "support");
+                options.put("is_not_my_input", true);
+                options.put("blocking", true);
 
-            @Override
-            public void onError(Exception error) {
-                unlockingTips = false;
+                AccountManager am = AccountManager.get(getApplicationContext());
+                Lbry.directApiCall(Lbry.METHOD_TXO_SPEND, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+
+                return true;
+            } catch (ApiCallException | ClassCastException ex) {
+                ex.printStackTrace();
+                return false;
             }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        };
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<Boolean> future = executorService.submit(callable);
+
+        try {
+            unlockingTips = true;
+            future.get();
+            unlockingTips = false;
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     private void displayUnseenNotificationCount(int count) {
