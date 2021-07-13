@@ -82,7 +82,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -119,7 +118,6 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -281,7 +279,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private NotificationListAdapter notificationListAdapter;
 
-    private Map<String, Fragment> openNavFragments;
     private static final Map<Class, Integer> fragmentClassNavIdMap = new HashMap<>();
     static {
         Logger.getLogger(OkHttpClient.class.getName()).setLevel(Level.FINE);
@@ -317,7 +314,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String ACTION_SAVE_SHARED_USER_STATE = "com.odysee.app.Broadcast.SaveSharedUserState";
 
     // preference keys
-    public static final String PREFERENCE_KEY_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
     public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
@@ -328,9 +324,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_NOTIFICATION_REWARDS = "com.odysee.app.preference.notifications.Rewards";
     public static final String PREFERENCE_KEY_NOTIFICATION_CONTENT_INTERESTS = "com.odysee.app.preference.notifications.ContentInterests";
     public static final String PREFERENCE_KEY_NOTIFICATION_CREATOR = "com.odysee.app.preference.notifications.Creator";
-    public static final String PREFERENCE_KEY_PARTICIPATE_DATA_NETWORK = "com.odysee.app.preference.other.ParticipateInDataNetwork";
     public static final String PREFERENCE_KEY_SEND_BUFFERING_EVENTS = "com.odysee.app.preference.other.SendBufferingEvents";
-    public static final String PREFERENCE_KEY_SHARE_USAGE_DATA = "com.odysee.app.preference.other.ShareUsageData";
 
     // Internal flags / setting preferences
     public static final String PREFERENCE_KEY_INTERNAL_SKIP_WALLET_ACCOUNT = "com.odysee.app.preference.internal.WalletSkipAccount";
@@ -541,18 +535,24 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 Fragment selectedFragment = null;
+                String fragmentTag;
 
-                if (item.getItemId() == R.id.action_home_menu)
+                if (item.getItemId() == R.id.action_home_menu) {
                     selectedFragment = homeFragment;
-                else if (item.getItemId() == R.id.action_following_menu)
+                    fragmentTag = "HOME";
+                } else if (item.getItemId() == R.id.action_following_menu) {
                     selectedFragment = followingFragment;
-                else if (item.getItemId() == R.id.action_wallet_menu)
+                    fragmentTag = "FOLLOWING";
+                } else if (item.getItemId() == R.id.action_wallet_menu) {
                     selectedFragment = walletFragment;
-                else if (item.getItemId() == R.id.action_library_menu)
+                    fragmentTag = "WALLET";
+                } else {
                     selectedFragment = libraryFragment;
+                    fragmentTag = "LIBRARY";
+                }
 
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container_main_activity, selectedFragment).commit();
+                        .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
                 return true;
             }
@@ -573,7 +573,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // Hide bottom navigation
                 // Hide main bar
                 // Show PublishFragment.class
-//                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment()).addToBackStack("publish_claim").commit();
+//                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
 //                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
 //                hideActionBar();
@@ -1306,24 +1306,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
         });
-    }
-
-    private void checkPendingOpens() {
-        if (pendingFollowingReload) {
-            loadFollowingContent();
-            pendingFollowingReload = false;
-        }
-        if (!Helper.isNullOrEmpty(pendingAllContentTag)) {
-            openAllContentFragmentWithTag(pendingAllContentTag);
-            pendingAllContentTag = null;
-        } else if (!Helper.isNullOrEmpty(pendingChannelUrl)) {
-            openChannelUrl(pendingChannelUrl);
-            pendingChannelUrl = null;
-        } else if (pendingOpenWalletPage) {
-            openFragment(WalletFragment.class, true, null);
-        } else if (pendingOpenRewardsPage) {
-            openFragment(RewardsFragment.class, true, null);
-        }
     }
 
     @Override
@@ -2184,12 +2166,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE, true).apply();
                             Lbryio.cacheResolvedSubscriptions.clear();
 
-                            for (Fragment fragment : openNavFragments.values()) {
-                                if (fragment instanceof FollowingFragment) {
-                                    // reload local subscriptions
-                                    FollowingFragment followingFragment = (FollowingFragment) fragment;
-                                    followingFragment.fetchLoadedSubscriptions(true);
-                                }
+                            FollowingFragment f = (FollowingFragment) getSupportFragmentManager().findFragmentByTag("FOLLOWING");
+
+                            if (f != null) {
+                                f.fetchLoadedSubscriptions(true);
                             }
                         }
 
@@ -2204,14 +2184,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (followedTags != null && followedTags.size() > 0) {
                     List<Tag> previousTags = new ArrayList<>(Lbry.followedTags);
                     Lbry.followedTags = new ArrayList<>(followedTags);
-                    for (Fragment fragment : openNavFragments.values()) {
-                        if (fragment instanceof AllContentFragment) {
-                            AllContentFragment acFragment = (AllContentFragment) fragment;
-                            if (!acFragment.isSingleTagView() &&
-                                    acFragment.getCurrentContentScope() == ContentScopeDialogFragment.ITEM_TAGS &&
-                                    !previousTags.equals(followedTags)) {
-                                acFragment.fetchClaimSearchContent(true);
-                            }
+
+                    AllContentFragment f = (AllContentFragment) getSupportFragmentManager().findFragmentByTag("HOME");
+
+                    if (f!= null) {
+                        if (!f.isSingleTagView() &&
+                                f.getCurrentContentScope() == ContentScopeDialogFragment.ITEM_TAGS &&
+                                !previousTags.equals(followedTags)) {
+                            f.fetchClaimSearchContent(true);
                         }
                     }
                 }
@@ -2543,13 +2523,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         registerReceiver(requestsReceiver, intentFilter);
     }
 
-    private void loadFollowingContent() {
-        for (Fragment fragment : openNavFragments.values()) {
-            if (fragment instanceof FollowingFragment) {
-                ((FollowingFragment) fragment).loadFollowing();
-            }
-        }
-    }
     public void showMessage(int stringResourceId) {
         Snackbar.make(findViewById(R.id.content_main), stringResourceId, Snackbar.LENGTH_LONG).show();
     }
@@ -2769,22 +2742,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
                     sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_SYNC_ENABLED, true).apply();
 
-                    for (Fragment fragment : openNavFragments.values()) {
-                        if (fragment instanceof WalletFragment) {
-                            ((WalletFragment) fragment).onWalletSyncEnabled();
-                        }
+                    WalletFragment f = (WalletFragment) getSupportFragmentManager().findFragmentByTag("WALLET");
+
+                    if (f != null) {
+                        f.onWalletSyncEnabled();
                     }
+
                     scheduleWalletSyncTask();
                 }
             }
         } else if (requestCode == REQUEST_VIDEO_CAPTURE || requestCode == REQUEST_TAKE_PHOTO) {
             if (resultCode == RESULT_OK) {
                 PublishFragment publishFragment = null;
-                for (Fragment fragment : openNavFragments.values()) {
-                    if (fragment instanceof PublishFragment) {
-                        publishFragment = (PublishFragment) fragment;
-                        break;
-                    }
+
+                PublishFragment f = (PublishFragment) getSupportFragmentManager().findFragmentByTag("PUBLISH");
+
+                if (f != null) {
+                    publishFragment = (PublishFragment) f;
                 }
 
                 Map<String, Object> params = new HashMap<>();
