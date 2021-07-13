@@ -5,7 +5,6 @@ import android.accounts.AccountManager;
 import android.accounts.OnAccountsUpdateListener;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.content.BroadcastReceiver;
@@ -116,7 +115,6 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPairGenerator;
@@ -223,6 +221,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 
+import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
 import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
@@ -349,21 +348,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean hasLoadedFirstBalance;
 
     // broadcast receivers
-    private BroadcastReceiver serviceActionsReceiver;
     private BroadcastReceiver requestsReceiver;
 
     private static boolean appStarted;
-    private boolean serviceRunning;
     private PlayerNotificationManager playerNotificationManager;
     private MediaSessionCompat mediaSession;
-    private boolean receivedStopService;
     private ActionBarDrawerToggle toggle;
     private SwipeRefreshLayout notificationsSwipeContainer;
     private SyncSetTask syncSetTask = null;
     private List<WalletSync> pendingSyncSetQueue;
     @Getter
     private DatabaseHelper dbHelper;
-    private int selectedMenuItemId = -1;
     private List<CameraPermissionListener> cameraPermissionListeners;
     private List<DownloadActionListener> downloadActionListeners;
     private List<FilePickerListener> filePickerListeners;
@@ -376,13 +371,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private boolean walletBalanceUpdateScheduled;
-    private boolean shouldOpenUserSelectedMenuItem;
     private boolean walletSyncScheduled;
-    private String pendingAllContentTag;
-    private String pendingChannelUrl;
-    private boolean pendingOpenWalletPage;
-    private boolean pendingOpenRewardsPage;
-    private boolean pendingFollowingReload;
 
     AccountManager accountManager;
 
@@ -534,7 +523,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         bottomNavigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                Fragment selectedFragment = null;
+                Fragment selectedFragment;
                 String fragmentTag;
 
                 if (item.getItemId() == R.id.action_home_menu) {
@@ -1024,15 +1013,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         }
     };
-
-    public void setSelectedMenuItemForFragment(Fragment fragment) {
-        if (fragment != null) {
-            Class fragmentClass = fragment.getClass();
-            if (fragmentClassNavIdMap.containsKey(fragmentClass)) {
-//                navMenuAdapter.setCurrentItem(fragmentClassNavIdMap.get(fragmentClass));
-            }
-        }
-    }
 
     private void renderPictureInPictureMode() {
         findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
@@ -1751,7 +1731,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         View appBarMainContainer = findViewById(R.id.appbar);
         View decorView = getWindow().getDecorView();
         int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
-                (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
+                (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
+
+        if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1)
+            flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+
         appBarMainContainer.setFitsSystemWindows(false);
         decorView.setSystemUiVisibility(flags);
         inFullscreenMode = false;
@@ -1806,17 +1790,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         fetchRewards();
-    }
-
-    public static boolean isServiceRunning(Context context, Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(serviceInfo.service.getClassName())) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void loadAuthToken() {
@@ -2000,11 +1973,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             fetchOwnChannels();
             Account act = accounts[0];
             AccountManager am = AccountManager.get(this);
-            String email = am.getUserData(act, "email");
-            String token;
             try {
-                token = am.peekAuthToken(act, "auth_token_type");
-
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -2388,7 +2357,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
 
             byte[] decoded = Base64.decode(encryptedValue, Base64.DEFAULT);
-            return new String(decrypt(decoded, context, keyStore), Charset.forName("UTF8"));
+            return new String(decrypt(decoded, context, keyStore), StandardCharsets.UTF_8);
         } catch (Exception ex) {
             Log.e(TAG, "utils - Could not retrieve a secure value", ex);
         }
@@ -2477,16 +2446,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 String action = intent.getAction();
                 if (ACTION_AUTH_TOKEN_GENERATED.equalsIgnoreCase(action)) {
                     handleAuthTokenGenerated(intent);
-                } else if (ACTION_USER_SIGN_IN_SUCCESS.equalsIgnoreCase(action)) {
-                    handleUserSignInSuccess(intent);
                 } else if (ACTION_OPEN_ALL_CONTENT_TAG.equalsIgnoreCase(action)) {
                     handleOpenContentTag(intent);
                 } else if (ACTION_OPEN_CHANNEL_URL.equalsIgnoreCase(action)) {
                     handleOpenChannelUrl(intent);
-                } else if (ACTION_OPEN_WALLET_PAGE.equalsIgnoreCase(action)) {
-                    pendingOpenWalletPage = true;
-                } else if (ACTION_OPEN_REWARDS_PAGE.equalsIgnoreCase(action)) {
-                    pendingOpenRewardsPage = true;
                 } else if (ACTION_SAVE_SHARED_USER_STATE.equalsIgnoreCase(action)) {
                     saveSharedUserState();
                 } else if (ACTION_PUBLISH_SUCCESSFUL.equalsIgnoreCase(action)) {
@@ -2510,14 +2473,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             private void handleOpenContentTag(Intent intent) {
                 String tag = intent.getStringExtra("tag");
                 if (!Helper.isNullOrEmpty(tag)) {
-                    pendingAllContentTag = tag;
                 }
             }
-            private void handleUserSignInSuccess(Intent intent) {
-                pendingFollowingReload = true;
-            }
             private void handleOpenChannelUrl(Intent intent) {
-                pendingChannelUrl = intent.getStringExtra("url");
             }
         };
         registerReceiver(requestsReceiver, intentFilter);
@@ -3144,7 +3102,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void unregisterReceivers() {
         Helper.unregisterReceiver(requestsReceiver, this);
-        Helper.unregisterReceiver(serviceActionsReceiver, this);
     }
 
     public void setNowPlayingClaim(Claim claim, String url) {

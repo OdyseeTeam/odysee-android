@@ -80,7 +80,6 @@ public class BaseFragment extends Fragment {
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.setSelectedMenuItemForFragment(this);
 
             if (shouldHideGlobalPlayer()) {
                 activity.hideGlobalNowPlaying();
@@ -177,7 +176,7 @@ public class BaseFragment extends Fragment {
 
                 double depositAmount = 0;
                 try {
-                    depositAmount = Double.valueOf(depositString);
+                    depositAmount = Double.parseDouble(depositString);
                 } catch (NumberFormatException ex) {
                     // pass
                     showError(getString(R.string.please_enter_valid_deposit));
