@@ -818,11 +818,14 @@ public class FileViewFragment extends BaseFragment implements
 
         closeWebView();
 
+        // Tasks on the scheduled executor needs to be really terminated to avoid
+        // crashes if user presses back after going to a related content from here
         if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
-            if (futureReactions != null) {
-                futureReactions.cancel(true);
+            try {
+                scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            scheduledExecutor.shutdown();
         }
     }
 
@@ -1945,6 +1948,8 @@ public class FileViewFragment extends BaseFragment implements
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(1);
         }
+        if (futureReactions != null)
+            futureReactions.cancel(true);
 
         if (reactions == null)
             reactions = new Reactions();
