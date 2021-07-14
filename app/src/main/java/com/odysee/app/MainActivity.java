@@ -1671,7 +1671,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
+        // Don't show the toolbar when returning from the Share Activity
+        if (getSupportFragmentManager().findFragmentByTag("FileView") == null)
+            findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
         if (nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
@@ -3203,7 +3205,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             //fragment.setRetainInstance(true);
             FragmentManager manager = getSupportFragmentManager();
-            FragmentTransaction transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
+
+            FragmentTransaction transaction;
+            if (fragment instanceof FileViewFragment) {
+                transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, "FileView");
+            } else {
+                transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
+            }
             if (allowNavigateBack) {
                 transaction.addToBackStack(null);
             }

@@ -306,7 +306,8 @@
                         android:clickable="true"
                         android:orientation="vertical"
                         android:paddingTop="8dp"
-                        android:paddingBottom="8dp">
+                        android:paddingBottom="8dp"
+                        android:focusable="true">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -341,7 +342,8 @@
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:padding="8dp">
+                        android:padding="8dp"
+                        android:focusable="true">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -377,8 +379,9 @@
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:orientation="vertical"
-                        android:visibility="gone"
-                        android:padding="8dp">
+                        android:visibility="visible"
+                        android:padding="8dp"
+                        android:focusable="true">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -411,7 +414,8 @@
                         android:clickable="true"
                         android:visibility="gone"
                         android:orientation="vertical"
-                        android:padding="8dp">
+                        android:padding="8dp"
+                        android:focusable="true">
 
                         <RelativeLayout
                             android:layout_width="36dp"
