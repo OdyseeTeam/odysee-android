@@ -210,7 +210,7 @@ public class FileViewFragment extends BaseFragment implements
     private String currentUrl;
     private ClaimListAdapter relatedContentAdapter;
     private CommentListAdapter commentListAdapter;
-    private Player.EventListener fileViewPlayerListener;
+    private Player.Listener fileViewPlayerListener;
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
@@ -323,7 +323,7 @@ public class FileViewFragment extends BaseFragment implements
 
         initUi(root);
 
-        fileViewPlayerListener = new Player.EventListener() {
+        fileViewPlayerListener = new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(@Player.State int playbackState) {
                 if (playbackState == Player.STATE_READY) {
@@ -1883,7 +1883,8 @@ public class FileViewFragment extends BaseFragment implements
             if (playbackState != Player.STATE_ENDED) {
                 playbackPositionMs = previousPlayer.getCurrentPosition();
             }
-            previousPlayer.stop(true);
+            previousPlayer.stop();
+            previousPlayer.clearMediaItems();
         }
 
         this.currentPlayer = currentPlayer;
