@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -458,10 +459,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                 vh.durationView.setVisibility((duration > 0 || item.isLive()) ? View.VISIBLE : View.GONE);
                 if (item.isLive()) {
-                    vh.durationView.setBackgroundColor(context.getResources().getColor(R.color.colorAccent));
+                    vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
                     vh.durationView.setText(context.getResources().getString(R.string.live).toUpperCase());
                 } else {
-                    vh.durationView.setBackgroundColor(context.getResources().getColor(android.R.color.black));
+                    vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
                     vh.durationView.setText(Helper.formatDuration(duration));
                 }
 

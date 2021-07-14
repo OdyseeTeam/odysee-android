@@ -2003,17 +2003,11 @@ public class FileViewFragment extends BaseFragment implements
                     int inactiveColor = 0;
                     int fireActive = 0;
                     int slimeActive = 0;
-                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                        Context context = getContext();
-                        if (context != null) {
-                            inactiveColor = getContext().getColor(R.color.darkForeground);
-                            fireActive = getContext().getColor(R.color.fireActive);
-                            slimeActive = getContext().getColor(R.color.slimeActive);
-                        }
-                    } else {
-                        inactiveColor = getResources().getColor(R.color.darkForeground);
-                        fireActive = getResources().getColor(R.color.fireActive);
-                        slimeActive = getResources().getColor(R.color.slimeActive);
+                    Context context = getContext();
+                    if (context != null) {
+                        inactiveColor = ContextCompat.getColor(context, R.color.darkForeground);
+                        fireActive = ContextCompat.getColor(context, R.color.fireActive);
+                        slimeActive = ContextCompat.getColor(context, R.color.slimeActive);
                     }
                     if (reactions.isLiked()) {
                         likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);

@@ -8,12 +8,12 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.odysee.app.R;
 
@@ -41,12 +41,7 @@ public class CreditsBalanceView extends TextView {
 
             this.setTextSize((int) textFontSize);
 
-            int textColor;
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                textColor = getResources().getColor(R.color.credits_view, context.getTheme());
-            } else {
-                textColor = getResources().getColor(R.color.credits_view);
-            }
+            int textColor = ContextCompat.getColor(context, R.color.credits_view);
             this.setTextColor(textColor);
 
             DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
