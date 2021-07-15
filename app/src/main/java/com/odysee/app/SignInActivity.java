@@ -16,18 +16,14 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
-import com.odysee.app.exceptions.LbryioRequestException;
-import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.callable.UserExistsWithPassword;
+import com.odysee.app.callable.UserSignin;
 import com.odysee.app.tasks.verification.CheckUserEmailVerifiedTask;
 import com.odysee.app.tasks.verification.EmailNewTask;
 import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Lbryio;
-
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,30 +35,28 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Response;
-
 import static com.odysee.app.utils.Lbryio.TAG;
 
 public class SignInActivity extends Activity {
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
     public final static String ARG_AUTH_TYPE = "auth_token_type";
-    private MaterialButton buttonContinue;
     private TextInputEditText inputEmail;
     private TextInputEditText inputPassword;
     private ProgressBar emailAddProgress;
     private View layoutCollect;
     private View layoutVerify;
     private TextView textAddedEmail;
-    private View buttonEdit;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
-    private String auth_token_sent;
+    private ExecutorService executor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
+
+        executor = Executors.newSingleThreadExecutor();
 
         layoutCollect = findViewById(R.id.signin_form);
         layoutVerify = findViewById(R.id.verification_email_verify_container);
@@ -90,7 +84,7 @@ public class SignInActivity extends Activity {
             }
         });
 
-        buttonEdit = findViewById(R.id.verification_email_edit_button);
+        View buttonEdit = findViewById(R.id.verification_email_edit_button);
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -110,120 +104,74 @@ public class SignInActivity extends Activity {
     }
 
     private boolean checkUserExistsWithPassword(String email) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Callable<Boolean> callable = () -> {
-            Map<String, String> options = new HashMap<String, String>();
-            options.put("email", email);
-
-            try {
-                Response response = Lbryio.call("user", "exists", options, Helper.METHOD_POST, getApplicationContext());
-
-                if (response.isSuccessful()) {
-                    String responseString = response.body().string();
-                    response.close();
-                    JSONObject jsonData = new JSONObject(responseString);
-
-                    if (jsonData.has("data"))
-                        return (jsonData.getJSONObject("data").getBoolean("has_password"));
-                }
-                return false;
-            } catch (LbryioRequestException | LbryioResponseException e) {
-                Log.e(TAG, e.getLocalizedMessage());
-                return false;
-            }
-        };
+        Callable<Boolean> callable = new UserExistsWithPassword(getApplicationContext(), email);
 
         Future<Boolean> future = executor.submit(callable);
 
         try {
-            boolean hasPassword = future.get();
-            return hasPassword;
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "checkUserExistsWithPassword: ".concat(e.getLocalizedMessage()));
         }
         return false;
     }
 
-    private void performSignIn(String email, String password, String authToken) {
+    private void performSignIn(String email, String password) {
         View progressView = findViewById(R.id.password_signin_progress);
         TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
         findViewById(R.id.signin_buttons).setVisibility(View.GONE);
         progressView.setVisibility(View.VISIBLE);
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Callable<Boolean> callable = () -> {
-            Map<String, String> options = new HashMap<String, String>();
-            options.put("email", email);
+        Map<String, String> options = new HashMap<>();
+        options.put("email", email);
 
-            if (checkUserExistsWithPassword(email)) {
-                options.put("password", password);
-                try {
-                    Response responseSignIn = Lbryio.call("user", "signin", options, Helper.METHOD_POST, getApplicationContext());
-                    if (responseSignIn.isSuccessful()) {
-                        String responseString = responseSignIn.body().string();
-                        responseSignIn.close();
-                        JSONObject responseJson = new JSONObject(responseString);
-                        if (responseJson.getBoolean("success") == true) {
-                            JSONObject jsondata = responseJson.getJSONObject("data");
-                            if (jsondata.has("primary_email") && jsondata.getString("primary_email").equals(email)) {
-                                scheduleEmailVerify();
-                            }
-                        }
-                        return true;
-                    } else {
-                        Log.e(TAG, "performSignIn: ".concat(responseSignIn.body().string()));
-                        return false;
-                    }
-                } catch (LbryioRequestException | LbryioResponseException e) {
-                    Log.e(TAG, e.getLocalizedMessage());
-                    return false;
+        if (checkUserExistsWithPassword(email)) {
+            options.put("password", password);
+
+            Future<Boolean> future = executor.submit(new UserSignin(getApplicationContext(), options));
+            try {
+                if (future.get())
+                    scheduleEmailVerify();
+                else {
+                    Snackbar.make(layoutCollect, "Retry request", Snackbar.LENGTH_LONG).
+                            setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
                 }
-            } else {
-                EmailNewTask task = new EmailNewTask(currentEmail, emailAddProgress, new EmailNewTask.EmailNewHandler() {
-                    @Override
-                    public void beforeStart() {
-                        Helper.setViewVisibility(buttonContinue, View.INVISIBLE);
-                    }
-
-                    @Override
-                    public void onSuccess() {
-                        TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
-                        findViewById(R.id.signin_buttons).setVisibility(View.VISIBLE);
-                        progressView.setVisibility(View.GONE);
-                        layoutCollect.setVisibility(View.GONE);
-                        layoutVerify.setVisibility(View.VISIBLE);
-                        Helper.setViewText(textAddedEmail, currentEmail);
-                        scheduleEmailVerify();
-
-                        Helper.setViewVisibility(buttonContinue, View.VISIBLE);
-                    }
-
-                    @Override
-                    public void onEmailExists() {
-                        // TODO: Update wording based on email already existing
-                    }
-
-                    @Override
-                    public void onError(Exception error) {
-                        View view = findViewById(R.id.verification_email_collect_container);
-                        if (view != null && error != null) {
-                            Snackbar.make(view, error.getMessage(), Snackbar.LENGTH_LONG).
-                                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-                        }
-                        Helper.setViewVisibility(buttonContinue, View.VISIBLE);
-                    }
-                });
-
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                return false;
+            } catch (ExecutionException | InterruptedException e) {
+                Log.e(TAG, e.toString());
             }
-        };
+        } else {
+            EmailNewTask task = new EmailNewTask(currentEmail, emailAddProgress, new EmailNewTask.EmailNewHandler() {
+                @Override
+                public void beforeStart() {
+                }
 
-        Future<Boolean> future = executor.submit(callable);
-        try {
-            boolean resultado = future.get();
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, e.getLocalizedMessage());
+                @Override
+                public void onSuccess() {
+                    TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
+                    findViewById(R.id.signin_buttons).setVisibility(View.VISIBLE);
+                    progressView.setVisibility(View.GONE);
+                    layoutCollect.setVisibility(View.GONE);
+                    layoutVerify.setVisibility(View.VISIBLE);
+                    Helper.setViewText(textAddedEmail, currentEmail);
+                    scheduleEmailVerify();
+                }
+
+                @Override
+                public void onEmailExists() {
+                    // TODO: Update wording based on email already existing
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    View view = findViewById(R.id.verification_email_collect_container);
+                    if (view != null && error != null) {
+                        Snackbar.make(view, error.toString(), Snackbar.LENGTH_LONG).
+                                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                    }
+                }
+            });
+
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -242,7 +190,7 @@ public class SignInActivity extends Activity {
         InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(inputEmail.getWindowToken(), 0);
 
-        performSignIn(currentEmail, password, null);
+        performSignIn(currentEmail, password);
     }
     private void scheduleEmailVerify() {
         emailVerifyCheckScheduler = Executors.newSingleThreadScheduledExecutor();
