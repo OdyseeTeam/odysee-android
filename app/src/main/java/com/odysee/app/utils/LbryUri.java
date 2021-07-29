@@ -11,6 +11,7 @@ import lombok.Data;
 @Data
 public class LbryUri {
     public static final String LBRY_TV_BASE_URL = "https://lbry.tv/";
+    public static final String ODYSEE_COM_BASE_URL = "https://odysee.com/";
     public static final String PROTO_DEFAULT = "lbry://";
     public static final String REGEX_INVALID_URI = "[ =&#:$@%?;/\\\\\"<>%\\{\\}|^~\\[\\]`\u0000-\u0008\u000b-\u000c\u000e-\u001F\uD800-\uDFFF\uFFFE-\uFFFF]";
     public static final String REGEX_ADDRESS = "^(b)(?=[^0OIl]{32,33})[0-9A-Za-z]{32,33}$";
@@ -223,7 +224,7 @@ public class LbryUri {
         String secondaryClaimId = !Helper.isNullOrEmpty(secondaryClaimName) ? streamClaimId : null;
 
         if (!Helper.isNullOrEmpty(primaryClaimId)) {
-            if (protocol.equals(LBRY_TV_BASE_URL))
+            if (protocol.equals(LBRY_TV_BASE_URL) || protocol.equals(ODYSEE_COM_BASE_URL))
                 sb.append(':').append(primaryClaimId);
             else
                 sb.append('#').append(primaryClaimId);
@@ -238,7 +239,7 @@ public class LbryUri {
         }
 
         if (!Helper.isNullOrEmpty(secondaryClaimId)) {
-            if (protocol.equals(LBRY_TV_BASE_URL))
+            if (protocol.equals(LBRY_TV_BASE_URL) || protocol.equals(ODYSEE_COM_BASE_URL))
                 sb.append(':').append(secondaryClaimId);
             else
                 sb.append('#').append(secondaryClaimId);
@@ -255,8 +256,17 @@ public class LbryUri {
         return parse(url).toString();
     }
 
+    /**
+     * @deprecated LBRY.TV will shutdown, so this will be useless. Use toOdyseeString() instead
+     * @return
+     */
+    @Deprecated
     public String toTvString() {
         return build(true, LBRY_TV_BASE_URL, false);
+    }
+
+    public String toOdyseeString() {
+        return build(true, ODYSEE_COM_BASE_URL, false);
     }
     public String toVanityString() {
         return build(true, PROTO_DEFAULT, true);
