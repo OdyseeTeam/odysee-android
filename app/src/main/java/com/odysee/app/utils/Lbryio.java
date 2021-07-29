@@ -279,6 +279,7 @@ public final class Lbryio {
         options.put("node_id", "");
         options.put("operating_system", "android");
         options.put("platform", String.format("Android %s (API %d)", Build.VERSION.RELEASE, Build.VERSION.SDK_INT));
+        options.put("domain", "odysee.com");
         try {
             JSONObject response = (JSONObject) parseResponse(call("install", "new", options, Helper.METHOD_POST, context));
         } catch (LbryioRequestException | LbryioResponseException | ClassCastException ex) {

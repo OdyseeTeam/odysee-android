@@ -30,6 +30,7 @@ public class UserSignin implements Callable<Boolean> {
     @Override
     public Boolean call() throws Exception {
         try {
+            options.put("domain", "odysee.com");
             Response responseSignIn = Lbryio.call("user", "signin", options, Helper.METHOD_POST, ctx);
             if (responseSignIn.isSuccessful()) {
                 ResponseBody responseBody = responseSignIn.body();
