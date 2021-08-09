@@ -136,12 +136,13 @@ public class LbryUri {
          * [https://] hosts use ':' as ModSeparators while [lbry://] protocol expects '#'
          */
 
+        /*
         if (!components.get(1).isEmpty()) {
             if (primaryModSeparator.equals(":"))
                 primaryModSeparator = "#";
             if (secondaryModSeparator.equals(":"))
                 secondaryModSeparator = "#";
-        }
+        }*/
 
         if (includesChannel) {
             if (Helper.isNullOrEmpty(channelName)) {
@@ -224,12 +225,9 @@ public class LbryUri {
         String secondaryClaimId = !Helper.isNullOrEmpty(secondaryClaimName) ? streamClaimId : null;
 
         if (!Helper.isNullOrEmpty(primaryClaimId)) {
-            if (protocol.equals(LBRY_TV_BASE_URL) || protocol.equals(ODYSEE_COM_BASE_URL))
-                sb.append(':').append(primaryClaimId);
-            else
-                sb.append('#').append(primaryClaimId);
+            sb.append(':').append(primaryClaimId);
         } else if (primaryClaimSequence > 0) {
-            sb.append(':').append(primaryClaimSequence);
+            sb.append('*').append(primaryClaimSequence);
         } else if (primaryBidPosition > 0) {
             sb.append('$').append(primaryBidPosition);
         }
@@ -239,12 +237,9 @@ public class LbryUri {
         }
 
         if (!Helper.isNullOrEmpty(secondaryClaimId)) {
-            if (protocol.equals(LBRY_TV_BASE_URL) || protocol.equals(ODYSEE_COM_BASE_URL))
-                sb.append(':').append(secondaryClaimId);
-            else
-                sb.append('#').append(secondaryClaimId);
+            sb.append(':').append(secondaryClaimId);
         } else if (secondaryClaimSequence > 0) {
-            sb.append(':').append(secondaryClaimSequence);
+            sb.append('*').append(secondaryClaimSequence);
         } else  if (secondaryBidPosition > 0) {
             sb.append('$').append(secondaryBidPosition);
         }
@@ -304,9 +299,9 @@ public class LbryUri {
                     throw new LbryUriException(String.format("No modifier provided after separator %s", modSeparator));
                 }
 
-                if ("#".equals(modSeparator)) {
+                if ("#".equals(modSeparator) || ":".equals(modSeparator)) {
                     claimId = modValue;
-                } else if (":".equals(modSeparator)) {
+                } else if ("*".equals(modSeparator)) {
                     claimSequence = Helper.parseInt(modValue, -1);
                 } else if ("$".equals(modSeparator)) {
                     bidPosition = Helper.parseInt(modValue, -1);

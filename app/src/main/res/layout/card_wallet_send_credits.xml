@@ -20,6 +20,7 @@
             android:textSize="20sp"/>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/recipient_address">
@@ -29,7 +30,10 @@
                 android:textSize="14sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:imeOptions="actionNext" />
+                android:inputType="text"
+                android:imeOptions="actionNext"
+                android:ellipsize="middle"
+                android:singleLine="true"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <RelativeLayout
@@ -37,6 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:id="@+id/wallet_input_layout_amount"
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"

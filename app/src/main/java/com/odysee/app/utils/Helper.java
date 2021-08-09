@@ -827,4 +827,11 @@ public final class Helper {
         String outpoint = String.format("%s:%d", claim.getTxid(), claim.getNout());
         return Lbryio.blockedOutpoints.contains(outpoint);
     }
+
+    public static boolean isSignedIn(Context context) {
+        if (context instanceof MainActivity) {
+            return ((MainActivity) context).isSignedIn();
+        }
+        return false;
+    }
 }

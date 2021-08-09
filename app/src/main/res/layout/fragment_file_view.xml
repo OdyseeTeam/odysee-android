@@ -814,7 +814,7 @@
                         android:layout_marginEnd="16dp"
                         android:autoLink="all"
                         android:fontFamily="@font/inter"
-                        android:textColorLink="@color/lbryGreen"
+                        android:textColorLink="@color/odyseePink"
                         android:textFontWeight="300"
                         android:textSize="12sp" />
 

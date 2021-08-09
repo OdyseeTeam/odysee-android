@@ -18,7 +18,7 @@
     <color name="playerControlsBackground">#33000000</color>
     <color name="scrubberColor">@color/nextLbryGreen</color>
     <color name="playedColor">@color/nextLbryGreen</color>
-    <color name="bufferedColor">@color/nextLbryGreenSemiTransparent</color>
+    <color name="bufferedColor">@color/odyseePinkSemiTransparent</color>
 
     <color name="darkForeground">#222222</color>
     <color name="lightForeground">#AAAAAA</color>
@@ -28,9 +28,9 @@
     <color name="backgroundTextArea">#F1F1F1</color>
 
     <color name="brighterLbryGreen">#40B887</color>
-    <color name="lbryGreen">#2F9176</color>
+    <color name="odyseePink">#E50054</color>
     <color name="nextLbryGreen">#38D9A9</color>
-    <color name="nextLbryGreenSemiTransparent">#3338D9A9</color>
+    <color name="odyseePinkSemiTransparent">#33E50054</color>
     <color name="tagGreen">#E3F6F1</color>
     <color name="tagGrape">#77F255DA</color>
 

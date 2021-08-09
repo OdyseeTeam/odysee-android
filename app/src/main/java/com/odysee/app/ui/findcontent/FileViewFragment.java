@@ -950,7 +950,7 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
-        ResolveTask task = new ResolveTask(url, Lbry.LBRY_TV_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(url, Lbry.API_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
@@ -2673,7 +2673,7 @@ public class FileViewFragment extends BaseFragment implements
             long st = System.currentTimeMillis();
             List<String> urlsToResolve = new ArrayList<>(commentListAdapter.getClaimUrlsToResolve());
             if (urlsToResolve.size() > 0) {
-                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.LBRY_TV_CONNECTION_STRING, null, new ClaimListResultHandler() {
+                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
                     @Override
                     public void onSuccess(List<Claim> claims) {
                         if (commentListAdapter != null) {

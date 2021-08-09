@@ -62,22 +62,5 @@
                 android:src="@drawable/ic_copy"
                 android:tint="@color/colorPrimary" />
         </RelativeLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/wallet_get_new_address"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/get_new_address"
-            android:fontFamily="@font/inter"
-            android:textSize="14sp" />
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/inter"
-            android:text="@string/generate_address_hint"
-            android:textSize="12sp"
-            android:textFontWeight="300" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

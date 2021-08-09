@@ -319,7 +319,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Override
     public void onBindViewHolder(ClaimListAdapter.ViewHolder vh, int position) {
         int type = getItemViewType(position);
-        int paddingTop = position == 0 ? 16 : 8;
+        int paddingTop = 0; //position == 0 ? 16 : 8;
         int paddingBottom = position == getItemCount() - 1 ? 16 : 8;
         int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
         int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);

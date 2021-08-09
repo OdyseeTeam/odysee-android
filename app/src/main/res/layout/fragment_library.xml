@@ -65,7 +65,7 @@
                 android:layout_alignParentEnd="true"
                 android:fontFamily="@font/inter"
                 android:text="@string/stats"
-                android:textColor="@color/lbryGreen"
+                android:textColor="@color/odyseePink"
                 android:textFontWeight="300"
                 android:textSize="12sp"
                 android:visibility="gone" />
@@ -99,7 +99,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter"
                         android:text="@string/zero"
-                        android:textColor="@color/lbryGreen"
+                        android:textColor="@color/odyseePink"
                         android:textFontWeight="300"
                         android:textSize="30sp" />
                     <TextView
@@ -109,7 +109,7 @@
                         android:layout_marginStart="3dp"
                         android:fontFamily="@font/inter"
                         android:text="@string/mb"
-                        android:textColor="@color/lbryGreen"
+                        android:textColor="@color/odyseePink"
                         android:textFontWeight="300"
                         android:textSize="20sp" />
                 </LinearLayout>

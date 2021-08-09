@@ -138,7 +138,7 @@
             android:layout_marginEnd="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/convert_credits"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="12sp" />
 
         <TextView
@@ -149,7 +149,7 @@
             android:layout_marginStart="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/convert_credits_bittrex"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="16sp" />
 
         <View
@@ -161,7 +161,7 @@
 
 
         <LinearLayout
-            android:background="@color/lbryGreen"
+            android:background="@color/odyseePink"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"

@@ -50,8 +50,7 @@ public final class Lbry {
     public static List<String> abandonedClaimIds = new ArrayList<>();
 
     public static final int TTL_CLAIM_SEARCH_VALUE = 120000; // 2-minute TTL for cache
-    public static final String SDK_CONNECTION_STRING = "http://127.0.0.1:5279";
-    public static final String LBRY_TV_CONNECTION_STRING = "https://api.lbry.tv/api/v1/proxy";
+    public static final String API_CONNECTION_STRING = "https://api.na-backend.odysee.com/api/v1/proxy";
     public static final String TAG = "Lbry";
 
     // Values to obtain from LBRY SDK status
@@ -135,16 +134,19 @@ public final class Lbry {
         }
     }
 
-    public static Response apiCall(String method, Map<String, Object> params) throws LbryRequestException {
-        return apiCall(method, params, SDK_CONNECTION_STRING);
+    public static Response apiCall(String method, Map<String, Object> params, String connectionString) throws LbryRequestException {
+        return apiCall(method, params, connectionString, null);
     }
 
-    public static Response apiCall(String method, Map<String, Object> params, String connectionString) throws LbryRequestException {
+    public static Response apiCall(String method, Map<String, Object> params) throws LbryRequestException {
+        return apiCall(method, params, API_CONNECTION_STRING, null);
+    }
+
+    public static Response apiCall(String method, Map<String, Object> params, String connectionString, String authToken) throws LbryRequestException {
         long counter = new Double(System.currentTimeMillis() / 1000.0).longValue();
 
-        String authToken = "";
-
-        if (params != null && params.containsKey("auth_token") && params.get("auth_token") != null) {
+        if (Helper.isNullOrEmpty(authToken) &&
+                params != null && params.containsKey("auth_token") && params.get("auth_token") != null) {
             authToken = params.get("auth_token").toString();
             params.remove("auth_token");
         }
@@ -162,8 +164,9 @@ public final class Lbry {
         RequestBody body = RequestBody.create(requestBody.toString(), Helper.JSON_MEDIA_TYPE);
         Request.Builder requestBuilder = new Request.Builder().url(connectionString).post(body);
 
-        if (authToken != "")
+        if (!Helper.isNullOrEmpty(authToken)) {
             requestBuilder.addHeader("X-Lbry-Auth-Token", authToken);
+        }
 
         Request request =  requestBuilder.build();
         OkHttpClient client = new OkHttpClient.Builder().
@@ -301,7 +304,7 @@ public final class Lbry {
             params.put("auth_token", authToken);
         }
         try {
-            JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_TRANSACTION_LIST, params, LBRY_TV_CONNECTION_STRING));
+            JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_TRANSACTION_LIST, params, API_CONNECTION_STRING));
             JSONArray items = result.getJSONArray("items");
             for (int i = 0; i < items.length(); i++) {
                 Transaction tx = Transaction.fromJSONObject(items.getJSONObject(i));
@@ -551,12 +554,21 @@ public final class Lbry {
         }
         return response;
     }
+    public static Object authenticatedGenericApiCall(String method, Map<String, Object> params, String authToken) throws ApiCallException {
+        Object response = null;
+        try {
+            response = parseResponse(apiCall(method, params, API_CONNECTION_STRING, authToken));
+        } catch (LbryRequestException | LbryResponseException ex) {
+            throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
+        }
+        return response;
+    }
     public static Object directApiCall(String method, String authToken) throws ApiCallException {
         Map<String, Object> params = new HashMap<>();
         params.put("auth_token", authToken);
         Object response = null;
         try {
-            response = parseResponse(apiCall(method, params, LBRY_TV_CONNECTION_STRING));
+            response = parseResponse(apiCall(method, params, API_CONNECTION_STRING));
         } catch (LbryRequestException | LbryResponseException ex) {
             throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
         }
@@ -566,7 +578,7 @@ public final class Lbry {
         p.put("auth_token", authToken);
         Object response = null;
         try {
-            response = parseResponse(apiCall(method, p, LBRY_TV_CONNECTION_STRING));
+            response = parseResponse(apiCall(method, p, API_CONNECTION_STRING));
         } catch (LbryRequestException | LbryResponseException ex) {
             throw new ApiCallException(String.format("Could not execute %s call: %s", method, ex.getMessage()), ex);
         }

@@ -6,7 +6,6 @@
     android:background="@color/pageBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
     <ProgressBar
         android:id="@+id/all_content_main_progress"
         android:layout_width="36dp"
@@ -20,19 +19,19 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="16dp">
+        android:layout_height="match_parent">
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="16dp">
+            android:layout_marginBottom="8dp">
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
+                android:layout_height="wrap_content"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/category_selection_chipgroup"
                     android:layout_width="wrap_content"
@@ -137,10 +136,9 @@
             android:id="@+id/all_content_filter_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="6dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
             android:visibility="visible">
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -243,8 +241,8 @@
             android:id="@+id/all_content_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="2dp"
             android:clipToPadding="false"
+            android:scrollbars="none"
             tools:listitem="@layout/list_item_stream" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

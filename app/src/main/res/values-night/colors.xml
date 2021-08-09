@@ -13,7 +13,7 @@
     <color name="playerControlsBackground">#33000000</color>
     <color name="scrubberColor">@color/nextLbryGreen</color>
     <color name="playedColor">@color/nextLbryGreen</color>
-    <color name="bufferedColor">@color/nextLbryGreenSemiTransparent</color>
+    <color name="bufferedColor">@color/odyseePinkSemiTransparent</color>
 
     <!-- At some point, these colours have to be renamed -->
     <color name="darkForeground">#EEEEEE</color>
@@ -24,9 +24,9 @@
     <color name="backgroundTextArea">#333333</color>
 
     <color name="brighterLbryGreen">#40B887</color>
-    <color name="lbryGreen">#2F9176</color>
+    <color name="odyseePink">#2F9176</color>
     <color name="nextLbryGreen">#38D9A9</color>
-    <color name="nextLbryGreenSemiTransparent">#3338D9A9</color>
+    <color name="odyseePinkSemiTransparent">#3338D9A9</color>
     <color name="tagGreen">#329A7E</color>
     <color name="tagGrape">#77D510B8</color>
 

@@ -6,7 +6,7 @@
             android:innerRadiusRatio="2.5"
             android:thickness="3dp"
             android:useLevel="false">
-            <solid android:color="@color/nextLbryGreenSemiTransparent" />
+            <solid android:color="@color/odyseePinkSemiTransparent" />
         </shape>
     </item>
     <item>

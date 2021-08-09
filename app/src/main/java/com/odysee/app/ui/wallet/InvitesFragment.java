@@ -50,7 +50,7 @@ import com.odysee.app.utils.Lbryio;
 
 public class InvitesFragment extends BaseFragment implements WalletBalanceListener {
 
-    private static final String INVITE_LINK_FORMAT = "https://lbry.tv/$/invite/%s:%s";
+    private static final String INVITE_LINK_FORMAT = "https://odysee.com/$/invite/%s:%s";
 
     private boolean fetchingChannels;
     private View layoutAccountDriver;
@@ -197,7 +197,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
             public void onClick(View view) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).simpleSignIn();
+                    ((MainActivity) context).simpleSignIn(R.id.action_home_menu);
                 }
             }
         });

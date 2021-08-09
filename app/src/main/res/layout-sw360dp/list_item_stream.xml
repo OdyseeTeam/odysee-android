@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
-    style="@style/List_item_Layout"
     android:clickable="true"
     android:focusable="true"
     android:background="@drawable/bg_selected_list_item">
@@ -76,19 +75,6 @@
                 android:layout_height="wrap_content"
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"/>
-            <TextView
-                android:background="@android:color/black"
-                android:id="@+id/claim_duration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true"
-                android:layout_marginEnd="4dp"
-                android:layout_marginBottom="4dp"
-                android:fontFamily="@font/inter"
-                style="@style/Claim_Duration"
-                android:padding="2dp"
-                android:visibility="gone" />
             <LinearLayout
                 android:id="@+id/claim_fee_container"
                 android:background="@drawable/bg_stream_cost"
@@ -139,6 +125,19 @@
                 android:layout_width="160dp"
                 android:layout_height="90dp"
                 android:visibility="gone" />
+            <TextView
+                android:id="@+id/claim_duration"
+                android:background="@android:color/black"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="4dp"
+                android:layout_marginBottom="4dp"
+                android:fontFamily="@font/inter"
+                android:padding="2dp"
+                android:visibility="gone"
+                style="@style/Claim_Duration" />
         </RelativeLayout>
 
         <LinearLayout
@@ -196,7 +195,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:layout_marginTop="8dp">
+                    android:layout_marginTop="2dp">
                     <TextView
                         android:id="@+id/claim_publish_time"
                         android:layout_width="wrap_content"

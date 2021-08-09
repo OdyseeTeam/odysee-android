@@ -116,7 +116,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/manual_backup"
-                android:textColorLink="@color/lbryGreen" />
+                android:textColorLink="@color/odyseePink" />
             <TextView
                 android:id="@+id/wallet_link_sync_faq"
                 android:layout_weight="1"
@@ -124,7 +124,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="right"
                 android:text="@string/sync_faq"
-                android:textColorLink="@color/lbryGreen"/>
+                android:textColorLink="@color/odyseePink"/>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

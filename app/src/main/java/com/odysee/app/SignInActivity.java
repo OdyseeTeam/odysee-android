@@ -3,6 +3,7 @@ package com.odysee.app;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -15,6 +16,8 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -38,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static com.odysee.app.utils.Lbryio.TAG;
 
 public class SignInActivity extends Activity {
+    public static final String ACTION_USER_SIGNED_IN_SUCCESSFULLY = "com.odysee.app.USER_SIGNED_IN_SUCCESSFULLY";
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
     public final static String ARG_AUTH_TYPE = "auth_token_type";
     private TextInputEditText inputEmail;
@@ -50,6 +54,7 @@ public class SignInActivity extends Activity {
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
     private ExecutorService executor;
+    private int sourceTabId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +96,11 @@ public class SignInActivity extends Activity {
                 editEmail();
             }
         });
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            sourceTabId = intent.getIntExtra("sourceTabId", R.id.action_home_menu);
+        }
     }
 
     @Override
@@ -215,10 +225,21 @@ public class SignInActivity extends Activity {
 
                 addOdyseeAccountExplicitly(currentEmail);
 
-                finishSignInActivity();
+                // send broadcat to indicate the user finished sign in
+                Intent intent = new Intent(ACTION_USER_SIGNED_IN_SUCCESSFULLY);
+                intent.putExtra("sourceTabId", sourceTabId);
+                LocalBroadcastManager.getInstance(SignInActivity.this).sendBroadcast(intent);
+
+                // perform wallet sync first before finish the activity
+                handleWalletSync();
+                //finishSignInActivity();
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void handleWalletSync() {
+
     }
 
     private void addOdyseeAccountExplicitly(String currentEmail) {

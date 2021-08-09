@@ -1,16 +1,20 @@
 package com.odysee.app.ui.wallet;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.transition.TransitionManager;
 import android.util.Base64;
 import android.view.GestureDetector;
@@ -62,6 +66,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
+import com.odysee.app.SignInActivity;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
 import com.odysee.app.callable.WalletGetUnusedAddress;
@@ -150,7 +155,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         textWhatSyncMeans = root.findViewById(R.id.wallet_hint_what_sync_means);
         textWalletReceiveAddress = root.findViewById(R.id.wallet_receive_address);
         buttonCopyReceiveAddress = root.findViewById(R.id.wallet_copy_receive_address);
-        buttonGetNewAddress = root.findViewById(R.id.wallet_get_new_address);
         inputSendAddress = root.findViewById(R.id.wallet_input_send_address);
         inputSendAmount = root.findViewById(R.id.wallet_input_amount);
         buttonSend = root.findViewById(R.id.wallet_send);
@@ -179,6 +183,10 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
 
     private void fetchRecentTransactions(boolean forceFetch) {
+        if (!Helper.isSignedIn(getContext())) {
+            return;
+        }
+
         if (hasFetchedRecentTransactions && !forceFetch) {
             return;
         }
@@ -186,6 +194,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         Helper.setViewVisibility(textNoRecentTransactions, View.GONE);
 
         AccountManager am = AccountManager.get(getContext());
+        Account[] account = am.getAccounts();
 
         TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
@@ -300,12 +309,12 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             }
         });
 
-        buttonGetNewAddress.setOnClickListener(new View.OnClickListener() {
+        /*buttonGetNewAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 generateNewAddress();
             }
-        });
+        });*/
         textWalletReceiveAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -445,47 +454,58 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         disableSendControls();
         Helper.setViewVisibility(walletSendProgress, View.VISIBLE);
 
-        Callable<Boolean> callable = () -> {
-            try {
-                AccountManager am = AccountManager.get(getContext());
-                Map<String, Object> options = new HashMap<>();
-                options.put("addresses", Collections.singletonList(recipientAddress));
-                options.put("amount", amount);
-                options.put("blocking", true);
-                Lbry.directApiCall(Lbry.METHOD_WALLET_SEND, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
-            } catch (ApiCallException ex) {
-                ex.printStackTrace();
-                return false;
+        Runnable sendRunnable = new Runnable() {
+            @Override
+            public void run() {
+                boolean result = false;
+                Context ctx = getContext();
+                if (ctx instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) ctx;
+                    try {
+                        Map<String, Object> options = new HashMap<>();
+                        options.put("addresses", Collections.singletonList(recipientAddress));
+                        options.put("amount", amount);
+                        options.put("blocking", true);
+                        Lbry.directApiCall(Lbry.METHOD_WALLET_SEND, options, activity.getAuthToken());
+
+                        result = true;
+                    } catch (ApiCallException ex) {
+                        // pass
+                    }
+                }
+                handleSendResult(result, actualSendAmount);
             }
-            return true;
         };
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Boolean> future = executorService.submit(callable);
+        executorService.execute(sendRunnable);
+    }
 
-        try {
-            boolean result = future.get();
+    private void handleSendResult(final boolean result, final double actualSendAmount) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                enableSendControls();
+                Helper.setViewVisibility(walletSendProgress, View.GONE);
 
-            if (result) {
-                String message = getResources().getQuantityString(
-                        R.plurals.you_sent_credits, actualSendAmount == 1.0 ? 1 : 2,
-                        new DecimalFormat("#,###.####").format(actualSendAmount));
-                Helper.setViewText(inputSendAddress, null);
-                Helper.setViewText(inputSendAmount, null);
-                if (view != null) {
-                    Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
-                }
-            } else {
-                if (view != null) {
-                    Snackbar.make(view, R.string.send_credit_error, Snackbar.LENGTH_LONG).
-                            setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                View view = getView();
+                if (result) {
+                    String message = getResources().getQuantityString(
+                            R.plurals.you_sent_credits, actualSendAmount == 1.0 ? 1 : 2,
+                            new DecimalFormat("#,###.####").format(actualSendAmount));
+                    Helper.setViewText(inputSendAddress, null);
+                    Helper.setViewText(inputSendAmount, null);
+                    if (view != null) {
+                        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+                    }
+                } else {
+                    if (view != null) {
+                        Snackbar.make(view, R.string.send_credit_error, Snackbar.LENGTH_LONG).
+                                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                    }
                 }
             }
-            enableSendControls();
-            Helper.setViewVisibility(walletSendProgress, View.GONE);
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     private void checkReceiveAddress() {
@@ -552,10 +572,15 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
     public void onResume() {
         super.onResume();
+
         Context context = getContext();
-        Helper.setWunderbarValue(null, context);
+        //Helper.setWunderbarValue(null, context);
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            if (!activity.isSignedIn()) {
+                return;
+            }
+
             activity.syncWalletAndLoadPreferences();
             LbryAnalytics.setCurrentScreen(activity, "Wallet", "Wallet");
         }
@@ -570,6 +595,13 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
     public void onStart() {
         super.onStart();
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            if (!activity.isSignedIn()) {
+                activity.simpleSignIn(R.id.action_wallet_menu);
+            }
+        }
     }
 
     public void onStop() {
@@ -711,7 +743,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             String rewardsDriverText = getString(R.string.free_credits_available);
             if (Lbryio.totalUnclaimedRewardAmount > 0) {
                 rewardsDriverText = getResources().getQuantityString(
-                        Lbryio.isSignedIn() ? R.plurals.wallet_signed_in_free_credits : R.plurals.wallet_get_free_credits,
+                        Helper.isSignedIn(ctx) ? R.plurals.wallet_signed_in_free_credits : R.plurals.wallet_get_free_credits,
                         Lbryio.totalUnclaimedRewardAmount == 1 ? 1 : 2,
                         Helper.shortCurrencyFormat(Lbryio.totalUnclaimedRewardAmount));
             }

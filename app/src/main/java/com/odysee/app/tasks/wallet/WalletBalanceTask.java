@@ -9,17 +9,19 @@ import com.odysee.app.model.WalletBalance;
 import com.odysee.app.utils.Lbry;
 
 public class WalletBalanceTask extends AsyncTask<Void, Void, WalletBalance> {
+    private final String authToken;
     private final WalletBalanceHandler handler;
     private Exception error;
 
-    public WalletBalanceTask(WalletBalanceHandler handler) {
+    public WalletBalanceTask(String authToken, WalletBalanceHandler handler) {
+        this.authToken = authToken;
         this.handler = handler;
     }
 
     protected WalletBalance doInBackground(Void... params) {
-       WalletBalance balance;
+        WalletBalance balance;
         try {
-            JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE);
+            JSONObject json = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_WALLET_BALANCE, null, authToken);
             balance = WalletBalance.fromJSONObject(json);
         } catch (ApiCallException | ClassCastException ex) {
             error = ex;
