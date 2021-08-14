@@ -16,8 +16,8 @@
 
     <color name="publishBackground">#333333</color>
     <color name="playerControlsBackground">#33000000</color>
-    <color name="scrubberColor">@color/nextLbryGreen</color>
-    <color name="playedColor">@color/nextLbryGreen</color>
+    <color name="scrubberColor">@color/odyseePink</color>
+    <color name="playedColor">@color/odyseePink</color>
     <color name="bufferedColor">@color/odyseePinkSemiTransparent</color>
 
     <color name="darkForeground">#222222</color>

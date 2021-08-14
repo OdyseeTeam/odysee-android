@@ -44,9 +44,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.Transformation;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -99,6 +97,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 import androidx.appcompat.app.AppCompatActivity;
@@ -242,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final int SOURCE_NOW_PLAYING_FILE = 1;
     public static final int SOURCE_NOW_PLAYING_SHUFFLE = 2;
     public static MainActivity instance;
+    private int pendingSourceTabId;
 
     private boolean shuttingDown;
     private Date remoteNotifcationsLastLoaded;
@@ -356,6 +356,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // broadcast receivers
     private BroadcastReceiver requestsReceiver;
+    private BroadcastReceiver uaReceiver;
 
     private static boolean appStarted;
     private PlayerNotificationManager playerNotificationManager;
@@ -483,6 +484,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // register receivers
         registerRequestsReceiver();
+        registerUAReceiver();
 
         View decorView = getWindow().getDecorView();
         decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
@@ -1220,8 +1222,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkNowPlaying();
 
         scheduleWalletBalanceUpdate();
- //            scheduleWalletSyncTask();
 
+        if (pendingSourceTabId != 0) {
+            BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+            bottomNavigation.setSelectedItemId(pendingSourceTabId);
+            pendingSourceTabId = 0;
+        }
+ //            scheduleWalletSyncTask();
 //        checkPendingOpens();
     }
 
@@ -2431,6 +2438,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void registerUAReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(SignInActivity.ACTION_USER_FINISHED_SIGN_IN);
+        uaReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (SignInActivity.ACTION_USER_FINISHED_SIGN_IN.equalsIgnoreCase(action)) {
+                    handleUserFinishedSignIn(intent);
+                }
+            }
+            private void handleUserFinishedSignIn(Intent intent) {
+                int sourceTabId = intent.getIntExtra("sourceTabId", 0);
+                if (sourceTabId != 0) {
+                    pendingSourceTabId = sourceTabId;
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(uaReceiver, intentFilter);
+    }
+
     private void registerRequestsReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_AUTH_TOKEN_GENERATED);
@@ -3109,6 +3137,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void unregisterReceivers() {
+        if (uaReceiver != null) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(uaReceiver);
+        }
         Helper.unregisterReceiver(requestsReceiver, this);
     }
 

@@ -88,7 +88,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
     private static final String MOONPAY_KEY = "c2tfbGl2ZV9ueVJqVXNDbE5pcnVSdnlCMkJLWW5JcFA5VnA3dWU=";
     private static final String MOONPAY_URL_FORMAT =
-            "https://buy.moonpay.io?apiKey=pk_live_xNFffrN5NWKy6fu0ggbV8VQIwRieRzy&colorCode=%%232F9176&currencyCode=LBC&showWalletAddressForm=true&walletAddress=%s&externalCustomerId=%s";
+            "https://buy.moonpay.io?apiKey=pk_live_xNFffrN5NWKy6fu0ggbV8VQIwRieRzy&colorCode=%%23E50054&currencyCode=LBC&showWalletAddressForm=true&walletAddress=%s&externalCustomerId=%s";
 
     private CreditsBalanceView walletTotalBalanceView;
     private CreditsBalanceView walletSpendableBalanceView;
@@ -539,8 +539,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                 }
 
                 long userId = Lbryio.currentUser != null ? Lbryio.currentUser.getId() : 0;
-                @SuppressLint("DefaultLocale") String url = String.format(MOONPAY_URL_FORMAT, receiveAddress,
-                        URLEncoder.encode(String.format("android-%d", userId), StandardCharsets.UTF_8.name()));
+                @SuppressLint("DefaultLocale")
+                String url = String.format(MOONPAY_URL_FORMAT, receiveAddress,
+                        URLEncoder.encode(String.format("OdyseeAndroid-%d", userId), StandardCharsets.UTF_8.name()));
                 String email = Lbryio.getSignedInEmail();
                 if (!Helper.isNullOrEmpty(email)) {
                     url = String.format("%s&email=%s", url, URLEncoder.encode(email, StandardCharsets.UTF_8.name()));
@@ -618,6 +619,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
         Callable<String> callable = new WalletGetUnusedAddress(getContext());
 
+        // TODO: calling future.get blocks the UI thread. Need to fix.
         Future<String> future = executor.submit(callable);
 
         try {
