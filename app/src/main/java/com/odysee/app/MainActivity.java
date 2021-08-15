@@ -29,6 +29,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.security.KeyPairGeneratorSpec;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -77,6 +78,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -216,6 +218,7 @@ import com.odysee.app.ui.findcontent.SearchFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
+import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -267,6 +270,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static boolean startingPermissionRequest = false;
     public static final boolean startingSignInFlowActivity = false;
 
+    @Getter
+    private boolean initialCategoriesLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
     @Getter
@@ -1228,6 +1233,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             bottomNavigation.setSelectedItemId(pendingSourceTabId);
             pendingSourceTabId = 0;
         }
+
+        loadInitialCategories();
  //            scheduleWalletSyncTask();
 //        checkPendingOpens();
     }
@@ -1995,6 +2002,43 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
         }
 
+        if (initialCategoriesLoaded) {
+            hideLaunchScreen();
+        }
+    }
+
+    private void loadInitialCategories() {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+
+        if (!initialCategoriesLoaded) {
+            ContentSources.loadCategories(service, new ContentSources.CategoriesLoadedHandler() {
+                @Override
+                public void onCategoriesLoaded(List<ContentSources.Category> categories) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (categories == null || categories.size() == 0) {
+                                // display a startup error
+                                Toast.makeText(MainActivity.this, R.string.startup_failed, Toast.LENGTH_LONG).show();
+                                finish();
+                                return;
+                            }
+
+                            android.util.Log.d(TAG, categories.toString());
+                            initialCategoriesLoaded = true;
+                            displayDynamicCategories();
+                        }
+                    });
+                }
+            }, MainActivity.this);
+        }
+    }
+
+    private void displayDynamicCategories() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container_main_activity);
+        if (fragment instanceof AllContentFragment) {
+            ((AllContentFragment) fragment).displayDynamicCategories();
+        }
         hideLaunchScreen();
     }
 

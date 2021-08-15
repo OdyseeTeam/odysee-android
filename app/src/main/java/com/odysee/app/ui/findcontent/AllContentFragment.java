@@ -4,16 +4,20 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import org.json.JSONException;
@@ -79,8 +83,55 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private int currentClaimSearchPage;
     private ClaimSearchTask contentClaimSearchTask;
 
+    private List<ContentSources.Category> dynamicCategories;
+    private boolean contentCategoriesDisplayed;
+    private int currentCategoryId;
+    private String[] currentChannelIdList;
     private ChipGroup categorySelection;
-    private String claim_search = "cheese";
+    private int wildWestIndex = -1;
+    private int moviesIndex = -1;
+
+    private void buildAndDisplayContentCategories() {
+        if (contentCategoriesDisplayed) {
+            return;
+        }
+
+        Context context = getContext();
+        View view = getView();
+        if (context != null && view != null) {
+            dynamicCategories = new ArrayList<>(ContentSources.DYNAMIC_CONTENT_CATEGORIES);
+            ContentSources.Category wildWest = new ContentSources.Category();
+            wildWest.setName("wildwest");
+            wildWest.setLabel(getString(R.string.wildwest_category));
+            wildWest.setChannelIds(null);
+            dynamicCategories.add(wildWest);
+
+            wildWestIndex = dynamicCategories.size() - 1;
+
+            ChipGroup group = view.findViewById(R.id.category_selection_chipgroup);
+            if (group.getChildCount() == 0) {
+                for (int i = 0; i < dynamicCategories.size(); i++) {
+                    ContentSources.Category category = dynamicCategories.get(i);
+                    if ("movies".equalsIgnoreCase(category.getName())) {
+                        moviesIndex = i;
+                    }
+
+                    Chip chip = new Chip(context);
+                    chip.setChipBackgroundColor(ContextCompat.getColorStateList(context, R.color.chip_background));
+                    chip.setText(category.getLabel());
+                    chip.setCheckable(true);
+                    chip.setCheckedIconVisible(false);
+                    chip.setChecked(i == 0);
+                    group.addView(chip);
+                }
+            }
+        }
+
+        currentCategoryId = 0;
+        onCategoryChanged();
+
+        contentCategoriesDisplayed = true;
+    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -107,28 +158,13 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         categorySelection.setOnCheckedChangeListener(new ChipGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(ChipGroup group, int checkedId) {
-                // TODO Check that shown content corresponds with expected one, including "sortBy"
-                if (checkedId == R.id.chip_cheese)
-                    claim_search = "cheese";
-                else if (checkedId == R.id.chip_bighits)
-                    claim_search = "bighits";
-                else if (checkedId == R.id.chip_gaming)
-                    claim_search = "gaming";
-                else if (checkedId == R.id.chip_lab)
-                    claim_search = "lab";
-                else if (checkedId == R.id.chip_tech)
-                    claim_search = "tech";
-                else if (checkedId == R.id.chip_news)
-                    claim_search = "news";
-                else if (checkedId == R.id.chip_finance20)
-                    claim_search = "finance";
-                else if (checkedId == R.id.chip_theuniverse)
-                    claim_search = "theuniverse";
-                else if (checkedId == R.id.chip_movies)
-                    claim_search = "movies";
-                else if (checkedId == R.id.chip_wildwest)
-                    claim_search = "wildwest";
-                onCategoryChanged(claim_search);
+                Chip chip = group.findViewById(checkedId);
+                if (chip != null && chip.isChecked()) {
+                    // Use child index, because getTag() doesn't work properly for some reason
+                    currentCategoryId = categorySelection.indexOfChild(chip);
+                    currentChannelIdList = dynamicCategories.get(currentCategoryId).getChannelIds();
+                    onCategoryChanged();
+                }
             }
         });
 
@@ -249,12 +285,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         fetchClaimSearchContent(true);
     }
 
-    private void onCategoryChanged(String newCategory) {
-        if (newCategory.equals("wildwest"))
-            layoutFilterContainer.setVisibility(View.INVISIBLE);
-        else
-            layoutFilterContainer.setVisibility(View.VISIBLE);
-
+    private void onCategoryChanged() {
+        Helper.setViewVisibility(layoutFilterContainer, currentCategoryId == wildWestIndex ? View.GONE : View.VISIBLE);
         fetchClaimSearchContent(true);
     }
 
@@ -375,13 +407,16 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 LbryAnalytics.setCurrentScreen(activity, "All Content", "AllContent");
             }
             activity.addDownloadActionListener(this);
-        }
 
-        PreferenceManager.getDefaultSharedPreferences(getContext()).registerOnSharedPreferenceChangeListener(this);
-        updateContentFromLinkText();
-        updateContentScopeLinkText();
-        updateSortByLinkText();
-        fetchClaimSearchContent();
+            if (activity.isInitialCategoriesLoaded()) {
+                buildAndDisplayContentCategories();
+            }
+
+            PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
+            updateContentFromLinkText();
+            updateContentScopeLinkText();
+            updateSortByLinkText();
+        }
     }
 
     public void onPause() {
@@ -401,25 +436,22 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdList;
-        channelIdList = ContentSources.get(claim_search);
-
         return Lbry.buildClaimSearchOptions(
                 null,
                 (currentContentScope == ContentScopeDialogFragment.ITEM_EVERYONE) ? null : tags,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
-                channelIdList,
+                currentChannelIdList == null ? Arrays.asList(dynamicCategories.get(0).getChannelIds()) : Arrays.asList(currentChannelIdList),
                 null,
                 getContentSortOrder(),
-                claim_search.equals("wildwest") ? Helper.buildReleaseTime(1) : contentReleaseTime,
+                currentCategoryId == wildWestIndex ? Helper.buildReleaseTime(1) : contentReleaseTime,
                 0,
-                claim_search.equals("movies") ? 20 : 0,
+                currentCategoryId == moviesIndex ? 20 : 0,
                 currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,
                 Helper.CONTENT_PAGE_SIZE);
     }
 
     private List<String> getContentSortOrder() {
-        if (contentSortOrder == null || claim_search.equals("wildwest")) {
+        if (contentSortOrder == null || currentCategoryId == wildWestIndex) {
             return Arrays.asList(Claim.ORDER_BY_TRENDING_GROUP, Claim.ORDER_BY_TRENDING_MIXED);
         }
         return contentSortOrder;
@@ -518,5 +550,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         } catch (JSONException ex) {
             // invalid file info for download
         }
+    }
+
+    public void displayDynamicCategories() {
+        buildAndDisplayContentCategories();
     }
 }

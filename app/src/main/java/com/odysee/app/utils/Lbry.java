@@ -489,7 +489,7 @@ public final class Lbry {
 
                     // Livestreams don't have a source set. Then request a livestream URL only for
                     // audio and video, even for reposted claims
-                    if (!claim.hasSource()) {
+                    if (!claim.hasSource() && claim.getSigningChannel() != null) {
                         String urlBitwave = String.format("https://api.bitwave.tv/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
 
                         Request.Builder builder = new Request.Builder().url(urlBitwave);

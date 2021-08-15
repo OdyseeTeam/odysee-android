@@ -80,4 +80,8 @@
     <style name="List_item_Layout">
         <item name="android:paddingBottom">8dp</item>
     </style>
+
+    <style name="OdyseeChipChoice" parent="@style/Widget.MaterialComponents.Chip.Choice">
+
+    </style>
 </resources>
