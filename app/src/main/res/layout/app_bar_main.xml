@@ -28,7 +28,7 @@
 
                 <ImageView
                     android:layout_width="80dp"
-                    android:layout_height="24dp"
+                    android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
                     android:scaleType="fitXY"
                     android:src="@drawable/odysee_brand"
@@ -47,23 +47,17 @@
                         android:id="@+id/wallet_balance_container"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="8dp"
-                        android:visibility="gone"
-                        tools:visibility="visible"
+                        android:focusable="true"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
                         android:orientation="horizontal">
-
                         <ImageView
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_gravity="center_vertical"
                             android:src="@drawable/ic_credits" />
-
                         <TextView
                             android:id="@+id/floating_balance_value"
                             android:layout_width="wrap_content"
@@ -71,29 +65,31 @@
                             android:layout_gravity="center_vertical"
                             android:layout_marginStart="2dp"
                             android:fontFamily="@font/inter"
-                            tools:text="543.2"
-                            android:textColor="?android:attr/textColorPrimary"
-                            android:textFontWeight="300"
+                            android:text="@string/zero"
                             android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textFontWeight="300" />
                     </LinearLayout>
 
-                    <ImageButton
+                    <RelativeLayout
                         android:id="@+id/upload_button"
-                        android:layout_width="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_width="40dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:visibility="visible"
-                        tools:visibility="visible"
-                        android:background="?attr/selectableItemBackground"
-                        android:src="@drawable/ic_cloud_upload"
-                        app:tint="@color/actionBarForeground" />
+                        android:background="?attr/selectableItemBackground">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:visibility="visible"
+                            android:layout_centerInParent="true"
+                            android:src="@drawable/ic_publish"
+                            app:tint="@color/actionBarForeground" />
+                    </RelativeLayout>
 
                     <RelativeLayout
                         android:id="@+id/wunderbar_notifications"
-                        android:layout_width="48dp"
+                        android:layout_width="40dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true">
 
@@ -122,40 +118,40 @@
                             android:visibility="invisible" />
                     </RelativeLayout>
 
-                    <ImageButton
+                    <RelativeLayout
                         android:id="@+id/search_button"
-                        android:layout_width="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_width="40dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:visibility="gone"
-                        tools:visibility="visible"
-                        android:background="?attr/selectableItemBackground"
-                        android:src="@drawable/ic_search"
-                        app:tint="@color/actionBarForeground" />
+                        android:background="?attr/selectableItemBackground">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:visibility="visible"
+                            android:layout_centerInParent="true"
+                            android:src="@drawable/ic_search"
+                            app:tint="@color/actionBarForeground" />
+                    </RelativeLayout>
 
-                    <ImageButton
+                    <RelativeLayout
                         android:id="@+id/profile_button"
-                        android:layout_width="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_width="40dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:src="@drawable/ic_person"
-                        app:tint="@color/actionBarForeground" />
-
-
+                        android:background="?attr/selectableItemBackground">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:visibility="visible"
+                            android:layout_centerInParent="true"
+                            android:src="@drawable/ic_person_account"
+                            app:tint="@color/actionBarForeground" />
+                    </RelativeLayout>
                 </LinearLayout>
-
             </androidx.constraintlayout.widget.ConstraintLayout>
-
-
         </androidx.appcompat.widget.Toolbar>
-
-
-
-
-
-
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -164,7 +160,7 @@
     <RelativeLayout
         android:id="@+id/splash_view"
         android:visibility="gone"
-        android:background="@color/lbryGreen"
+        android:background="@color/odyseePink"
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

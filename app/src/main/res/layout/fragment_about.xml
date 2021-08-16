@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/content_freedom"
-            android:textColor="@color/lbryGreen"
+            android:textColor="@color/odyseePink"
             android:textSize="24sp" />
 
         <TextView
@@ -34,7 +34,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_what_is_lbry"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -44,7 +44,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_android_basics"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -54,7 +54,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_faq"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
 
@@ -64,7 +64,7 @@
             android:layout_marginTop="36dp"
             android:fontFamily="@font/inter"
             android:text="@string/get_social"
-            android:textColor="@color/lbryGreen"
+            android:textColor="@color/odyseePink"
             android:textSize="18sp" />
         <TextView
             android:layout_width="wrap_content"
@@ -81,7 +81,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_discord"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -91,7 +91,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_facebook"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -101,7 +101,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_instagram"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -111,7 +111,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_reddit"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -121,7 +121,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_telegram"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
         <TextView
@@ -131,7 +131,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/inter"
             android:text="@string/about_link_twitter"
-            android:textColorLink="@color/lbryGreen"
+            android:textColorLink="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300" />
 
@@ -141,7 +141,7 @@
             android:layout_marginTop="36dp"
             android:fontFamily="@font/inter"
             android:text="@string/app_info"
-            android:textColor="@color/lbryGreen"
+            android:textColor="@color/odyseePink"
             android:textSize="18sp" />
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -193,7 +193,7 @@
                             android:fontFamily="@font/inter"
                             android:singleLine="true"
                             android:text="@string/update_mailing_preferences"
-                            android:textColor="@color/lbryGreen"
+                            android:textColor="@color/odyseePink"
                             android:textFontWeight="300"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -363,7 +363,7 @@
                         android:fontFamily="@font/inter"
                         android:singleLine="true"
                         android:text="@string/send_log"
-                        android:textColor="@color/lbryGreen"
+                        android:textColor="@color/odyseePink"
                         android:textFontWeight="300"
                         android:textSize="14sp" />
                 </LinearLayout>

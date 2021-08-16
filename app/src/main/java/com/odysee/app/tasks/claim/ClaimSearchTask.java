@@ -45,5 +45,4 @@ public class ClaimSearchTask extends AsyncTask<Void, Void, List<Claim>> {
             }
         }
     }
-
 }

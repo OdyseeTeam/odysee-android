@@ -6,7 +6,6 @@
     android:background="@color/pageBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
     <ProgressBar
         android:id="@+id/all_content_main_progress"
         android:layout_width="36dp"
@@ -20,110 +19,37 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="16dp">
+        android:layout_height="match_parent">
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="16dp">
+            android:layout_marginBottom="8dp">
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
+                android:layout_height="wrap_content"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/category_selection_chipgroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:singleLine="true"
                     app:singleSelection="true"
-                    app:selectionRequired="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_cheese"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="@string/cheese_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_bighits"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/big_hits_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_gaming"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/gaming_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_lab"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/lab_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_tech"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/tech_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_news"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/news_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_finance20"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/finance20_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_theuniverse"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/theuniverse_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_movies"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/movies_category" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_wildwest"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:text="@string/wildwest_category" />
-
-                </com.google.android.material.chip.ChipGroup>
-
+                    app:selectionRequired="true" />
             </HorizontalScrollView>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/all_content_filter_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="visible">
             <ProgressBar
                 android:id="@+id/all_content_load_progress"
                 android:visibility="gone"
@@ -131,28 +57,18 @@
                 android:layout_height="16dp"
                 android:layout_centerVertical="true"
                 android:layout_alignParentEnd="true" />
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/all_content_filter_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:visibility="visible">
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:orientation="horizontal">
                 <LinearLayout
                     android:id="@+id/all_content_sort_link"
                     android:background="?attr/selectableItemBackground"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:clickable="true">
+                    android:clickable="true"
+                    android:focusable="true">
                     <TextView
                         android:id="@+id/all_content_sort_link_text"
                         android:layout_width="wrap_content"
@@ -243,8 +159,8 @@
             android:id="@+id/all_content_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="2dp"
             android:clipToPadding="false"
+            android:scrollbars="none"
             tools:listitem="@layout/list_item_stream" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

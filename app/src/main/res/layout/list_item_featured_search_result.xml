@@ -164,7 +164,7 @@
                 android:id="@+id/claim_publisher"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/lbryGreen"
+                android:textColor="@color/odyseePink"
                 android:fontFamily="@font/inter"
                 android:textSize="12sp" />
             <TextView

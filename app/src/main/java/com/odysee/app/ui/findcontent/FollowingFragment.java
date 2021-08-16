@@ -513,7 +513,7 @@ public class FollowingFragment extends BaseFragment implements
     private void fetchAndResolveChannelList() {
         buildChannelIdsAndUrls();
         if (channelIds.size() > 0) {
-            ResolveTask resolveSubscribedTask = new ResolveTask(channelUrls, Lbry.LBRY_TV_CONNECTION_STRING, channelListLoading, new ClaimListResultHandler() {
+            ResolveTask resolveSubscribedTask = new ResolveTask(channelUrls, Lbry.API_CONNECTION_STRING, channelListLoading, new ClaimListResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     updateChannelFilterListAdapter(claims, true);
@@ -598,7 +598,7 @@ public class FollowingFragment extends BaseFragment implements
         contentClaimSearchLoading = true;
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
-        contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.LBRY_TV_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
+        contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.API_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
@@ -681,7 +681,7 @@ public class FollowingFragment extends BaseFragment implements
         Helper.setViewVisibility(noContentView, View.GONE);
         suggestedChannelClaimSearchTask = new ClaimSearchTask(
                 buildSuggestedOptions(),
-                Lbry.LBRY_TV_CONNECTION_STRING,
+                Lbry.API_CONNECTION_STRING,
                 suggestedChannelAdapter == null || suggestedChannelAdapter.getItemCount() == 0 ? bigContentLoading : contentLoading,
                 new ClaimSearchResultHandler() {
                     @Override

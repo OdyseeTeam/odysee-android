@@ -444,10 +444,15 @@
     <string name="resend">Resend</string>
     <string name="continue_text">Continue</string>
     <string name="provide_valid_email">Please enter a valid email address</string>
+    <string name="provide_valid_email_password">Please enter a valid email address and a password.</string>
+    <string name="signup_error_occurred">An unknown error occurred during signup. Please try again.</string>
+    <string name="signup_failed">Sign up failed: %1$s</string>
     <string name="please_follow_instructions">Please follow the instructions in the email sent to your address to continue.</string>
     <string name="sign_in_successful">You have successfully signed in to lbry.tv</string>
     <string name="retrieving_account_information">Retrieving account information…</string>
     <string name="apply_wallet_data">Applying wallet data…</string>
+    <string name="please_enter_signin_password">Please enter your password</string>
+    <string name="unknown_error_occurred">An unknown error occurred. Please try again.</string>
     <string name="please_enter_your_password">Please enter the password you used to secure your wallet.</string>
     <string name="please_enter_a_password">Please enter a password to secure your wallet.</string>
     <string name="wallet_security_purposes">Note: for wallet security purposes, LBRY is unable to reset your password.</string>
@@ -668,6 +673,8 @@
         <item quantity="one">Are you sure you want to remove the selected notification?</item>
         <item quantity="other">Are you sure you want to remove the selected notifications?</item>
     </plurals>
+
+    <string name="join_odysee">Join Odysee</string>
 
     <!-- Font Awesome -->
     <string name="fa_gift" translatable="false">&#xf06b;</string>

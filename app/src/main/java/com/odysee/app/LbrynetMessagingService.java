@@ -31,8 +31,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.odysee.app.R;
-
 public class LbrynetMessagingService extends FirebaseMessagingService {
     public static final String ACTION_NOTIFICATION_RECEIVED = "com.odysee.app.Broadcast.NotificationReceived";
 
@@ -147,7 +145,7 @@ public class LbrynetMessagingService extends FirebaseMessagingService {
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                        .setColor(ContextCompat.getColor(this, R.color.lbryGreen))
+                        .setColor(ContextCompat.getColor(this, R.color.odyseePink))
                         .setSmallIcon(R.drawable.ic_spaceman_launcher_foreground)
                         .setContentTitle(title)
                         .setContentText(messageBody)

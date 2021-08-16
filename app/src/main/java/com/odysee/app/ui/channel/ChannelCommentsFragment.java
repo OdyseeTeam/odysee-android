@@ -248,7 +248,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         if (commentListAdapter != null) {
             List<String> urlsToResolve = new ArrayList<>(commentListAdapter.getClaimUrlsToResolve());
             if (urlsToResolve.size() > 0) {
-                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.SDK_CONNECTION_STRING, null, new ClaimListResultHandler() {
+                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
                     @Override
                     public void onSuccess(List<Claim> claims) {
                         if (commentListAdapter != null) {

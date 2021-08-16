@@ -29,13 +29,11 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.LbryFile;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.LighthouseSearchTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -162,7 +160,7 @@ public class SearchFragment extends BaseFragment implements
             return;
         }
 
-        ResolveTask task = new ResolveTask(vanityUrl, Lbry.LBRY_TV_CONNECTION_STRING, null, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(vanityUrl, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {

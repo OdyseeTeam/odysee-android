@@ -55,7 +55,7 @@
             android:layout_centerVertical="true"
             android:src="@drawable/ic_check"
             android:visibility="gone"
-            app:tint="@color/lbryGreen" />
+            app:tint="@color/odyseePink" />
     </RelativeLayout>
 
     <RelativeLayout
@@ -90,7 +90,7 @@
             android:layout_centerVertical="true"
             android:src="@drawable/ic_check"
             android:visibility="gone"
-            app:tint="@color/lbryGreen" />
+            app:tint="@color/odyseePink" />
     </RelativeLayout>
 
     <RelativeLayout
@@ -125,6 +125,6 @@
             android:layout_centerVertical="true"
             android:src="@drawable/ic_check"
             android:visibility="gone"
-            app:tint="@color/lbryGreen" />
+            app:tint="@color/odyseePink" />
     </RelativeLayout>
 </LinearLayout>

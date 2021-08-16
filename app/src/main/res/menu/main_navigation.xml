@@ -5,12 +5,10 @@
         android:icon="@drawable/ic_home" />
     <item android:id="@+id/action_following_menu"
         android:title="@string/following"
-        android:visible="false"
         android:icon="@drawable/ic_following" />
     <item android:id="@+id/action_wallet_menu"
         android:title="@string/wallet"
-        android:visible="false"
-        android:icon="@drawable/ic_wallet" />
+        android:icon="@drawable/ic_lbc_bw" />
     <item android:id="@+id/action_library_menu"
         android:title="@string/library"
         android:icon="@drawable/ic_library" />

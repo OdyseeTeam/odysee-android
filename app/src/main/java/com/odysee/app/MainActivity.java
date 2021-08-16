@@ -3,6 +3,9 @@ package com.odysee.app;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.OnAccountsUpdateListener;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -26,6 +29,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.security.KeyPairGeneratorSpec;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -41,6 +45,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -73,6 +78,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -93,6 +99,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 import androidx.appcompat.app.AppCompatActivity;
@@ -197,6 +204,7 @@ import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
+import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -210,6 +218,7 @@ import com.odysee.app.ui.findcontent.SearchFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
+import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -235,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final int SOURCE_NOW_PLAYING_FILE = 1;
     public static final int SOURCE_NOW_PLAYING_SHUFFLE = 2;
     public static MainActivity instance;
+    private int pendingSourceTabId;
 
     private boolean shuttingDown;
     private Date remoteNotifcationsLastLoaded;
@@ -260,6 +270,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static boolean startingPermissionRequest = false;
     public static final boolean startingSignInFlowActivity = false;
 
+    @Getter
+    private boolean initialCategoriesLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
     @Getter
@@ -349,6 +361,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // broadcast receivers
     private BroadcastReceiver requestsReceiver;
+    private BroadcastReceiver uaReceiver;
 
     private static boolean appStarted;
     private PlayerNotificationManager playerNotificationManager;
@@ -425,7 +438,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
+
         setContentView(R.layout.activity_main);
+        findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -472,6 +489,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // register receivers
         registerRequestsReceiver();
+        registerUAReceiver();
 
         View decorView = getWindow().getDecorView();
         decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
@@ -526,20 +544,30 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Fragment selectedFragment;
                 String fragmentTag;
 
-                if (item.getItemId() == R.id.action_home_menu) {
-                    selectedFragment = homeFragment;
-                    fragmentTag = "HOME";
-                } else if (item.getItemId() == R.id.action_following_menu) {
-                    selectedFragment = followingFragment;
-                    fragmentTag = "FOLLOWING";
-                } else if (item.getItemId() == R.id.action_wallet_menu) {
-                    selectedFragment = walletFragment;
-                    fragmentTag = "WALLET";
-                } else {
-                    selectedFragment = libraryFragment;
-                    fragmentTag = "LIBRARY";
+                if (!isSignedIn() && item.getItemId() != R.id.action_home_menu) {
+                    simpleSignIn(item.getItemId());
+                    return false;
                 }
 
+                switch (item.getItemId()) {
+                    case R.id.action_home_menu:
+                    default:
+                        selectedFragment = homeFragment;
+                        fragmentTag = "HOME";
+                        break;
+                    case R.id.action_following_menu:
+                        selectedFragment = followingFragment;
+                        fragmentTag = "FOLLOWING";
+                        break;
+                    case R.id.action_wallet_menu:
+                        selectedFragment = walletFragment;
+                        fragmentTag = "WALLET";
+                        break;
+                    case R.id.action_library_menu:
+                        selectedFragment = libraryFragment;
+                        fragmentTag = "LIBRARY";
+                        break;
+                }
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -629,7 +657,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         if (isSignedIn) {
                             signOutUser();
                         } else {
-                            simpleSignIn();
+                            simpleSignIn(R.id.action_home_menu);
                         }
                     }
                 });
@@ -1107,53 +1135,39 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return true;
     }
 
+    public String getAuthToken() {
+        AccountManager am = AccountManager.get(this);
+        if (am.getAccounts().length > 0) {
+            return am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+        }
+        return null;
+    }
+
     public void updateWalletBalance() {
-        WalletBalance balance;
-
-        showSignedInUIElements(accountManager.getAccounts().length > 0);
-
-        if (accountManager.getAccounts().length > 0) {
-            Log.i(TAG, "updateWalletBalance: Updating wallet balance");
-            try {
-                SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-                JSONObject json = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_BALANCE, false, accountManager.peekAuthToken(accountManager.getAccounts()[0], "auth_token_type"));
-                balance = WalletBalance.fromJSONObject(json);
-                for (WalletBalanceListener listener : walletBalanceListeners) {
-                    if (listener != null) {
-                        listener.onWalletBalanceUpdated(balance);
+        if (isSignedIn()) {
+            WalletBalanceTask task = new WalletBalanceTask(getAuthToken(), new WalletBalanceTask.WalletBalanceHandler() {
+                @Override
+                public void onSuccess(WalletBalance walletBalance) {
+                    Lbry.walletBalance = walletBalance;
+                    for (WalletBalanceListener listener : walletBalanceListeners) {
+                        if (listener != null) {
+                            listener.onWalletBalanceUpdated(walletBalance);
+                        }
                     }
+                    sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+                    ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
+                            Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
                 }
-                Lbry.walletBalance = balance;
-                updateFloatingWalletBalance(balance);
-                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-            } catch (ApiCallException | ClassCastException ex) {
-                ex.printStackTrace();
-            }
-        } else {
-            Log.i(TAG, "updateWalletBalance: Skipping updating wallet balance");
+
+                @Override
+                public void onError(Exception error) {
+                    // pass
+                }
+            });
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
-    /**
-     * Shows or hides the wallet balance and the bottom navigation items which need user to be signed in.
-     * This runs on the main (UI) thread
-     * @param show true to show items, false to hide them
-     */
-    private void showSignedInUIElements(boolean show) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-                bottomNavigation.getMenu().findItem(R.id.action_wallet_menu).setVisible(show);
-                bottomNavigation.getMenu().findItem(R.id.action_following_menu).setVisible(show);
-
-                if (show)
-                    showWalletBalance();
-                else
-                    hideWalletBalance();
-            }
-        });
-    }
     @SneakyThrows
     private void checkWebSocketClient() {
         if ((webSocketClient == null || webSocketClient.isClosed()) && !Helper.isNullOrEmpty(Lbryio.AUTH_TOKEN)) {
@@ -1191,6 +1205,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     protected void onStart() {
         super.onStart();
+        if (!isSignedIn()) {
+            BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+            bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
+        }
+
         accountManager.addOnAccountsUpdatedListener(this, null, true);
     }
 
@@ -1208,8 +1227,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkNowPlaying();
 
         scheduleWalletBalanceUpdate();
-//            scheduleWalletSyncTask();
 
+        if (pendingSourceTabId != 0) {
+            BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+            bottomNavigation.setSelectedItemId(pendingSourceTabId);
+            pendingSourceTabId = 0;
+        }
+
+        loadInitialCategories();
+ //            scheduleWalletSyncTask();
 //        checkPendingOpens();
     }
 
@@ -1481,7 +1507,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void resolveUrlSuggestions(List<String> urls) {
-        ResolveTask task = new ResolveTask(urls, Lbry.LBRY_TV_CONNECTION_STRING, null, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (findViewById(R.id.url_suggestions_container).getVisibility() == View.VISIBLE) {
@@ -1970,23 +1996,78 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void onAccountsUpdated(Account[] accounts) {
         if (accounts.length > 0) {
             fetchOwnChannels();
-            Account act = accounts[0];
-            AccountManager am = AccountManager.get(this);
-            try {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateWalletBalance();
-                    }
-                }).start();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            scheduleWalletBalanceUpdate();
         } else {
             BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
         }
 
+        if (initialCategoriesLoaded) {
+            hideLaunchScreen();
+        }
+    }
+
+    private void loadInitialCategories() {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+
+        if (!initialCategoriesLoaded) {
+            ContentSources.loadCategories(service, new ContentSources.CategoriesLoadedHandler() {
+                @Override
+                public void onCategoriesLoaded(List<ContentSources.Category> categories) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (categories == null || categories.size() == 0) {
+                                // display a startup error
+                                Toast.makeText(MainActivity.this, R.string.startup_failed, Toast.LENGTH_LONG).show();
+                                finish();
+                                return;
+                            }
+
+                            android.util.Log.d(TAG, categories.toString());
+                            initialCategoriesLoaded = true;
+                            displayDynamicCategories();
+                        }
+                    });
+                }
+            }, MainActivity.this);
+        }
+    }
+
+    private void displayDynamicCategories() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container_main_activity);
+        if (fragment instanceof AllContentFragment) {
+            ((AllContentFragment) fragment).displayDynamicCategories();
+        }
+        hideLaunchScreen();
+    }
+
+    private void hideLaunchScreen() {
+        // Animate?
+        View launchSplash = findViewById(R.id.launch_splash);
+        if (launchSplash.getVisibility() == View.VISIBLE) {
+            int width = launchSplash.getWidth();
+            ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
+            valueAnimator.setInterpolator(new DecelerateInterpolator());
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    launchSplash.getLayoutParams().width = (int) animation.getAnimatedValue();
+                    launchSplash.requestLayout();
+                }
+            });
+            valueAnimator.setInterpolator(new DecelerateInterpolator());
+            valueAnimator.setDuration(200);
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    launchSplash.clearAnimation();
+                    launchSplash.setVisibility(View.GONE);
+                    findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+                }
+            });
+            valueAnimator.start();
+        }
     }
 
     private class PlayerNotificationDescriptionAdapter implements PlayerNotificationManager.MediaDescriptionAdapter {
@@ -2036,33 +2117,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    private void updateFloatingWalletBalance(WalletBalance balance) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (accountManager.getAccounts().length > 0) {
-                    View balanceContainer = findViewById(R.id.wallet_balance_container);
-                    TextView walletBalance = balanceContainer.findViewById(R.id.floating_balance_value);
-                    walletBalance.setText(Helper.shortCurrencyFormat(balance.getTotal().doubleValue()));
-                    showWalletBalance();
-                    walletBalance.invalidate();
-                    walletBalance.requestLayout();
-
-                    BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-
-                    if (bottomNavigation.getSelectedItemId() == findViewById(R.id.action_wallet_menu).getId()) {
-                        Fragment walletFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container_main_activity);
-                        if (walletFragment != null) {
-                            ((WalletFragment) walletFragment).onWalletBalanceUpdated(balance);
-                        }
-                    }
-                } else {
-                    hideWalletBalance();
-                }
-            }
-        });
-    }
-
     private void scheduleWalletBalanceUpdate() {
         Log.i(TAG, "scheduleWalletBalanceUpdate: Scheduling wallet balance update...");
         if (scheduler != null && !walletBalanceUpdateScheduled) {
@@ -2075,7 +2129,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         e.printStackTrace();
                     }
                 }
-            }, 5, 15, TimeUnit.SECONDS);
+            }, 0, 5, TimeUnit.SECONDS);
             walletBalanceUpdateScheduled = true;
         }
     }
@@ -2428,6 +2482,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void registerUAReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(SignInActivity.ACTION_USER_FINISHED_SIGN_IN);
+        uaReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (SignInActivity.ACTION_USER_FINISHED_SIGN_IN.equalsIgnoreCase(action)) {
+                    handleUserFinishedSignIn(intent);
+                }
+            }
+            private void handleUserFinishedSignIn(Intent intent) {
+                int sourceTabId = intent.getIntExtra("sourceTabId", 0);
+                if (sourceTabId != 0) {
+                    pendingSourceTabId = sourceTabId;
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(uaReceiver, intentFilter);
+    }
+
     private void registerRequestsReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_AUTH_TOKEN_GENERATED);
@@ -2625,9 +2700,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    public void simpleSignIn() {
+    public boolean isSignedIn() {
+        AccountManager am = AccountManager.get(this);
+        return am.getAccounts().length > 0;
+    }
+
+    public void simpleSignIn(int sourceTabId) {
         Intent intent = new Intent(this, SignInActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        intent.putExtra("sourceTabId", sourceTabId);
         startActivity(intent);
         overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
     }
@@ -2909,7 +2990,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                             // resolve subscriptions
                             if (subUrls.size() > 0 && Lbryio.cacheResolvedSubscriptions.size() != Lbryio.subscriptions.size()) {
-                                Lbryio.cacheResolvedSubscriptions = Lbry.resolve(subUrls, Lbry.LBRY_TV_CONNECTION_STRING);
+                                Lbryio.cacheResolvedSubscriptions = Lbry.resolve(subUrls, Lbry.API_CONNECTION_STRING);
                             }
                             // if no exceptions occurred here, subscriptions have been loaded and resolved
                             startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
@@ -3100,6 +3181,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void unregisterReceivers() {
+        if (uaReceiver != null) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(uaReceiver);
+        }
         Helper.unregisterReceiver(requestsReceiver, this);
     }
 
@@ -3436,7 +3520,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void resolveCommentAuthors(List<String> urls) {
         if (urls != null && urls.size() > 0) {
-            ResolveTask task = new ResolveTask(urls, Lbry.LBRY_TV_CONNECTION_STRING, null, new ClaimListResultHandler() {
+            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     if (notificationListAdapter != null) {

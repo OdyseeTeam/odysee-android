@@ -33,7 +33,7 @@
                 android:clickable="true"
                 android:fontFamily="@font/inter"
                 android:text="@string/view_all"
-                android:textColor="@color/lbryGreen"
+                android:textColor="@color/odyseePink"
                 android:textSize="14sp"
                 android:textFontWeight="300"/>
         </RelativeLayout>

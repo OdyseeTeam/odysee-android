@@ -56,7 +56,7 @@
             android:ellipsize="end"
             android:fontFamily="@font/inter"
             android:singleLine="true"
-            android:textColor="@color/lbryGreen"
+            android:textColor="@color/odyseePink"
             android:textSize="14sp"
             android:textFontWeight="300"
             />
@@ -89,7 +89,7 @@
             android:ellipsize="end"
             android:fontFamily="@font/inter"
             android:singleLine="true"
-            android:textColor="@color/lbryGreen"
+            android:textColor="@color/odyseePink"
             android:textSize="12sp"
             android:textFontWeight="300"
             android:textAlignment="viewStart"

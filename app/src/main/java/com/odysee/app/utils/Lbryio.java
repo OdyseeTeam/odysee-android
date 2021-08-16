@@ -56,7 +56,7 @@ public final class Lbryio {
     public static WalletSync lastWalletSync;
     public static final Object lock = new Object();
 
-    public static final String TAG = "Lbryio";
+    public static final String TAG = "OdyseeUA";
     public static final String CONNECTION_STRING = "https://api.lbry.com";
     public static final String WS_CONNECTION_BASE_URL = "wss://api.lbry.com/subscribe?auth_token=";
     public static final String AUTH_TOKEN_PARAM = "auth_token";
@@ -193,10 +193,25 @@ public final class Lbryio {
         return AUTH_TOKEN;
     }
 
+    public static boolean isValidJSON(String value) {
+        try {
+            JSONObject json = new JSONObject(value);
+            return true;
+        } catch (JSONException ex) {
+            return false;
+        }
+    }
+
     public static Object parseResponse(Response response) throws LbryioResponseException {
         String responseString = null;
         try {
             responseString = response.body().string();
+            if (!isValidJSON(responseString)) {
+                return responseString;
+            }
+
+            android.util.Log.d("OdyseeUA", responseString);
+
             JSONObject json = new JSONObject(responseString);
             if (response.code() >= 200 && response.code() < 300) {
                 if (json.isNull("data")) {
@@ -206,6 +221,10 @@ public final class Lbryio {
             }
 
             if (json.has("error")) {
+                if (json.isNull("error")) {
+                    throw new LbryioResponseException("No error message", response.code());
+                }
+
                 throw new LbryioResponseException(json.getString("error"), response.code());
             } else {
                 throw new LbryioResponseException("Unknown API error signature.", response.code());

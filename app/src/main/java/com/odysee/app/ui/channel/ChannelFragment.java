@@ -158,7 +158,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     try {
                         String shareUrl = LbryUri.parse(
                                 !Helper.isNullOrEmpty(claim.getCanonicalUrl()) ? claim.getCanonicalUrl() :
-                                        (!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl())).toTvString();
+                                        (!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl())).toOdyseeString();
                         Intent shareIntent = new Intent();
                         shareIntent.setAction(Intent.ACTION_SEND);
                         shareIntent.setType("text/plain");
@@ -449,7 +449,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private void resolveUrl() {
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
-        ResolveTask task = new ResolveTask(currentUrl, Lbry.LBRY_TV_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(currentUrl, Lbry.API_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {

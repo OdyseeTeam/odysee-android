@@ -292,6 +292,22 @@ public final class Helper {
        }
     }
 
+    public static List<String> getJsonStringArrayAsList(String name, JSONObject object)
+    {
+        List<String> result = new ArrayList<>();
+        try {
+            if (object.has(name) && !object.isNull(name)) {
+                JSONArray array = object.getJSONArray(name);
+                for (int i = 0; i < array.length(); i++) {
+                    result.add(array.getString(i));
+                }
+            }
+        } catch (JSONException ex) {
+            // pass
+        }
+        return result;
+    }
+
     public static double getJSONDouble(String name, double defaultValue, JSONObject object) {
         try {
             return object.has(name) && !object.isNull(name) ? object.getDouble(name) : defaultValue;
@@ -826,5 +842,12 @@ public final class Helper {
 
         String outpoint = String.format("%s:%d", claim.getTxid(), claim.getNout());
         return Lbryio.blockedOutpoints.contains(outpoint);
+    }
+
+    public static boolean isSignedIn(Context context) {
+        if (context instanceof MainActivity) {
+            return ((MainActivity) context).isSignedIn();
+        }
+        return false;
     }
 }

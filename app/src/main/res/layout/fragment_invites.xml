@@ -30,7 +30,7 @@
 
     <RelativeLayout
         android:id="@+id/invites_account_driver_container"
-        android:background="@color/lbryGreen"
+        android:background="@color/odyseePink"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="16dp">

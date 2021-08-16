@@ -26,7 +26,7 @@
                 android:layout_centerInParent="true"
                 android:src="@drawable/ic_check_circle"
                 android:visibility="invisible"
-                app:tint="@color/lbryGreen" />
+                app:tint="@color/odyseePink" />
             <ProgressBar
                 android:id="@+id/reward_item_loading"
                 android:layout_centerInParent="true"
@@ -47,7 +47,7 @@
                 android:ellipsize="end"
                 android:fontFamily="@font/inter"
                 android:singleLine="true"
-                android:textColor="@color/lbryGreen"
+                android:textColor="@color/odyseePink"
                 android:textSize="16sp"
                 android:textFontWeight="300" />
             <TextView
@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="@font/inter"
-                android:textColor="@color/lbryGreen"
+                android:textColor="@color/odyseePink"
                 android:textFontWeight="300"
                 android:textSize="12sp"
                 android:visibility="gone" />

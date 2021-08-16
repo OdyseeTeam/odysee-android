@@ -685,7 +685,7 @@ public class LibraryFragment extends BaseFragment implements
 
     private void resolveMissingChannelNames(List<String> urls) {
         if (urls.size() > 0) {
-            ResolveTask task = new ResolveTask(urls, Lbry.SDK_CONNECTION_STRING, null, new ClaimListResultHandler() {
+            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     boolean updated = false;

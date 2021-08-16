@@ -3,6 +3,8 @@ package com.odysee.app.utils;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.google.firebase.analytics.FirebaseAnalytics;
 
@@ -54,15 +56,25 @@ public class LbryAnalytics {
     }
 
     public static void logEvent(String name, Bundle bundle) {
-        if (analytics != null) {
-            analytics.logEvent(name, bundle);
-        }
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                if (analytics != null) {
+                    analytics.logEvent(name, bundle);
+                }
+            }
+        });
     }
 
     public static void logError(String message, String exceptionName) {
-        Bundle bundle = new Bundle();
-        bundle.putString("message", message);
-        bundle.putString("name", exceptionName);
-        logEvent(EVENT_APP_ERROR, bundle);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Bundle bundle = new Bundle();
+                bundle.putString("message", message);
+                bundle.putString("name", exceptionName);
+                logEvent(EVENT_APP_ERROR, bundle);
+            }
+        });
     }
 }

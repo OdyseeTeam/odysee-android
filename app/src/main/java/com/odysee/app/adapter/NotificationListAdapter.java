@@ -186,13 +186,13 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             return ContextCompat.getColor(context, R.color.nextLbryGreen);
         }
 
-        return ContextCompat.getColor(context, R.color.lbryGreen);
+        return ContextCompat.getColor(context, R.color.odyseePink);
     }
 
     @Override
     public void onBindViewHolder(NotificationListAdapter.ViewHolder vh, int position) {
         LbryNotification notification = items.get(position);
-        vh.layoutView.setBackgroundColor(ContextCompat.getColor(context, notification.isSeen() ? android.R.color.transparent : R.color.nextLbryGreenSemiTransparent));
+        vh.layoutView.setBackgroundColor(ContextCompat.getColor(context, notification.isSeen() ? android.R.color.transparent : R.color.odyseePinkSemiTransparent));
         vh.selectedOverlayView.setVisibility(isNotificationSelected(notification) ? View.VISIBLE : View.GONE);
 
         vh.titleView.setVisibility(!Helper.isNullOrEmpty(notification.getTitle()) ? View.VISIBLE : View.GONE);
