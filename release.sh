@@ -3,31 +3,17 @@
 version=$(./gradlew -q printVersionName --console=plain | tail -1)
 mkdir -p bin/
 rm -f bin/*
-cp app/build/outputs/apk/__32bit/release/app-__32bit-release-unsigned.apk bin/browser-$version-release-unsigned__arm.apk
-cp app/build/outputs/apk/__64bit/release/app-__64bit-release-unsigned.apk bin/browser-$version-release-unsigned__arm64.apk
+cp app/build/outputs/apk/release/app-release-unsigned.apk bin/odysee-$version-release-unsigned.apk
 
-# sign 32-bit
-echo "Signing 32-bit APK..."
+# sign APK
+echo "Signing APK..."
 jarsigner -verbose -sigalg SHA1withRSA \
     -digestalg SHA1 \
     -keystore lbry-android.keystore \
     -storepass $KEYSTORE_PASSWORD \
-    bin/browser-$version-release-unsigned__arm.apk lbry-android > /dev/null \
-    && mv bin/browser-$version-release-unsigned__arm.apk bin/browser-$version-release-signed__arm.apk
+    bin/odysee-$version-release-unsigned.apk lbry-android > /dev/null \
+    && mv bin/odysee-$version-release-unsigned.apk bin/odysee-$version-release-signed.apk
 zipalign -v 4 \
-    bin/browser-$version-release-signed__arm.apk bin/browser-$version-release__arm.apk > /dev/null \
-    && rm bin/browser-$version-release-signed__arm.apk
-echo "32-bit APK successfully built."
-
-# sign 64-bit
-echo "Signing 64-bit APK..."
-jarsigner -verbose -sigalg SHA1withRSA \
-    -digestalg SHA1 \
-    -keystore lbry-android.keystore \
-    -storepass $KEYSTORE_PASSWORD \
-    bin/browser-$version-release-unsigned__arm64.apk lbry-android > /dev/null \
-    && mv bin/browser-$version-release-unsigned__arm64.apk bin/browser-$version-release-signed__arm64.apk
-zipalign -v 4 \
-    bin/browser-$version-release-signed__arm64.apk bin/browser-$version-release__arm64.apk > /dev/null \
-    && rm bin/browser-$version-release-signed__arm64.apk
-echo "64-bit APK successfully built."
+    bin/odysee-$version-release-signed.apk bin/odysee-$version-release.apk > /dev/null \
+    && rm bin/odysee-$version-release-signed.apk
+echo "APK successfully built."
