@@ -14,8 +14,8 @@ android {
         applicationId "com.odysee.app"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 10
-        versionName "0.0.10-prealpha"
+        versionCode 11
+        versionName "0.0.11"
 //        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
