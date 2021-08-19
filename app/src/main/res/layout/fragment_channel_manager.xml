@@ -41,7 +41,7 @@
                 android:layout_width="160dp"
                 android:layout_height="300dp"
                 android:adjustViewBounds="true"
-                android:src="@drawable/gerbil_happy" />
+                android:src="@drawable/spaceman_happy" />
             <TextView
                 android:text="@string/no_channel_created"
                 android:layout_width="wrap_content"

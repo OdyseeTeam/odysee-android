@@ -158,7 +158,7 @@
                     android:layout_width="64dp"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:src="@drawable/gerbil_happy" />
+                    android:src="@drawable/spaceman_happy" />
 
                 <LinearLayout
                     android:layout_width="match_parent"

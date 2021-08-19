@@ -210,8 +210,6 @@ public final class Lbryio {
                 return responseString;
             }
 
-            android.util.Log.d("OdyseeUA", responseString);
-
             JSONObject json = new JSONObject(responseString);
             if (response.code() >= 200 && response.code() < 300) {
                 if (json.isNull("data")) {
