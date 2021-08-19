@@ -26,7 +26,7 @@ public class LbryUri {
     private static final Pattern PATTERN_SEPARATE_QUERY_STRING = Pattern.compile(QUERY_STRING_BREAKER);
 
     private String path;
-    private boolean isChannel;
+    private boolean channel;
     private String streamName;
     private String streamClaimId;
     private String channelName;

@@ -7,7 +7,6 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
@@ -55,21 +54,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
-import com.odysee.app.SignInActivity;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
-import com.odysee.app.callable.WalletGetUnusedAddress;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Transaction;
@@ -194,9 +188,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         Helper.setViewVisibility(textNoRecentTransactions, View.GONE);
 
         AccountManager am = AccountManager.get(getContext());
-        Account[] account = am.getAccounts();
+        Account[] accounts = am.getAccounts();
 
-        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(accounts[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 hasFetchedRecentTransactions = true;
@@ -309,12 +303,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             }
         });
 
-        /*buttonGetNewAddress.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                generateNewAddress();
-            }
-        });*/
         textWalletReceiveAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -516,13 +504,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             receiveAddress = sp.getString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, null);
         }
         if (Helper.isNullOrEmpty(receiveAddress)) {
-            AccountManager am = AccountManager.get(getContext());
-
-            if (am.getAccounts().length > 0) {
-                generateNewAddress();
-            }
-        } else if (textWalletReceiveAddress != null) {
-            textWalletReceiveAddress.setText(receiveAddress);
+            generateNewAddress();
+        } else {
+            Helper.setViewText(textWalletReceiveAddress, receiveAddress);
         }
     }
 
@@ -616,31 +600,37 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
     public void generateNewAddress() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Callable<String> callable = new WalletGetUnusedAddress(getContext());
-
-        // TODO: calling future.get blocks the UI thread. Need to fix.
-        Future<String> future = executor.submit(callable);
-
-        try {
-            Helper.setViewEnabled(buttonGetNewAddress, false);
-
-            String addr = future.get();
-
-            if (!Helper.isNullOrEmpty(addr)) {
-                Context context = getContext();
-                if (context != null) {
-                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                    sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                AccountManager am = AccountManager.get(getContext());
+                Account[] accounts = am.getAccounts();
+                if (accounts.length == 0) {
+                    return;
                 }
-                Helper.setViewText(textWalletReceiveAddress, addr);
-                Helper.setViewEnabled(buttonGetNewAddress, true);
-            } else {
-                Helper.setViewEnabled(buttonGetNewAddress, true);
+
+                try {
+                    final String address = (String) Lbry.directApiCall(Lbry.METHOD_ADDRESS_UNUSED, am.peekAuthToken(accounts[0], "auth_token_type"));
+                    Context context = getContext();
+                    if (context != null) {
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                        sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, address).apply();
+                    }
+                    onNewAddressGenerated(address);
+                } catch (ApiCallException ex) {
+                    // pass
+                }
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        });
+    }
+
+    private void onNewAddressGenerated(final String address) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Helper.setViewText(textWalletReceiveAddress, address);
+            }
+        });
     }
 
     public void onWalletBalanceUpdated(WalletBalance walletBalance) {

@@ -3,6 +3,8 @@ package com.odysee.app.model;
 import androidx.annotation.Nullable;
 
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.LbryUri;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -21,20 +23,30 @@ public class ClaimCacheKey {
 
     public static ClaimCacheKey fromClaimShortUrl(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
-        key.setUrl(claim.getShortUrl());
+        LbryUri url = LbryUri.tryParse(claim.getShortUrl());
+        if (url != null) {
+            key.setUrl(url.toString());
+        }
         return key;
     }
 
     public static ClaimCacheKey fromClaimPermanentUrl(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
-        key.setUrl(claim.getPermanentUrl());
+        LbryUri url = LbryUri.tryParse(claim.getPermanentUrl());
+        if (url != null) {
+            key.setUrl(url.toString());
+        }
         return key;
     }
 
     public static ClaimCacheKey fromClaim(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
         key.setClaimId(claim.getClaimId());
-        key.setUrl(!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+        LbryUri claimUrl = !Helper.isNullOrEmpty(claim.getShortUrl()) ?
+                LbryUri.tryParse(claim.getShortUrl()) : LbryUri.tryParse(claim.getPermanentUrl());
+        if (claimUrl != null) {
+            key.setUrl(claimUrl.toString());
+        }
         return key;
     }
 

@@ -2024,7 +2024,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 return;
                             }
 
-                            android.util.Log.d(TAG, categories.toString());
                             initialCategoriesLoaded = true;
                             displayDynamicCategories();
                         }

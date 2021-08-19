@@ -12,10 +12,10 @@
         android:orientation="vertical">
         <ImageView
             android:layout_gravity="center_horizontal"
-            android:layout_width="120dp"
-            android:layout_height="200dp"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
             android:adjustViewBounds="true"
-            android:src="@drawable/spaceman_happy" />
+            android:src="@drawable/spaceman_sad" />
 
         <TextView
             android:id="@+id/channel_about_no_info"

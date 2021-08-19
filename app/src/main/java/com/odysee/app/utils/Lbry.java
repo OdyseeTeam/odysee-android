@@ -40,8 +40,8 @@ import okhttp3.Response;
 
 public final class Lbry {
     private static final Object lock = new Object();
-    public static final LinkedHashMap<ClaimCacheKey, Claim> claimCache = new LinkedHashMap<>();
-    public static final LinkedHashMap<Map<String, Object>, ClaimSearchCacheValue> claimSearchCache = new LinkedHashMap<>();
+    public static final Map<ClaimCacheKey, Claim> claimCache = new HashMap<>();
+    public static final Map<Map<String, Object>, ClaimSearchCacheValue> claimSearchCache = new HashMap<>();
     public static WalletBalance walletBalance = new WalletBalance();
     public static List<Tag> knownTags = new ArrayList<>();
     public static List<Tag> followedTags = new ArrayList<>();
@@ -614,8 +614,13 @@ public final class Lbry {
         ClaimCacheKey fullKey = ClaimCacheKey.fromClaim(claim);
         ClaimCacheKey shortUrlKey = ClaimCacheKey.fromClaimShortUrl(claim);
         ClaimCacheKey permanentUrlKey = ClaimCacheKey.fromClaimPermanentUrl(claim);
-        claimCache.put(fullKey, claim);
-        claimCache.put(permanentUrlKey, claim);
+
+        if (!Helper.isNullOrEmpty(fullKey.getUrl())) {
+            claimCache.put(fullKey, claim);
+        }
+        if (!Helper.isNullOrEmpty(permanentUrlKey.getUrl())) {
+            claimCache.put(permanentUrlKey, claim);
+        }
         if (!Helper.isNullOrEmpty(shortUrlKey.getUrl())) {
             claimCache.put(shortUrlKey, claim);
         }

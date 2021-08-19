@@ -38,8 +38,8 @@
             android:padding="36dp">
             <ImageView
                 android:layout_gravity="center_horizontal"
-                android:layout_width="160dp"
-                android:layout_height="300dp"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
                 android:adjustViewBounds="true"
                 android:src="@drawable/spaceman_happy" />
             <TextView
