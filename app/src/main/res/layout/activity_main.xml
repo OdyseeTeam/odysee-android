@@ -29,10 +29,6 @@
             android:layout_height="0dp"
             android:layout_weight="1"/>
 
-        <include layout="@layout/mini_player"
-                android:id="@+id/miniplayer"
-            android:visibility="gone"/>
-
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
@@ -53,6 +49,16 @@
                 android:layout_height="match_parent" />
         </LinearLayout>
     </LinearLayout>
+
+    <include layout="@layout/mini_player"
+        android:id="@+id/miniplayer"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="36dp"
+        android:layout_alignParentBottom="true" />
 
     <RelativeLayout
         android:layout_width="match_parent"

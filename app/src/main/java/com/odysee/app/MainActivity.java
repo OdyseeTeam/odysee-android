@@ -53,6 +53,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -736,7 +737,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         int miniPlayerBottomMargin = Helper.parseInt(
                 sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
+        RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
         int scaledMiniPlayerBottomMargin = getScaledValue(miniPlayerBottomMargin);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {

@@ -1634,7 +1634,7 @@ public class FileViewFragment extends BaseFragment implements
                 if (MainActivity.nowPlayingClaim != null && MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
                     // claim already playing
                     showExoplayerView();
-                    playMedia();
+                    //playMedia();
                 } else {
                     onMainActionButtonClicked();
                 }
@@ -1786,7 +1786,7 @@ public class FileViewFragment extends BaseFragment implements
                             new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
                             new DefaultExtractorsFactory()
                     ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
-                } else {
+                }/* else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
@@ -1810,7 +1810,7 @@ public class FileViewFragment extends BaseFragment implements
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
-                }
+                }*/
 
                 if (mediaSource != null) {
                     MainActivity.appPlayer.setMediaSource(mediaSource, true);
@@ -1854,7 +1854,6 @@ public class FileViewFragment extends BaseFragment implements
         Future<JSONObject> future = executor.submit(callable);
         try {
             JSONObject jsonData = future.get();
-
             if (jsonData != null && jsonData.has("live")) {
                 if (jsonData.getBoolean("live") && jsonData.has("url")) {
                     return jsonData.getString("url");
@@ -2280,7 +2279,7 @@ public class FileViewFragment extends BaseFragment implements
             // always use lbry.tv streaming when signed in and playabble
             startTimeMillis = System.currentTimeMillis();
             showExoplayerView();
-            playMedia();
+            //playMedia();
             return;
         }
 
@@ -2303,7 +2302,7 @@ public class FileViewFragment extends BaseFragment implements
             if (claim.isPlayable()) {
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
-                playMedia();
+                //playMedia();
             }
         }
     }
@@ -2362,7 +2361,7 @@ public class FileViewFragment extends BaseFragment implements
             if (claim.isPlayable()) {
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
-                playMedia();
+                //playMedia();
                 handled = true;
             } else if (claim.isViewable()) {
                 // check type and display
@@ -2598,7 +2597,7 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
-                    Map<String, Reactions> commentReactions = loadReactions(comments);
+                    Map<String, Reactions> commentReactions = new HashMap<>();// loadReactions(comments);
 
                     if (commentReactions != null) {
                         for (Comment c: comments) {
