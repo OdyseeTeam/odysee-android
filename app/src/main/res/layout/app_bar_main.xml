@@ -26,7 +26,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <ImageView
+                <ImageView android:id="@+id/brand"
                     android:layout_width="80dp"
                     android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
@@ -118,21 +118,46 @@
                             android:visibility="invisible" />
                     </RelativeLayout>
 
-                    <RelativeLayout
-                        android:id="@+id/search_button"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:layout_width="40dp"
+                    <LinearLayout android:id="@+id/search_component"
+                        android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:background="?attr/selectableItemBackground">
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:visibility="visible"
-                            android:layout_centerInParent="true"
-                            android:src="@drawable/ic_search"
-                            app:tint="@color/actionBarForeground" />
-                    </RelativeLayout>
+                        android:orientation="horizontal">
+                        <EditText android:id="@+id/search_query_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:minWidth="256dp"
+                            android:visibility="gone"/>
+
+                        <RelativeLayout android:id="@+id/search_button"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:layout_width="40dp"
+                            android:layout_height="match_parent"
+                            android:background="?attr/selectableItemBackground">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:visibility="visible"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_search"
+                                app:tint="@color/actionBarForeground" />
+                        </RelativeLayout>
+                        <RelativeLayout android:id="@+id/search_close_button"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:layout_width="40dp"
+                            android:layout_height="match_parent"
+                            android:visibility="gone"
+                            android:background="?attr/selectableItemBackground">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:visibility="visible"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_close"
+                                app:tint="@color/actionBarForeground" />
+                        </RelativeLayout>
+                    </LinearLayout>
 
                     <RelativeLayout
                         android:id="@+id/profile_button"
