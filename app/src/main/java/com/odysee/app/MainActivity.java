@@ -2742,12 +2742,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             findViewById(R.id.upload_button).setVisibility(View.GONE);
             findViewById(R.id.profile_button).setVisibility(View.GONE);
             findViewById(R.id.wunderbar_notifications).setVisibility(View.GONE);
-            findViewById(R.id.search_query_text).setVisibility(View.VISIBLE);
+            findViewById(R.id.search_query_layout).setVisibility(View.VISIBLE);
             findViewById(R.id.search_close_button).setVisibility(View.VISIBLE);
         } else {
             EditText queryTextView = findViewById(R.id.search_query_text);
             queryTextView.setText("");
-            queryTextView.setVisibility(View.GONE);
+            findViewById(R.id.search_query_layout).setVisibility(View.GONE);
             findViewById(R.id.search_close_button).setVisibility(View.GONE);
             findViewById(R.id.brand).setVisibility(View.VISIBLE);
             showWalletBalance();

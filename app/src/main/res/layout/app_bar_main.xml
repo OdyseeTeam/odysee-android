@@ -122,11 +122,25 @@
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:orientation="horizontal">
-                        <EditText android:id="@+id/search_query_text"
+
+                        <com.google.android.material.textfield.TextInputLayout android:id="@+id/search_query_layout"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical"
                             android:minWidth="256dp"
-                            android:visibility="gone"/>
+                            android:visibility="gone">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/search_query_text"
+                                android:fontFamily="@font/inter"
+                                android:textSize="16sp"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:inputType="text"
+                                android:imeOptions="actionNext"
+                                android:hint="@string/search_hint"
+                                android:singleLine="true" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
 
                         <RelativeLayout android:id="@+id/search_button"
                             android:clickable="true"
