@@ -1635,7 +1635,7 @@ public class FileViewFragment extends BaseFragment implements
                 if (MainActivity.nowPlayingClaim != null && MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
                     // claim already playing
                     showExoplayerView();
-                    //playMedia();
+                    playMedia();
                 } else {
                     onMainActionButtonClicked();
                 }
@@ -2280,7 +2280,7 @@ public class FileViewFragment extends BaseFragment implements
             // always use lbry.tv streaming when signed in and playabble
             startTimeMillis = System.currentTimeMillis();
             showExoplayerView();
-            //playMedia();
+            playMedia();
             return;
         }
 
@@ -2303,7 +2303,7 @@ public class FileViewFragment extends BaseFragment implements
             if (claim.isPlayable()) {
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
-                //playMedia();
+                playMedia();
             }
         }
     }
@@ -2362,7 +2362,7 @@ public class FileViewFragment extends BaseFragment implements
             if (claim.isPlayable()) {
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
-                //playMedia();
+                playMedia();
                 handled = true;
             } else if (claim.isViewable()) {
                 // check type and display
