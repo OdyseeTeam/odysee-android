@@ -136,7 +136,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:inputType="text"
-                                android:imeOptions="actionNext"
+                                android:imeOptions="actionSearch"
                                 android:hint="@string/search_hint"
                                 android:singleLine="true" />
 

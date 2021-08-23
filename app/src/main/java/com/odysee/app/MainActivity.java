@@ -39,6 +39,7 @@ import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,6 +47,8 @@ import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -616,10 +619,25 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 } else {
                     EditText queryText = findViewById(R.id.search_query_text);
-                    String query = queryText.getText().toString();
+                    // hide keyboard
+                    InputMethodManager inputMethodManager = (InputMethodManager) queryText.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                    String query = queryText.getText().toString();
                     ((SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH")).search(query, 0);
                 }
+            }
+        });
+
+        ((EditText)findViewById(R.id.search_query_text)).setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_SEARCH) {
+                    findViewById(R.id.search_button).callOnClick();
+                    return true;
+                }
+                return false;
             }
         });
 
