@@ -606,7 +606,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 switchToolbarForSearch(true);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
 
-                if (getSupportFragmentManager().findFragmentByTag("SEARCH") == null) {
+                if (!isSearchUIActive()) {
                     try {
                         getSupportFragmentManager().beginTransaction()
                                 .replace(R.id.fragment_container_search, SearchFragment.class.newInstance(), "SEARCH").commit();
@@ -2706,7 +2706,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             manager.popBackStack();
 
             if (backCount == 1) { // It was 1 before popping
-                if (getSupportFragmentManager().findFragmentByTag("SEARCH") != null) {
+                if (isSearchUIActive()) {
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
                     hideBottomNavigation();
