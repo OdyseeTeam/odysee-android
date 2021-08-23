@@ -79,7 +79,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -1076,7 +1075,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
         findViewById(R.id.appbar).setVisibility(View.VISIBLE);
-        showBottomBavigation();
+        showBottomNavigation();
 
         findViewById(R.id.content_main).setVisibility(View.GONE);
         Fragment fragment = getCurrentFragment();
@@ -2568,7 +2567,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void showNotifications() {
 //        clearWunderbarFocus(findViewById(R.id.wunderbar));
-        findViewById(R.id.content_main_container).setVisibility(View.VISIBLE);
+        findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
         hideBottomNavigation();
@@ -2592,7 +2591,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.notifications_container).setVisibility(View.GONE);
         if (!isInPictureInPictureMode() && hideSingleContentView) {
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-            showBottomBavigation();
+            showBottomNavigation();
         }
     }
 
@@ -2632,7 +2631,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         showNotifications();
     }
 
-    private void showBottomBavigation() {
+    private void showBottomNavigation() {
         findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
     }
 
