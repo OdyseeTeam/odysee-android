@@ -58,7 +58,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/verification_email_input"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:maxLength="256" />
         </com.google.android.material.textfield.TextInputLayout>
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layout_signin_password"
@@ -66,6 +67,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
             android:hint="@string/password"
+            android:maxLength="100"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:enabled="true">
             <com.google.android.material.textfield.TextInputEditText
