@@ -11,7 +11,7 @@ build apk:
     - echo "$PGP_PRIVATE_KEY" | gpg --batch --import
     - echo 'deb https://gitsecret.jfrog.io/artifactory/git-secret-deb git-secret main' >> /etc/apt/sources.list
     - wget -qO - 'https://gitsecret.jfrog.io/artifactory/api/gpg/key/public' | apt-key add -
-    - apt-get -y update && apt-get -y install build-essential ca-certificates curl git gpg-agent openjdk-8-jdk software-properties-common wget zipalign git-secret
+    - apt-get -y update && apt-get -y install build-essential ca-certificates curl git gpg-agent openjdk-8-jdk software-properties-common wget zipalign apksigner git-secret
     - git secret reveal
     - chmod u+x $CI_PROJECT_DIR/gradlew
     - export BUILD_VERSION=$($CI_PROJECT_DIR/gradlew -p $CI_PROJECT_DIR -q printVersionName --console=plain | tail -1)
