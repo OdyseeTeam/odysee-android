@@ -13,7 +13,7 @@ apksigner sign \
     --ks lbry-android.keystore \
     --ks-pass pass:$KEYSTORE_PASSWORD \
     --v1-signing-enabled true \
-    --v2-signing-eanbled true \
+    --v2-signing-enabled true \
     bin/odysee-$version-release-unsigned-aligned.apk > /dev/null \
-    && mv bin/odysee-$version-release-unsigned-aligned.apk bin/odysee-$version-release-signed.apk
+    && mv bin/odysee-$version-release-unsigned-aligned.apk bin/odysee-$version-release.apk
 echo "APK successfully built."
