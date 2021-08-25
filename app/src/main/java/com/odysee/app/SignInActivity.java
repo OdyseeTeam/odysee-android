@@ -244,7 +244,6 @@ public class SignInActivity extends Activity {
                 try {
                     Object response = Lbryio.parseResponse(Lbryio.call("user", "signin", options, Helper.METHOD_POST, SignInActivity.this));
                     requestInProgress = false;
-                    restoreControls(false);
                     if (response instanceof JSONObject) {
                         Type type = new TypeToken<User>(){}.getType();
                         Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
@@ -263,8 +262,15 @@ public class SignInActivity extends Activity {
                             return;
                         }
                     }
+
+                    showError(ex.getMessage());
+                    requestInProgress = false;
+                    restoreControls(true);
+                    return;
                 }
 
+                requestInProgress = false;
+                restoreControls(true);
                 showError(getString(R.string.unknown_error_occurred));
             }
         });
@@ -318,7 +324,8 @@ public class SignInActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                inputPassword.setVisibility(View.VISIBLE);
+                restoreControls(true);
+                layoutPassword.setVisibility(View.VISIBLE);
                 buttonPrimary.setText(R.string.sign_in);
             }
         });
