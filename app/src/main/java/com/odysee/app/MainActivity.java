@@ -39,6 +39,7 @@ import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,8 +47,11 @@ import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -594,6 +598,64 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
 //                hideActionBar();
                 startActivity(new Intent(view.getContext(), ComingSoon.class));
+            }
+        });
+
+        findViewById(R.id.search_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Enter Search Mode
+                hideBottomNavigation();
+                switchToolbarForSearch(true);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+
+                if (!isSearchUIActive()) {
+                    try {
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container_search, SearchFragment.class.newInstance(), "SEARCH").commit();
+                        findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                    } catch (IllegalAccessException | InstantiationException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    EditText queryText = findViewById(R.id.search_query_text);
+                    // hide keyboard
+                    InputMethodManager inputMethodManager = (InputMethodManager) queryText.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
+                    findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                    String query = queryText.getText().toString();
+                    ((SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH")).search(query, 0);
+                }
+            }
+        });
+
+        ((EditText)findViewById(R.id.search_query_text)).setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_SEARCH) {
+                    findViewById(R.id.search_button).callOnClick();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        findViewById(R.id.search_close_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getSupportFragmentManager().beginTransaction()
+                        .remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                ((EditText)findViewById(R.id.search_query_text)).setText("");
+                showBottomNavigation();
+                switchToolbarForSearch(false);
+
+                // On tablets, multiple fragments could be visible. Don't show Home Screen when File View is visible
+                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE)
+                    findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+
+                showWalletBalance();
+                findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
             }
         });
 
@@ -2662,17 +2724,59 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             manager.popBackStack();
 
             if (backCount == 1) { // It was 1 before popping
+                if (isSearchUIActive()) {
+                    findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                    findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+                    hideBottomNavigation();
+                } else {
+                    findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+                    showBottomNavigation();
+                }
                 findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
-                findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-                findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
                 findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
+                showActionBar();
                 getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             }
         } else if (!enterPIPMode()) {
             // we're at the top of the stack
-            moveTaskToBack(true);
+            if (isSearchUIActive()) {
+                // Close Search UI
+                getSupportFragmentManager().beginTransaction().remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                switchToolbarForSearch(false);
+                findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+            } else {
+                moveTaskToBack(true);
+            }
+
             return;
         }
+    }
+
+    private void switchToolbarForSearch(boolean showSearch) {
+        if (showSearch) {
+            findViewById(R.id.brand).setVisibility(View.GONE);
+            hideWalletBalance();
+            findViewById(R.id.upload_button).setVisibility(View.GONE);
+            findViewById(R.id.profile_button).setVisibility(View.GONE);
+            findViewById(R.id.wunderbar_notifications).setVisibility(View.GONE);
+            findViewById(R.id.search_query_layout).setVisibility(View.VISIBLE);
+            findViewById(R.id.search_close_button).setVisibility(View.VISIBLE);
+        } else {
+            EditText queryTextView = findViewById(R.id.search_query_text);
+            queryTextView.setText("");
+            findViewById(R.id.search_query_layout).setVisibility(View.GONE);
+            findViewById(R.id.search_close_button).setVisibility(View.GONE);
+            findViewById(R.id.brand).setVisibility(View.VISIBLE);
+            showWalletBalance();
+            findViewById(R.id.upload_button).setVisibility(View.VISIBLE);
+            findViewById(R.id.profile_button).setVisibility(View.VISIBLE);
+            findViewById(R.id.wunderbar_notifications).setVisibility(View.VISIBLE);
+        }
+    }
+
+    private boolean isSearchUIActive() {
+        return getSupportFragmentManager().findFragmentByTag("SEARCH") != null;
     }
 
     public void signOutUser() {
@@ -3135,7 +3239,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 appPlayer != null &&
                 !startingFilePickerActivity &&
-                !startingSignInFlowActivity) {
+                !startingSignInFlowActivity &&
+                !isSearchUIActive()) {
             enteringPIPMode = true;
             PictureInPictureParams params = new PictureInPictureParams.Builder().build();
 
@@ -3291,6 +3396,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             FragmentTransaction transaction;
             if (fragment instanceof FileViewFragment) {
+                findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, "FileView");
             } else {
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
