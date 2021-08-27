@@ -276,6 +276,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final boolean startingSignInFlowActivity = false;
 
     @Getter
+    private boolean userInstallInitialised;
+    @Getter
     private boolean initialCategoriesLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
@@ -330,6 +332,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String ACTION_SAVE_SHARED_USER_STATE = "com.odysee.app.Broadcast.SaveSharedUserState";
 
     // preference keys
+    public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
     public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
@@ -358,7 +361,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
 
-    private static final String TAG = "LbryMain";
+    private static final String TAG = "OdyseeMain";
 
     private UrlSuggestionListAdapter urlSuggestionListAdapter;
     private List<UrlSuggestion> recentUrlHistory;
@@ -1297,9 +1300,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             pendingSourceTabId = 0;
         }
 
-        loadInitialCategories();
- //            scheduleWalletSyncTask();
-//        checkPendingOpens();
+        initialiseUserInstall();
+        // scheduleWalletSyncTask();
+        // checkPendingOpens();
     }
 
     public boolean isFirstRunCompleted() {
@@ -2041,9 +2044,68 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
         }
 
-        if (initialCategoriesLoaded) {
+        if (initialCategoriesLoaded && userInstallInitialised) {
             hideLaunchScreen();
         }
+    }
+
+    private void initialiseUserInstall() {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        if (!userInstallInitialised) {
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    String installId = sp.getString(PREFERENCE_KEY_INSTALL_ID, null);
+                    if (Helper.isNullOrEmpty(installId)) {
+                        // no install_id found (first run didn't start the sdk successfully?)
+                        installId = Lbry.generateId();
+                        sp.edit().putString(PREFERENCE_KEY_INSTALL_ID, installId).apply();
+                    }
+
+                    Lbry.INSTALLATION_ID = installId;
+                    android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
+
+                    try {
+                        try {
+                            Lbryio.authenticate(MainActivity.this);
+                        } catch (AuthTokenInvalidatedException ex) {
+                            // if this happens, attempt to authenticate again, so that we can obtain a new auth token
+                            // this will also result in the user having to sign in again
+                            Lbryio.authenticate(MainActivity.this);
+                        }
+
+                        if (Lbryio.currentUser == null) {
+                            // display simplified startup error
+                        }
+
+                        Lbryio.newInstall(MainActivity.this);
+                    } catch (Exception ex) {
+                        // startup steps failed completely
+                        // display startup error
+
+                        return;
+                    }
+
+                    if (!initialCategoriesLoaded) {
+                        loadInitialCategories();
+                        return;
+                    }
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            hideLaunchScreen();
+                        }
+                    });
+                }
+            });
+            userInstallInitialised = true;
+            return;
+        }
+
+        // if the user install has already been initialised, proceed to load categories
+        loadInitialCategories();
     }
 
     private void loadInitialCategories() {
