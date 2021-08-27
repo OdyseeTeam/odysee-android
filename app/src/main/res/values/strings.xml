@@ -455,8 +455,9 @@
     <string name="unknown_error_occurred">An unknown error occurred. Please try again.</string>
     <string name="please_enter_your_password">Please enter the password you used to secure your wallet.</string>
     <string name="please_enter_a_password">Please enter a password to secure your wallet.</string>
-    <string name="wallet_security_purposes">Note: for wallet security purposes, LBRY is unable to reset your password.</string>
+    <string name="wallet_security_purposes">Note: for wallet security purposes, Odysee is unable to reset your wallet password.</string>
     <string name="password">Password</string>
+    <string name="wallet_password">Wallet password</string>
     <string name="enable_sync">Enable sync</string>
     <string name="wallet_sync_op_failed">The wallet sync operation could not be completed at this time. Please try again later. If this problem persists, please send an email to hello@lbry.com.</string>
     <string name="phone_number">Phone Number</string>
@@ -675,6 +676,7 @@
     </plurals>
 
     <string name="join_odysee">Join Odysee</string>
+    <string name="log_in_odysee">Log in to Odysee</string>
 
     <!-- Font Awesome -->
     <string name="fa_gift" translatable="false">&#xf06b;</string>

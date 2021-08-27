@@ -43,15 +43,16 @@ public class SyncGetTask extends AsyncTask<Void, Void, WalletSync> {
     protected WalletSync doInBackground(Void... params) {
         try {
             password = Helper.isNullOrEmpty(password) ? "" : password;
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_STATUS);
+            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_WALLET_STATUS, Lbryio.AUTH_TOKEN);
             boolean isLocked = Helper.getJSONBoolean("is_locked", false, result);
             boolean unlockSuccessful =
-                    !isLocked || (boolean) Lbry.genericApiCall(Lbry.METHOD_WALLET_UNLOCK, Lbry.buildSingleParam("password", password));
+                    !isLocked || (boolean) Lbry.authenticatedGenericApiCall(
+                            Lbry.METHOD_WALLET_UNLOCK, Lbry.buildSingleParam("password", password), Lbryio.AUTH_TOKEN);
             if (!unlockSuccessful) {
                 throw new WalletException("The wallet could not be unlocked with the provided password.");
             }
 
-            String hash = (String) Lbry.genericApiCall(Lbry.METHOD_SYNC_HASH);
+            String hash = (String) Lbry.authenticatedGenericApiCall(Lbry.METHOD_SYNC_HASH, null, Lbryio.AUTH_TOKEN);
             try {
                 JSONObject response = (JSONObject) Lbryio.parseResponse(
                         Lbryio.call("sync", "get", Lbryio.buildSingleParam("hash", hash), Helper.METHOD_POST, null));
@@ -68,7 +69,7 @@ public class SyncGetTask extends AsyncTask<Void, Void, WalletSync> {
                         options.put("data", walletSync.getData());
                         options.put("blocking", true);
 
-                        JSONObject syncApplyResponse = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_SYNC_APPLY, options);
+                        JSONObject syncApplyResponse = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_SYNC_APPLY, options, Lbryio.AUTH_TOKEN);
                         syncHash = Helper.getJSONString("hash", null, syncApplyResponse);
                         syncData = Helper.getJSONString("data", null, syncApplyResponse);
                         applySyncSuccessful = true;

@@ -228,6 +228,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -1830,31 +1831,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void initKeyStore() {
         try {
-            KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER);
-            ks.load(null);
-
-            if (!ks.containsAlias(KEY_ALIAS)) {
-                Calendar start = Calendar.getInstance();
-                Calendar end = Calendar.getInstance();
-                end.add(Calendar.YEAR, 100);
-
-                KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(this)
-                        .setAlias(KEY_ALIAS)
-                        .setSubject(new X500Principal(String.format("CN=%s", KEY_ALIAS)))
-                        .setSerialNumber(BigInteger.ONE)
-                        .setStartDate(start.getTime())
-                        .setEndDate(end.getTime())
-                        .build();
-
-                try {
-                    KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA", KEYSTORE_PROVIDER);
-                    keygen.initialize(spec);
-                    keygen.generateKeyPair();
-                } catch (NoSuchProviderException ex) {
-                    throw ex;
-                }
-            }
-            Lbry.KEYSTORE = ks;
+            Lbry.KEYSTORE = Utils.initKeyStore(this);
         } catch (Exception ex) {
             // This shouldn't happen, but in case it does.
             Toast.makeText(this, "The keystore could not be initialized. The app requires a secure keystore to run properly.", Toast.LENGTH_LONG).show();

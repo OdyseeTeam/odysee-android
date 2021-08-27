@@ -11,6 +11,7 @@ import java.util.Map;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.Lbryio;
 
 public class SyncApplyTask extends AsyncTask<Void, Void, Boolean> {
     // flag to indicate if this sync_apply is to fetch wallet data or apply data
@@ -50,7 +51,7 @@ public class SyncApplyTask extends AsyncTask<Void, Void, Boolean> {
         }
 
         try {
-            JSONObject response = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_SYNC_APPLY, options);
+            JSONObject response = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_SYNC_APPLY, options, Lbryio.AUTH_TOKEN);
             syncHash = Helper.getJSONString("hash", null, response);
             syncData = Helper.getJSONString("data", null, response);
         } catch (ApiCallException ex) {

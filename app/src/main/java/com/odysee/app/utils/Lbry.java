@@ -584,11 +584,11 @@ public final class Lbry {
         }
         return response;
     }
-    public static Object genericApiCall(String method, boolean useSdk, String authToken) throws ApiCallException {
+    public static Object genericApiCall(String method, String authToken) throws ApiCallException {
         return directApiCall(method, authToken);
     }
     public static Object genericApiCall(String method) throws ApiCallException {
-        return genericApiCall(method, null);
+        return genericApiCall(method, (String) null);
     }
     public static void addFollowedTag(Tag tag) {
         synchronized (lock) {
