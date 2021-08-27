@@ -289,7 +289,7 @@ public class SearchFragment extends BaseFragment implements
                 params.put("suggestedUrl", claim.getName());
 //                activity.openFragment(PublishFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
             } else if (claim.getName().startsWith("@")) {
-                activity.openChannelUrl(claim.getPermanentUrl());
+                activity.openChannelClaim(claim);
             } else {
                 // not a channel
                 activity.openFileClaim(claim);
