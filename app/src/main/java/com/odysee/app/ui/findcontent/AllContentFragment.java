@@ -425,6 +425,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             ((MainActivity) context).removeDownloadActionListener(this);
         }
         PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
+        contentCategoriesDisplayed = false;
         super.onPause();
     }
 

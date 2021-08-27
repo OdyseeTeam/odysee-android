@@ -2218,7 +2218,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void scheduleWalletBalanceUpdate() {
-        Log.i(TAG, "scheduleWalletBalanceUpdate: Scheduling wallet balance update...");
         if (scheduler != null && !walletBalanceUpdateScheduled) {
             scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
