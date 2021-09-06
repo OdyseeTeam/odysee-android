@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -125,6 +126,7 @@ import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
+import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
 import com.odysee.app.exceptions.LbryUriException;
@@ -176,6 +178,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Predefined;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -2503,7 +2506,8 @@ public class FileViewFragment extends BaseFragment implements
             Context context = getContext();
 
             List<Claim> loadingPlaceholders = new ArrayList<>();
-            for (int i = 0; i < 15; i++) {
+            int loadingPlaceholdersLength = Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) ? claim.getClaimIds().size() : 15;
+            for (int i = 0; i < loadingPlaceholdersLength; i++) {
                 Claim placeholder = new Claim();
                 placeholder.setLoadingPlaceholder(true);
                 loadingPlaceholders.add(placeholder);
@@ -2512,8 +2516,6 @@ public class FileViewFragment extends BaseFragment implements
             RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
             relatedContentList.setAdapter(relatedContentAdapter);
 
-            String title = claim.getTitle();
-            String claimId = claim.getClaimId();
             ProgressBar relatedLoading = root.findViewById(R.id.file_view_related_content_progress);
             boolean canShowMatureContent = false;
             if (context != null) {
@@ -2521,20 +2523,86 @@ public class FileViewFragment extends BaseFragment implements
                 canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
             }
 
-            LighthouseSearchTask relatedTask = new LighthouseSearchTask(
-                    title, RELATED_CONTENT_SIZE, 0, canShowMatureContent, claimId, relatedLoading, new ClaimSearchResultHandler() {
-                @Override
-                public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                    List<Claim> filteredClaims = new ArrayList<>();
-                    for (Claim c : claims) {
-                        if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
-                            filteredClaims.add(c);
+            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType())) {
+                String title = claim.getTitle();
+                String claimId = claim.getClaimId();
+
+                LighthouseSearchTask relatedTask = new LighthouseSearchTask(
+                        title, RELATED_CONTENT_SIZE, 0, canShowMatureContent, claimId, relatedLoading, new ClaimSearchResultHandler() {
+                    @Override
+                    public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
+                        List<Claim> filteredClaims = new ArrayList<>();
+                        for (Claim c : claims) {
+                            if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+                                filteredClaims.add(c);
+                            }
+                        }
+
+                        Context ctx = getContext();
+                        if (ctx != null) {
+                            relatedContentAdapter.setItems(filteredClaims);
+                            relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                @Override
+                                public void onClaimClicked(Claim claim) {
+                                    if (claim.isLoadingPlaceholder()) {
+                                        return;
+                                    }
+
+                                    if (context instanceof MainActivity) {
+                                        MainActivity activity = (MainActivity) context;
+                                        if (claim.getName().startsWith("@")) {
+                                            activity.openChannelClaim(claim);
+                                        } else {
+                                            activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
+                                        }
+                                    }
+                                }
+                            });
+
+                            View v = getView();
+                            if (v != null) {
+                                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+                                relatedContentList.setAdapter(relatedContentAdapter);
+                                relatedContentAdapter.notifyDataSetChanged();
+
+                                Helper.setViewVisibility(
+                                        v.findViewById(R.id.file_view_no_related_content),
+                                        relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+                            }
+
+                            // if related content loads before comment, this will affect the scroll position
+                            // so just ensure that we are at the correct position
+                            scrollToCommentHash();
                         }
                     }
 
-                    Context ctx = getContext();
-                    if (ctx != null) {
-                        relatedContentAdapter.setItems(filteredClaims);
+                    @Override
+                    public void onError(Exception error) {
+
+                    }
+                });
+                relatedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            } else {
+                TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
+                relatedOrPlayList.setText(claim.getTitle());
+                relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
+                relatedOrPlayList.setPadding(0, 0, 0, 16);
+                relatedOrPlayList.setTypeface(null, Typeface.BOLD);
+
+                Map<String, Object> claimSearchOptions = new HashMap<>(3);
+
+                claimSearchOptions.put("claim_ids", claim.getClaimIds());
+                claimSearchOptions.put("not_tags", canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS));
+                claimSearchOptions.put("page_size", claim.getClaimIds().size());
+
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
+
+                try {
+                    List<Claim> playlistClaimItems = future.get();
+
+                    if (playlistClaimItems != null) {
+                        relatedContentAdapter.setItems(playlistClaimItems);
                         relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -2544,18 +2612,13 @@ public class FileViewFragment extends BaseFragment implements
 
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;
-                                    if (claim.getName().startsWith("@")) {
-                                        activity.openChannelClaim(claim);
-                                    } else {
-                                        activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
-                                    }
+                                    activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
                                 }
                             }
                         });
 
                         View v = getView();
                         if (v != null) {
-                            RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
                             relatedContentList.setAdapter(relatedContentAdapter);
                             relatedContentAdapter.notifyDataSetChanged();
 
@@ -2564,18 +2627,12 @@ public class FileViewFragment extends BaseFragment implements
                                     relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
                         }
 
-                        // if related content loads before comment, this will affect the scroll position
-                        // so just ensure that we are at the correct position
                         scrollToCommentHash();
                     }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
                 }
-
-                @Override
-                public void onError(Exception error) {
-
-                }
-            });
-            relatedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
         }
     }
 

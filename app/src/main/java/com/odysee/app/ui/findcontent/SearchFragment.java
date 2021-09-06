@@ -18,13 +18,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
+import com.odysee.app.callable.Search;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
@@ -120,6 +126,16 @@ public class SearchFragment extends BaseFragment implements
         }
         PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        Context context = getContext();
+        if (context != null) {
+            ((MainActivity) context).showBottomNavigation();
+        }
+
+        super.onStop();
     }
 
     private boolean checkQuery(String query) {
@@ -236,6 +252,43 @@ public class SearchFragment extends BaseFragment implements
                 currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null, loadingView, new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
+                // Lighthouse doesn't return "valueType" of the claim, so another request is needed
+                // to determine if an item is a playlist and get the items on the playlist.
+                List<String> claimIds = new ArrayList<>();
+
+                for (int i = 0; i < claims.size(); i++) {
+                    if (!claims.get(i).getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
+                        claimIds.add(claims.get(i).getClaimId());
+                    }
+                }
+
+                Map<String, Object> claimSearchOptions = new HashMap<>(2);
+
+                claimSearchOptions.put("claim_ids", claimIds);
+                claimSearchOptions.put("page_size", claimIds.size());
+
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
+
+                try {
+                    List<Claim> totalResults = future.get();
+
+                    // For each claim returned from Lighthouse, replace it by the one using Search API
+                    for (int i = 0; i < claims.size(); i++) {
+                        if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(claims.get(i).getValueType())) {
+                            int finalI = i;
+                            Claim found = totalResults.stream().filter(filteredClaim -> {
+                                return claims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
+                            }).findAny().orElse(null);
+
+                            if (found != null)
+                                claims.set(i, found);
+                        }
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+
                 contentHasReachedEnd = hasReachedEnd;
                 searchLoading = false;
                 Context context = getContext();

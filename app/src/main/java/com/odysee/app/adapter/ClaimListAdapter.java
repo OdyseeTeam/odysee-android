@@ -1,5 +1,6 @@
 package com.odysee.app.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -316,6 +317,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return new ClaimListAdapter.ViewHolder(v);
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onBindViewHolder(ClaimListAdapter.ViewHolder vh, int position) {
         int type = getItemViewType(position);
@@ -437,8 +439,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             vh.titleView.setText("Nothing here. Publish something!");
             vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
         } else {
-            if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType())) {
-                long duration = item.getDuration();
+            if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType()) || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
                 if (!Helper.isNullOrEmpty(thumbnailUrl)) {
                     Glide.with(context.getApplicationContext()).
                             asBitmap().
@@ -457,13 +458,21 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 vh.publisherView.setText(signingChannel != null ? signingChannel.getName() : context.getString(R.string.anonymous));
                 vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                         publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
-                vh.durationView.setVisibility((duration > 0 || item.isLive()) ? View.VISIBLE : View.GONE);
+                long duration = item.getDuration();
+                vh.durationView.setVisibility((duration > 0 || item.isLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
                 if (item.isLive()) {
                     vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
                     vh.durationView.setText(context.getResources().getString(R.string.live).toUpperCase());
                 } else {
                     vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
-                    vh.durationView.setText(Helper.formatDuration(duration));
+                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                        vh.durationView.setText(Helper.formatDuration(duration));
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+                    } else {
+                        vh.durationView.setText(String.valueOf(item.getClaimIds().size()));
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
+                        vh.durationView.setCompoundDrawablePadding(8);
+                    }
                 }
 
                 LbryFile claimFile = item.getFile();

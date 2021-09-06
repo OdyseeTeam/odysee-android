@@ -20,6 +20,10 @@
         <item name="android:textColor">@color/lightForeground</item>
         <item name="textSize">@dimen/repost_info_textsize</item>
     </style>
+    <style name="No_Content_To_Display">
+        <item name="android:textFontWeight">300</item>
+        <item name="textSize">@dimen/no_content_to_display_textsize</item>
+    </style>
     <style name="List_item_Layout">
         <item name="android:foreground">?attr/selectableItemBackground</item>
         <item name="android:paddingBottom">8dp</item>
