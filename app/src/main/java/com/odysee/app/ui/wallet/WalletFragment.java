@@ -7,11 +7,11 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -56,19 +56,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
-import com.odysee.app.SignInActivity;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
+import com.odysee.app.supplier.WalletGetUnusedAddressSupplier;
 import com.odysee.app.callable.WalletGetUnusedAddress;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
@@ -114,7 +116,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     private TextView textWalletReceiveAddress;
     private TextView textWalletHintSyncStatus;
     private ImageButton buttonCopyReceiveAddress;
-    private MaterialButton buttonGetNewAddress;
     private TextInputEditText inputSendAddress;
     private TextInputEditText inputSendAmount;
     private MaterialButton buttonSend;
@@ -615,31 +616,50 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
 
     public void generateNewAddress() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Callable<String> callable = new WalletGetUnusedAddress(getContext());
-
-        // TODO: calling future.get blocks the UI thread. Need to fix.
-        Future<String> future = executor.submit(callable);
-
-        try {
-            Helper.setViewEnabled(buttonGetNewAddress, false);
-
-            String addr = future.get();
-
-            if (!Helper.isNullOrEmpty(addr)) {
-                Context context = getContext();
-                if (context != null) {
-                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                    sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            AccountManager am = AccountManager.get(getContext());
+            Supplier<String> task = new WalletGetUnusedAddressSupplier(am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(task);
+            completableFuture.thenAccept(addr -> {
+                if (!Helper.isNullOrEmpty(addr)) {
+                    Context context = getContext();
+                    if (context != null) {
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                        sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
+                    }
+                    Helper.setViewText(textWalletReceiveAddress, addr);
                 }
-                Helper.setViewText(textWalletReceiveAddress, addr);
-                Helper.setViewEnabled(buttonGetNewAddress, true);
-            } else {
-                Helper.setViewEnabled(buttonGetNewAddress, true);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            });
+        } else {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    Callable<String> callable = new WalletGetUnusedAddress(getContext());
+                    Future<String> future = executor.submit(callable);
+                    try {
+                        String addr = future.get();
+
+                        if (!Helper.isNullOrEmpty(addr)) {
+                            Context context = getContext();
+                            if (context != null) {
+                                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                                sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
+                                ((MainActivity)context).runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Helper.setViewText(textWalletReceiveAddress, addr);
+                                    }
+                                });
+                            }
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            thread.start();
         }
     }
 
