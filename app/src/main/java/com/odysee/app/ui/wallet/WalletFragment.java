@@ -285,11 +285,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         itemDecoration.setDrawable(ContextCompat.getDrawable(context, R.drawable.thin_divider));
         recentTransactionsList.addItemDecoration(itemDecoration);
 
-        detailRows = new ArrayList<>(3);
-
-        detailAdapter = new WalletDetailAdapter(context, detailRows);
-        detailListView.setAdapter(detailAdapter);
-
         buttonViewMore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
