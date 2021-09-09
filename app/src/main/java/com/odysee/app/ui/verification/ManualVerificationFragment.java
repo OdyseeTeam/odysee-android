@@ -67,7 +67,7 @@ public class ManualVerificationFragment extends Fragment {
                     twitterVerify(currentOauth);
                 } else {
                     // show twitter sign-in flow
-                    twitterVerificationFlow();
+//                    twitterVerificationFlow();
                 }
             }
         });
@@ -127,6 +127,7 @@ public class ManualVerificationFragment extends Fragment {
 
         return root;
     }
+/*
 
     private void twitterVerificationFlow() {
         twitterOauthInProgress = true;
@@ -154,6 +155,7 @@ public class ManualVerificationFragment extends Fragment {
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+*/
     public void showLoading() {
         Helper.setViewVisibility(mainView, View.INVISIBLE);
         Helper.setViewVisibility(loadingView, View.VISIBLE);
