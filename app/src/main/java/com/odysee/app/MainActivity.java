@@ -2693,11 +2693,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         showNotifications();
     }
 
-    private void showBottomNavigation() {
+    public void showBottomNavigation() {
         findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
     }
 
-    private void hideBottomNavigation() {
+    public void hideBottomNavigation() {
         findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
     }
 

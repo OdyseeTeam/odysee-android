@@ -86,7 +86,7 @@
                 android:layout_marginBottom="4dp"
                 android:fontFamily="@font/inter"
                 android:textColor="@android:color/white"
-                android:textSize="10sp"
+                android:textSize="12sp"
                 android:textFontWeight="300"
                 android:padding="2dp"
                 android:visibility="gone" />

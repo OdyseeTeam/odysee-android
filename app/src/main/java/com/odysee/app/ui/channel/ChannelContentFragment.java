@@ -219,8 +219,13 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
+        // Exclude Collections from requested claims
+        List<String> claimTypes = new ArrayList<>(2);
+        claimTypes.add(Claim.TYPE_STREAM);
+        claimTypes.add(Claim.TYPE_REPOST);
+
         return Lbry.buildClaimSearchOptions(
-                null,
+                claimTypes,
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 !Helper.isNullOrEmpty(channelId) ? Arrays.asList(channelId) : null,
