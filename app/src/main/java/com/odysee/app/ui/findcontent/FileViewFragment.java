@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -127,6 +128,7 @@ import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
+import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
 import com.odysee.app.exceptions.LbryUriException;
@@ -178,6 +180,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Predefined;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -237,6 +240,7 @@ public class FileViewFragment extends BaseFragment implements
     private WebView webView;
     private boolean webViewAdded;
 
+    private ViewGroup singleCommentRoot;
     private ImageButton expandButton;
     private Comment replyToComment;
     private View containerReplyToComment;
@@ -292,6 +296,7 @@ public class FileViewFragment extends BaseFragment implements
         tipButton = root.findViewById(R.id.file_view_action_tip);
 
         expandButton = root.findViewById(R.id.expand_commentarea_button);
+        singleCommentRoot = root.findViewById(R.id.contracted_comment);
 
         containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
@@ -1296,6 +1301,14 @@ public class FileViewFragment extends BaseFragment implements
                 commentListAdapter.switchExpandedState();
             }
         });
+
+        singleCommentRoot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                expandButton.performClick();
+            }
+        });
+
         setupInlineChannelCreator(
                 inlineChannelCreator,
                 inlineChannelCreatorInputName,
@@ -2515,7 +2528,8 @@ public class FileViewFragment extends BaseFragment implements
             Context context = getContext();
 
             List<Claim> loadingPlaceholders = new ArrayList<>();
-            for (int i = 0; i < 15; i++) {
+            int loadingPlaceholdersLength = Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) ? claim.getClaimIds().size() : 15;
+            for (int i = 0; i < loadingPlaceholdersLength; i++) {
                 Claim placeholder = new Claim();
                 placeholder.setLoadingPlaceholder(true);
                 loadingPlaceholders.add(placeholder);
@@ -2524,8 +2538,6 @@ public class FileViewFragment extends BaseFragment implements
             RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
             relatedContentList.setAdapter(relatedContentAdapter);
 
-            String title = claim.getTitle();
-            String claimId = claim.getClaimId();
             ProgressBar relatedLoading = root.findViewById(R.id.file_view_related_content_progress);
             boolean canShowMatureContent = false;
             if (context != null) {
@@ -2533,20 +2545,86 @@ public class FileViewFragment extends BaseFragment implements
                 canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
             }
 
-            LighthouseSearchTask relatedTask = new LighthouseSearchTask(
-                    title, RELATED_CONTENT_SIZE, 0, canShowMatureContent, claimId, relatedLoading, new ClaimSearchResultHandler() {
-                @Override
-                public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                    List<Claim> filteredClaims = new ArrayList<>();
-                    for (Claim c : claims) {
-                        if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
-                            filteredClaims.add(c);
+            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType())) {
+                String title = claim.getTitle();
+                String claimId = claim.getClaimId();
+
+                LighthouseSearchTask relatedTask = new LighthouseSearchTask(
+                        title, RELATED_CONTENT_SIZE, 0, canShowMatureContent, claimId, relatedLoading, new ClaimSearchResultHandler() {
+                    @Override
+                    public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
+                        List<Claim> filteredClaims = new ArrayList<>();
+                        for (Claim c : claims) {
+                            if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+                                filteredClaims.add(c);
+                            }
+                        }
+
+                        Context ctx = getContext();
+                        if (ctx != null) {
+                            relatedContentAdapter.setItems(filteredClaims);
+                            relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                @Override
+                                public void onClaimClicked(Claim claim) {
+                                    if (claim.isLoadingPlaceholder()) {
+                                        return;
+                                    }
+
+                                    if (context instanceof MainActivity) {
+                                        MainActivity activity = (MainActivity) context;
+                                        if (claim.getName().startsWith("@")) {
+                                            activity.openChannelClaim(claim);
+                                        } else {
+                                            activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
+                                        }
+                                    }
+                                }
+                            });
+
+                            View v = getView();
+                            if (v != null) {
+                                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+                                relatedContentList.setAdapter(relatedContentAdapter);
+                                relatedContentAdapter.notifyDataSetChanged();
+
+                                Helper.setViewVisibility(
+                                        v.findViewById(R.id.file_view_no_related_content),
+                                        relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+                            }
+
+                            // if related content loads before comment, this will affect the scroll position
+                            // so just ensure that we are at the correct position
+                            scrollToCommentHash();
                         }
                     }
 
-                    Context ctx = getContext();
-                    if (ctx != null) {
-                        relatedContentAdapter.setItems(filteredClaims);
+                    @Override
+                    public void onError(Exception error) {
+
+                    }
+                });
+                relatedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            } else {
+                TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
+                relatedOrPlayList.setText(claim.getTitle());
+                relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
+                relatedOrPlayList.setPadding(0, 0, 0, 16);
+                relatedOrPlayList.setTypeface(null, Typeface.BOLD);
+
+                Map<String, Object> claimSearchOptions = new HashMap<>(3);
+
+                claimSearchOptions.put("claim_ids", claim.getClaimIds());
+                claimSearchOptions.put("not_tags", canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS));
+                claimSearchOptions.put("page_size", claim.getClaimIds().size());
+
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
+
+                try {
+                    List<Claim> playlistClaimItems = future.get();
+
+                    if (playlistClaimItems != null) {
+                        relatedContentAdapter.setItems(playlistClaimItems);
                         relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -2556,18 +2634,13 @@ public class FileViewFragment extends BaseFragment implements
 
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;
-                                    if (claim.getName().startsWith("@")) {
-                                        activity.openChannelClaim(claim);
-                                    } else {
-                                        activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
-                                    }
+                                    activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
                                 }
                             }
                         });
 
                         View v = getView();
                         if (v != null) {
-                            RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
                             relatedContentList.setAdapter(relatedContentAdapter);
                             relatedContentAdapter.notifyDataSetChanged();
 
@@ -2576,18 +2649,12 @@ public class FileViewFragment extends BaseFragment implements
                                     relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
                         }
 
-                        // if related content loads before comment, this will affect the scroll position
-                        // so just ensure that we are at the correct position
                         scrollToCommentHash();
                     }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
                 }
-
-                @Override
-                public void onError(Exception error) {
-
-                }
-            });
-            relatedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
         }
     }
 
@@ -2598,8 +2665,42 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
-                    Map<String, Reactions> commentReactions = new HashMap<>();// loadReactions(comments);
+                    Comment singleComment = comments.get(0);
 
+                    TextView commentText = singleCommentRoot.findViewById(R.id.comment_text);
+                    ImageView thumbnailView = singleCommentRoot.findViewById(R.id.comment_thumbnail);
+                    View noThumbnailView = singleCommentRoot.findViewById(R.id.comment_no_thumbnail);
+                    TextView alphaView = singleCommentRoot.findViewById(R.id.comment_thumbnail_alpha);
+
+                    commentText.setText(singleComment.getText());
+                    commentText.setMaxLines(3);
+                    commentText.setEllipsize(TextUtils.TruncateAt.END);
+                    commentText.setClickable(true);
+                    commentText.setTextIsSelectable(false);
+
+                    boolean hasThumbnail = singleComment.getPoster() != null && !Helper.isNullOrEmpty(singleComment.getPoster().getThumbnailUrl());
+                    thumbnailView.setVisibility(hasThumbnail ? View.VISIBLE : View.INVISIBLE);
+                    noThumbnailView.setVisibility(!hasThumbnail ? View.VISIBLE : View.INVISIBLE);
+
+                    int bgColor = Helper.generateRandomColorForValue(singleComment.getChannelId());
+                    Helper.setIconViewBackgroundColor(noThumbnailView, bgColor, false, getContext());
+                    if (hasThumbnail) {
+                        Glide.with(getContext().getApplicationContext()).asBitmap().load(singleComment.getPoster().getThumbnailUrl()).
+                                apply(RequestOptions.circleCropTransform()).into(thumbnailView);
+                    }
+                    alphaView.setText(singleComment.getChannelName() != null ? singleComment.getChannelName().substring(1, 2).toUpperCase() : null);
+                    singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_time).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_channel_name).setVisibility(View.GONE);
+
+                    singleCommentRoot.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            expandButton.performClick();
+                        }
+                    });
+
+                    Map<String, Reactions> commentReactions = new HashMap<>(); //loadReactions(comments);
                     if (commentReactions != null) {
                         for (Comment c: comments) {
                             c.setReactions(commentReactions.get(c.getId()));
@@ -3420,7 +3521,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
-    private void switchCommentListVisibility(Boolean isExpanded) {
+    private void switchCommentListVisibility(Boolean expanded) {
         View root = getView();
         View relatedContentArea = root.findViewById(R.id.file_view_related_content_area);
         View actionsArea = root.findViewById(R.id.file_view_actions_area);
@@ -3428,7 +3529,8 @@ public class FileViewFragment extends BaseFragment implements
         ImageButton expandButton = root.findViewById(R.id.expand_commentarea_button);
         Context context = getContext();
 
-        if (isExpanded) {
+        if (expanded) {
+            root.findViewById(R.id.contracted_comment).setVisibility(View.GONE);
             Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
@@ -3437,6 +3539,7 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
+            root.findViewById(R.id.contracted_comment).setVisibility(View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);

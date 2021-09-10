@@ -2731,11 +2731,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         showNotifications();
     }
 
-    private void showBottomNavigation() {
+    public void showBottomNavigation() {
         findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
     }
 
-    private void hideBottomNavigation() {
+    public void hideBottomNavigation() {
         findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
     }
 
@@ -3432,9 +3432,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             //fragment.setRetainInstance(true);
             FragmentManager manager = getSupportFragmentManager();
 
+            if (fragment instanceof FileViewFragment || fragment instanceof ChannelFragment)
+                findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
+
             FragmentTransaction transaction;
             if (fragment instanceof FileViewFragment) {
-                findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, "FileView");
             } else {
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);

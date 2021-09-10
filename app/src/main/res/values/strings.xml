@@ -136,6 +136,7 @@
     <!-- Channel view -->
     <string name="no_channel_info">There\'s nothing here yet.\nPlease check back later.</string>
     <string name="content">Content</string>
+    <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>
     <string name="receive_all_notifications">You will receive all notifications</string>

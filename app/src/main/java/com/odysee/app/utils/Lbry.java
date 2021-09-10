@@ -517,8 +517,10 @@ public final class Lbry {
 
                     }
 
-                    // For now, only claims which are audio, videos or livestreaming right now can be viewed
-                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) || (!claim.hasSource() && claim.isLive()) || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio"))))
+                    // For now, only claims which are audio, videos, playlists or livestreaming right now can be viewed
+                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) || Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType())
+                        || (!claim.hasSource() && claim.isLive())
+                        || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio"))))
                         claims.add(claim);
 
                     addClaimToCache(claim);

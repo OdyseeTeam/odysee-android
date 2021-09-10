@@ -6,6 +6,7 @@ android {
     flavorDimensions "default"
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -27,16 +28,16 @@ android {
 
     buildTypes {
         debug {
-            Properties twitterProps = new Properties()
-            twitterProps.load(project.file('twitter.properties').newDataInputStream())
-            resValue "string", "TWITTER_CONSUMER_KEY",  "\"${twitterProps.getProperty("twitterConsumerKey")}\""
-            resValue "string", "TWITTER_CONSUMER_SECRET", "\"${twitterProps.getProperty("twitterConsumerSecret")}\""
+//            Properties twitterProps = new Properties()
+//            twitterProps.load(project.file('twitter.properties').newDataInputStream())
+//            resValue "string", "TWITTER_CONSUMER_KEY",  "\"${twitterProps.getProperty("twitterConsumerKey")}\""
+//            resValue "string", "TWITTER_CONSUMER_SECRET", "\"${twitterProps.getProperty("twitterConsumerSecret")}\""
         }
         release {
-            Properties twitterProps = new Properties()
-            twitterProps.load(project.file('twitter.properties').newDataInputStream())
-            resValue "string", "TWITTER_CONSUMER_KEY",  "\"${twitterProps.getProperty("twitterConsumerKey")}\""
-            resValue "string", "TWITTER_CONSUMER_SECRET", "\"${twitterProps.getProperty("twitterConsumerSecret")}\""
+//            Properties twitterProps = new Properties()
+//            twitterProps.load(project.file('twitter.properties').newDataInputStream())
+//            resValue "string", "TWITTER_CONSUMER_KEY",  "\"${twitterProps.getProperty("twitterConsumerKey")}\""
+//            resValue "string", "TWITTER_CONSUMER_SECRET", "\"${twitterProps.getProperty("twitterConsumerSecret")}\""
             minifyEnabled false
             debuggable false
 //            signingConfig signingConfigs.release
@@ -60,6 +61,7 @@ configurations {
 
 dependencies {
 //    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'

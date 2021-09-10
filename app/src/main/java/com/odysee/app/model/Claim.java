@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,6 +35,7 @@ public class Claim {
     public static final String TYPE_STREAM = "stream";
     public static final String TYPE_CHANNEL = "channel";
     public static final String TYPE_REPOST = "repost";
+    public static final String TYPE_COLLECTION = "collection";
 
     public static final String STREAM_TYPE_AUDIO = "audio";
     public static final String STREAM_TYPE_IMAGE = "image";
@@ -92,6 +94,9 @@ public class Claim {
 
     private boolean isLive;
     private String livestreamUrl;
+
+    // Collections
+    private List<String> claimIds;
 
     public static Claim claimFromOutput(JSONObject item) {
         // we only need name, permanent_url, txid and nout
@@ -357,10 +362,19 @@ public class Claim {
                         claim.setValue(gson.fromJson(valueJson, streamMetadataType));
                     } else if (TYPE_CHANNEL.equalsIgnoreCase(valueType)) {
                         claim.setValue(gson.fromJson(valueJson, channelMetadataType));
+                    } else if (TYPE_COLLECTION.equalsIgnoreCase(valueType)) {
+                        JSONArray claims = value.getJSONArray("claims");
+                        List<String> ids = new ArrayList<>(claims.length());
+
+                        for (int i = 0; i < claims.length(); i++) {
+                            ids.add(claims.getString(i));
+                        }
+                        claim.setClaimIds(ids);
                     }
                 }
             }
         } catch (JSONException ex) {
+            ex.printStackTrace();
             // pass
         }
 
@@ -382,7 +396,7 @@ public class Claim {
             } else {
                 claimUri.setStreamClaimId(claim.getClaimId());
                 claimUri.setStreamName(claim.getName());
-                claim.setValueType(TYPE_STREAM);
+                claim.setValueType((!searchResultObject.isNull("value_type") && searchResultObject.getString("value_type").equalsIgnoreCase("collection")) ? TYPE_COLLECTION : TYPE_STREAM);
             }
 
             int duration = searchResultObject.isNull("duration") ? 0 : searchResultObject.getInt("duration");

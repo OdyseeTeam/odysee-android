@@ -536,7 +536,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            tabPager.setCurrentItem(2);
+                            tabPager.setCurrentItem(3);
                         }
                     }, 500);
                 }
@@ -546,8 +546,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                 public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
                     switch (position) {
                         case 0: tab.setText(R.string.content); break;
-                        case 1: tab.setText(R.string.about); break;
-                        case 2: tab.setText(R.string.comments); break;
+                        case 1: tab.setText(R.string.playlists); break;
+                        case 2: tab.setText(R.string.about); break;
+                        case 3: tab.setText(R.string.comments); break;
                     }
                 }
             }).attach();
@@ -608,6 +609,13 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     return contentFragment;
 
                 case 1:
+                    ChannelPlaylistsFragment playlistsFragment = ChannelPlaylistsFragment.class.newInstance();
+                    if (channelClaim != null) {
+                        playlistsFragment.setChannelId(channelClaim.getClaimId());
+                    }
+                    return playlistsFragment;
+
+                case 2:
                     ChannelAboutFragment aboutFragment = ChannelAboutFragment.class.newInstance();
                     try {
                         Claim.ChannelMetadata metadata = (Claim.ChannelMetadata) channelClaim.getValue();
@@ -621,7 +629,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     }
                     return aboutFragment;
 
-                case 2:
+                case 3:
                     ChannelCommentsFragment commentsFragment = ChannelCommentsFragment.class.newInstance();
                     if (channelClaim != null) {
                         commentsFragment.setClaim(channelClaim);
@@ -642,7 +650,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
         @Override
         public int getItemCount() {
-            return 3;
+            return 4;
         }
     }
 }
