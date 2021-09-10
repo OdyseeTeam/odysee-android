@@ -577,6 +577,7 @@ public class SignInActivity extends Activity {
         }
 
         walletSyncStarted = true;
+        Helper.setViewVisibility(layoutCollect, View.GONE);
         Helper.setViewVisibility(layoutVerify, View.GONE);
         Helper.setViewVisibility(closeSignupSignIn, View.GONE);
         Helper.setViewVisibility(layoutWalletSyncContainer, View.VISIBLE);
@@ -621,7 +622,12 @@ public class SignInActivity extends Activity {
     }
 
     private void finishWithWalletSync() {
-        runWalletSync("");
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                runWalletSync("");
+            }
+        });
     }
 
     private void addOdyseeAccountExplicitly(String currentEmail) {
@@ -671,6 +677,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
+                finishSignInActivity();
             }
 
             @Override
