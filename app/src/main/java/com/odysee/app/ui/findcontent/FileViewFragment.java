@@ -234,6 +234,7 @@ public class FileViewFragment extends BaseFragment implements
     private WebView webView;
     private boolean webViewAdded;
 
+    private ViewGroup singleCommentRoot;
     private ImageButton expandButton;
     private Comment replyToComment;
     private View containerReplyToComment;
@@ -289,6 +290,7 @@ public class FileViewFragment extends BaseFragment implements
         tipButton = root.findViewById(R.id.file_view_action_tip);
 
         expandButton = root.findViewById(R.id.expand_commentarea_button);
+        singleCommentRoot = root.findViewById(R.id.contracted_comment);
 
         containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
@@ -1284,6 +1286,14 @@ public class FileViewFragment extends BaseFragment implements
                 commentListAdapter.switchExpandedState();
             }
         });
+
+        singleCommentRoot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                expandButton.performClick();
+            }
+        });
+
         setupInlineChannelCreator(
                 inlineChannelCreator,
                 inlineChannelCreatorInputName,
@@ -2586,6 +2596,41 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
+                    Comment singleComment = comments.get(0);
+
+                    TextView commentText = singleCommentRoot.findViewById(R.id.comment_text);
+                    ImageView thumbnailView = singleCommentRoot.findViewById(R.id.comment_thumbnail);
+                    View noThumbnailView = singleCommentRoot.findViewById(R.id.comment_no_thumbnail);
+                    TextView alphaView = singleCommentRoot.findViewById(R.id.comment_thumbnail_alpha);
+
+                    commentText.setText(singleComment.getText());
+                    commentText.setMaxLines(3);
+                    commentText.setEllipsize(TextUtils.TruncateAt.END);
+                    commentText.setClickable(true);
+                    commentText.setTextIsSelectable(false);
+
+                    boolean hasThumbnail = singleComment.getPoster() != null && !Helper.isNullOrEmpty(singleComment.getPoster().getThumbnailUrl());
+                    thumbnailView.setVisibility(hasThumbnail ? View.VISIBLE : View.INVISIBLE);
+                    noThumbnailView.setVisibility(!hasThumbnail ? View.VISIBLE : View.INVISIBLE);
+
+                    int bgColor = Helper.generateRandomColorForValue(singleComment.getChannelId());
+                    Helper.setIconViewBackgroundColor(noThumbnailView, bgColor, false, getContext());
+                    if (hasThumbnail) {
+                        Glide.with(getContext().getApplicationContext()).asBitmap().load(singleComment.getPoster().getThumbnailUrl()).
+                                apply(RequestOptions.circleCropTransform()).into(thumbnailView);
+                    }
+                    alphaView.setText(singleComment.getChannelName() != null ? singleComment.getChannelName().substring(1, 2).toUpperCase() : null);
+                    singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_time).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_channel_name).setVisibility(View.GONE);
+
+                    singleCommentRoot.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            expandButton.performClick();
+                        }
+                    });
+
                     Map<String, Reactions> commentReactions = loadReactions(comments);
 
                     if (commentReactions != null) {
@@ -3408,7 +3453,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
-    private void switchCommentListVisibility(Boolean isExpanded) {
+    private void switchCommentListVisibility(Boolean expanded) {
         View root = getView();
         View relatedContentArea = root.findViewById(R.id.file_view_related_content_area);
         View actionsArea = root.findViewById(R.id.file_view_actions_area);
@@ -3416,7 +3461,8 @@ public class FileViewFragment extends BaseFragment implements
         ImageButton expandButton = root.findViewById(R.id.expand_commentarea_button);
         Context context = getContext();
 
-        if (isExpanded) {
+        if (expanded) {
+            root.findViewById(R.id.contracted_comment).setVisibility(View.GONE);
             Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
@@ -3425,6 +3471,7 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
+            root.findViewById(R.id.contracted_comment).setVisibility(View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);
