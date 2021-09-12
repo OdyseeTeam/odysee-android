@@ -110,6 +110,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -118,6 +119,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -127,6 +129,7 @@ import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
@@ -147,6 +150,7 @@ import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.supplier.ReactToCommentSupplier;
 import com.odysee.app.tasks.BufferEventTask;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
@@ -180,6 +184,7 @@ import com.odysee.app.utils.Lbryio;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import static com.odysee.app.utils.Lbry.TAG;
 
@@ -3483,11 +3488,8 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void react(Comment comment, boolean like) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Callable<Boolean> callable = () -> {
-            Comments.checkCommentsEndpointStatus();
-            JSONObject options = new JSONObject();
+        JSONObject options = new JSONObject();
+        try {
             options.put("comment_ids", comment.getId());
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
@@ -3499,57 +3501,100 @@ public class FileViewFragment extends BaseFragment implements
             if (am.getAccounts().length > 0) {
                 options.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
-            if (Lbry.ownChannels.size() > 0) {
-                options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                options.put("channel_name", Lbry.ownChannels.get(0).getName());
-
-                JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
-
-                if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                    options.put("signature", jsonChannelSign.getString("signature"));
-                    options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+        AccountManager am = AccountManager.get(getContext());
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
+            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
+            completableFuture.thenAccept(result -> {
+                if (result) {
+                    checkAndRefreshComments();
                 }
-            }
+            });
+        } else {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    // This makes a network connection, so it needs to be executed on a different thread than main.
+                    if (Lbry.ownChannels.size() > 0) {
+                        try {
+                            options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+                            options.put("channel_name", Lbry.ownChannels.get(0).getName());
+                            JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
 
-            JSONObject data = null;
-            try {
-                if (am.getAccounts().length > 0) {
-                    okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-                    String responseString = response.body().string();
-                    response.close();
+                            if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                                options.put("signature", jsonChannelSign.getString("signature"));
+                                options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                            }
+                        } catch (JSONException | ApiCallException e) {
+                            e.printStackTrace();
+                        }
 
-                    JSONObject jsonResponse = new JSONObject(responseString);
+                    }
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    Callable<Boolean> callable = new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() {
+                            JSONObject data = null;
+                            try {
+                                if (am.getAccounts().length > 0) {
+                                    okhttp3.Response response = Comments.performRequest(options, "reaction.React");
 
-                    if (jsonResponse.has("result")) {
-                        data = jsonResponse.getJSONObject("result");
-                    } else {
-                        Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
+                                    ResponseBody responseBody = response.body();
+
+                                    if (responseBody != null) {
+                                        String responseString = responseBody.string();
+
+                                        JSONObject jsonResponse = new JSONObject(responseString);
+
+                                        if (jsonResponse.has("result")) {
+                                            data = jsonResponse.getJSONObject("result");
+                                        } else {
+                                            Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
+                                        }
+                                    }
+                                    response.close();
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return data != null && !data.has("error");
+                        }
+                    };
+                    Future<Boolean> futureReactions = executor.submit(callable);
+                    Boolean result;
+                    try {
+                        // This runs on a different thread, so it will not block main thread
+                        result = futureReactions.get();
+                        if (result) {
+                            checkAndRefreshComments();
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
                     }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "react: ".concat(e.getLocalizedMessage()));
-                e.printStackTrace();
-            }
-            return data != null && !data.has("error");
-        };
+            });
 
-        Future<Boolean> futureReactions = executor.submit(callable);
-
-        Boolean result;
-
-        try {
-            result = futureReactions.get();
-            if (result) {
-              expandButton.performClick();
-              scrollView.scrollTo(0, 0);
-              checkAndLoadComments(true);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            thread.start();
         }
     }
 
+    private void checkAndRefreshComments(){
+        Activity activity = getActivity();
+        if (activity != null) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    expandButton.performClick();
+                    scrollView.scrollTo(0, 0);
+                    checkAndLoadComments(true);
+                }
+            });
+        }
+    }
     private void react(Claim claim, boolean like) {
         Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
