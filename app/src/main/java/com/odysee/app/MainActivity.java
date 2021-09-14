@@ -45,6 +45,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -291,6 +292,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Setter
     private BackPressInterceptor backPressInterceptor;
     private WebSocketClient webSocketClient;
+
+    private int bottomNavigationHeight = 0;
 
     @Getter
     private String firebaseMessagingToken;
@@ -799,12 +802,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
     private void updateMiniPlayerMargins() {
         // mini-player bottom margin setting
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         int miniPlayerBottomMargin = Helper.parseInt(
                 sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
+        */
         RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
-        int scaledMiniPlayerBottomMargin = getScaledValue(miniPlayerBottomMargin);
+        int scaledMiniPlayerBottomMargin = bottomNavigationHeight + getScaledValue(2);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -1286,6 +1290,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         checkPurchases();
         checkWebSocketClient();
+        checkBottomNavigationHeight();
         updateMiniPlayerMargins();
         enteringPIPMode = false;
 
@@ -1303,6 +1308,26 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initialiseUserInstall();
         // scheduleWalletSyncTask();
         // checkPendingOpens();
+    }
+
+    private void checkBottomNavigationHeight() {
+        if (bottomNavigationHeight == 0) {
+            final BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+            ViewTreeObserver viewTreeObserver = bottomNavigation.getViewTreeObserver();
+            if (viewTreeObserver.isAlive()) {
+                viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        int viewHeight = bottomNavigation.getHeight();
+                        if (viewHeight != 0) {
+                            bottomNavigationHeight = viewHeight;
+                            bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                            updateMiniPlayerMargins();
+                        }
+                    }
+                });
+            }
+        }
     }
 
     public boolean isFirstRunCompleted() {
