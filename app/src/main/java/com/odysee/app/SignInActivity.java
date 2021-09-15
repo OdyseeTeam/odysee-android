@@ -218,8 +218,13 @@ public class SignInActivity extends Activity {
             return;
         }
 
-        TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
-        findViewById(R.id.signin_buttons).setVisibility(View.GONE);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                //TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
+                findViewById(R.id.signin_buttons).setVisibility(View.INVISIBLE);
+            }
+        });
 
         activityProgress.setVisibility(View.VISIBLE);
         if (!emailSignInChecked) {
