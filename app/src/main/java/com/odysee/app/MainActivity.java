@@ -31,7 +31,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
-import android.security.KeyPairGeneratorSpec;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -55,7 +54,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
@@ -125,20 +123,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -159,7 +153,6 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLParameters;
-import javax.security.auth.x500.X500Principal;
 
 import com.odysee.app.adapter.NotificationListAdapter;
 import com.odysee.app.adapter.StartupStageAdapter;
@@ -688,16 +681,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 TextView userIdText = customView.findViewById(R.id.user_id);
 
                 AccountManager am = AccountManager.get(getApplicationContext());
-                final boolean isSignedIn;
-                if (am.getAccounts().length > 0)
-                    isSignedIn = true;
-                else
-                    isSignedIn = false;
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                final boolean isSignedIn = odyseeAccount != null;
                 if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
                     buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setText("Sign out");
-                    userIdText.setText(am.getUserData(am.getAccounts()[0], "email"));
+                    userIdText.setText(am.getUserData(odyseeAccount, "email"));
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("auth_token", Lbryio.AUTH_TOKEN);
@@ -1207,8 +1197,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public String getAuthToken() {
         AccountManager am = AccountManager.get(this);
-        if (am.getAccounts().length > 0) {
-            return am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+        if (odyseeAccount != null) {
+            return am.peekAuthToken(odyseeAccount, "auth_token_type");
         }
         return null;
     }
@@ -2061,7 +2052,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onAccountsUpdated(Account[] accounts) {
-        if (accounts.length > 0) {
+        Account odyseeAccount = Helper.getOdyseeAccount(accounts);
+        if (odyseeAccount != null) {
             fetchOwnChannels();
             scheduleWalletBalanceUpdate();
         } else {
@@ -2868,7 +2860,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public boolean isSignedIn() {
         AccountManager am = AccountManager.get(this);
-        return am.getAccounts().length > 0;
+        return Helper.getOdyseeAccount(am.getAccounts()) != null;
     }
 
     public void simpleSignIn(int sourceTabId) {
@@ -3496,7 +3488,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 Log.e("FetchingChannels", "onError: ".concat(error.getLocalizedMessage()));
             }
-        }, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+        }, am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

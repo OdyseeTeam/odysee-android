@@ -1,5 +1,6 @@
 package com.odysee.app.utils;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
@@ -86,8 +87,10 @@ public final class Lbryio {
 
         if (context != null) {
             AccountManager am = AccountManager.get(context);
-            if (am.getAccounts().length > 0)
-                authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                authToken = am.peekAuthToken(odyseeAccount, "auth_token_type");
+            }
         }
         if (Helper.isNullOrEmpty(authToken) && !generatingAuthToken) {
             // Only call getAuthToken if not calling /user/new

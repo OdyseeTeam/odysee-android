@@ -1,6 +1,7 @@
 package com.odysee.app.ui.findcontent;
 
 import android.Manifest;
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -1054,8 +1055,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
-
-                if (claim != null && am.getAccounts().length > 0) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (claim != null && odyseeAccount != null) {
                     react(claim, true);
                 }
             }
@@ -1064,8 +1065,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
-
-                if (claim != null && am.getAccounts().length > 0) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (claim != null && odyseeAccount != null) {
                     react(claim, false);
                 }
             }
@@ -2077,8 +2078,9 @@ public class FileViewFragment extends BaseFragment implements
             jsonParams.put("comment_ids", TextUtils.join(",", commentIds));
 
             AccountManager am = AccountManager.get(getContext());
-            if (am.getAccounts().length > 0) {
-                jsonParams.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                jsonParams.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
             }
 
             if (Lbry.ownChannels.size() > 0) {
@@ -3611,8 +3613,9 @@ public class FileViewFragment extends BaseFragment implements
                 options.put("remove", true);
 
             AccountManager am = AccountManager.get(getContext());
-            if (am.getAccounts().length > 0) {
-                options.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
             }
 
             if (Lbry.ownChannels.size() > 0) {
@@ -3629,7 +3632,7 @@ public class FileViewFragment extends BaseFragment implements
 
             JSONObject data = null;
             try {
-                if (am.getAccounts().length > 0) {
+                if (odyseeAccount != null) {
                     okhttp3.Response response = Comments.performRequest(options, "reaction.React");
                     String responseString = response.body().string();
                     response.close();
