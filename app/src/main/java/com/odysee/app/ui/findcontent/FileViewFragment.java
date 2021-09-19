@@ -41,6 +41,7 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
@@ -1813,54 +1814,83 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    /**
+     * @return The URL to connect to get the video stream, usually a .M3U8
+     */
+    @AnyThread
     private String getLivestreamUrl() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Callable<JSONObject> callable = () -> {
-            String urlBitwave = String.format("https://api.bitwave.tv/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
-
-            Request.Builder builder = new Request.Builder().url(urlBitwave);
-            Request request = builder.build();
-
-            OkHttpClient client = new OkHttpClient.Builder().build();
-
-            try {
-                Response resp = client.newCall(request).execute();
-                String responseString = resp.body().string();
-                resp.close();
-                JSONObject json = new JSONObject(responseString);
-                if (resp.code() >= 200 && resp.code() < 300) {
-                    if (json.isNull("data") || (json.has("success") && !json.getBoolean("success"))) {
-                        return null;
-                    }
-                    Log.d(TAG, "getLivestreamUrl: ".concat(json.get("data").toString()));
-
-                    return (JSONObject) json.get("data");
-                } else {
-                    return null;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            Supplier<JSONObject> task = new Supplier<JSONObject>() {
+                @Override
+                public JSONObject get() {
+                    return getLivestreamData(claim);
                 }
-            } catch (IOException | JSONException e) {
+            };
+            CompletableFuture<JSONObject> completableFuture = CompletableFuture.supplyAsync(task);
+            CompletableFuture<String> cf = completableFuture.thenApply(jsonData -> getLivestreamUrl(jsonData));
+            try {
+                return cf.get();
+            } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
-                return null;
             }
-        };
+        } else {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Callable<JSONObject> callable = () -> getLivestreamData(claim);
+            Future<JSONObject> future = executor.submit(callable);
 
-        Future<JSONObject> future = executor.submit(callable);
-        try {
-            JSONObject jsonData = future.get();
+            for (;;) {
+                if (future.isDone()) {
+                    try {
+                        JSONObject jsonData = future.get();
+                        return getLivestreamUrl(jsonData);
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
-            if (jsonData != null && jsonData.has("live")) {
+    private String getLivestreamUrl(JSONObject jsonData) {
+        if (jsonData != null && jsonData.has("live")) {
+            try {
                 if (jsonData.getBoolean("live") && jsonData.has("url")) {
                     return jsonData.getString("url");
                 } else {
                     return "notlive";
                 }
-            } else {
-                return null;
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException | ExecutionException | JSONException e) {
-            e.printStackTrace();
-            return null;
         }
+        return null;
+    }
+
+    private JSONObject getLivestreamData(Claim claim) {
+        String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
+
+        Request.Builder builder = new Request.Builder().url(urlLivestream);
+        Request request = builder.build();
+
+        OkHttpClient client = new OkHttpClient.Builder().build();
+
+        try {
+            Response resp = client.newCall(request).execute();
+            String responseString = resp.body().string();
+            resp.close();
+            JSONObject json = new JSONObject(responseString);
+            if (resp.code() >= 200 && resp.code() < 300) {
+                if (json.isNull("data") || (json.has("success") && !json.getBoolean("success"))) {
+                    return null;
+                }
+
+                return (JSONObject) json.get("data");
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void setCurrentPlayer(Player currentPlayer) {

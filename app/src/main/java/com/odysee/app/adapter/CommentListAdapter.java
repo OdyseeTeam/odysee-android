@@ -30,8 +30,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
 import com.odysee.app.R;
-import com.odysee.app.exceptions.LbryioRequestException;
-import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
