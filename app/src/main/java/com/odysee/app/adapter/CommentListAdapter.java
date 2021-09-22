@@ -69,8 +69,9 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     }
 
     public void clearItems() {
+        int previousSize = items.size();
         items.clear();
-        notifyDataSetChanged();
+        notifyItemRangeRemoved(0, previousSize);
     }
 
 
@@ -145,7 +146,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     public void insert(int index, Comment comment) {
         if (!items.contains(comment)) {
             items.add(index, comment);
-            notifyDataSetChanged();
+            notifyItemInserted(index);
         }
     }
 
@@ -157,6 +158,13 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 notifyDataSetChanged();
                 break;
             }
+        }
+    }
+
+    public void updateReactions(Comment comment, Reactions reactions) {
+        if (items.contains(comment)) {
+            items.get(getPositionForComment(comment.getId())).setReactions(reactions);
+            notifyItemChanged(getPositionForComment(comment.getId()));
         }
     }
 
@@ -217,6 +225,13 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
         Reactions commentReactions = comment.getReactions();
         if (commentReactions != null) {
+            int countTextColor;
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                countTextColor = context.getResources().getColor(R.color.foreground, null);
+            } else {
+                countTextColor = context.getResources().getColor(R.color.foreground);
+            }
+
             String likesAmount = String.valueOf(commentReactions.getOthersLikes());
             String dislikesAmount = String.valueOf(commentReactions.getOthersDislikes());
 
@@ -229,7 +244,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                     fireActive = context.getResources().getColor(R.color.fireActive);
                 }
 
-                holder.likesCount.setText(String.valueOf(Integer.valueOf(likesAmount) + 1));
+                holder.likesCount.setText(String.valueOf(Integer.parseInt(likesAmount) + 1));
                 holder.likesCount.setTextColor(fireActive);
 
                 for (Drawable d: holder.likesCount.getCompoundDrawablesRelative()) {
@@ -237,7 +252,18 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                         d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.likesCount.getContext(), R.color.fireActive), PorterDuff.Mode.SRC_IN));
                     }
                 }
-            } else if (commentReactions.isDisliked()) {
+            } else {
+                holder.likesCount.setText(likesAmount);
+                holder.likesCount.setTextColor(countTextColor);
+
+                for (Drawable d: holder.likesCount.getCompoundDrawablesRelative()) {
+                    if (d != null) {
+                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.likesCount.getContext(), R.color.foreground), PorterDuff.Mode.SRC_IN));
+                    }
+                }
+            }
+
+            if (commentReactions.isDisliked()) {
                 int slimeActive;
 
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
@@ -246,7 +272,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                     slimeActive = context.getResources().getColor(R.color.slimeActive);
                 }
 
-                holder.dislikesCount.setText(String.valueOf(Integer.valueOf(dislikesAmount) + 1));
+                holder.dislikesCount.setText(String.valueOf(Integer.parseInt(dislikesAmount) + 1));
                 holder.dislikesCount.setTextColor(slimeActive);
                 for (Drawable d: holder.dislikesCount.getCompoundDrawablesRelative()) {
                     if (d != null) {
@@ -254,13 +280,9 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                     }
                 }
             } else {
-                holder.likesCount.setText(likesAmount);
                 holder.dislikesCount.setText(dislikesAmount);
-                for (Drawable d: holder.likesCount.getCompoundDrawablesRelative()) {
-                    if (d != null) {
-                        d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.likesCount.getContext(), R.color.foreground), PorterDuff.Mode.SRC_IN));
-                    }
-                }
+                holder.dislikesCount.setTextColor(countTextColor);
+
                 for (Drawable d: holder.dislikesCount.getCompoundDrawablesRelative()) {
                     if (d != null) {
                         d.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(holder.dislikesCount.getContext(), R.color.foreground), PorterDuff.Mode.SRC_IN));
