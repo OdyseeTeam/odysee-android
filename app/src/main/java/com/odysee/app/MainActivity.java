@@ -593,6 +593,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // Hide bottom navigation
                 // Hide main bar
                 // Show PublishFragment.class
+                // hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
 //                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
 //                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -605,6 +606,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClick(View view) {
                 // Enter Search Mode
+                hideNotifications();
                 hideBottomNavigation();
                 switchToolbarForSearch(true);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
