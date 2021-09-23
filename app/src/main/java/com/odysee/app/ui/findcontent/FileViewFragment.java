@@ -2799,6 +2799,8 @@ public class FileViewFragment extends BaseFragment implements
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
+            Helper.setViewVisibility(root.findViewById(R.id.contracted_comment),
+                    commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
 
             if (commentListAdapter == null)
                 root.findViewById(R.id.container_comment_form).setVisibility(View.VISIBLE);
