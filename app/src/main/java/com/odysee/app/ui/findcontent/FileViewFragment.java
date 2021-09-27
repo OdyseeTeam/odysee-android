@@ -106,6 +106,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -2760,7 +2761,7 @@ public class FileViewFragment extends BaseFragment implements
 
                         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
                         commentsList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyDataSetChanged();
+                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
 
                         scrollToCommentHash();
                         checkNoComments();
@@ -3647,7 +3648,7 @@ public class FileViewFragment extends BaseFragment implements
             CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
             completableFuture.thenAccept(result -> {
                 if (result) {
-                    checkAndRefreshComments();
+                    refreshCommentAfterReacting(comment);
                 }
             });
         } else {
@@ -3668,7 +3669,6 @@ public class FileViewFragment extends BaseFragment implements
                         } catch (JSONException | ApiCallException e) {
                             e.printStackTrace();
                         }
-
                     }
                     ExecutorService executor = Executors.newSingleThreadExecutor();
                     Callable<Boolean> callable = new Callable<Boolean>() {
@@ -3706,7 +3706,7 @@ public class FileViewFragment extends BaseFragment implements
                         // This runs on a different thread, so it will not block main thread
                         result = futureReactions.get();
                         if (result) {
-                            checkAndRefreshComments();
+                            refreshCommentAfterReacting(comment);
                         }
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
@@ -3718,19 +3718,23 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void checkAndRefreshComments(){
-        Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    expandButton.performClick();
-                    scrollView.scrollTo(0, 0);
-                    checkAndLoadComments(true);
-                }
-            });
+    private void refreshCommentAfterReacting(Comment comment) {
+        Map<String, Reactions> reactionsList = loadReactions(Collections.singletonList(comment));
+
+        if (reactionsList != null && reactionsList.containsKey(comment.getId())){
+            Activity activity = getActivity();
+
+            if (activity != null) {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        commentListAdapter.updateReactions(comment, reactionsList.get(comment.getId()));
+                    }
+                });
+            }
         }
     }
+
     private void react(Claim claim, boolean like) {
         Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
