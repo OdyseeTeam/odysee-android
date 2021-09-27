@@ -85,6 +85,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -442,8 +443,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
-
         setContentView(R.layout.activity_main);
+
         findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
 
@@ -451,6 +452,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         setSupportActionBar(toolbar);
 
         updateMiniPlayerMargins();
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled by default */) {
+            @Override
+            public void handleOnBackPressed() {
+                moveTaskToBack(true);
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
 
         // setup the billing client in main activity (to handle cases where the verification purchase flow may have been interrupted)
         billingClient = BillingClient.newBuilder(this)
