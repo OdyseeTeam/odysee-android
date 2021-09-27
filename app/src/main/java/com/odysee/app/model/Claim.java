@@ -1,6 +1,7 @@
 package com.odysee.app.model;
 
 import androidx.annotation.Nullable;
+import android.annotation.SuppressLint;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -17,6 +18,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import com.odysee.app.utils.Helper;
@@ -381,6 +383,7 @@ public class Claim {
         return claim;
     }
 
+    @SuppressLint("SimpleDateFormat")
     public static Claim fromSearchJSONObject(JSONObject searchResultObject) {
         Claim claim = new Claim();
         LbryUri claimUri = new LbryUri();
@@ -404,7 +407,13 @@ public class Claim {
             String releaseTimeString = !searchResultObject.isNull("release_time") ? searchResultObject.getString("release_time") : null;
             long releaseTime = 0;
             try {
-                releaseTime = Double.valueOf(new SimpleDateFormat(RELEASE_TIME_DATE_FORMAT).parse(releaseTimeString).getTime() / 1000.0).longValue();
+                if (releaseTimeString != null) {
+                    Date releaseTimeAsDate = new SimpleDateFormat(RELEASE_TIME_DATE_FORMAT).parse(releaseTimeString);
+
+                    if (releaseTimeAsDate!= null) {
+                        releaseTime = Double.valueOf(releaseTimeAsDate.getTime() / 1000.0).longValue();
+                    }
+                }
             } catch (ParseException ex) {
                 // pass
             }

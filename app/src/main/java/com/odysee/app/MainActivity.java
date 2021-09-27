@@ -140,12 +140,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -184,6 +186,8 @@ import com.odysee.app.model.lbryinc.LbryNotification;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.supplier.ReactToCommentSupplier;
+import com.odysee.app.supplier.UnlockingTipsSupplier;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -602,6 +606,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // Hide bottom navigation
                 // Hide main bar
                 // Show PublishFragment.class
+                // hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
 //                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
 //                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -614,6 +619,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClick(View view) {
                 // Enter Search Mode
+                hideNotifications();
                 hideBottomNavigation();
                 switchToolbarForSearch(true);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -3521,32 +3527,49 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        Callable<Boolean> callable = () -> {
-            try {
-                Map<String, Object> options = new HashMap<>();
-                options.put("type", "support");
-                options.put("is_not_my_input", true);
-                options.put("blocking", true);
+        Map<String, Object> options = new HashMap<>();
+        options.put("type", "support");
+        options.put("is_not_my_input", true);
+        options.put("blocking", true);
 
-                AccountManager am = AccountManager.get(getApplicationContext());
-                Lbry.directApiCall(Lbry.METHOD_TXO_SPEND, options, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+        AccountManager am = AccountManager.get(getApplicationContext());
+        String authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
 
-                return true;
-            } catch (ApiCallException | ClassCastException ex) {
-                ex.printStackTrace();
-                return false;
-            }
-        };
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Boolean> future = executorService.submit(callable);
-
-        try {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             unlockingTips = true;
-            future.get();
-            unlockingTips = false;
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+
+            Supplier<Boolean> task = new UnlockingTipsSupplier(options, authToken);
+            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
+            completableFuture.thenAccept(result -> {
+                unlockingTips = false;
+            });
+        } else {
+            Thread unlockingThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Callable<Boolean> callable = () -> {
+                        try {
+                            Lbry.directApiCall(Lbry.METHOD_TXO_SPEND, options, authToken);
+                            return true;
+                        } catch (ApiCallException | ClassCastException ex) {
+                            ex.printStackTrace();
+                            return false;
+                        }
+                    };
+
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Future<Boolean> future = executorService.submit(callable);
+
+                    try {
+                        unlockingTips = true;
+                        future.get(); // This doesn't block main thread as it is called from a different thread
+                        unlockingTips = false;
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            unlockingThread.start();
         }
     }
 
