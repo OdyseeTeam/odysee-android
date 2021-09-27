@@ -294,6 +294,21 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                     View walletDetail = ((MainActivity) context).findViewById(R.id.balance_detail_listview);
 
                     if (walletDetail.getVisibility() == View.GONE) {
+                        int listHeight = Math.round(getResources().getDisplayMetrics().density);
+
+                        for (int i = 0; i < detailRows.size(); i++) {
+                            View item = detailAdapter.getView(i, null, detailListView);
+                            item.measure(0, 0);
+                            listHeight += item.getMeasuredHeight();
+                        }
+
+                        // Avoid scroll bars being displayed
+                        ViewGroup.LayoutParams params = detailListView.getLayoutParams();
+                        params.height = listHeight + (detailListView.getCount() + 1) * detailListView.getDividerHeight();
+                        detailListView.setLayoutParams(params);
+                        detailListView.setVerticalScrollBarEnabled(false);
+                        detailListView.requestLayout();
+
                         TransitionManager.beginDelayedTransition((ViewGroup) walletDetail.getParent());
                         walletDetail.setVisibility(View.VISIBLE);
                         buttonViewMore.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_dropup, 0);
@@ -598,6 +613,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             if (!activity.isSignedIn()) {
                 activity.simpleSignIn(R.id.action_wallet_menu);
             }
+            activity.addWalletBalanceListener(this);
         }
     }
 
@@ -685,55 +701,25 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         WalletDetailItem initialPublishes = new WalletDetailItem(getResources().getString(R.string.on_initial_publishes), getResources().getString(R.string.delete_or_edit_past_content), Helper.SIMPLE_CURRENCY_FORMAT.format(walletBalance.getClaims().doubleValue()), false, false);
         WalletDetailItem supportingContent = new WalletDetailItem(getResources().getString(R.string.supporting_content), getResources().getString(R.string.delete_supports_to_spend), Helper.SIMPLE_CURRENCY_FORMAT.format(walletBalance.getSupports().doubleValue()), false, false);
 
-        boolean needNotifyAdapter = false;
-        boolean firstDatasetNotification;
-
         if (detailRows.size() == 0) {
             detailRows.add(0, earnedBalance);
             detailRows.add(1, initialPublishes);
             detailRows.add(2, supportingContent);
-            needNotifyAdapter = true;
-            firstDatasetNotification = true;
         } else {
-            firstDatasetNotification = false;
             if (!detailRows.get(0).detailAmount.equals(earnedBalance.detailAmount)
                  || detailRows.get(0).isInProgress != earnedBalance.isInProgress
                  || detailRows.get(0).isUnlockable != earnedBalance.isUnlockable) {
                 detailRows.set(0, earnedBalance);
-                needNotifyAdapter = true;
             }
             if (!detailRows.get(1).detailAmount.equals(initialPublishes.detailAmount)) {
                 detailRows.set(1, initialPublishes);
-                needNotifyAdapter = true;
             }
             if (!detailRows.get(2).detailAmount.equals(supportingContent.detailAmount)) {
                 detailRows.set(2, supportingContent);
-                needNotifyAdapter = true;
             }
         }
 
-        if (needNotifyAdapter) {
-            // notifyDatasetChanged() doesn't work, so simply reset the adapter to the list
-            // to update the view
-            detailListView.setAdapter(detailAdapter);
-
-            if (firstDatasetNotification) {
-                int listHeight = Math.round(getResources().getDisplayMetrics().density);
-
-                for (int i = 0; i < detailRows.size(); i++) {
-                    View item = detailAdapter.getView(i, null, detailListView);
-                    item.measure(0, 0);
-                    listHeight += item.getMeasuredHeight();
-                }
-
-                // Avoid scroll bars being displayed
-                ViewGroup.LayoutParams params = detailListView.getLayoutParams();
-                params.height = listHeight + (detailListView.getCount() + 1) * detailListView.getDividerHeight();
-                detailListView.setLayoutParams(params);
-                detailListView.setVerticalScrollBarEnabled(false);
-                detailListView.requestLayout();
-            }
-        }
+        detailListView.setAdapter(detailAdapter);
 
         String formattedTotalBalance = Helper.REDUCED_LBC_CURRENCY_FORMAT.format(totalBalance);
         String formattedSpendableBalance = Helper.SIMPLE_CURRENCY_FORMAT.format(spendableBalance);
