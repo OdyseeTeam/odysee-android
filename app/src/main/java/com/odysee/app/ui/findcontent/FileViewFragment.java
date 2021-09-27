@@ -300,7 +300,7 @@ public class FileViewFragment extends BaseFragment implements
         tipButton = root.findViewById(R.id.file_view_action_tip);
 
         expandButton = root.findViewById(R.id.expand_commentarea_button);
-        singleCommentRoot = root.findViewById(R.id.contracted_comment);
+        singleCommentRoot = root.findViewById(R.id.collapsed_comment);
 
         containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
@@ -2800,7 +2800,7 @@ public class FileViewFragment extends BaseFragment implements
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
-            Helper.setViewVisibility(root.findViewById(R.id.contracted_comment),
+            Helper.setViewVisibility(root.findViewById(R.id.collapsed_comment),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
 
             if (commentListAdapter == null)
@@ -3557,7 +3557,7 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
 
         if (expanded) {
-            root.findViewById(R.id.contracted_comment).setVisibility(View.GONE);
+            root.findViewById(R.id.collapsed_comment).setVisibility(View.GONE);
             Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
@@ -3566,7 +3566,7 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
-            root.findViewById(R.id.contracted_comment).setVisibility(View.VISIBLE);
+            root.findViewById(R.id.collapsed_comment).setVisibility(View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);
