@@ -2771,7 +2771,9 @@ public class FileViewFragment extends BaseFragment implements
 
                 @Override
                 public void onError(Exception error) {
-                    error.printStackTrace();
+                    if (error != null) {
+                        error.printStackTrace();
+                    }
                     checkNoComments();
                 }
             });
