@@ -7,13 +7,13 @@ cp app/build/outputs/apk/release/app-release-unsigned.apk bin/odysee-$version-re
 
 # sign APK
 echo "Signing APK..."
-jarsigner -verbose -sigalg SHA1withRSA \
-    -digestalg SHA1 \
-    -keystore lbry-android.keystore \
-    -storepass $KEYSTORE_PASSWORD \
-    bin/odysee-$version-release-unsigned.apk lbry-android > /dev/null \
-    && mv bin/odysee-$version-release-unsigned.apk bin/odysee-$version-release-signed.apk
 zipalign -v 4 \
-    bin/odysee-$version-release-signed.apk bin/odysee-$version-release.apk > /dev/null \
-    && rm bin/odysee-$version-release-signed.apk
+    bin/odysee-$version-release-unsigned.apk bin/odysee-$version-release-unsigned-aligned.apk > /dev/null
+apksigner sign \
+    --ks lbry-android.keystore \
+    --ks-pass pass:$KEYSTORE_PASSWORD \
+    --v1-signing-enabled true \
+    --v2-signing-enabled true \
+    bin/odysee-$version-release-unsigned-aligned.apk > /dev/null \
+    && mv bin/odysee-$version-release-unsigned-aligned.apk bin/odysee-$version-release.apk
 echo "APK successfully built."

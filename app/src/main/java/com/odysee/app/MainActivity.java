@@ -31,7 +31,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
-import android.security.KeyPairGeneratorSpec;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -45,6 +44,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -54,9 +54,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -85,6 +85,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -123,20 +124,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -159,7 +156,6 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLParameters;
-import javax.security.auth.x500.X500Principal;
 
 import com.odysee.app.adapter.NotificationListAdapter;
 import com.odysee.app.adapter.StartupStageAdapter;
@@ -231,6 +227,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -278,6 +275,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final boolean startingSignInFlowActivity = false;
 
     @Getter
+    private boolean userInstallInitialised;
+    @Getter
     private boolean initialCategoriesLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
@@ -291,6 +290,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Setter
     private BackPressInterceptor backPressInterceptor;
     private WebSocketClient webSocketClient;
+
+    private int bottomNavigationHeight = 0;
 
     @Getter
     private String firebaseMessagingToken;
@@ -332,6 +333,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String ACTION_SAVE_SHARED_USER_STATE = "com.odysee.app.Broadcast.SaveSharedUserState";
 
     // preference keys
+    public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
     public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
@@ -360,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
 
-    private static final String TAG = "LbryMain";
+    private static final String TAG = "OdyseeMain";
 
     private UrlSuggestionListAdapter urlSuggestionListAdapter;
     private List<UrlSuggestion> recentUrlHistory;
@@ -445,8 +447,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
-
         setContentView(R.layout.activity_main);
+
         findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
 
@@ -454,6 +456,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         setSupportActionBar(toolbar);
 
         updateMiniPlayerMargins();
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled by default */) {
+            @Override
+            public void handleOnBackPressed() {
+                moveTaskToBack(true);
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
 
         // setup the billing client in main activity (to handle cases where the verification purchase flow may have been interrupted)
         billingClient = BillingClient.newBuilder(this)
@@ -686,16 +695,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 TextView userIdText = customView.findViewById(R.id.user_id);
 
                 AccountManager am = AccountManager.get(getApplicationContext());
-                final boolean isSignedIn;
-                if (am.getAccounts().length > 0)
-                    isSignedIn = true;
-                else
-                    isSignedIn = false;
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                final boolean isSignedIn = odyseeAccount != null;
                 if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
                     buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setText("Sign out");
-                    userIdText.setText(am.getUserData(am.getAccounts()[0], "email"));
+                    userIdText.setText(am.getUserData(odyseeAccount, "email"));
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("auth_token", Lbryio.AUTH_TOKEN);
@@ -800,12 +806,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
     private void updateMiniPlayerMargins() {
         // mini-player bottom margin setting
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         int miniPlayerBottomMargin = Helper.parseInt(
                 sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
+        */
+        RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
-        int scaledMiniPlayerBottomMargin = getScaledValue(miniPlayerBottomMargin);
+        int scaledMiniPlayerBottomMargin = bottomNavigationHeight + getScaledValue(2);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -1204,8 +1211,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public String getAuthToken() {
         AccountManager am = AccountManager.get(this);
-        if (am.getAccounts().length > 0) {
-            return am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+        if (odyseeAccount != null) {
+            return am.peekAuthToken(odyseeAccount, "auth_token_type");
         }
         return null;
     }
@@ -1287,6 +1295,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         checkPurchases();
         checkWebSocketClient();
+        checkBottomNavigationHeight();
         updateMiniPlayerMargins();
         enteringPIPMode = false;
 
@@ -1301,9 +1310,29 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             pendingSourceTabId = 0;
         }
 
-        loadInitialCategories();
- //            scheduleWalletSyncTask();
-//        checkPendingOpens();
+        initialiseUserInstall();
+        // scheduleWalletSyncTask();
+        // checkPendingOpens();
+    }
+
+    private void checkBottomNavigationHeight() {
+        if (bottomNavigationHeight == 0) {
+            final BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+            ViewTreeObserver viewTreeObserver = bottomNavigation.getViewTreeObserver();
+            if (viewTreeObserver.isAlive()) {
+                viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        int viewHeight = bottomNavigation.getHeight();
+                        if (viewHeight != 0) {
+                            bottomNavigationHeight = viewHeight;
+                            bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                            updateMiniPlayerMargins();
+                        }
+                    }
+                });
+            }
+        }
     }
 
     public boolean isFirstRunCompleted() {
@@ -1835,31 +1864,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void initKeyStore() {
         try {
-            KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER);
-            ks.load(null);
-
-            if (!ks.containsAlias(KEY_ALIAS)) {
-                Calendar start = Calendar.getInstance();
-                Calendar end = Calendar.getInstance();
-                end.add(Calendar.YEAR, 100);
-
-                KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(this)
-                        .setAlias(KEY_ALIAS)
-                        .setSubject(new X500Principal(String.format("CN=%s", KEY_ALIAS)))
-                        .setSerialNumber(BigInteger.ONE)
-                        .setStartDate(start.getTime())
-                        .setEndDate(end.getTime())
-                        .build();
-
-                try {
-                    KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA", KEYSTORE_PROVIDER);
-                    keygen.initialize(spec);
-                    keygen.generateKeyPair();
-                } catch (NoSuchProviderException ex) {
-                    throw ex;
-                }
-            }
-            Lbry.KEYSTORE = ks;
+            Lbry.KEYSTORE = Utils.initKeyStore(this);
         } catch (Exception ex) {
             // This shouldn't happen, but in case it does.
             Toast.makeText(this, "The keystore could not be initialized. The app requires a secure keystore to run properly.", Toast.LENGTH_LONG).show();
@@ -2061,7 +2066,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onAccountsUpdated(Account[] accounts) {
-        if (accounts.length > 0) {
+        Account odyseeAccount = Helper.getOdyseeAccount(accounts);
+        if (odyseeAccount != null) {
             fetchOwnChannels();
             scheduleWalletBalanceUpdate();
         } else {
@@ -2069,9 +2075,68 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
         }
 
-        if (initialCategoriesLoaded) {
+        if (initialCategoriesLoaded && userInstallInitialised) {
             hideLaunchScreen();
         }
+    }
+
+    private void initialiseUserInstall() {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        if (!userInstallInitialised) {
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    String installId = sp.getString(PREFERENCE_KEY_INSTALL_ID, null);
+                    if (Helper.isNullOrEmpty(installId)) {
+                        // no install_id found (first run didn't start the sdk successfully?)
+                        installId = Lbry.generateId();
+                        sp.edit().putString(PREFERENCE_KEY_INSTALL_ID, installId).apply();
+                    }
+
+                    Lbry.INSTALLATION_ID = installId;
+                    android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
+
+                    try {
+                        try {
+                            Lbryio.authenticate(MainActivity.this);
+                        } catch (AuthTokenInvalidatedException ex) {
+                            // if this happens, attempt to authenticate again, so that we can obtain a new auth token
+                            // this will also result in the user having to sign in again
+                            Lbryio.authenticate(MainActivity.this);
+                        }
+
+                        if (Lbryio.currentUser == null) {
+                            // display simplified startup error
+                        }
+
+                        Lbryio.newInstall(MainActivity.this);
+                    } catch (Exception ex) {
+                        // startup steps failed completely
+                        // display startup error
+
+                        return;
+                    }
+
+                    if (!initialCategoriesLoaded) {
+                        loadInitialCategories();
+                        return;
+                    }
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            hideLaunchScreen();
+                        }
+                    });
+                }
+            });
+            userInstallInitialised = true;
+            return;
+        }
+
+        // if the user install has already been initialised, proceed to load categories
+        loadInitialCategories();
     }
 
     private void loadInitialCategories() {
@@ -2091,7 +2156,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 return;
                             }
 
-                            android.util.Log.d(TAG, categories.toString());
                             initialCategoriesLoaded = true;
                             displayDynamicCategories();
                         }
@@ -2167,7 +2231,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             if (nowPlayingClaimBitmap == null &&
                     nowPlayingClaim != null &&
                     !Helper.isNullOrEmpty(nowPlayingClaim.getThumbnailUrl())) {
-                Glide.with(getApplicationContext()).asBitmap().load(nowPlayingClaim.getThumbnailUrl()).into(new CustomTarget<Bitmap>() {
+                Glide.with(getApplicationContext()).asBitmap().load(nowPlayingClaim.getThumbnailUrl(0, 0, 75)).into(new CustomTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                         nowPlayingClaimBitmap = resource;
@@ -2185,7 +2249,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void scheduleWalletBalanceUpdate() {
-        Log.i(TAG, "scheduleWalletBalanceUpdate: Scheduling wallet balance update...");
         if (scheduler != null && !walletBalanceUpdateScheduled) {
             scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
@@ -2811,7 +2874,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public boolean isSignedIn() {
         AccountManager am = AccountManager.get(this);
-        return am.getAccounts().length > 0;
+        return Helper.getOdyseeAccount(am.getAccounts()) != null;
     }
 
     public void simpleSignIn(int sourceTabId) {
@@ -3439,7 +3502,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 Log.e("FetchingChannels", "onError: ".concat(error.getLocalizedMessage()));
             }
-        }, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+        }, am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

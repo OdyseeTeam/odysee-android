@@ -1,5 +1,6 @@
 package com.odysee.app.utils;
 
+import android.accounts.Account;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
@@ -849,5 +850,16 @@ public final class Helper {
             return ((MainActivity) context).isSignedIn();
         }
         return false;
+    }
+
+    public static Account getOdyseeAccount(Account[] accounts) {
+        if (accounts != null) {
+            for (Account account : accounts) {
+                if ("com.odysee".equalsIgnoreCase(account.type)) {
+                    return account;
+                }
+            }
+        }
+        return null;
     }
 }

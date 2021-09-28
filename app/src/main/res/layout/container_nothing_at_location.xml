@@ -13,10 +13,10 @@
         android:padding="36dp">
         <ImageView
             android:layout_gravity="center_horizontal"
-            android:layout_width="160dp"
-            android:layout_height="300dp"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
             android:adjustViewBounds="true"
-            android:src="@drawable/gerbil_happy" />
+            android:src="@drawable/spaceman_sad" />
         <TextView
             android:id="@+id/nothing_at_location_text"
             android:text="@string/nothing_at_this_location"

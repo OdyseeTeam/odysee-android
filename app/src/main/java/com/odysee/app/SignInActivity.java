@@ -31,11 +31,18 @@ import com.google.gson.reflect.TypeToken;
 import com.odysee.app.callable.UserExistsWithPassword;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.model.WalletSync;
 import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.tasks.verification.CheckUserEmailVerifiedTask;
+import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
+import com.odysee.app.tasks.wallet.SyncApplyTask;
+import com.odysee.app.tasks.wallet.SyncGetTask;
+import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 
 import org.json.JSONObject;
 
@@ -48,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.odysee.app.utils.Lbryio.TAG;
@@ -57,12 +65,24 @@ public class SignInActivity extends Activity {
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
     public final static String ARG_AUTH_TYPE = "auth_token_type";
 
+    private boolean walletSyncStarted;
+    private WalletSync currentWalletSync;
+    private ScheduledFuture<?> emailVerifyFuture = null;
+
+    private View layoutWalletSyncContainer;
+    private View layoutWalletSyncInputArea;
+    private ProgressBar walletSyncProgress;
+    private MaterialButton walletSyncDoneButton;
+    private TextView textWalletSyncLoading;
+    private TextInputEditText inputWalletSyncPassword;
+
     private TextInputLayout layoutPassword;
     private TextInputEditText inputEmail;
     private TextInputEditText inputPassword;
     private ProgressBar activityProgress;
     private View layoutCollect;
     private View layoutVerify;
+    private TextView textTitle;
     private TextView textAddedEmail;
 
     private String currentEmail;
@@ -85,6 +105,7 @@ public class SignInActivity extends Activity {
         executor = Executors.newSingleThreadExecutor();
 
         layoutCollect = findViewById(R.id.signin_form);
+        textTitle = findViewById(R.id.signin_title);
         layoutVerify = findViewById(R.id.verification_email_verify_container);
         textAddedEmail = findViewById(R.id.verification_email_added_address);
         layoutPassword = findViewById(R.id.layout_signin_password);
@@ -93,6 +114,13 @@ public class SignInActivity extends Activity {
         activityProgress = findViewById(R.id.signin_activity_progress);
         closeSignupSignIn = findViewById(R.id.signin_close);
 
+        layoutWalletSyncContainer = findViewById(R.id.verification_wallet_sync_container);
+        layoutWalletSyncInputArea = findViewById(R.id.verification_wallet_input_area);
+        walletSyncProgress = findViewById(R.id.verification_wallet_loading_progress);
+        walletSyncDoneButton = findViewById(R.id.verification_wallet_done_button);
+        textWalletSyncLoading = findViewById(R.id.verification_wallet_loading_text);
+        inputWalletSyncPassword = findViewById(R.id.verification_wallet_password_input);
+
         buttonPrimary = findViewById(R.id.button_primary);
         buttonSecondary = findViewById(R.id.button_secondary);
 
@@ -100,10 +128,28 @@ public class SignInActivity extends Activity {
             @Override
             public void onClick(View v) {
                 signInMode = !signInMode;
+                textTitle.setText(signInMode ? R.string.log_in_odysee : R.string.join_odysee);
                 buttonPrimary.setText(signInMode ? R.string.continue_text : R.string.sign_up);
                 buttonSecondary.setText(signInMode ? R.string.sign_up : R.string.sign_in);
                 layoutPassword.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 inputPassword.setText("");
+            }
+        });
+
+        walletSyncDoneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String password = Helper.getValue(inputWalletSyncPassword.getText());
+                if (Helper.isNullOrEmpty(password)) {
+                    showError(getString(R.string.please_enter_your_password));
+                    return;
+                }
+
+                InputMethodManager imm = (InputMethodManager) SignInActivity.this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(inputWalletSyncPassword.getWindowToken(), 0);
+
+                Helper.setViewVisibility(layoutWalletSyncInputArea, View.GONE);
+                runWalletSync(password);
             }
         });
 
@@ -172,8 +218,13 @@ public class SignInActivity extends Activity {
             return;
         }
 
-        TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
-        findViewById(R.id.signin_buttons).setVisibility(View.GONE);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                //TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
+                findViewById(R.id.signin_buttons).setVisibility(View.INVISIBLE);
+            }
+        });
 
         activityProgress.setVisibility(View.VISIBLE);
         if (!emailSignInChecked) {
@@ -244,7 +295,6 @@ public class SignInActivity extends Activity {
                 try {
                     Object response = Lbryio.parseResponse(Lbryio.call("user", "signin", options, Helper.METHOD_POST, SignInActivity.this));
                     requestInProgress = false;
-                    restoreControls(false);
                     if (response instanceof JSONObject) {
                         Type type = new TypeToken<User>(){}.getType();
                         Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
@@ -263,8 +313,15 @@ public class SignInActivity extends Activity {
                             return;
                         }
                     }
+
+                    showError(ex.getMessage());
+                    requestInProgress = false;
+                    restoreControls(true);
+                    return;
                 }
 
+                requestInProgress = false;
+                restoreControls(true);
                 showError(getString(R.string.unknown_error_occurred));
             }
         });
@@ -318,7 +375,8 @@ public class SignInActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                inputPassword.setVisibility(View.VISIBLE);
+                restoreControls(true);
+                layoutPassword.setVisibility(View.VISIBLE);
                 buttonPrimary.setText(R.string.sign_in);
             }
         });
@@ -481,7 +539,7 @@ public class SignInActivity extends Activity {
 
     private void scheduleEmailVerify() {
         emailVerifyCheckScheduler = Executors.newSingleThreadScheduledExecutor();
-        emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
+        emailVerifyFuture = emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 checkEmailVerified();
@@ -495,6 +553,10 @@ public class SignInActivity extends Activity {
             public void onUserEmailVerified() {
                 layoutCollect.setVisibility(View.GONE);
                 layoutVerify.setVisibility(View.GONE);
+                if (emailVerifyFuture != null) {
+                    emailVerifyFuture.cancel(true);
+                    emailVerifyFuture = null;
+                }
                 if (emailVerifyCheckScheduler != null) {
                     emailVerifyCheckScheduler.shutdownNow();
                     emailVerifyCheckScheduler = null;
@@ -509,14 +571,68 @@ public class SignInActivity extends Activity {
 
                 // perform wallet sync first before finish the activity
                 finishWithWalletSync();
-                //finishSignInActivity();
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void runWalletSync(String password) {
+        if (walletSyncStarted) {
+            return;
+        }
+
+        walletSyncStarted = true;
+        Helper.setViewVisibility(layoutCollect, View.GONE);
+        Helper.setViewVisibility(layoutVerify, View.GONE);
+        Helper.setViewVisibility(closeSignupSignIn, View.GONE);
+        Helper.setViewVisibility(layoutWalletSyncContainer, View.VISIBLE);
+        Helper.setViewVisibility(walletSyncProgress, View.VISIBLE);
+        Helper.setViewVisibility(textWalletSyncLoading, View.VISIBLE);
+
+        password = Utils.getSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, this, Lbry.KEYSTORE);
+        if (Helper.isNullOrEmpty(password)) {
+            password = Helper.getValue(inputWalletSyncPassword.getText());
+        }
+
+        final String actual = password;
+        SyncGetTask task = new SyncGetTask(password,false,null, new DefaultSyncTaskHandler() {
+            @Override
+            public void onSyncGetSuccess(WalletSync walletSync) {
+                currentWalletSync = walletSync;
+                Lbryio.lastRemoteHash = walletSync.getHash();
+                if (Helper.isNullOrEmpty(actual)) {
+                    processExistingWallet(walletSync);
+                } else {
+                    processExistingWalletWithPassword(actual);
+                }
+            }
+
+            @Override
+            public void onSyncGetWalletNotFound() {
+                // no wallet found, get sync apply data and run the process
+                processNewWallet();
+            }
+            @Override
+            public void onSyncGetError(Exception error) {
+                // try again
+                Helper.setViewVisibility(walletSyncProgress, View.GONE);
+                //Helper.setViewText(textWalletSyncLoading, error.getMessage());
+                Helper.setViewVisibility(textWalletSyncLoading, View.GONE);
+                Helper.setViewVisibility(layoutWalletSyncInputArea, View.VISIBLE);
+                Helper.setViewVisibility(closeSignupSignIn, View.VISIBLE);
+                walletSyncStarted = false;
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private void finishWithWalletSync() {
-        finishSignInActivity();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                runWalletSync("");
+            }
+        });
     }
 
     private void addOdyseeAccountExplicitly(String currentEmail) {
@@ -551,5 +667,125 @@ public class SignInActivity extends Activity {
         TransitionManager.beginDelayedTransition(findViewById(R.id.verification_activity));
         layoutVerify.setVisibility(View.GONE);
         layoutCollect.setVisibility(View.VISIBLE);
+    }
+
+    public void processExistingWallet(WalletSync walletSync) {
+        // Try first sync apply
+        SyncApplyTask applyTask = new SyncApplyTask("", walletSync.getData(), null, new DefaultSyncTaskHandler() {
+            @Override
+            public void onSyncApplySuccess(String hash, String data) {
+                // check if local and remote hash are different, and then run sync set
+                Utils.setSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, "", SignInActivity.this, Lbry.KEYSTORE);
+                if (!hash.equalsIgnoreCase(Lbryio.lastRemoteHash) && !Helper.isNullOrEmpty(Lbryio.lastRemoteHash)) {
+                    new SyncSetTask(Lbryio.lastRemoteHash, hash, data, null).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+                /*if (listener != null) {
+                    listener.onWalletSyncEnabled();
+                }*/
+                finishSignInActivity();
+            }
+
+            @Override
+            public void onSyncApplyError(Exception error) {
+                // failed, request the user to enter a password
+                Helper.setViewVisibility(walletSyncProgress, View.GONE);
+                Helper.setViewVisibility(textWalletSyncLoading, View.GONE);
+                Helper.setViewVisibility(inputWalletSyncPassword, View.VISIBLE);
+                /*if (listener != null) {
+                    listener.onWalletSyncWaitingForInput();
+                }*/
+
+                Helper.setViewVisibility(layoutWalletSyncInputArea, View.VISIBLE);
+                Helper.setViewVisibility(closeSignupSignIn, View.VISIBLE);
+                walletSyncStarted = false;
+            }
+        });
+        applyTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    public void processExistingWalletWithPassword(String password) {
+        Helper.setViewVisibility(textWalletSyncLoading, View.VISIBLE);
+        Helper.setViewVisibility(inputWalletSyncPassword, View.GONE);
+
+        if (currentWalletSync == null) {
+            showError(getString(R.string.wallet_sync_op_failed));
+            Helper.setViewText(textWalletSyncLoading, R.string.wallet_sync_op_failed);
+            return;
+        }
+
+        Helper.setViewVisibility(walletSyncProgress, View.VISIBLE);
+        Helper.setViewText(textWalletSyncLoading, R.string.apply_wallet_data);
+        SyncApplyTask applyTask = new SyncApplyTask(password, currentWalletSync.getData(), null, new DefaultSyncTaskHandler() {
+            @Override
+            public void onSyncApplySuccess(String hash, String data) {
+                Utils.setSecureValue(MainActivity.SECURE_VALUE_KEY_SAVED_PASSWORD, password, SignInActivity.this, Lbry.KEYSTORE);
+                // check if local and remote hash are different, and then run sync set
+                if (!hash.equalsIgnoreCase(Lbryio.lastRemoteHash) && !Helper.isNullOrEmpty(Lbryio.lastRemoteHash)) {
+                    new SyncSetTask(Lbryio.lastRemoteHash, hash, data, null).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+                /*if (listener != null) {
+                    listener.onWalletSyncEnabled();
+                }*/
+                finishSignInActivity();
+            }
+
+            @Override
+            public void onSyncApplyError(Exception error) {
+                // failed, request the user to enter a password
+                showError(error.getMessage());
+                Helper.setViewVisibility(walletSyncProgress, View.GONE);
+                Helper.setViewVisibility(textWalletSyncLoading, View.GONE);
+                Helper.setViewVisibility(inputWalletSyncPassword, View.VISIBLE);
+                Helper.setViewVisibility(layoutWalletSyncInputArea, View.VISIBLE);
+                Helper.setViewVisibility(closeSignupSignIn, View.VISIBLE);
+                walletSyncStarted = false;
+            }
+        });
+        applyTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    public void processNewWallet() {
+        SyncApplyTask fetchTask = new SyncApplyTask(true, null, new DefaultSyncTaskHandler() {
+            @Override
+            public void onSyncApplySuccess(String hash, String data) { createNewRemoteSync(hash, data); }
+            @Override
+            public void onSyncApplyError(Exception error) {
+                showError(error.getMessage());
+                Helper.setViewVisibility(walletSyncProgress, View.GONE);
+                Helper.setViewText(textWalletSyncLoading, R.string.wallet_sync_op_failed);
+                Helper.setViewVisibility(closeSignupSignIn, View.VISIBLE);
+                /*if (listener != null) {
+                    listener.onWalletSyncFailed(error);
+                }*/
+                walletSyncStarted = false;
+            }
+        });
+        fetchTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void createNewRemoteSync(String hash, String data) {
+        SyncSetTask setTask = new SyncSetTask("", hash, data, new DefaultSyncTaskHandler() {
+            @Override
+            public void onSyncSetSuccess(String hash) {
+                Lbryio.lastRemoteHash = hash;
+                /*if (listener != null) {
+                    listener.onWalletSyncEnabled();
+                }*/
+                finishSignInActivity();
+            }
+
+            @Override
+            public void onSyncSetError(Exception error) {
+                showError(error.getMessage());
+                Helper.setViewVisibility(walletSyncProgress, View.GONE);
+                Helper.setViewText(textWalletSyncLoading, R.string.wallet_sync_op_failed);
+                Helper.setViewVisibility(closeSignupSignIn, View.VISIBLE);
+                /*if (listener != null) {
+                    listener.onWalletSyncFailed(error);
+                }*/
+                walletSyncStarted = false;
+            }
+        });
+        setTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 }

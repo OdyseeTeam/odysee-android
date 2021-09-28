@@ -25,6 +25,7 @@ import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 
 public class TransactionHistoryFragment extends BaseFragment implements TransactionListAdapter.TransactionClickListener {
 
@@ -99,7 +100,7 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
     private void loadTransactions() {
         currentTransactionPage = currentTransactionPage == 0 ? 1 : currentTransactionPage;
         transactionsLoading = true;
-        TransactionListTask task = new TransactionListTask(currentTransactionPage, TRANSACTION_PAGE_LIMIT, loading, new TransactionListTask.TransactionListHandler() {
+        TransactionListTask task = new TransactionListTask(currentTransactionPage, TRANSACTION_PAGE_LIMIT, Lbryio.AUTH_TOKEN, loading, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 Context context = getContext();

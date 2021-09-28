@@ -1,5 +1,6 @@
 package com.odysee.app.adapter;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -295,8 +296,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(context);
-
-                if (am.getAccounts().length > 0 && comment.getClaimId() != null && reactListener != null) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
                     reactListener.onCommentReactClicked(comment, true);
                 }
             }
@@ -305,8 +306,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(context);
-
-                if (am.getAccounts().length > 0 && comment.getClaimId() != null && reactListener != null) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
                     reactListener.onCommentReactClicked(comment, false);
                 }
             }
@@ -318,7 +319,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         int bgColor = Helper.generateRandomColorForValue(comment.getChannelId());
         Helper.setIconViewBackgroundColor(holder.noThumbnailView, bgColor, false, context);
         if (hasThumbnail) {
-            Glide.with(context.getApplicationContext()).asBitmap().load(comment.getPoster().getThumbnailUrl()).
+            Glide.with(context.getApplicationContext()).asBitmap().load(comment.getPoster().getThumbnailUrl(holder.thumbnailView.getLayoutParams().width, holder.thumbnailView.getLayoutParams().height, 85)).
                     apply(RequestOptions.circleCropTransform()).into(holder.thumbnailView);
         }
         holder.alphaView.setText(comment.getChannelName() != null ? comment.getChannelName().substring(1, 2).toUpperCase() : null);

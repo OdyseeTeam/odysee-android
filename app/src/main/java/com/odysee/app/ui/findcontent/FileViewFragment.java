@@ -1,6 +1,7 @@
 package com.odysee.app.ui.findcontent;
 
 import android.Manifest;
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -46,6 +47,8 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.text.HtmlCompat;
@@ -201,6 +204,7 @@ public class FileViewFragment extends BaseFragment implements
         ScreenOrientationListener,
         StoragePermissionListener,
         WalletBalanceListener {
+    private static final String TAG = "OdyseeFile";
     private static final int RELATED_CONTENT_SIZE = 16;
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
@@ -426,119 +430,122 @@ public class FileViewFragment extends BaseFragment implements
         boolean updateRequired = false;
         Context context = getContext();
 //        claim.setClaimId(FileViewFragmentArgs.fromBundle(getArguments()).getClaimId());
-        Map<String, Object> params = getParams();
-        Claim newClaim = null;
-        String newUrl = null;
-        if (params != null) {
-            if (params.containsKey("claim")) {
-                newClaim = (Claim) params.get("claim");
-                if (newClaim != null && !newClaim.equals(this.claim)) {
-                    updateRequired = true;
-                }
-            }
-            if (params.containsKey("url")) {
-                LbryUri newLbryUri = LbryUri.tryParse(params.get("url").toString());
-                if (newLbryUri != null) {
-                    newUrl = newLbryUri.toString();
-                    String qs = newLbryUri.getQueryString();
-                    if (!Helper.isNullOrEmpty(qs)) {
-                        String[] qsPairs = qs.split("&");
-                        for (String pair : qsPairs) {
-                            String[] parts = pair.split("=");
-                            if (parts.length < 2) {
-                                continue;
-                            }
-                            if ("comment_hash".equalsIgnoreCase(parts[0])) {
-                                commentHash = parts[1];
-                                break;
-                            }
-                        }
-                    }
-
-                    if (claim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
+        try {
+            Map<String, Object> params = getParams();
+            Claim newClaim = null;
+            String newUrl = null;
+            if (params != null) {
+                if (params.containsKey("claim")) {
+                    newClaim = (Claim) params.get("claim");
+                    if (newClaim != null && !newClaim.equals(this.claim)) {
                         updateRequired = true;
                     }
                 }
-            }
-        } else if (currentUrl != null) {
-            updateRequired = true;
-        } else if (context instanceof MainActivity) {
-            ((MainActivity) context).onBackPressed();
-        }
 
-        boolean invalidRepost = false;
-        if (updateRequired) {
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).clearNowPlayingClaim();
-            }
-            if (MainActivity.appPlayer != null) {
-                MainActivity.appPlayer.setPlayWhenReady(false);
-            }
-
-            resetViewCount();
-            resetFee();
-            checkNewClaimAndUrl(newClaim, newUrl);
-
-            if (newClaim != null) {
-                claim = newClaim;
-            }
-            if (!Helper.isNullOrEmpty(newUrl)) {
-                // check if the claim is already cached
-                currentUrl = newUrl;
-                ClaimCacheKey key = new ClaimCacheKey();
-                key.setUrl(currentUrl);
-                onNewClaim(currentUrl);
-                if (Lbry.claimCache.containsKey(key)) {
-                    claim = Lbry.claimCache.get(key);
-                    if (claim != null && Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
-                        claim = claim.getRepostedClaim();
-                        if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
-                            // Invalid repost, probably
-                            invalidRepost = true;
-                            renderNothingAtLocation();
-                        } else if (claim.getName().startsWith("@")) {
-                            // this is a reposted channel, so launch the channel url
-                            if (context instanceof MainActivity) {
-                                MainActivity activity = (MainActivity) context;
-                                //activity.onBackPressed(); // remove the reposted url page from the back stack
-                                activity.getSupportFragmentManager().popBackStack();
-                                activity.openChannelUrl(!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+                if (params.containsKey("url")) {
+                    LbryUri newLbryUri = LbryUri.tryParse(params.get("url").toString());
+                    if (newLbryUri != null) {
+                        newUrl = newLbryUri.toString();
+                        String qs = newLbryUri.getQueryString();
+                        if (!Helper.isNullOrEmpty(qs)) {
+                            String[] qsPairs = qs.split("&");
+                            for (String pair : qsPairs) {
+                                String[] parts = pair.split("=");
+                                if (parts.length < 2) {
+                                    continue;
+                                }
+                                if ("comment_hash".equalsIgnoreCase(parts[0])) {
+                                    commentHash = parts[1];
+                                    break;
+                                }
                             }
-                            return;
+                        }
+
+                        if (claim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
+                            updateRequired = true;
                         }
                     }
-                } else {
+                }
+            } else if (currentUrl != null) {
+                updateRequired = true;
+            } else if (context instanceof MainActivity) {
+                ((MainActivity) context).onBackPressed();
+            }
+
+            boolean invalidRepost = false;
+            if (updateRequired) {
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).clearNowPlayingClaim();
+                }
+                if (MainActivity.appPlayer != null) {
+                    MainActivity.appPlayer.setPlayWhenReady(false);
+                }
+
+                resetViewCount();
+                resetFee();
+                checkNewClaimAndUrl(newClaim, newUrl);
+
+                if (newClaim != null) {
+                    claim = newClaim;
+                }
+                if (claim == null && !Helper.isNullOrEmpty(newUrl)) {
+                    // check if the claim is already cached
+                    currentUrl = newUrl;
+                    ClaimCacheKey key = new ClaimCacheKey();
+                    key.setUrl(currentUrl);
+                    onNewClaim(currentUrl);
+                    if (Lbry.claimCache.containsKey(key)) {
+                        claim = Lbry.claimCache.get(key);
+                    }
+                }
+                if (claim != null && Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
+                    claim = claim.getRepostedClaim();
+                    if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
+                        // Invalid repost, probably
+                        invalidRepost = true;
+                        renderNothingAtLocation();
+                    } else if (claim.getName().startsWith("@")) {
+                        // this is a reposted channel, so launch the channel url
+                        if (context instanceof MainActivity) {
+                            MainActivity activity = (MainActivity) context;
+                            //activity.onBackPressed(); // remove the reposted url page from the back stack
+                            activity.getSupportFragmentManager().popBackStack();
+                            activity.openChannelUrl(!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+                        }
+                        return;
+                    }
+                }
+                if (claim == null) {
                     resolveUrl(currentUrl);
                 }
-            } else if (claim == null) {
-                // nothing at this location
-                renderNothingAtLocation();
-            }
-        } else {
-            checkAndResetNowPlayingClaim();
-        }
-
-        if (!Helper.isNullOrEmpty(currentUrl)) {
-            Helper.saveUrlHistory(currentUrl, claim != null ? claim.getTitle() : null, UrlSuggestion.TYPE_FILE);
-        }
-
-        if (claim != null && !invalidRepost) {
-            Helper.saveViewHistory(currentUrl, claim);
-            if (Helper.isClaimBlocked(claim)) {
-                renderClaimBlocked();
             } else {
-                checkAndLoadRelatedContent();
-                checkAndLoadComments();
-                renderClaim();
-                if (claim.getFile() == null) {
-                    loadFile();
+                checkAndResetNowPlayingClaim();
+            }
+
+            if (!Helper.isNullOrEmpty(currentUrl)) {
+                Helper.saveUrlHistory(currentUrl, claim != null ? claim.getTitle() : null, UrlSuggestion.TYPE_FILE);
+            }
+
+            if (claim != null && !invalidRepost) {
+                Helper.saveViewHistory(currentUrl, claim);
+                if (Helper.isClaimBlocked(claim)) {
+                    renderClaimBlocked();
                 } else {
+                    checkAndLoadRelatedContent();
+                    checkAndLoadComments();
+                    renderClaim();
+                    if (claim.getFile() == null) {
+                        loadFile();
+                    } else {
 //                    initialFileLoadDone = true;
+                    }
                 }
             }
-        }
 
-        checkIsFileComplete();
+            checkIsFileComplete();
+        } catch (Exception ex){
+            android.util.Log.e(TAG, ex.getMessage(), ex);
+        }
     }
 
     private void renderNothingAtLocation() {
@@ -1055,8 +1062,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
-
-                if (claim != null && am.getAccounts().length > 0) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (claim != null && odyseeAccount != null) {
                     react(claim, true);
                 }
             }
@@ -1065,8 +1072,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
-
-                if (claim != null && am.getAccounts().length > 0) {
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (claim != null && odyseeAccount != null) {
                     react(claim, false);
                 }
             }
@@ -1195,8 +1202,14 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (claim != null) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format("https://lbry.com/dmca/%s", claim.getClaimId())));
-                    startActivity(intent);
+                    Context context = getContext();
+                    CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+                    ctcspb.setToolbarColor(ContextCompat.getColor(context, R.color.colorPrimary));
+                    CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+                    CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+                    CustomTabsIntent intent = builder.build();
+                    intent.launchUrl(context, Uri.parse(String.format("https://lbry.com/dmca/%s", claim.getClaimId())));
                 }
             }
         });
@@ -1537,7 +1550,8 @@ public class FileViewFragment extends BaseFragment implements
                 int bgColor = Helper.generateRandomColorForValue(signingChannel.getClaimId());
                 Helper.setIconViewBackgroundColor(root.findViewById(R.id.file_view_publisher_no_thumbnail), bgColor, false, context);
                 if (hasPublisherThumbnail && context != null) {
-                    Glide.with(context.getApplicationContext()).load(signingChannel.getThumbnailUrl()).
+                    ViewGroup.LayoutParams lp = root.findViewById(R.id.file_view_publisher_thumbnail).getLayoutParams();
+                    Glide.with(context.getApplicationContext()).load(signingChannel.getThumbnailUrl(lp.width, lp.height, 85)).
                             apply(RequestOptions.circleCropTransform()).into((ImageView) root.findViewById(R.id.file_view_publisher_thumbnail));
                 }
                 ((TextView) root.findViewById(R.id.file_view_publisher_thumbnail_alpha)).
@@ -1577,7 +1591,7 @@ public class FileViewFragment extends BaseFragment implements
             Claim.GenericMetadata metadata = claim.getValue();
             if (!Helper.isNullOrEmpty(claim.getThumbnailUrl())) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
-                Glide.with(context.getApplicationContext()).asBitmap().load(claim.getThumbnailUrl()).centerCrop().into(thumbnailView);
+                Glide.with(context.getApplicationContext()).asBitmap().load(claim.getThumbnailUrl(context.getResources().getDisplayMetrics().widthPixels, thumbnailView.getLayoutParams().height, 85)).centerCrop().into(thumbnailView);
             } else {
                 // display first x letters of claim name, with random background
             }
@@ -1794,7 +1808,7 @@ public class FileViewFragment extends BaseFragment implements
                             new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
                             new DefaultExtractorsFactory()
                     ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
-                } else {
+                }/* else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
@@ -1818,7 +1832,7 @@ public class FileViewFragment extends BaseFragment implements
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
-                }
+                }*/
 
                 if (mediaSource != null) {
                     MainActivity.appPlayer.setMediaSource(mediaSource, true);
@@ -2101,8 +2115,9 @@ public class FileViewFragment extends BaseFragment implements
             jsonParams.put("comment_ids", TextUtils.join(",", commentIds));
 
             AccountManager am = AccountManager.get(getContext());
-            if (am.getAccounts().length > 0) {
-                jsonParams.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                jsonParams.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
             }
 
             if (Lbry.ownChannels.size() > 0) {
@@ -2724,8 +2739,7 @@ public class FileViewFragment extends BaseFragment implements
                         }
                     });
 
-                    Map<String, Reactions> commentReactions = loadReactions(comments);
-
+                    Map<String, Reactions> commentReactions = new HashMap<>(); //loadReactions(comments);
                     if (commentReactions != null) {
                         for (Comment c: comments) {
                             c.setReactions(commentReactions.get(c.getId()));
@@ -3489,7 +3503,7 @@ public class FileViewFragment extends BaseFragment implements
         if (hasThumbnail && context != null) {
             Glide.with(context.getApplicationContext()).
                     asBitmap().
-                    load(channel.getThumbnailUrl()).
+                    load(channel.getThumbnailUrl(commentPostAsThumbnail.getLayoutParams().width, commentPostAsThumbnail.getLayoutParams().height, 85)).
                     apply(RequestOptions.circleCropTransform()).
                     into(commentPostAsThumbnail);
         }
@@ -3635,8 +3649,9 @@ public class FileViewFragment extends BaseFragment implements
                 options.put("remove", true);
 
             AccountManager am = AccountManager.get(getContext());
-            if (am.getAccounts().length > 0) {
-                options.put("auth_token", am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -3675,27 +3690,23 @@ public class FileViewFragment extends BaseFragment implements
                         @Override
                         public Boolean call() {
                             JSONObject data = null;
-                            try {
-                                if (am.getAccounts().length > 0) {
-                                    okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-
-                                    ResponseBody responseBody = response.body();
-
-                                    if (responseBody != null) {
-                                        String responseString = responseBody.string();
-
+                            if (am.getAccounts().length > 0) {
+                                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                                try {
+                                    if (odyseeAccount != null) {
+                                        okhttp3.Response response = Comments.performRequest(options, "reaction.React");
+                                        String responseString = response.body().string();
                                         JSONObject jsonResponse = new JSONObject(responseString);
-
                                         if (jsonResponse.has("result")) {
                                             data = jsonResponse.getJSONObject("result");
                                         } else {
                                             Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
                                         }
+                                        response.close();
                                     }
-                                    response.close();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
                             }
                             return data != null && !data.has("error");
                         }

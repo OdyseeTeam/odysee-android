@@ -55,11 +55,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
@@ -70,8 +70,8 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
-import com.odysee.app.supplier.WalletGetUnusedAddressSupplier;
 import com.odysee.app.callable.WalletGetUnusedAddress;
+import com.odysee.app.supplier.WalletGetUnusedAddressSupplier;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Transaction;
@@ -195,9 +195,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         Helper.setViewVisibility(textNoRecentTransactions, View.GONE);
 
         AccountManager am = AccountManager.get(getContext());
-        Account[] account = am.getAccounts();
+        Account[] accounts = am.getAccounts();
 
-        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(am.getAccounts()[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(accounts[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 hasFetchedRecentTransactions = true;
@@ -320,12 +320,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             }
         });
 
-        /*buttonGetNewAddress.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                generateNewAddress();
-            }
-        });*/
         textWalletReceiveAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -527,13 +521,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             receiveAddress = sp.getString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, null);
         }
         if (Helper.isNullOrEmpty(receiveAddress)) {
-            AccountManager am = AccountManager.get(getContext());
-
-            if (am.getAccounts().length > 0) {
-                generateNewAddress();
-            }
-        } else if (textWalletReceiveAddress != null) {
-            textWalletReceiveAddress.setText(receiveAddress);
+            generateNewAddress();
+        } else {
+            Helper.setViewText(textWalletReceiveAddress, receiveAddress);
         }
     }
 
@@ -629,7 +619,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     public void generateNewAddress() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             AccountManager am = AccountManager.get(getContext());
-            Supplier<String> task = new WalletGetUnusedAddressSupplier(am.peekAuthToken(am.getAccounts()[0], "auth_token_type"));
+            Supplier<String> task = new WalletGetUnusedAddressSupplier(am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
             CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(task);
             completableFuture.thenAccept(addr -> {
                 if (!Helper.isNullOrEmpty(addr)) {

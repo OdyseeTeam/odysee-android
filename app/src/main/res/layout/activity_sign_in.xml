@@ -41,13 +41,15 @@
         android:layout_marginEnd="36dp"
         android:orientation="vertical">
         <TextView
+            android:id="@+id/signin_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:text="@string/join_odysee"
             android:fontFamily="@font/inter"
             android:textColor="@color/joinodysee_text"
-            android:textSize="24sp" />
+            android:textSize="24sp"
+            android:textFontWeight="300" />
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -58,7 +60,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/verification_email_input"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:maxLength="256" />
         </com.google.android.material.textfield.TextInputLayout>
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layout_signin_password"
@@ -66,6 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
             android:hint="@string/password"
+            android:maxLength="100"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:enabled="true">
             <com.google.android.material.textfield.TextInputEditText
@@ -204,6 +208,111 @@
                 android:textFontWeight="300" />
         </LinearLayout>
     </LinearLayout>
+
+
+    <LinearLayout android:id="@+id/verification_wallet_sync_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="36dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <LinearLayout
+            android:id="@+id/verification_wallet_sync_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:textSize="24sp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:layout_centerVertical="true"
+                    android:text="@string/wallet_sync"
+                    android:textFontWeight="300" />
+                <ProgressBar
+                    android:id="@+id/verification_wallet_loading_progress"
+                    android:visibility="gone"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginTop="24dp" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/verification_wallet_loading_text"
+                android:visibility="gone"
+                android:textSize="16sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:layout_marginTop="8dp"
+                android:text="@string/retrieving_account_information"
+                android:textFontWeight="300" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/verification_wallet_input_area"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/verification_wallet_sync_paragraph"
+                android:textSize="16sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="@string/please_enter_your_password"
+                android:textFontWeight="300"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="@string/wallet_password"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/verification_wallet_password_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:inputType="textPassword"
+                    android:singleLine="true"
+                    android:textSize="20sp"
+                    android:textAlignment="center"
+                    android:textFontWeight="300" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:textSize="12sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:layout_marginTop="16dp"
+                android:text="@string/wallet_security_purposes"
+                android:textFontWeight="300" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/verification_wallet_done_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/inter"
+                android:text="@string/done" />
+        </LinearLayout>
+    </LinearLayout>
+
+
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="match_parent"

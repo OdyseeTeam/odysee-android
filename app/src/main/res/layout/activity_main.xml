@@ -40,10 +40,10 @@
             android:id="@+id/notifications_container"
             android:background="@color/pageBackground"
             android:elevation="6dp"
-            android:fitsSystemWindows="true"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
             <ProgressBar
                 android:id="@+id/notifications_progress"
                 android:layout_centerInParent="true"
@@ -60,10 +60,10 @@
                 android:visibility="gone">
                 <ImageView
                     android:layout_gravity="center_horizontal"
-                    android:layout_width="160dp"
-                    android:layout_height="300dp"
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
                     android:adjustViewBounds="true"
-                    android:src="@drawable/gerbil_happy" />
+                    android:src="@drawable/spaceman_happy" />
                 <TextView
                     android:text="@string/no_notifications"
                     android:layout_width="wrap_content"
@@ -88,10 +88,6 @@
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
         </RelativeLayout>
 
-        <include layout="@layout/mini_player"
-                android:id="@+id/miniplayer"
-            android:visibility="gone"/>
-
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
@@ -112,6 +108,17 @@
                 android:layout_height="match_parent" />
         </LinearLayout>
     </LinearLayout>
+
+    <include layout="@layout/mini_player"
+        android:id="@+id/miniplayer"
+        tools:visibility="visible"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="96dp"
+        android:layout_alignParentBottom="true" />
 
     <RelativeLayout
         android:layout_width="match_parent"

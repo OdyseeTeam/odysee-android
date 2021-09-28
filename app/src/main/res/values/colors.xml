@@ -31,7 +31,7 @@
     <color name="odyseePink">#E50054</color>
     <color name="nextLbryGreen">#38D9A9</color>
     <color name="odyseePinkSemiTransparent">#33E50054</color>
-    <color name="tagGreen">#E3F6F1</color>
+    <color name="tagPink">#44E50054</color>
     <color name="tagGrape">#77F255DA</color>
 
     <color name="divider">#DFDFDF</color>
@@ -60,7 +60,7 @@
 
     <color name="codeTagText">#2E3439</color>
     <color name="codeTagBackground">#D0E8FF</color>
-
+`
     <color name="close_button">#ff000000</color>
     <color name="closeimagebutton_outline">#000000</color>
     <color name="signin_close_background">@android:color/transparent</color>

@@ -66,7 +66,7 @@
                             android:layout_marginStart="2dp"
                             android:fontFamily="@font/inter"
                             android:text="@string/zero"
-                            android:textSize="18sp"
+                            android:textSize="16sp"
                             android:textFontWeight="300" />
                     </LinearLayout>
 
@@ -74,7 +74,7 @@
                         android:id="@+id/upload_button"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_width="40dp"
+                        android:layout_width="42dp"
                         android:layout_height="match_parent"
                         android:background="?attr/selectableItemBackground">
                         <ImageView
@@ -88,7 +88,7 @@
 
                     <RelativeLayout
                         android:id="@+id/wunderbar_notifications"
-                        android:layout_width="40dp"
+                        android:layout_width="42dp"
                         android:layout_height="match_parent"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true">
@@ -105,7 +105,7 @@
                             android:id="@+id/notifications_badge_count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="24dp"
+                            android:layout_marginStart="22dp"
                             android:layout_marginTop="12dp"
                             android:background="@drawable/bg_notification_badge"
                             android:fontFamily="@font/inter"
@@ -113,9 +113,11 @@
                             android:minWidth="12dp"
                             android:paddingStart="2dp"
                             android:paddingEnd="2dp"
+                            android:singleLine="true"
                             android:textColor="@color/white"
-                            android:textSize="10sp"
-                            android:visibility="invisible" />
+                            android:textSize="9sp"
+                            android:visibility="invisible"
+                            tools:visibility="visible" />
                     </RelativeLayout>
 
                     <LinearLayout android:id="@+id/search_component"
@@ -145,7 +147,7 @@
                         <RelativeLayout android:id="@+id/search_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:layout_width="40dp"
+                            android:layout_width="42dp"
                             android:layout_height="match_parent"
                             android:background="?attr/selectableItemBackground">
                             <ImageView
@@ -159,7 +161,7 @@
                         <RelativeLayout android:id="@+id/search_close_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:layout_width="40dp"
+                            android:layout_width="42dp"
                             android:layout_height="match_parent"
                             android:visibility="gone"
                             android:background="?attr/selectableItemBackground">
@@ -177,7 +179,7 @@
                         android:id="@+id/profile_button"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_width="40dp"
+                        android:layout_width="42dp"
                         android:layout_height="match_parent"
                         android:background="?attr/selectableItemBackground">
                         <ImageView
