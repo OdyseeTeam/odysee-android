@@ -341,8 +341,8 @@ public class Claim {
                 JSONObject repostedClaimObject = claimObject.getJSONObject("reposted_claim");
                 claim.setRepostedClaim(Claim.fromJSONObject(repostedClaimObject));
             } else {
-                JSONObject value = claimObject.getJSONObject("value");
-                if (value != null) {
+                if (claimObject.has("value")) {
+                    JSONObject value = claimObject.getJSONObject("value");
                     String valueJson = value.toString();
                     if (TYPE_STREAM.equalsIgnoreCase(valueType)) {
                         claim.setValue(gson.fromJson(valueJson, streamMetadataType));
