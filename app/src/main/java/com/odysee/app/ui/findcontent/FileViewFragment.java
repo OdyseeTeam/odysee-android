@@ -2599,7 +2599,12 @@ public class FileViewFragment extends BaseFragment implements
                                         if (claim.getName().startsWith("@")) {
                                             activity.openChannelClaim(claim);
                                         } else {
-                                            activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
+                                            Map<String, Object> params = new HashMap<>();
+                                            params.put("claimId", claim.getClaimId());
+                                            params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+
+                                            setParams(params);
+                                            checkParams();
                                         }
                                     }
                                 }
