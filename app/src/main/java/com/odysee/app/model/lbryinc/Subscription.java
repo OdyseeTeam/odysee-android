@@ -1,6 +1,8 @@
 package com.odysee.app.model.lbryinc;
 
 import com.odysee.app.model.Claim;
+import com.odysee.app.utils.LbryUri;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,7 +27,13 @@ public class Subscription {
     }
 
     public static Subscription fromClaim(Claim claim) {
-        return new Subscription(claim.getName(), claim.getPermanentUrl(), false);
+        String u = claim.getPermanentUrl();
+        LbryUri lbryUri = LbryUri.tryParse(u);
+
+        if (lbryUri != null)
+            u = lbryUri.toString();
+
+        return new Subscription(claim.getName(), u, false);
     }
     public String toString() {
         return url;
