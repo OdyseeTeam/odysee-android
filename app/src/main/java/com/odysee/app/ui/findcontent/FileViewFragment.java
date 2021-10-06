@@ -2719,8 +2719,8 @@ public class FileViewFragment extends BaseFragment implements
                     Collections.sort(rootComments, new Comparator<Comment>() {
                         @Override
                         public int compare(Comment o1, Comment o2) {
-                            int o1SelfLiked = o1.getReactions().isLiked() ? 1 : 0;
-                            int o2SelfLiked = o2.getReactions().isLiked() ? 1 : 0;
+                            int o1SelfLiked = (Lbryio.isSignedIn() &&  o1.getReactions().isLiked()) ? 1 : 0;
+                            int o2SelfLiked = (Lbryio.isSignedIn() && o2.getReactions().isLiked()) ? 1 : 0;
                             return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
                         }
                     });
@@ -3637,7 +3637,10 @@ public class FileViewFragment extends BaseFragment implements
         Comment comment = buildPostComment();
 
         beforePostComment();
-        CommentCreateTask task = new CommentCreateTask(comment, progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
+        AccountManager am = AccountManager.get(getContext());
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+
+        CommentCreateTask task = new CommentCreateTask(comment, am.peekAuthToken(odyseeAccount, "auth_token_type"), progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
             @Override
             public void onSuccess(Comment createdComment) {
                 inputComment.setText(null);

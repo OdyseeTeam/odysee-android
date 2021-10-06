@@ -17,6 +17,7 @@ import okhttp3.Response;
 
 public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
     private final Comment comment;
+    private String authToken;
     private final View progressView;
     private final CommentCreateWithTipHandler handler;
     private Exception error;
@@ -25,6 +26,11 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
         this.comment = comment;
         this.progressView = progressView;
         this.handler = handler;
+    }
+
+    public CommentCreateTask(Comment comment, String authToken, View progressView, CommentCreateWithTipHandler handler) {
+        this(comment, progressView, handler);
+        this.authToken = authToken;
     }
 
     protected void onPreExecute() {
@@ -45,6 +51,8 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
             }
             comment_body.put("channel_id", comment.getChannelId());
             comment_body.put("channel_name", comment.getChannelName());
+            if (authToken != null)
+                comment_body.put("auth_token", authToken);
 
             JSONObject jsonChannelSign = Comments.channelSign(comment_body, comment.getChannelId(), comment.getChannelName());
 
