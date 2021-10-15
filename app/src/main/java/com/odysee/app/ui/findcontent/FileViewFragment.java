@@ -839,8 +839,11 @@ public class FileViewFragment extends BaseFragment implements
 
         // Tasks on the scheduled executor needs to be really terminated to avoid
         // crashes if user presses back after going to a related content from here
-        if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
+        if (scheduledExecutor != null && !scheduledExecutor.isShutdown() && futureReactions != null) {
             try {
+                // .cancel() will not remove the task, so it is needed to .purge()
+                futureReactions.cancel(true);
+                ((ScheduledThreadPoolExecutor) scheduledExecutor).purge();
                 scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
