@@ -3297,7 +3297,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (startingPermissionRequest) {
             return;
         }
-        enterPIPMode();
+        if (appPlayer != null && appPlayer.isPlaying()) {
+            enterPIPMode();
+        }
     }
 
     protected boolean enterPIPMode() {
