@@ -146,6 +146,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -392,7 +393,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private List<FetchChannelsListener> fetchChannelsListeners;
     @Getter
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private boolean walletBalanceUpdateScheduled;
+    private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
 
     AccountManager accountManager;
@@ -1236,10 +1237,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 @Override
                 public void onError(Exception error) {
+                    error.printStackTrace();
                     // pass
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            Lbry.walletBalance = new WalletBalance();
+
+            for (WalletBalanceListener listener : walletBalanceListeners) {
+                if (listener != null) {
+                    listener.onWalletBalanceUpdated(Lbry.walletBalance);
+                }
+            }
+            sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+            ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
+                    Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
         }
     }
 
@@ -2074,6 +2087,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
+
+            if (scheduledWalletUpdater != null)
+                scheduledWalletUpdater.cancel(true);
+
+            updateWalletBalance();
         }
 
         if (initialCategoriesLoaded && userInstallInitialised) {
@@ -2250,8 +2268,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void scheduleWalletBalanceUpdate() {
-        if (scheduler != null && !walletBalanceUpdateScheduled) {
-            scheduler.scheduleAtFixedRate(new Runnable() {
+        if (isSignedIn() && scheduler != null && (scheduledWalletUpdater == null || scheduledWalletUpdater.isDone() || scheduledWalletUpdater.isCancelled())) {
+            scheduledWalletUpdater = scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -2261,7 +2279,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 }
             }, 0, 5, TimeUnit.SECONDS);
-            walletBalanceUpdateScheduled = true;
         }
     }
 
