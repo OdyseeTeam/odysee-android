@@ -74,7 +74,7 @@
     <string name="download">Download</string>
     <string name="open">Open</string>
     <string name="report">Report</string>
-    <string name="loading_decentralized_data">Loading content…</string>
+    <string name="loading_content">Loading content…</string>
     <string name="related_content">Related Content</string>
     <string name="comments">Comments</string>
     <string name="no_comments">No comments to display at this time.</string>

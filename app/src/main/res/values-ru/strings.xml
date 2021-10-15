@@ -57,7 +57,6 @@
     <string name="download">Загрузить</string>
     <string name="open">Открыть</string>
     <string name="report">Пожаловаться</string>
-    <string name="loading_decentralized_data">Загружаем децентрализованные данные...</string>
     <string name="related_content">Похожие материалы</string>
     <string name="comments">Комментарии</string>
     <string name="no_comments">Нет комментариев для отображения.</string>
