@@ -23,6 +23,7 @@ import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -64,7 +65,6 @@ import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultControlDispatcher;
-import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
@@ -75,7 +75,6 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
@@ -110,6 +109,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -130,6 +130,7 @@ import java.util.function.Supplier;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
+import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
@@ -192,9 +193,8 @@ import com.odysee.app.utils.Predefined;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 
-import static com.odysee.app.utils.Lbry.TAG;
+import static java.util.stream.Collectors.groupingBy;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -304,7 +304,7 @@ public class FileViewFragment extends BaseFragment implements
         tipButton = root.findViewById(R.id.file_view_action_tip);
 
         expandButton = root.findViewById(R.id.expand_commentarea_button);
-        singleCommentRoot = root.findViewById(R.id.contracted_comment);
+        singleCommentRoot = root.findViewById(R.id.collapsed_comment);
 
         containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
@@ -839,8 +839,11 @@ public class FileViewFragment extends BaseFragment implements
 
         // Tasks on the scheduled executor needs to be really terminated to avoid
         // crashes if user presses back after going to a related content from here
-        if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
+        if (scheduledExecutor != null && !scheduledExecutor.isShutdown() && futureReactions != null) {
             try {
+                // .cancel() will not remove the task, so it is needed to .purge()
+                futureReactions.cancel(true);
+                ((ScheduledThreadPoolExecutor) scheduledExecutor).purge();
                 scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -1305,7 +1308,7 @@ public class FileViewFragment extends BaseFragment implements
         expandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                switchCommentListVisibility(commentListAdapter.contracted);
+                switchCommentListVisibility(commentListAdapter.collapsed);
                 commentListAdapter.switchExpandedState();
             }
         });
@@ -1514,7 +1517,7 @@ public class FileViewFragment extends BaseFragment implements
         loadViewCount();
         loadReactions();
         checkIsFollowing();
-        
+
         View root = getView();
         if (root != null) {
             Context context = getContext();
@@ -2098,14 +2101,6 @@ public class FileViewFragment extends BaseFragment implements
 
         for (Comment c: comments) {
             commentIds.add(c.getId());
-
-            List <Comment> replies = c.getReplies();
-
-            if (replies.size() > 0) {
-                for (Comment r: replies) {
-                    commentIds.add(r.getId());
-                }
-            }
         }
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -2704,7 +2699,35 @@ public class FileViewFragment extends BaseFragment implements
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
-                    Comment singleComment = comments.get(0);
+                    Map<String, Reactions> commentReactions = loadReactions(comments);
+                    if (commentReactions != null) {
+                        for (Comment c: comments) {
+                            c.setReactions(commentReactions.get(c.getId()));
+                        }
+                    }
+
+                    List<Comment> rootComments = new ArrayList<>();
+
+                    for (Comment c : comments) {
+                        if (c.getParentId() == null) {
+                            rootComments.add(c);
+                        }
+                    }
+
+                    // Now we have level 0 comments to content
+
+                    Collections.sort(rootComments, new Comparator<Comment>() {
+                        @Override
+                        public int compare(Comment o1, Comment o2) {
+                            int o1SelfLiked = o1.getReactions().isLiked() ? 1 : 0;
+                            int o2SelfLiked = o2.getReactions().isLiked() ? 1 : 0;
+                            return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
+                        }
+                    });
+
+                    // Direct comments are now sorted by their amount of likes. We can now pick the
+                    // one to be displayed as the collapsed single comment.
+                    Comment singleComment = rootComments.get(0);
 
                     TextView commentText = singleCommentRoot.findViewById(R.id.comment_text);
                     ImageView thumbnailView = singleCommentRoot.findViewById(R.id.comment_thumbnail);
@@ -2724,8 +2747,12 @@ public class FileViewFragment extends BaseFragment implements
                     int bgColor = Helper.generateRandomColorForValue(singleComment.getChannelId());
                     Helper.setIconViewBackgroundColor(noThumbnailView, bgColor, false, getContext());
                     if (hasThumbnail) {
-                        Glide.with(getContext().getApplicationContext()).asBitmap().load(singleComment.getPoster().getThumbnailUrl()).
-                                apply(RequestOptions.circleCropTransform()).into(thumbnailView);
+                        Context ctx = getContext();
+                        if (ctx != null) {
+                            Context appCtx = ctx.getApplicationContext();
+                            Glide.with(appCtx).asBitmap().load(singleComment.getPoster().getThumbnailUrl()).
+                                    apply(RequestOptions.circleCropTransform()).into(thumbnailView);
+                        }
                     }
                     alphaView.setText(singleComment.getChannelName() != null ? singleComment.getChannelName().substring(1, 2).toUpperCase() : null);
                     singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
@@ -2739,12 +2766,20 @@ public class FileViewFragment extends BaseFragment implements
                         }
                     });
 
-                    Map<String, Reactions> commentReactions = new HashMap<>(); //loadReactions(comments);
-                    if (commentReactions != null) {
-                        for (Comment c: comments) {
-                            c.setReactions(commentReactions.get(c.getId()));
+                    List<Comment> parentComments = rootComments;
+//                    rootComments.clear();
+                    for (Comment c : comments) {
+                        if (!parentComments.contains(c)) {
+                            if (c.getParentId() != null) {
+                                Comment item = parentComments.stream().filter(v -> c.getParentId().equalsIgnoreCase(v.getId())).findFirst().orElse(null);
+                                if (item != null) {
+                                    parentComments.add(parentComments.indexOf(item) + 1, c);
+                                }
+                            }
                         }
                     }
+                    comments = parentComments;
+
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
@@ -2774,6 +2809,9 @@ public class FileViewFragment extends BaseFragment implements
                         });
 
                         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
+                        // Indent reply-type items
+                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+                        commentsList.addItemDecoration(new CommentItemDecoration(marginInPx));
                         commentsList.setAdapter(commentListAdapter);
                         commentListAdapter.notifyItemRangeInserted(0, comments.size());
 
@@ -2785,7 +2823,9 @@ public class FileViewFragment extends BaseFragment implements
 
                 @Override
                 public void onError(Exception error) {
-                    error.printStackTrace();
+                    if (error != null) {
+                        error.printStackTrace();
+                    }
                     checkNoComments();
                 }
             });
@@ -2814,7 +2854,7 @@ public class FileViewFragment extends BaseFragment implements
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
-            Helper.setViewVisibility(root.findViewById(R.id.contracted_comment),
+            Helper.setViewVisibility(root.findViewById(R.id.collapsed_comment),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
 
             if (commentListAdapter == null)
@@ -3571,7 +3611,7 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
 
         if (expanded) {
-            root.findViewById(R.id.contracted_comment).setVisibility(View.GONE);
+            root.findViewById(R.id.collapsed_comment).setVisibility(View.GONE);
             Helper.setViewVisibility(containerCommentForm, View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
@@ -3580,7 +3620,7 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
-            root.findViewById(R.id.contracted_comment).setVisibility(View.VISIBLE);
+            root.findViewById(R.id.collapsed_comment).setVisibility(View.VISIBLE);
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);

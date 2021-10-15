@@ -1,5 +1,7 @@
 package com.odysee.app.tasks;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import android.os.AsyncTask;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -57,32 +59,33 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
             options.put("visible", true);
 
             JSONObject result = (JSONObject) Lbry.parseResponse(Comments.performRequest(Lbry.buildJsonParams(options), "comment.List"));
-            JSONArray items = result.getJSONArray("items");
 
-            List<Comment> children = new ArrayList<>();
-            comments = new ArrayList<>();
-            for (int i = 0; i < items.length(); i++) {
-                Comment comment = Comment.fromJSONObject(items.getJSONObject(i));
-                if (comment != null) {
-                    if (!Helper.isNullOrEmpty(comment.getParentId())) {
-                        children.add(comment);
-                    } else {
-                        comments.add(comment);
+            if (result != null && result.has("items")) {
+                JSONArray items = result.getJSONArray("items");
+
+                List<Comment> children = new ArrayList<>();
+                comments = new ArrayList<>();
+                for (int i = 0; i < items.length(); i++) {
+                    Comment comment = Comment.fromJSONObject(items.getJSONObject(i));
+                    if (comment != null) {
+                        if (!Helper.isNullOrEmpty(comment.getParentId())) {
+                            children.add(comment);
+                        } else {
+                            comments.add(comment);
+                        }
                     }
                 }
-            }
 
-            // Sort all replies from oldest to newest at once
+            // Sort all replies from oldest to newest at once and then group them by its parent comment
             Collections.sort(children);
 
-            for (Comment child : children) {
-                for (Comment parent : comments) {
-                    if (parent.getId().equalsIgnoreCase(child.getParentId())) {
-                        parent.addReply(child);
-                        break;
-                    }
-                }
-            }
+            Map<String, List<Comment>> groupedChildrenList = children.stream().collect(groupingBy(Comment::getParentId));
+            List<Comment> finalComments = comments;
+            groupedChildrenList.forEach((key, value) -> {
+                Comment c = finalComments.stream().filter(v -> key.equalsIgnoreCase(v.getId())).findFirst().orElse(null);
+                finalComments.addAll(finalComments.indexOf(c) + 1, value);
+            });
+            comments = finalComments;
         } catch (JSONException | LbryResponseException | IOException ex) {
             error = ex;
         }
