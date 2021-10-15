@@ -15,7 +15,6 @@ public class Comment implements Comparable<Comment> {
 
     private Claim poster;
     private String claimId;
-    private List<Comment> replies;
     private long timestamp;
     private String channelId;
     private String channelName, text, id, parentId;
@@ -27,23 +26,11 @@ public class Comment implements Comparable<Comment> {
         this.text = text;
         this.id = id;
         this.parentId = parentId;
-
-        this.replies = new ArrayList<>();
     }
 
     public Comment() {
-        replies = new ArrayList<>();
-    }
 
-    public void addReply(Comment reply) {
-        if (replies == null) {
-            replies = new ArrayList<>();
-        }
-        if (!replies.contains(reply)) {
-            replies.add(reply);
-        }
     }
-
     public static Comment fromJSONObject(JSONObject jsonObject) {
         try {
             String parentId = null;

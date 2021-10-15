@@ -141,11 +141,22 @@
 
                 </LinearLayout>
             </LinearLayout>
+            <TextView android:id="@+id/textview_view_replies"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:text="View replies"
+                android:fontFamily="@font/inter"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:drawableStart="@drawable/ic_expand"
+                android:drawableTint="@color/colorPrimary"
+                android:drawablePadding="4dp"
+                android:visibility="gone"
+                tools:visibility="visible"/>
         </LinearLayout>
     </RelativeLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/comment_replies"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 </LinearLayout>
