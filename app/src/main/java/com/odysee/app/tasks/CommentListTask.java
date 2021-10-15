@@ -59,20 +59,22 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
             options.put("visible", true);
 
             JSONObject result = (JSONObject) Lbry.parseResponse(Comments.performRequest(Lbry.buildJsonParams(options), "comment.List"));
-            JSONArray items = result.getJSONArray("items");
 
-            List<Comment> children = new ArrayList<>();
-            comments = new ArrayList<>();
-            for (int i = 0; i < items.length(); i++) {
-                Comment comment = Comment.fromJSONObject(items.getJSONObject(i));
-                if (comment != null) {
-                    if (!Helper.isNullOrEmpty(comment.getParentId())) {
-                        children.add(comment);
-                    } else {
-                        comments.add(comment);
+            if (result != null && result.has("items")) {
+                JSONArray items = result.getJSONArray("items");
+
+                List<Comment> children = new ArrayList<>();
+                comments = new ArrayList<>();
+                for (int i = 0; i < items.length(); i++) {
+                    Comment comment = Comment.fromJSONObject(items.getJSONObject(i));
+                    if (comment != null) {
+                        if (!Helper.isNullOrEmpty(comment.getParentId())) {
+                            children.add(comment);
+                        } else {
+                            comments.add(comment);
+                        }
                     }
                 }
-            }
 
             // Sort all replies from oldest to newest at once and then group them by its parent comment
             Collections.sort(children);

@@ -916,8 +916,9 @@
                         android:textSize="14sp"
                         android:visibility="gone" />
 
-                    <include android:id="@+id/contracted_comment"
-                        layout="@layout/list_item_comment" />
+                    <include android:id="@+id/collapsed_comment"
+                        layout="@layout/list_item_comment"
+                        android:visibility="gone"/>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/file_view_comments_list"
