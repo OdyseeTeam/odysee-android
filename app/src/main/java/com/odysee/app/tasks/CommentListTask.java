@@ -76,16 +76,17 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
                     }
                 }
 
-            // Sort all replies from oldest to newest at once and then group them by its parent comment
-            Collections.sort(children);
+                // Sort all replies from oldest to newest at once and then group them by its parent comment
+                Collections.sort(children);
 
-            Map<String, List<Comment>> groupedChildrenList = children.stream().collect(groupingBy(Comment::getParentId));
-            List<Comment> finalComments = comments;
-            groupedChildrenList.forEach((key, value) -> {
-                Comment c = finalComments.stream().filter(v -> key.equalsIgnoreCase(v.getId())).findFirst().orElse(null);
-                finalComments.addAll(finalComments.indexOf(c) + 1, value);
-            });
-            comments = finalComments;
+                Map<String, List<Comment>> groupedChildrenList = children.stream().collect(groupingBy(Comment::getParentId));
+                List<Comment> finalComments = comments;
+                groupedChildrenList.forEach((key, value) -> {
+                    Comment c = finalComments.stream().filter(v -> key.equalsIgnoreCase(v.getId())).findFirst().orElse(null);
+                    finalComments.addAll(finalComments.indexOf(c) + 1, value);
+                });
+                comments = finalComments;
+            }
         } catch (JSONException | LbryResponseException | IOException ex) {
             error = ex;
         }
