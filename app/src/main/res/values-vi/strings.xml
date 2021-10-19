@@ -35,7 +35,6 @@
     <!-- Following page -->
     <string name="find_channels_to_follow">Tìm kênh để theo dõi
  </string>
-    <string name="channels_you_follow">Kênh bạn theo dõi</string>
     <string name="discover">Khám phá</string>
     <string name="lbry_works_better">LBRY hoạt động tốt hơn nếu bạn theo dõi ít ​​nhất 5 người sáng tạo mà bạn thích. Đăng nhập để hiển thị người tạo bạn theo dõi nếu bạn đã có tài khoản.</string>
     <string name="select_five_subscriptions">Vui lòng chọn tối đa 5 người sáng tạo nội dung để tiếp tục</string>

@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Takip edecek kanallar bulun</string>
-    <string name="channels_you_follow">Takip ettiğiniz kanallar</string>
     <string name="discover">Keşfet</string>
     <string name="lbry_works_better">LBRY, sevdiğiniz en az 5 içerik üreticisini takip ettiğinizde daha iyi çalışır. Eğer bir üyeliğiniz varsa takip ettiğiniz içerik üreticilerine onları takip ettiğinizi göstermek için giriş yapın.</string>
     <string name="select_five_subscriptions">Lütfen devam etmek için 5 içerik üreticisi seçin.</string>

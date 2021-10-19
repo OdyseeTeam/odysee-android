@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Trova canali da seguire</string>
-    <string name="channels_you_follow">Canali che segui</string>
     <string name="discover">Scopri</string>
     <string name="lbry_works_better">LBRY funziona meglio se segui almeno 5 editori che preferisci. Se hai un account, accedi per vedere gli editori che segui.</string>
     <string name="select_five_subscriptions">Per favore seleziona almeno 5 editori per continuare.</string>

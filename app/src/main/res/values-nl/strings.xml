@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Zoek kanalen om te volgen</string>
-    <string name="channels_you_follow">Kanalen die u volgt</string>
     <string name="discover">Ontdek</string>
     <string name="lbry_works_better">LBRY werkt beter als u minstens 5 makers volgt die u leuk vindt. Log in om videomakers te laten zien die u volgt als u al een account hebt.</string>
     <string name="select_five_subscriptions">Selecteer maximaal 5 makers om door te gaan.</string>

@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Găsire canale de urmărit</string>
-    <string name="channels_you_follow">Canale urmărite</string>
     <string name="discover">Descoperire</string>
     <string name="lbry_works_better">LBRY funcţionează mai bine dacă te abonezi la cel puţin 5 creatori de care îţi place. Dacă deja ai un cont, conectează-te pentru a vedea creatorii la care eşti abonat.</string>
     <string name="select_five_subscriptions">Selectează până la 5 creatori pentru a continua. Caută canalul „@lbryro” cu știri în română.</string>

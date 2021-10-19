@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Temukan Saluran untuk diikuti</string>
-    <string name="channels_you_follow">Saluran yang Anda ikuti</string>
     <string name="discover">Menemukan</string>
     <string name="lbry_works_better">LBRY berfungsi lebih baik jika Anda mengikuti setidaknya 5 kreator yang Anda suka. Masuk untuk menampilkan kreator yang Anda ikuti jika Anda sudah memiliki akun.</string>
     <string name="select_five_subscriptions">Silakan pilih hingga 5 kreator untuk melanjutkan.</string>

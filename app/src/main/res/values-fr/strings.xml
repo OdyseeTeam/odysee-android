@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Trouver des Chaînes  à suivre</string>
-    <string name="channels_you_follow">Chaînes que vous suivez</string>
     <string name="discover">Découvrir</string>
     <string name="lbry_works_better">LBRY fonctionne mieux si vous suivez au moins 5 créateurs que vous aimez. Connectez-vous pour montrer aux créateurs que vous suivez si vous avez déjà un compte.</string>
     <string name="select_five_subscriptions">S’il vous plaît sélectionner jusqu’à 5 créateurs pour continuer.</string>

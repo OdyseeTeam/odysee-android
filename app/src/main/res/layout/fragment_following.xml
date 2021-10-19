@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="@color/pageBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -28,13 +28,13 @@
             android:layout_marginBottom="6dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp">
-            <TextView
-                android:id="@+id/following_page_title"
+            <TextView android:id="@+id/find_following_page_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:fontFamily="@font/inter"
-                android:textSize="20sp"  />
+                android:textSize="20sp"
+                android:text="@string/find_channels_to_follow"/>
             <ProgressBar
                 android:id="@+id/following_channel_load_progress"
                 android:layout_width="16dp"
@@ -56,17 +56,46 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:visibility="gone">
-            <LinearLayout
-                android:id="@+id/following_sort_link"
+            android:visibility="gone"
+            tools:visibility="visible">
+            <LinearLayout android:id="@+id/filter_by_channel_link"
                 android:background="?attr/selectableItemBackground"
+                android:clickable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:clickable="true">
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:focusable="true">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:fontFamily="@font/inter"
+                    android:textFontWeight="300"
+                    android:textSize="14sp"
+                    android:text="@string/filter_by_channel" />
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_filter"
+                    app:tint="@color/foreground" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/following_sort_link"
+                android:layout_toEndOf="@id/filter_by_channel_link"
+                android:background="?attr/selectableItemBackground"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_centerVertical="true"
+                android:clickable="true"
+                android:focusable="true">
                 <TextView
                     android:id="@+id/following_sort_link_text"
                     android:layout_width="wrap_content"
@@ -74,7 +103,7 @@
                     android:layout_gravity="center_vertical"
                     android:fontFamily="@font/inter"
                     android:textFontWeight="300"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:text="@string/new_text" />
                 <ImageView
                     android:layout_width="16dp"
@@ -92,9 +121,11 @@
                 android:clickable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
+                android:layout_marginStart="8dp"
                 android:layout_centerVertical="true"
-                android:visibility="gone">
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:focusable="true">
                 <TextView
                     android:id="@+id/following_time_link_text"
                     android:layout_width="wrap_content"
@@ -102,7 +133,7 @@
                     android:layout_gravity="center_vertical"
                     android:fontFamily="@font/inter"
                     android:textFontWeight="300"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:text="@string/past_week" />
                 <ImageView
                     android:layout_width="16dp"
@@ -124,7 +155,8 @@
                 android:fontFamily="@font/inter"
                 android:textFontWeight="300"
                 android:textSize="12sp"
-                android:text="@string/discover" />
+                android:text="@string/discover"
+                android:focusable="true" />
         </RelativeLayout>
 
         <TextView
@@ -146,7 +178,10 @@
             android:clipToPadding="false"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:listitem="@layout/list_item_channel_filter"
+            tools:itemCount="2"/>
 
         <View
             android:id="@+id/following_divider"

@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">અનુસરવા માટે ચેનલો શોધો</string>
-    <string name="channels_you_follow">તમે અનુસરો છો તે ચેનલો</string>
     <string name="discover">શોધો</string>
     <string name="lbry_works_better">જો તમને ગમે તેવા ઓછામાં ઓછા 5 નિર્માતાઓનું પાલન કરો તો LBRY વધુ સારું કાર્ય કરે છે. જો તમારી પાસે પહેલેથી જ એકાઉન્ટ છે તો તમે અનુસરો છો તે સર્જકોને બતાવવા માટે સાઇન ઇન કરો.</string>
     <string name="select_five_subscriptions">કૃપા કરીને ચાલુ રાખવા માટે 5 નિર્માતાઓ પસંદ કરો.</string>

@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Vind Kanale om te volg</string>
-    <string name="channels_you_follow">Kanale wat u volg</string>
     <string name="discover">Vind</string>
     <string name="lbry_works_better">LBRY werk beter as u ten minste 5 skeppers volg waarvan u hou. Meld aan om skeppers wat u volg te wys as u reeds \'n account het.</string>
     <string name="select_five_subscriptions">Kies tot 5 skeppers om voort te gaan.</string>
