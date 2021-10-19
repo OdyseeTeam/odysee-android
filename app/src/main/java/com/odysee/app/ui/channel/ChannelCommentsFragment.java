@@ -1,5 +1,7 @@
 package com.odysee.app.ui.channel;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -507,7 +509,10 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         Comment comment = buildPostComment();
 
         beforePostComment();
-        CommentCreateTask task = new CommentCreateTask(comment, progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
+        AccountManager am = AccountManager.get(getContext());
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+
+        CommentCreateTask task = new CommentCreateTask(comment, am.peekAuthToken(odyseeAccount, "auth_token_type"), progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
             @Override
             public void onSuccess(Comment createdComment) {
                 inputComment.setText(null);
