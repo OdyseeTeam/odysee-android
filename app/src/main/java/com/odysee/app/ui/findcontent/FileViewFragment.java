@@ -2064,8 +2064,10 @@ public class FileViewFragment extends BaseFragment implements
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    likeReactionAmount.setText(String.valueOf(reactions.getOthersLikes()));
-                    dislikeReactionAmount.setText(String.valueOf(reactions.getOthersDislikes()));
+                    int likes = reactions.isLiked() ? reactions.getOthersLikes() + 1 : reactions.getOthersLikes();
+                    int dislikes = reactions.isDisliked() ? reactions.getOthersDislikes() + 1 : reactions.getOthersDislikes();
+                    likeReactionAmount.setText(String.valueOf(likes));
+                    dislikeReactionAmount.setText(String.valueOf(dislikes));
 
                     int inactiveColor = 0;
                     int fireActive = 0;
