@@ -57,7 +57,6 @@
     <string name="download">डाउनलोड</string>
     <string name="open">खोलें</string>
     <string name="report">रिपोर्ट</string>
-    <string name="loading_decentralized_data">विकेन्द्रीकृत डेटा लोड हो रहा है ...</string>
     <string name="related_content">संबंधित सामग्री</string>
     <string name="comments">टिप्पणियां</string>
     <string name="no_comments">इस समय प्रदर्शित करने के लिए कोई कमेंट्स नहीं हैं।</string>

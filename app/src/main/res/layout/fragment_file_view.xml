@@ -27,7 +27,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:fontFamily="@font/inter"
-                android:text="@string/loading_decentralized_data"
+                android:text="@string/loading_content"
                 android:textSize="16sp"
                 android:textFontWeight="300" />
         </LinearLayout>
