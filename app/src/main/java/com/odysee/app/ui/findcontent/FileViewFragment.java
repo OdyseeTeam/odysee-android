@@ -194,8 +194,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import static java.util.stream.Collectors.groupingBy;
-
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
         DownloadActionListener,
@@ -839,6 +837,10 @@ public class FileViewFragment extends BaseFragment implements
 
         // Tasks on the scheduled executor needs to be really terminated to avoid
         // crashes if user presses back after going to a related content from here
+        purgeLoadingReactionsTask();
+    }
+
+    private void purgeLoadingReactionsTask() {
         if (scheduledExecutor != null && !scheduledExecutor.isShutdown() && futureReactions != null) {
             try {
                 // .cancel() will not remove the task, so it is needed to .purge()
@@ -3798,6 +3800,8 @@ public class FileViewFragment extends BaseFragment implements
 
     private void react(Claim claim, boolean like) {
         Runnable runnable = () -> {
+            purgeLoadingReactionsTask();
+
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
@@ -3807,9 +3811,17 @@ public class FileViewFragment extends BaseFragment implements
                 options.put("remove", "true");
 
             try {
-                Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext());
-            } catch (LbryioRequestException | LbryioResponseException e) {
+                JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
+
+                if (jsonResponse != null && jsonResponse.has(claim.getClaimId())) {
+                    reactions.setLiked(jsonResponse.getJSONObject(claim.getClaimId()).has("like") && !reactions.isLiked());
+                    reactions.setDisliked(jsonResponse.getJSONObject(claim.getClaimId()).has("dislike") && !reactions.isDisliked());
+                    updateContentReactions();
+                }
+            } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
                 e.printStackTrace();
+            } finally {
+                loadReactions(claim);
             }
         };
 
