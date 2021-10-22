@@ -124,6 +124,11 @@ public class Claim {
         return fee == null || Helper.parseDouble(fee.getAmount(), 0) == 0;
     }
 
+    /**
+     * Calculates price of claim in LBC once it is converted from USD
+     * @param usdRate LBC/USD rate
+     * @return
+     */
     public BigDecimal getActualCost(double usdRate) {
         if (!(value instanceof StreamMetadata)) {
             return new BigDecimal(0);

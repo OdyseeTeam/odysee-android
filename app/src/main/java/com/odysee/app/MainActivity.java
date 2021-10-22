@@ -3246,7 +3246,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Lbryio.updateRewardsLists(rewards);
 
                 if (Lbryio.totalUnclaimedRewardAmount > 0) {
-                    updateRewardsUsdVale();
+                    updateRewardsUsdValue();
                 }
             }
 
@@ -3257,7 +3257,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    public void updateRewardsUsdVale() {
+    public void updateRewardsUsdValue() {
         if (Lbryio.totalUnclaimedRewardAmount > 0) {
             double usdRewardAmount = Lbryio.totalUnclaimedRewardAmount * Lbryio.LBCUSDRate;
         }
