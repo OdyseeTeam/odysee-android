@@ -2123,11 +2123,15 @@ public class FileViewFragment extends BaseFragment implements
                 jsonParams.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
                 jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
-                JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
+                try {
+                    JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
 
-                if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                    jsonParams.put("signature", jsonChannelSign.getString("signature"));
-                    jsonParams.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                    if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                        jsonParams.put("signature", jsonChannelSign.getString("signature"));
+                        jsonParams.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                    }
+                } catch (ApiCallException | JSONException e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -2165,7 +2169,6 @@ public class FileViewFragment extends BaseFragment implements
                     }
                 }
             } catch (IOException e) {
-                Log.e("LoadingReactions", e.toString());
                 e.printStackTrace();
             }
             return result;
@@ -2703,15 +2706,45 @@ public class FileViewFragment extends BaseFragment implements
 
     private void loadComments() {
         View root = getView();
-        ProgressBar commentsLoading = root.findViewById(R.id.file_view_comments_progress);
-        if (claim != null) {
+        if (root != null && claim != null) {
+            ProgressBar commentsLoading = root.findViewById(R.id.file_view_comments_progress);
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
-                    Map<String, Reactions> commentReactions = loadReactions(comments);
-                    if (commentReactions != null) {
-                        for (Comment c: comments) {
+                    if (!comments.isEmpty()) {
+                        // Load and process comments reactions on a different thread so main thread is not blocked
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Map<String, Reactions> commentReactions = loadReactions(comments);
+                                Activity activity = getActivity();
+                                if (activity != null) {
+                                    activity.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            processCommentReactions(comments, commentReactions);
+                                        }
+                                    });
+                                }
+                            }
+                        }).start();
+                    }
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    if (error != null) {
+                        error.printStackTrace();
+                    }
+                    checkNoComments();
+                }
+
+                private void processCommentReactions(List<Comment> comments, Map<String, Reactions> commentReactions) {
+                    for (Comment c: comments) {
+                        if (commentReactions != null) {
                             c.setReactions(commentReactions.get(c.getId()));
+                        } else {
+                            c.setReactions(new Reactions(0, 0, false, false));
                         }
                     }
 
@@ -2725,14 +2758,16 @@ public class FileViewFragment extends BaseFragment implements
 
                     // Now we have level 0 comments to content
 
-                    Collections.sort(rootComments, new Comparator<Comment>() {
-                        @Override
-                        public int compare(Comment o1, Comment o2) {
-                            int o1SelfLiked = (Lbryio.isSignedIn() &&  o1.getReactions().isLiked()) ? 1 : 0;
-                            int o2SelfLiked = (Lbryio.isSignedIn() && o2.getReactions().isLiked()) ? 1 : 0;
-                            return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
-                        }
-                    });
+                    if (commentReactions != null) {
+                        Collections.sort(rootComments, new Comparator<Comment>() {
+                            @Override
+                            public int compare(Comment o1, Comment o2) {
+                                int o1SelfLiked = (Lbryio.isSignedIn() &&  o1.getReactions() != null && o1.getReactions().isLiked()) ? 1 : 0;
+                                int o2SelfLiked = (Lbryio.isSignedIn() && o2.getReactions() != null && o2.getReactions().isLiked()) ? 1 : 0;
+                                return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
+                            }
+                        });
+                    }
 
                     // Direct comments are now sorted by their amount of likes. We can now pick the
                     // one to be displayed as the collapsed single comment.
@@ -2828,14 +2863,7 @@ public class FileViewFragment extends BaseFragment implements
                         checkNoComments();
                         resolveCommentPosters();
                     }
-                }
 
-                @Override
-                public void onError(Exception error) {
-                    if (error != null) {
-                        error.printStackTrace();
-                    }
-                    checkNoComments();
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
