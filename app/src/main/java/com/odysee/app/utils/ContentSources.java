@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import lombok.Data;
@@ -95,7 +94,7 @@ public final class ContentSources {
                              return;
                          }
                      } catch (JsonSyntaxException ex) {
-                         // pass
+                         ex.printStackTrace();
                      }
                  }
 
@@ -160,6 +159,25 @@ public final class ContentSources {
                         handler.onCategoriesLoaded(new ArrayList<>());
                     }
                     return;
+                }
+
+                if (loadedCategories.size() == 0 && handler != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    String cachedJsonString = sp.getString(CACHE_KEY, null);
+
+                    if (!Helper.isNullOrEmpty(cachedJsonString)) {
+                        Gson gson = new Gson();
+                        Type type = new TypeToken<ContentSourceCache>(){}.getType();
+                        try {
+                            ContentSourceCache cache = gson.fromJson(cachedJsonString, type);
+                            Log.d(TAG, "Using cached categories");
+                            DYNAMIC_CONTENT_CATEGORIES = new ArrayList<>(cache.getCategories());
+                            handler.onCategoriesLoaded(cache.getCategories());
+                        } catch (JsonSyntaxException exc) {
+                            exc.printStackTrace();
+                        }
+                        return;
+                    }
                 }
 
                 Collections.sort(loadedCategories, new Comparator<Category>() {
