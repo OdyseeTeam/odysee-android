@@ -143,8 +143,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     public void addReply(Comment comment) {
         Comment c = items.stream().filter(v -> comment.getParentId().equalsIgnoreCase(v.getId())).findFirst().orElse(null);
 
-        if (comment != null) {
-            items.add(items.indexOf(c) + 1, c);
+        if (c != null) {
+            int positionToInsert = items.indexOf(c) + 1;
+            items.add(positionToInsert, comment);
+            notifyItemInserted(positionToInsert);
         }
     }
 
