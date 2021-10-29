@@ -3665,6 +3665,7 @@ public class FileViewFragment extends BaseFragment implements
                 }
                 afterPostComment();
                 checkNoComments();
+                singleCommentRoot.setVisibility(View.GONE);
 
                 Bundle bundle = new Bundle();
                 bundle.putString("claim_id", claim != null ? claim.getClaimId() : null);
