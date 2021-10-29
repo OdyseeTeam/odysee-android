@@ -336,7 +336,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
     public void switchExpandedState() {
         collapsed = !collapsed;
-        notifyDataSetChanged();
+        notifyItemRangeChanged(0, items.size());
     }
 
     /**
