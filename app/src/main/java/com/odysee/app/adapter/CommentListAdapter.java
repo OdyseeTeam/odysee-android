@@ -38,7 +38,6 @@ import lombok.Setter;
 public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.ViewHolder> {
     protected final List<Comment> items;
     private final Context context;
-    private float scale;
     @Setter
     private ClaimListAdapter.ClaimListItemListener listener;
     @Setter
@@ -50,16 +49,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     private List<String> childsToBeShown;
 
     public CommentListAdapter(List<Comment> items, Context context) {
-        this(items, context, false);
-    }
-
-    public CommentListAdapter(List<Comment> items, Context context, boolean nested) {
         this.items = new ArrayList<>(items);
         this.childsToBeShown= new ArrayList<>();
         this.context = context;
-        if (context != null) {
-            scale = context.getResources().getDisplayMetrics().density;
-        }
+
         for (Comment item : this.items) {
             ClaimCacheKey key = new ClaimCacheKey();
             key.setClaimId(item.getChannelId());
