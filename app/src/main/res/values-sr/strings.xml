@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Pronađi kanale  za praćenje</string>
-    <string name="channels_you_follow">Kanali koje pratite</string>
     <string name="discover">Otkrij</string>
     <string name="lbry_works_better">LBRY radi bolje ako pratite bar 5 ili više kreatora koji vam se se dopadaju. Prijavite se da bi vam kreatori koje pratite bili prikazani ukoliko već posedujete nalog.</string>
     <string name="select_five_subscriptions">Molimo vas odaberite do 5 kreatora da bi nastavili.</string>

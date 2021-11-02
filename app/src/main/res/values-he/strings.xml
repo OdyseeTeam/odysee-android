@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">מצא ערוצים למעקב</string>
-    <string name="channels_you_follow">ערוצים במעקב</string>
     <string name="discover">עיון</string>
     <string name="lbry_works_better">‏‪LBRY‬ עובדת בצורה טובה יותר אם אתה עוקב אחר לפחות 5 יוצרים שאתה אוהב. בצע כניסה כדי לראות את היוצרים שאתה עוקב אחריהם אם ברשותך חשבון קיים.</string>
     <string name="select_five_subscriptions">אנא בחר עד כ-5 יוצרים כדי להמשיך.</string>

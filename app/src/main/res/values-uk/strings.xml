@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Знайдіть канали для підписки</string>
-    <string name="channels_you_follow">Підписки</string>
     <string name="discover">Знайти нове</string>
     <string name="lbry_works_better">LBRY працює краще, якщо ви стежите за принаймні 5 авторами, які вам подобаються. Увійдіть, щоб підтримати авторів, на яких ви підписані, якщо у вас вже є обліковий запис.</string>
     <string name="select_five_subscriptions">Будь ласка, оберіть 5 каналів, щоби продовжити. </string>

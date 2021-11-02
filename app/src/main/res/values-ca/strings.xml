@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Troba canals per seguir</string>
-    <string name="channels_you_follow">Canals que segueixes</string>
     <string name="discover">Descobreix</string>
     <string name="lbry_works_better">LBRY funciona millor si segueixes almenys 5 creadors que t\'agradin. Inicia la sessió per mostrar els creadors que segueixes si ja tens un compte.</string>
     <string name="select_five_subscriptions">Sisplau, selecciona fins a 5 creadors per continuar.</string>

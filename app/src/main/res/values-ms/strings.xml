@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Cari Saluran untuk mengikuti</string>
-    <string name="channels_you_follow">Saluran-saluran yang anda ikuti</string>
     <string name="discover">Teroka</string>
     <string name="lbry_works_better">LBRY berfungsi dengan lebih baik jika anda mengikuti sekurang-kurangnya 5 kreator yang anda suka. Masuk untuk melihat kreator yang anda ikuti jika anda sudah mempunyai akaun.</string>
     <string name="select_five_subscriptions">Sila pilih sehingga 5 kreator untuk mara.</string>

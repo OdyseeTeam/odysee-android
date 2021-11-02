@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">找尋想跟隨的頻道</string>
-    <string name="channels_you_follow">跟隨中的頻道</string>
     <string name="discover">發掘</string>
     <string name="lbry_works_better">LBRY在你跟隨五位或以上創作者後能提供更好的使用體驗。\n如已有帳號需登入方能顯示跟隨中的創作者。</string>
     <string name="select_five_subscriptions">請選擇最多五位創作者以繼續。</string>

@@ -35,7 +35,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">फॉलो करने के लिए चैनल्स को खोजें</string>
-    <string name="channels_you_follow">आपके द्वारा फॉलो किए गए चैनलस</string>
     <string name="discover">खोजना</string>
     <string name="lbry_works_better">लाइब्रेरी का पूर्ण आनंद लेने के लिए कम से कम 5 क्रिएटर्स को फॉलो करें। अगर आपके पास पहले से ही लाइब्रेरी अकाउंट है तो फॉलो किए हुए क्रिएटर्स को देखने के लिए साइन इन करें।</string>
     <string name="select_five_subscriptions">आगे बढ़ने के लिए कृपया 5 रचनाकारों को चुने</string>

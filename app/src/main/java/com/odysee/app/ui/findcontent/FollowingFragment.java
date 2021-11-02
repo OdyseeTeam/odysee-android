@@ -79,6 +79,7 @@ public class FollowingFragment extends BaseFragment implements
     private ProgressBar contentLoading;
     private ProgressBar channelListLoading;
     private View layoutSortContainer;
+    private View filterLink;
     private View sortLink;
     private TextView sortLinkText;
     private View contentFromLink;
@@ -125,12 +126,13 @@ public class FollowingFragment extends BaseFragment implements
         currentSortBy = ContentSortDialogFragment.ITEM_SORT_BY_NEW;
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
 
-        titleView = root.findViewById(R.id.following_page_title);
+        titleView = root.findViewById(R.id.find_following_page_title);
         infoView = root.findViewById(R.id.following_page_info);
         horizontalChannelList = root.findViewById(R.id.following_channel_list);
         layoutSortContainer = root.findViewById(R.id.following_filter_container);
         sortLink = root.findViewById(R.id.following_sort_link);
         sortLinkText = root.findViewById(R.id.following_sort_link_text);
+        filterLink = root.findViewById(R.id.filter_by_channel_link);
         contentFromLink = root.findViewById(R.id.following_time_link);
         contentFromLinkText = root.findViewById(R.id.following_time_link_text);
         suggestedChannelGrid = root.findViewById(R.id.following_suggested_grid);
@@ -210,6 +212,12 @@ public class FollowingFragment extends BaseFragment implements
             }
         });
 
+        filterLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Helper.setViewVisibility(horizontalChannelList, horizontalChannelList.getVisibility() == View.VISIBLE ? View.GONE: View.VISIBLE);
+            }
+        });
         sortLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -461,8 +469,7 @@ public class FollowingFragment extends BaseFragment implements
     }
 
     private void showSuggestedChannels() {
-        Helper.setViewText(titleView, R.string.find_channels_to_follow);
-
+        Helper.setViewVisibility(titleView, View.VISIBLE);
         Helper.setViewVisibility(horizontalChannelList, View.GONE);
         Helper.setViewVisibility(contentList, View.GONE);
         Helper.setViewVisibility(infoView, View.VISIBLE);
@@ -475,12 +482,12 @@ public class FollowingFragment extends BaseFragment implements
 
     private void showSubscribedContent() {
         subscriptionsShown = true;
-        Helper.setViewText(titleView, R.string.channels_you_follow);
 
-        Helper.setViewVisibility(horizontalChannelList, View.VISIBLE);
+        Helper.setViewVisibility(titleView, View.GONE);
         Helper.setViewVisibility(contentList, View.VISIBLE);
         Helper.setViewVisibility(infoView, View.GONE);
         Helper.setViewVisibility(layoutSortContainer, View.VISIBLE);
+        Helper.setViewVisibility(filterLink, View.VISIBLE);
         Helper.setViewVisibility(suggestedChannelGrid, View.GONE);
         Helper.setViewVisibility(suggestedDoneButton, View.GONE);
     }

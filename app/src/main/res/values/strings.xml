@@ -48,7 +48,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Find Channels to follow</string>
-    <string name="channels_you_follow">Channels you follow</string>
     <string name="discover">Discover</string>
     <string name="lbry_works_better">LBRY works better if you follow at least 5 creators you like. Sign in to show creators you follow if you already have an account.</string>
     <string name="select_five_subscriptions">Please select up to 5 creators to continue.</string>
@@ -393,6 +392,7 @@
     <string name="past_month">Past month</string>
     <string name="past_year">Past year</string>
     <string name="all_time">All time</string>
+    <string name="filter_by_channel">Filter</string>
     <string name="from">from</string>
     <string name="for_text">for</string>
     <string name="filter_for">Filter for</string>

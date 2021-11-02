@@ -34,7 +34,6 @@
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Finde Kanäle, denen Sie folgen können</string>
-    <string name="channels_you_follow">Kanäle denen Sie folgen</string>
     <string name="discover">Entdecke</string>
     <string name="lbry_works_better">LBRY funktioniert besser, wenn Sie mindestens 5 Erstellern folgen, die Sie mögen. Melden Sie sich an, um den Erstellern zu zeigen, denen Sie folgen, wenn Sie bereits ein Account haben.</string>
     <string name="select_five_subscriptions">Bitte wähle bis zu 5 Kanäle aus, um fortzufahren.</string>
