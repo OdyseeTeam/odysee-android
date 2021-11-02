@@ -14,6 +14,7 @@ import com.odysee.app.model.Comment;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
     private final Comment comment;
@@ -39,6 +40,7 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
 
     public Comment doInBackground(Void... params) {
         Comment createdComment = null;
+        ResponseBody responseBody = null;
         try {
             // check comments status endpoint
             Comments.checkCommentsEndpointStatus();
@@ -51,8 +53,9 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
             }
             comment_body.put("channel_id", comment.getChannelId());
             comment_body.put("channel_name", comment.getChannelName());
-            if (authToken != null)
+            if (authToken != null) {
                 comment_body.put("auth_token", authToken);
+            }
 
             JSONObject jsonChannelSign = Comments.channelSign(comment_body, comment.getChannelId(), comment.getChannelName());
 
@@ -62,14 +65,21 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
             }
 
             Response resp = Comments.performRequest(comment_body, "comment.Create");
-            String responseString = Objects.requireNonNull(resp.body()).string();
-            resp.close();
-            JSONObject jsonResponse = new JSONObject(responseString);
+            responseBody = resp.body();
+            if (responseBody != null) {
+                String responseString = responseBody.string();
+                resp.close();
+                JSONObject jsonResponse = new JSONObject(responseString);
 
-            if (jsonResponse.has("result"))
-                createdComment = Comment.fromJSONObject(jsonResponse.getJSONObject("result"));
+                if (jsonResponse.has("result"))
+                    createdComment = Comment.fromJSONObject(jsonResponse.getJSONObject("result"));
+            }
         } catch (ApiCallException | ClassCastException | IOException | JSONException ex) {
             error = ex;
+        } finally {
+            if (responseBody != null) {
+                responseBody.close();
+            }
         }
 
         return createdComment;

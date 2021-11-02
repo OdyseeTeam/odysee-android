@@ -18,6 +18,7 @@ import com.odysee.app.model.UrlSuggestion;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class Lighthouse {
     public static final String CONNECTION_STRING = "https://lighthouse.lbry.com";
@@ -57,13 +58,18 @@ public class Lighthouse {
         List<Claim> results = new ArrayList<>();
         Request request = new Request.Builder().url(uriBuilder.toString()).build();
         OkHttpClient client = new OkHttpClient();
+        ResponseBody responseBody = null;
+        Response response = null;
         try {
-            Response response = client.newCall(request).execute();
+            response = client.newCall(request).execute();
             if (response.code() == 200) {
-                JSONArray array = new JSONArray(response.body().string());
-                for (int i = 0; i < array.length(); i++) {
-                    Claim claim = Claim.fromSearchJSONObject(array.getJSONObject(i));
-                    results.add(claim);
+                responseBody = response.body();
+                if (responseBody != null) {
+                    JSONArray array = new JSONArray(responseBody.string());
+                    for (int i = 0; i < array.length(); i++) {
+                        Claim claim = Claim.fromSearchJSONObject(array.getJSONObject(i));
+                        results.add(claim);
+                    }
                 }
                 searchCache.put(cacheKey, results);
             } else {
@@ -73,6 +79,10 @@ public class Lighthouse {
             throw new LbryRequestException(String.format("search request for '%s' failed", rawQuery), ex);
         } catch (JSONException ex) {
             throw new LbryResponseException(String.format("the search response for '%s' could not be parsed", rawQuery), ex);
+        } finally {
+            if (responseBody != null) {
+                response.close();
+            }
         }
 
         return results;
@@ -88,22 +98,27 @@ public class Lighthouse {
                 appendQueryParameter("s", text);
         Request request = new Request.Builder().url(uriBuilder.toString()).build();
         OkHttpClient client = new OkHttpClient();
+        Response response = null;
+        ResponseBody responseBody = null;
         try {
-            Response response = client.newCall(request).execute();
+            response = client.newCall(request).execute();
             if (response.code() == 200) {
-                JSONArray array = new JSONArray(response.body().string());
-                for (int i = 0; i < array.length(); i++) {
-                    String item = array.getString(i);
-                    boolean isChannel = item.startsWith("@");
-                    LbryUri uri = new LbryUri();
-                    if (isChannel) {
-                        uri.setChannelName(item);
-                    } else {
-                        uri.setStreamName(item);
+                responseBody = response.body();
+                if (responseBody != null) {
+                    JSONArray array = new JSONArray(responseBody.string());
+                    for (int i = 0; i < array.length(); i++) {
+                        String item = array.getString(i);
+                        boolean isChannel = item.startsWith("@");
+                        LbryUri uri = new LbryUri();
+                        if (isChannel) {
+                            uri.setChannelName(item);
+                        } else {
+                            uri.setStreamName(item);
+                        }
+                        UrlSuggestion suggestion = new UrlSuggestion(isChannel ? UrlSuggestion.TYPE_CHANNEL : UrlSuggestion.TYPE_FILE, item);
+                        suggestion.setUri(uri);
+                        suggestions.add(suggestion);
                     }
-                    UrlSuggestion suggestion = new UrlSuggestion(isChannel ? UrlSuggestion.TYPE_CHANNEL : UrlSuggestion.TYPE_FILE, item);
-                    suggestion.setUri(uri);
-                    suggestions.add(suggestion);
                 }
 
                 autocompleteCache.put(text, suggestions);
@@ -114,6 +129,10 @@ public class Lighthouse {
             throw new LbryRequestException(String.format("autocomplete request for '%s' failed", text), ex);
         } catch (JSONException ex) {
             throw new LbryResponseException(String.format("the autocomplete response for '%s' could not be parsed", text), ex);
+        } finally {
+            if(responseBody != null) {
+                response.close();
+            }
         }
 
         return suggestions;

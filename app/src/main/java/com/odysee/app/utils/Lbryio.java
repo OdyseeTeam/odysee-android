@@ -47,6 +47,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 @Data
 public final class Lbryio {
@@ -207,28 +208,32 @@ public final class Lbryio {
 
     public static Object parseResponse(Response response) throws LbryioResponseException {
         String responseString = null;
-        try {
-            responseString = response.body().string();
-            if (!isValidJSON(responseString)) {
-                return responseString;
-            }
-
-            JSONObject json = new JSONObject(responseString);
-            if (response.code() >= 200 && response.code() < 300) {
-                if (json.isNull("data")) {
-                    return null;
-                }
-                return json.get("data");
-            }
-
-            if (json.has("error")) {
-                if (json.isNull("error")) {
-                    throw new LbryioResponseException("No error message", response.code());
+        try (ResponseBody responseBody = response.body()) {
+            if (responseBody != null) {
+                responseString = responseBody.string();
+                if (!isValidJSON(responseString)) {
+                    return responseString;
                 }
 
-                throw new LbryioResponseException(json.getString("error"), response.code());
+                JSONObject json = new JSONObject(responseString);
+                if (response.code() >= 200 && response.code() < 300) {
+                    if (json.isNull("data")) {
+                        return null;
+                    }
+                    return json.get("data");
+                }
+
+                if (json.has("error")) {
+                    if (json.isNull("error")) {
+                        throw new LbryioResponseException("No error message", response.code());
+                    }
+
+                    throw new LbryioResponseException(json.getString("error"), response.code());
+                } else {
+                    throw new LbryioResponseException("Unknown API error signature.", response.code());
+                }
             } else {
-                throw new LbryioResponseException("Unknown API error signature.", response.code());
+                return null;
             }
         } catch (JSONException | IOException ex) {
             throw new LbryioResponseException(String.format("Could not parse response: %s", responseString), ex);

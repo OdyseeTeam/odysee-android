@@ -57,8 +57,9 @@ public class BufferEventTask extends AsyncTask<Void, Void, Void> {
             ResponseBody resBody = response.body();
             String responseString = "";
             if (resBody != null) {
-                responseString = response.body().string();
+                responseString = resBody.string();
             }
+            response.close();
             Log.d(TAG, String.format("buffer event sent: %s", responseString));
         } catch (Exception ex) {
             // we don't want to fail if a buffer event fails to register

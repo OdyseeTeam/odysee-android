@@ -46,13 +46,14 @@ public class ReactToCommentSupplier implements Supplier<Boolean> {
         }
 
         JSONObject data = null;
+        okhttp3.Response response = null;
         try {
             if (am.getAccounts().length > 0) {
-                okhttp3.Response response = Comments.performRequest(options, "reaction.React");
+                response = Comments.performRequest(options, "reaction.React");
 
                 ResponseBody responseBody = response.body();
 
-                if (responseBody!= null) {
+                if (responseBody != null) {
                     JSONObject jsonResponse = new JSONObject(responseBody.string());
 
                     if (jsonResponse.has("result")) {
@@ -65,6 +66,10 @@ public class ReactToCommentSupplier implements Supplier<Boolean> {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (response != null) {
+                response.close();
+            }
         }
         return data != null && !data.has("error");
     }
