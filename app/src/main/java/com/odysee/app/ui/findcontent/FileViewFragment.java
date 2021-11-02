@@ -483,6 +483,8 @@ public class FileViewFragment extends BaseFragment implements
                 resetFee();
                 checkNewClaimAndUrl(newClaim, newUrl);
 
+                claim = null;
+
                 if (newClaim != null) {
                     claim = newClaim;
                 }
@@ -2613,8 +2615,7 @@ public class FileViewFragment extends BaseFragment implements
                                         if (claim.getName().startsWith("@")) {
                                             activity.openChannelClaim(claim);
                                         } else {
-                                            Map<String, Object> params = new HashMap<>();
-                                            params.put("claimId", claim.getClaimId());
+                                            Map<String, Object> params = new HashMap<>(1);
                                             params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
 
                                             setParams(params);
