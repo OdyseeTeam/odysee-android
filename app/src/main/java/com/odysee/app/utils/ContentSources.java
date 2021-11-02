@@ -15,6 +15,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,13 +24,13 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import lombok.Data;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public final class ContentSources {
     private static final String TAG = "OdyseeContent";
@@ -95,7 +96,7 @@ public final class ContentSources {
                              return;
                          }
                      } catch (JsonSyntaxException ex) {
-                         // pass
+                         ex.printStackTrace();
                      }
                  }
 
@@ -116,41 +117,32 @@ public final class ContentSources {
 
                 Request request = new Request.Builder().url(ENDPOINT).build();
                 OkHttpClient client = new OkHttpClient.Builder().build();
+                ResponseBody responseBody = null;
                 try {
                     Response response = client.newCall(request).execute();
-                    String jsonString = response.body().string();
-                    JSONObject json = new JSONObject(jsonString);
+                    responseBody = response.body();
 
-                    if (!json.isNull("data")) {
-                        JSONObject data = json.getJSONObject("data");
-                        String langCode = Locale.getDefault().getLanguage();
-                        String regionCode = Locale.getDefault().getCountry();
-                        Log.d(TAG, "LangCode=" + langCode + ";RegionCode=" + regionCode);
-                        String langKey = langCode;
-                        if (!LANG_CODE_EN.equals(langCode) && REGION_CODE_BR.equals(regionCode)) {
-                            langKey = String.format("%s-%s", langCode, regionCode);
-                        }
+                    if (responseBody != null) {
+                        String jsonString = responseBody.string();
+                        JSONObject json = new JSONObject(jsonString);
 
-                        JSONObject langData = data.has(langKey) ? Helper.getJSONObject(langKey, data) : Helper.getJSONObject(LANG_CODE_EN, data);
-                        if (langData != null) {
-                            Iterator<String> keys = langData.keys();
-                            while (keys.hasNext()) {
-                                String key = keys.next();
-                                JSONObject srcJson = Helper.getJSONObject(key, langData);
-                                if (srcJson != null) {
-                                    Category category = new Category();
-                                    category.setKey(key);
-                                    category.setSortOrder(Helper.getJSONInt("sortOrder", 1, srcJson));
-                                    category.setName(Helper.getJSONString("name", null, srcJson));
-                                    category.setLabel(Helper.getJSONString("label", null, srcJson));
+                        if (!json.isNull("data") && !json.getJSONObject("data").toString().equals("{}")) {
+                            JSONObject data = json.getJSONObject("data");
+                            loadedCategories = processJSONdata(data);
+                        } else {
+                            // Load default categories from APK assets
+                            try {
+                                String string;
+                                InputStream inputStream = context.getAssets().open("default_categories.json");
+                                int size = inputStream.available();
+                                byte[] buffer = new byte[size];
+                                //noinspection ResultOfMethodCallIgnored
+                                inputStream.read(buffer);
+                                string = new String(buffer);
 
-                                    List<String> channelIdList = Helper.getJsonStringArrayAsList("channelIds", srcJson);
-                                    category.setChannelIds(channelIdList.toArray(new String[channelIdList.size()]));
-
-                                    if (category.isValid()) {
-                                        loadedCategories.add(category);
-                                    }
-                                }
+                                loadedCategories = processJSONdata(new JSONObject(string));
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -160,6 +152,29 @@ public final class ContentSources {
                         handler.onCategoriesLoaded(new ArrayList<>());
                     }
                     return;
+                } finally {
+                    if (responseBody != null) {
+                        responseBody.close();
+                    }
+                }
+
+                if (loadedCategories.size() == 0 && handler != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    String cachedJsonString = sp.getString(CACHE_KEY, null);
+
+                    if (!Helper.isNullOrEmpty(cachedJsonString)) {
+                        Gson gson = new Gson();
+                        Type type = new TypeToken<ContentSourceCache>(){}.getType();
+                        try {
+                            ContentSourceCache cache = gson.fromJson(cachedJsonString, type);
+                            Log.d(TAG, "Using cached categories");
+                            DYNAMIC_CONTENT_CATEGORIES = new ArrayList<>(cache.getCategories());
+                            handler.onCategoriesLoaded(cache.getCategories());
+                        } catch (JsonSyntaxException exc) {
+                            exc.printStackTrace();
+                        }
+                        return;
+                    }
                 }
 
                 Collections.sort(loadedCategories, new Comparator<Category>() {
@@ -189,6 +204,41 @@ public final class ContentSources {
                 if (handler != null) {
                     handler.onCategoriesLoaded(loadedCategories);
                 }
+            }
+
+            private List<Category> processJSONdata(JSONObject data) {
+                List<Category> lc = new ArrayList<>();
+                String langCode = Locale.getDefault().getLanguage();
+                String regionCode = Locale.getDefault().getCountry();
+                Log.d(TAG, "LangCode=" + langCode + ";RegionCode=" + regionCode);
+                String langKey = langCode;
+                if (!LANG_CODE_EN.equals(langCode) && REGION_CODE_BR.equals(regionCode)) {
+                    langKey = String.format("%s-%s", langCode, regionCode);
+                }
+
+                JSONObject langData = data.has(langKey) ? Helper.getJSONObject(langKey, data) : Helper.getJSONObject(LANG_CODE_EN, data);
+                if (langData != null) {
+                    Iterator<String> keys = langData.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        JSONObject srcJson = Helper.getJSONObject(key, langData);
+                        if (srcJson != null) {
+                            Category category = new Category();
+                            category.setKey(key);
+                            category.setSortOrder(Helper.getJSONInt("sortOrder", 1, srcJson));
+                            category.setName(Helper.getJSONString("name", null, srcJson));
+                            category.setLabel(Helper.getJSONString("label", null, srcJson));
+
+                            List<String> channelIdList = Helper.getJsonStringArrayAsList("channelIds", srcJson);
+                            category.setChannelIds(channelIdList.toArray(new String[channelIdList.size()]));
+
+                            if (category.isValid()) {
+                                lc.add(category);
+                            }
+                        }
+                    }
+                }
+                return lc;
             }
         });
     }
