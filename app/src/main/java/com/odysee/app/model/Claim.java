@@ -211,7 +211,7 @@ public class Claim {
      * @return URL from the CDN from where image can be retrieved
      */
     public String getThumbnailUrl(int width, int height, int q) {
-        if (value != null && value.getThumbnail() != null) {
+        if (value != null && value.getThumbnail() != null && !Helper.isNullOrEmpty(value.getThumbnail().getUrl())) {
             ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Math.max(width, 0), Math.max(height, 0), q, null, value.getThumbnail().getUrl());
             return imageCDNUrl.toString();
         }
