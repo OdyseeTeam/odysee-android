@@ -1144,7 +1144,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!inFullscreenMode) {
             showActionBar();
         } else {
-            findViewById(R.id.app_bar_main_container).setFitsSystemWindows(false);
+            View v = findViewById(R.id.appbar);
+            if (v != null) {
+                v.setFitsSystemWindows(false);
+            }
         }
 
         findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
