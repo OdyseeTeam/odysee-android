@@ -15,7 +15,8 @@ public class LbryNotification implements Comparator<LbryNotification> {
     private long remoteId;
     private String title;
     private String description;
-    private String thumbnailUrl;
+    private String claimThumbnailUrl;
+    private String authorThumbnailUrl;
     private String rule;
     private String targetUrl;
     private boolean read;
@@ -23,7 +24,6 @@ public class LbryNotification implements Comparator<LbryNotification> {
     private Date timestamp;
 
     // only for comment notifications
-    private String authorUrl;
     private Claim commentAuthor;
 
     public int compare(LbryNotification a, LbryNotification b) {
