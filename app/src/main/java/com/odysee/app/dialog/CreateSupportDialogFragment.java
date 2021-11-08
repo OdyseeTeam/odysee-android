@@ -1,9 +1,12 @@
 package com.odysee.app.dialog;
 
+import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -25,19 +28,31 @@ import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.WalletBalance;
-import com.odysee.app.tasks.GenericTaskHandler;
+import com.odysee.app.supplier.SupportCreateSupplier;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
-import com.odysee.app.tasks.wallet.SupportCreateTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 
@@ -182,30 +197,89 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
                 Claim selectedChannel = (Claim) channelSpinner.getSelectedItem();
                 String channelId = !fetchingChannels && selectedChannel != null ? selectedChannel.getClaimId() : null;
                 boolean isTip = switchTip.isChecked();
-                SupportCreateTask task = new SupportCreateTask(
-                        claim.getClaimId(), channelId, amount, isTip, sendProgress, new GenericTaskHandler() {
-                    @Override
-                    public void beforeStart() {
-                        disableControls();
-                    }
 
-                    @Override
-                    public void onSuccess() {
-                        enableControls();
-                        if (listener != null) {
-                            listener.onSupportCreated(amount, isTip);
+                disableControls();
+                AccountManager am = AccountManager.get(getContext());
+                String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                Map<String, Object> options = new HashMap<>();
+                options.put("blocking", true);
+                options.put("claim_id", claim.getClaimId());
+                options.put("amount", new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US)).format(amount.doubleValue()));
+                options.put("tip", isTip);
+                if (!Helper.isNullOrEmpty(channelId)) {
+                    options.put("channel_id", channelId);
+                }
+
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                    Supplier<String> task = new SupportCreateSupplier(options, authToken);
+                    CompletableFuture<String> cf = CompletableFuture.supplyAsync(task);
+                    cf.thenAccept(result -> {
+                        Activity activity = getActivity();
+                        if (result == null) {
+                            if (listener != null) {
+                                listener.onSupportCreated(amount, isTip);
+                            }
+                            dismiss();
+                        } else {
+                            showError(result);
                         }
 
-                        dismiss();
-                    }
+                        if (activity != null) {
+                            enableControls();
+                        }
+                    });
+                } else {
+                    Thread supportingThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callable<Boolean> callable = () -> {
+                                try {
+                                    Lbry.authenticatedGenericApiCall(Lbry.METHOD_SUPPORT_CREATE, options, authToken);
+                                } catch (ApiCallException ex) {
+                                    ex.printStackTrace();
+                                    showError(ex.getMessage());
+                                    return false;
+                                }
+                                return true;
+                            };
+                            ExecutorService executorService = Executors.newSingleThreadExecutor();
+                            Future<Boolean> future = executorService.submit(callable);
 
-                    @Override
-                    public void onError(Exception error) {
-                        showError(error.getMessage());
-                        enableControls();
-                    }
-                });
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            try {
+                                boolean result = future.get();
+
+                                Activity activity = getActivity();
+
+                                if (result) {
+                                    if (listener != null) {
+                                        listener.onSupportCreated(amount, isTip);
+                                    }
+
+                                    if (activity != null) {
+                                        activity.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                dismiss();
+                                            }
+                                        });
+                                    }
+                                }
+
+                                if (activity != null) {
+                                    activity.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            enableControls();
+                                        }
+                                    });
+                                }
+                            } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    supportingThread.start();
+                }
             }
         });
 
