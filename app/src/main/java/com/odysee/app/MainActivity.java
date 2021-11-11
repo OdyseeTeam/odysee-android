@@ -1327,7 +1327,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         initialiseUserInstall();
-        // scheduleWalletSyncTask();
+        scheduleWalletSyncTask();
         // checkPendingOpens();
     }
 
@@ -2393,9 +2393,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private boolean userSyncEnabled() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean walletSyncEnabled = sp.getBoolean(PREFERENCE_KEY_INTERNAL_WALLET_SYNC_ENABLED, false);
-        return walletSyncEnabled && Lbryio.isSignedIn();
+        // For Odysee, wallet sync is always enabled, so just check that the user is signed in
+        return Lbryio.isSignedIn();
     }
 
     public void syncSet(String hash, String data) {

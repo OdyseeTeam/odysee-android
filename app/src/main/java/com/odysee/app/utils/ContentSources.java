@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 
 import lombok.Data;
+import lombok.Getter;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;

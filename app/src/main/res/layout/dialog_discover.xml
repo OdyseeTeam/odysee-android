@@ -36,10 +36,10 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/discover_channel_grid"
-        android:layout_above="@id/discover_done_button"
-        android:layout_below="@id/discover_title_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_above="@id/discover_done_button"
+        android:layout_below="@id/discover_title_container" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/discover_done_button"

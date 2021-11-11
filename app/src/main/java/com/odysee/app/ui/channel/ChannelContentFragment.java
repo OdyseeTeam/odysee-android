@@ -228,6 +228,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                 claimTypes,
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                null,
                 !Helper.isNullOrEmpty(channelId) ? Arrays.asList(channelId) : null,
                 null,
                 getContentSortOrder(),

@@ -441,6 +441,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 null,
                 (currentContentScope == ContentScopeDialogFragment.ITEM_EVERYONE) ? null : tags,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                null,
                 currentChannelIdList == null ? Arrays.asList(dynamicCategories.get(0).getChannelIds()) : Arrays.asList(currentChannelIdList),
                 null,
                 getContentSortOrder(),

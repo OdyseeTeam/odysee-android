@@ -113,6 +113,7 @@ public class ChannelPlaylistsFragment extends Fragment implements SharedPreferen
                 null,
                 null,
                 null,
+                null,
                 0,
                 0,
                 currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,

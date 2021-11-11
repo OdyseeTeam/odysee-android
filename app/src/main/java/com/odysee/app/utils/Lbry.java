@@ -393,6 +393,7 @@ public final class Lbry {
                 Collections.singletonList(claimType),
                 null,
                 notTags,
+                null,
                 channelIds,
                 null,
                 orderBy,
@@ -407,6 +408,7 @@ public final class Lbry {
             String claimType,
             List<String> anyTags,
             List<String> notTags,
+            List<String> claimIds,
             List<String> channelIds,
             List<String> notChannelIds,
             List<String> orderBy,
@@ -417,6 +419,7 @@ public final class Lbry {
                 Collections.singletonList(claimType),
                 anyTags,
                 notTags,
+                claimIds,
                 channelIds,
                 notChannelIds,
                 orderBy,
@@ -431,6 +434,7 @@ public final class Lbry {
             List<String> claimType,
             List<String> anyTags,
             List<String> notTags,
+            List<String> claimIds,
             List<String> channelIds,
             List<String> notChannelIds,
             List<String> orderBy,
@@ -458,6 +462,7 @@ public final class Lbry {
 
         addClaimSearchListOption("any_tags", anyTags, options);
         addClaimSearchListOption("not_tags", notTags, options);
+        addClaimSearchListOption("claim_ids", claimIds, options);
         addClaimSearchListOption("channel_ids", channelIds, options);
         addClaimSearchListOption("not_channel_ids", notChannelIds, options);
         addClaimSearchListOption("order_by", orderBy, options);
@@ -518,10 +523,11 @@ public final class Lbry {
                     }
 
                     // For now, only claims which are audio, videos, playlists or livestreaming right now can be viewed
-                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) || Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType())
+                    if (Arrays.asList(Claim.TYPE_REPOST, Claim.TYPE_COLLECTION, Claim.TYPE_CHANNEL).contains(claim.getValueType().toLowerCase())
                         || (!claim.hasSource() && claim.isLive())
-                        || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio"))))
+                        || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio")))) {
                         claims.add(claim);
+                    }
 
                     addClaimToCache(claim);
                 }
