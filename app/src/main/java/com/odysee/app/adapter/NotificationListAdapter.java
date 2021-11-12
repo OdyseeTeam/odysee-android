@@ -220,6 +220,9 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
                     if (clickListener != null) {
                         clickListener.onNotificationClicked(notification);
                     }
+                    notification.setRead(true);
+                    notification.setSeen(true);
+                    notifyItemChanged(position);
                 }
             }
         });

@@ -188,6 +188,7 @@ import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
+import com.odysee.app.supplier.NotificationUpdateSupplier;
 import com.odysee.app.supplier.UnlockingTipsSupplier;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.RewardVerifiedHandler;
@@ -200,7 +201,6 @@ import com.odysee.app.tasks.MergeSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
 import com.odysee.app.tasks.lbryinc.NotificationListTask;
-import com.odysee.app.tasks.lbryinc.NotificationUpdateTask;
 import com.odysee.app.tasks.localdata.FetchRecentUrlHistoryTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
 import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
@@ -2718,7 +2718,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void showNotifications() {
-//        clearWunderbarFocus(findViewById(R.id.wunderbar));
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -2727,7 +2726,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (isSignedIn()) {
             if (remoteNotifcationsLastLoaded == null ||
                     (System.currentTimeMillis() - remoteNotifcationsLastLoaded.getTime() > REMOTE_NOTIFICATION_REFRESH_TTL)) {
-                loadRemoteNotifications(true);
+                loadRemoteNotifications(false);
             }
 
             if (notificationListAdapter != null) {
@@ -3724,13 +3723,36 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onNotificationClicked(LbryNotification notification) {
                 // set as seen and read
-                NotificationUpdateTask task = new NotificationUpdateTask(Arrays.asList(notification.getRemoteId()), true, true, true);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                markNotificationReadAndSeen(notification.getId());
-                notification.setSeen(true);
-                if (notificationListAdapter != null) {
-                    notificationListAdapter.notifyDataSetChanged();
+                Map<String, String> options = new HashMap<>();
+                options.put("notification_ids", String.valueOf(notification.getRemoteId()));
+                options.put("is_seen", "true");
+                options.put("is_read", "true");
+
+                AccountManager am = AccountManager.get(getApplicationContext());
+
+                if (am != null) {
+                    String at = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                    if (at != null)
+                        options.put("auth_token", at);
                 }
+
+                if (Build.VERSION.SDK_INT > M) {
+                    Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
+                    CompletableFuture.supplyAsync(supplier);
+                } else {
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Lbryio.call("notification", "edit", options, null);
+                            } catch (LbryioResponseException | LbryioRequestException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    t.start();
+                }
+                markNotificationReadAndSeen(notification.getId());
 
                 String targetUrl = notification.getTargetUrl();
                 if (targetUrl.startsWith(SPECIAL_URL_PREFIX)) {
