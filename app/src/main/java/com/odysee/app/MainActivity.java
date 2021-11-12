@@ -166,6 +166,8 @@ import com.odysee.app.dialog.ContentScopeDialogFragment;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.AuthTokenInvalidatedException;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.exceptions.LbryioRequestException;
+import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.CameraPermissionListener;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchChannelsListener;
@@ -2760,26 +2762,47 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
             if (unseenIds.size() > 0) {
-                NotificationUpdateTask task = new NotificationUpdateTask(unseenIds, true);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                AccountManager am = AccountManager.get(this);
+                Map<String, String> options = new HashMap<>();
+                options.put("notification_ids", Helper.joinL(unseenIds, ","));
+                options.put("is_seen", "true");
+
+                if (am != null) {
+                    String at = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                    if (at != null)
+                        options.put("auth_token", at);
+                }
+
+                if (Build.VERSION.SDK_INT > M) {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Supplier<Boolean> task = new NotificationUpdateSupplier(options);
+                    CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, executorService);
+                    cf.thenAcceptAsync(result -> {
+                        if (result) {
+                            SQLiteDatabase db = dbHelper.getWritableDatabase();
+                            DatabaseHelper.markNotificationsSeen(db);
+                            loadUnseenNotificationsCount();
+                        }
+                    }, executorService);
+                } else {
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Lbryio.call("notification", "edit", options, null);
+                                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                                DatabaseHelper.markNotificationsSeen(db);
+                                db.close();
+                                loadUnseenNotificationsCount();
+                            } catch (LbryioRequestException | LbryioResponseException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    t.start();
+                }
             }
         }
-
-
-        (new AsyncTask<Void, Void, Void>() {
-            protected Void doInBackground(Void... params) {
-                try {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    DatabaseHelper.markNotificationsSeen(db);
-                } catch (Exception ex) {
-                    // pass
-                }
-                return null;
-            }
-            protected void onPostExecute(Void result) {
-                loadUnseenNotificationsCount();
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void navigateBackToNotifications() {
