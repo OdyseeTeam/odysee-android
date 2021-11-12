@@ -1320,6 +1320,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkFirstRun();
         checkNowPlaying();
 
+        if (isSignedIn())
+            loadRemoteNotifications(false);
+
         scheduleWalletBalanceUpdate();
 
         if (pendingSourceTabId != 0) {
@@ -3630,20 +3633,25 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void loadUnseenNotificationsCount() {
-        (new AsyncTask<Void, Void, Integer>() {
+        Activity activity = this;
+        Thread t = new Thread(new Runnable() {
             @Override
-            protected Integer doInBackground(Void... params) {
+            public void run() {
                 try {
                     SQLiteDatabase db = dbHelper.getReadableDatabase();
-                    return DatabaseHelper.getUnseenNotificationsCount(db);
+                    int count = DatabaseHelper.getUnseenNotificationsCount(db);
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            displayUnseenNotificationCount(count);
+                        }
+                    });
                 } catch (Exception ex) {
-                    return 0;
+                    ex.printStackTrace();
                 }
             }
-            protected void onPostExecute(Integer count) {
-                displayUnseenNotificationCount(count);
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        });
+        t.start();
     }
 
     private void loadRemoteNotifications(boolean markRead) {
@@ -3796,22 +3804,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void markNotificationReadAndSeen(long notificationId) {
-        (new AsyncTask<Void, Void, Void>() {
-            protected Void doInBackground(Void... params) {
+        Activity activity = this;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
                 if (dbHelper != null) {
                     try {
                         SQLiteDatabase db = dbHelper.getWritableDatabase();
                         DatabaseHelper.markNotificationReadAndSeen(notificationId, db);
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                loadUnseenNotificationsCount();
+                            }
+                        });
                     } catch (Exception ex) {
-                        // pass
+                        ex.printStackTrace();
                     }
                 }
-                return null;
             }
-            protected void onPostExecute() {
-                loadUnseenNotificationsCount();
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        });
+        t.start();
     }
 
     private void resolveCommentAuthors(List<String> urls) {
