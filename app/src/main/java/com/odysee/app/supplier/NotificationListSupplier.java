@@ -1,12 +1,10 @@
-package com.odysee.app.tasks.lbryinc;
+package com.odysee.app.supplier;
 
-import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
-import android.os.AsyncTask;
-import android.util.Log;
-import android.view.View;
-import android.widget.ProgressBar;
+import com.odysee.app.exceptions.LbryioRequestException;
+import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.model.lbryinc.LbryNotification;
+import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Lbryio;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,36 +16,21 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 
-import com.odysee.app.MainActivity;
-import com.odysee.app.data.DatabaseHelper;
-import com.odysee.app.exceptions.LbryioRequestException;
-import com.odysee.app.exceptions.LbryioResponseException;
-import com.odysee.app.model.lbryinc.LbryNotification;
-import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbryio;
+public class NotificationListSupplier implements Supplier<List<LbryNotification>> {
+    private final Map<String, String> options;
 
-public class NotificationListTask extends AsyncTask<Void, Void, List<LbryNotification>> {
-    private static final String TAG = "Notifications";
-
-    private final Context context;
-    private final ListNotificationsHandler handler;
-    private final ProgressBar progressBar;
-    private Exception error;
-
-    public NotificationListTask(Context context, ProgressBar progressBar, ListNotificationsHandler handler) {
-        this.context = context;
-        this.progressBar = progressBar;
-        this.handler = handler;
+    public NotificationListSupplier(Map<String, String> options) {
+        this.options = options;
     }
-    protected void onPreExecute() {
-        Helper.setViewVisibility(progressBar, View.VISIBLE);
-    }
-    protected List<LbryNotification> doInBackground(Void... params) {
+
+    @Override
+    public List<LbryNotification> get() {
         List<LbryNotification> notifications = new ArrayList<>();
-        SQLiteDatabase db = null;
         try {
-            JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("notification", "list", context));
+            JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("notification", "list", options, null));
             if (array != null) {
                 for (int i = 0; i < array.length(); i++) {
                     JSONObject item = array.getJSONObject(i);
@@ -94,35 +77,12 @@ public class NotificationListTask extends AsyncTask<Void, Void, List<LbryNotific
                         }
                     }
                 }
-
-                if (context instanceof MainActivity) {
-                    db = ((MainActivity) context).getDbHelper().getWritableDatabase();
-                    for (LbryNotification notification : notifications) {
-                        DatabaseHelper.createOrUpdateNotification(notification, db);
-                    }
-                }
             }
-        } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | SQLiteException | IllegalStateException ex) {
-            Log.e(TAG, ex.getMessage(), ex);
-            error = ex;
+        } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | IllegalStateException ex) {
+            ex.printStackTrace();
             return null;
         }
 
         return notifications;
-    }
-    protected void onPostExecute(List<LbryNotification> notifications) {
-        Helper.setViewVisibility(progressBar, View.GONE);
-        if (handler != null) {
-            if (notifications != null) {
-                handler.onSuccess(notifications);
-            } else {
-                handler.onError(error);
-            }
-        }
-    }
-
-    public interface ListNotificationsHandler {
-        void onSuccess(List<LbryNotification> notifications);
-        void onError(Exception exception);
     }
 }
