@@ -46,13 +46,24 @@ public class NotificationListSupplier implements Supplier<List<LbryNotification>
                         }
                         if (notificationParams.has("dynamic") && !notificationParams.isNull("dynamic")) {
                             JSONObject dynamic = notificationParams.getJSONObject("dynamic");
-                            if (dynamic.has("comment_author")) {
-                                notification.setAuthorUrl(Helper.getJSONString("comment_author", null, dynamic));
+                            if (dynamic.has("comment_author") || dynamic.has("channel_thumbnail")) {
+                                String url = null;
+                                if (dynamic.has("comment_author"))
+                                    url = Helper.getJSONString("comment_author", null, dynamic);
+                                else if (dynamic.has("channel_thumbnail"))
+                                    url = Helper.getJSONString("channel_thumbnail", null, dynamic);
+                                notification.setAuthorThumbnailUrl(url);
                             }
                             if (dynamic.has("channelURI")) {
                                 String channelUrl = Helper.getJSONString("channelURI", null, dynamic);
                                 if (!Helper.isNullOrEmpty(channelUrl)) {
                                     notification.setTargetUrl(channelUrl);
+                                }
+                            }
+                            if (dynamic.has("claim_thumbnail")) {
+                                String claimThumbnailUrl = Helper.getJSONString("claim_thumbnail", null, dynamic);
+                                if (!Helper.isNullOrEmpty(claimThumbnailUrl)) {
+                                    notification.setClaimThumbnailUrl(claimThumbnailUrl);
                                 }
                             }
                             if (dynamic.has("hash") && "comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))) {

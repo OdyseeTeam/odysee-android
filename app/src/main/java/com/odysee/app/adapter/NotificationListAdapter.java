@@ -1,6 +1,7 @@
 package com.odysee.app.adapter;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -65,7 +66,8 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         protected final TextView bodyView;
         protected final TextView timeView;
         protected final SolidIconView iconView;
-        protected final ImageView thumbnailView;
+        protected final ImageView authorThumbnailView;
+        protected final ImageView claimThumbnailView;
         protected final View selectedOverlayView;
         public ViewHolder(View v) {
             super(v);
@@ -74,7 +76,8 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             bodyView = v.findViewById(R.id.notification_body);
             timeView = v.findViewById(R.id.notification_time);
             iconView = v.findViewById(R.id.notification_icon);
-            thumbnailView = v.findViewById(R.id.notification_author_thumbnail);
+            authorThumbnailView = v.findViewById(R.id.notification_author_thumbnail);
+            claimThumbnailView = v.findViewById(R.id.notification_claim_thumbnail);
             selectedOverlayView = v.findViewById(R.id.notification_selected_overlay);
         }
     }
@@ -128,8 +131,8 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
     public List<String> getAuthorUrls() {
         List<String> urls = new ArrayList<>();
         for (LbryNotification item : items) {
-            if (!Helper.isNullOrEmpty(item.getAuthorUrl())) {
-                urls.add(item.getAuthorUrl());
+            if (!Helper.isNullOrEmpty(item.getAuthorThumbnailUrl())) {
+                urls.add(item.getAuthorThumbnailUrl());
             }
         }
         return urls;
@@ -146,7 +149,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
 
     private void updateClaimForAuthorUrl(Claim claim) {
         for (LbryNotification item : items) {
-            if (claim.getPermanentUrl().equalsIgnoreCase(item.getAuthorUrl())) {
+            if (claim.getPermanentUrl().equalsIgnoreCase(item.getAuthorThumbnailUrl())) {
                 item.setCommentAuthor(claim);
             }
         }
@@ -201,13 +204,38 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         vh.timeView.setText(DateUtils.getRelativeTimeSpanString(
                 getLocalNotificationTime(notification), System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
 
-        vh.thumbnailView.setVisibility(notification.getCommentAuthor() == null ? View.INVISIBLE : View.VISIBLE);
-        if (notification.getCommentAuthor() != null) {
-            Glide.with(context.getApplicationContext()).load(
-                    notification.getCommentAuthor().getThumbnailUrl(vh.thumbnailView.getLayoutParams().width, vh.thumbnailView.getLayoutParams().height, 85)).apply(RequestOptions.circleCropTransform()).into(vh.thumbnailView);
+        vh.authorThumbnailView.setVisibility(notification.getCommentAuthor() == null || notification.getAuthorThumbnailUrl() == null ? View.INVISIBLE : View.VISIBLE);
+        if (notification.getAuthorThumbnailUrl() != null)
+            vh.authorThumbnailView.setVisibility(View.VISIBLE);
+        if (notification.getCommentAuthor() != null || notification.getAuthorThumbnailUrl() != null) {
+            String turl;
+
+            if (notification.getCommentAuthor() != null)
+                turl = notification.getCommentAuthor().getThumbnailUrl(vh.authorThumbnailView.getLayoutParams().width, vh.authorThumbnailView.getLayoutParams().height, 85);
+            else {
+                turl = getThumbnailUrl(vh.authorThumbnailView, notification.getAuthorThumbnailUrl());
+            }
+
+            Glide.with(context.getApplicationContext()).load(turl).apply(RequestOptions.circleCropTransform()).into(vh.authorThumbnailView);
         }
 
-        vh.iconView.setVisibility(notification.getCommentAuthor() != null ? View.INVISIBLE : View.VISIBLE);
+        if (notification.getClaimThumbnailUrl() != null) {
+            vh.bodyView.getLayoutParams().width = (int) (200 * context.getApplicationContext().getResources().getDisplayMetrics().density);
+            Configuration config = context.getApplicationContext().getResources().getConfiguration();
+            if (config.smallestScreenWidthDp > 359) {
+                String turl = getThumbnailUrl(vh.claimThumbnailView, notification.getClaimThumbnailUrl());
+
+                Glide.with(context.getApplicationContext()).asBitmap().load(turl).into(vh.claimThumbnailView);
+                vh.claimThumbnailView.setVisibility(View.VISIBLE);
+            } else {
+                vh.claimThumbnailView.setVisibility(View.GONE);
+            }
+        } else {
+            vh.bodyView.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+            vh.claimThumbnailView.setVisibility(View.GONE);
+        }
+
+        vh.iconView.setVisibility(notification.getCommentAuthor() != null || notification.getAuthorThumbnailUrl() != null ? View.INVISIBLE : View.VISIBLE);
         vh.iconView.setText(getStringIdForRule(notification.getRule()));
         vh.iconView.setTextColor(getColorForRule(notification.getRule()));
 
@@ -239,6 +267,17 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
                 return true;
             }
         });
+    }
+
+    private String getThumbnailUrl(View v, String url) {
+        String appendedPath;
+
+        appendedPath = "s:".concat(String.valueOf(v.getLayoutParams().width))
+                .concat(":").concat(String.valueOf(v.getLayoutParams().height)).concat("/")
+                .concat("quality:").concat(String.valueOf(85)).concat("/")
+                .concat("plain/").concat(url);
+
+        return "https://image-processor.vanwanet.com/optimize/".concat(appendedPath);
     }
 
     private void toggleSelectedNotification(LbryNotification notification) {
