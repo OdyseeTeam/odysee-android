@@ -213,6 +213,11 @@ public class FollowingFragment extends BaseFragment implements
             }
         });
 
+        if (context != null) {
+            SharedPreferences sharedpreferences = context.getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+            Helper.setViewVisibility(horizontalChannelList, sharedpreferences.getBoolean("subscriptions_filter_visibility", false) ? View.VISIBLE : View.GONE);
+        }
+
         filterLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -378,8 +383,14 @@ public class FollowingFragment extends BaseFragment implements
         Context context = getContext();
         if (context instanceof MainActivity) {
             ((MainActivity) context).removeDownloadActionListener(this);
+            PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
+
+            // Store current state of the channel filter as a preference
+            SharedPreferences sharedpreferences = context.getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedpreferences.edit();
+            editor.putBoolean("subscriptions_filter_visibility", horizontalChannelList.getVisibility() == View.VISIBLE);
+            editor.apply();
         }
-        PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         super.onPause();
     }
     public void fetchLoadedSubscriptions(boolean showSubscribed) {

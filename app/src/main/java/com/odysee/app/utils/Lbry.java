@@ -582,6 +582,16 @@ public final class Lbry {
         }
         return response;
     }
+
+    /**
+     * @deprecated Use authenticatedGenericApiCall(String, Map, String) instead
+     * @param method
+     * @param p
+     * @param authToken
+     * @return
+     * @throws ApiCallException
+     */
+    @Deprecated
     public static Object directApiCall(String method, Map<String, Object> p, String authToken) throws ApiCallException {
         p.put("auth_token", authToken);
         Object response = null;

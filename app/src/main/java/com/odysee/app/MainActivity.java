@@ -2876,7 +2876,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Lbryio.currentUser = null;
         Lbryio.AUTH_TOKEN = "";
         SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-        sharedPref.edit().remove("auth_token").commit();
+        sharedPref.edit().remove("auth_token").apply();
+        sharedPref.edit().remove("subscriptions_filter_visibility").apply();
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
