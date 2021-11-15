@@ -3725,7 +3725,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                             if (notificationParams.has("dynamic") && !notificationParams.isNull("dynamic")) {
                                                 JSONObject dynamic = notificationParams.getJSONObject("dynamic");
                                                 if (dynamic.has("comment_author")) {
-                                                    notification.setAuthorUrl(Helper.getJSONString("comment_author", null, dynamic));
+                                                    notification.setAuthorThumbnailUrl(Helper.getJSONString("comment_author", null, dynamic));
                                                 }
                                                 if (dynamic.has("channelURI")) {
                                                     String channelUrl = Helper.getJSONString("channelURI", null, dynamic);
