@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +38,7 @@ import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
+import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.listener.WalletBalanceListener;
@@ -213,9 +215,12 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                             }
                         });
 
-                        RecyclerView relatedContentList = root.findViewById(R.id.channel_comments_list);
-                        relatedContentList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyDataSetChanged();
+                        RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
+                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+                        commentList.addItemDecoration(new CommentItemDecoration(marginInPx));
+                        commentList.setAdapter(commentListAdapter);
+                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
+                        commentListAdapter.setCollapsed(false);
 
                         checkNoComments();
                         resolveCommentPosters();
