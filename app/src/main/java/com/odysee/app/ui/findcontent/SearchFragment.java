@@ -1,5 +1,6 @@
 package com.odysee.app.ui.findcontent;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -269,47 +270,62 @@ public class SearchFragment extends BaseFragment implements
 
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
+                Activity activity = getActivity();
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            List<Claim> totalResults = future.get();
 
-                try {
-                    List<Claim> totalResults = future.get();
+                            // For each claim returned from Lighthouse, replace it by the one using Search API
+                            for (int i = 0; i < claims.size(); i++) {
+                                if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(claims.get(i).getValueType())) {
+                                    int finalI = i;
+                                    Claim found = totalResults.stream().filter(filteredClaim -> {
+                                        return claims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
+                                    }).findAny().orElse(null);
 
-                    // For each claim returned from Lighthouse, replace it by the one using Search API
-                    for (int i = 0; i < claims.size(); i++) {
-                        if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(claims.get(i).getValueType())) {
-                            int finalI = i;
-                            Claim found = totalResults.stream().filter(filteredClaim -> {
-                                return claims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
-                            }).findAny().orElse(null);
+                                    if (found != null) {
+                                        claims.set(i, found);
+                                    }
+                                }
+                            }
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                        }
 
-                            if (found != null)
-                                claims.set(i, found);
+                        contentHasReachedEnd = hasReachedEnd;
+                        searchLoading = false;
+
+                        if (activity != null) {
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Context context = getContext();
+                                    if (context != null) {
+                                        if (resultListAdapter == null) {
+                                            resultListAdapter = new ClaimListAdapter(claims, context);
+                                            resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
+                                            resolveFeaturedItem(buildVanityUrl(query));
+                                            resultListAdapter.setListener(SearchFragment.this);
+                                            if (resultList != null) {
+                                                resultList.setAdapter(resultListAdapter);
+                                            }
+                                        } else {
+                                            resultListAdapter.addItems(claims);
+                                        }
+
+                                        int itemCount = resultListAdapter.getItemCount();
+                                        Helper.setViewVisibility(noQueryView, View.GONE);
+                                        Helper.setViewVisibility(noResultsView, itemCount == 0 ? View.VISIBLE : View.GONE);
+                                        Helper.setViewText(noResultsView, getString(R.string.search_no_results, currentQuery));
+                                    }
+                                }
+                            });
                         }
                     }
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
-
-                contentHasReachedEnd = hasReachedEnd;
-                searchLoading = false;
-                Context context = getContext();
-                if (context != null) {
-                    if (resultListAdapter == null) {
-                        resultListAdapter = new ClaimListAdapter(claims, context);
-                        resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
-                        resolveFeaturedItem(buildVanityUrl(query));
-                        resultListAdapter.setListener(SearchFragment.this);
-                        if (resultList != null) {
-                            resultList.setAdapter(resultListAdapter);
-                        }
-                    } else {
-                        resultListAdapter.addItems(claims);
-                    }
-
-                    int itemCount = resultListAdapter.getItemCount();
-                    Helper.setViewVisibility(noQueryView, View.GONE);
-                    Helper.setViewVisibility(noResultsView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                    Helper.setViewText(noResultsView, getString(R.string.search_no_results, currentQuery));
-                }
+                });
+                t.start();
             }
 
             @Override

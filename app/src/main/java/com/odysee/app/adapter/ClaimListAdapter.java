@@ -57,7 +57,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private boolean inSelectionMode;
     @Setter
     private SelectionModeListener selectionModeListener;
-    private float scale;
 
     public ClaimListAdapter(List<Claim> items, Context context) {
         this.context = context;
@@ -73,9 +72,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         quickClaimUrlMap = new HashMap<>();
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
-        if (context != null) {
-            scale = context.getResources().getDisplayMetrics().density;
-        }
     }
 
     public List<Claim> getSelectedItems() {
@@ -141,28 +137,38 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public void addFeaturedItem(Claim claim) {
         items.add(0, claim);
-        notifyDataSetChanged();
+        notifyItemInserted(0);
     }
 
     public void addItems(List<Claim> claims) {
+        final int initialCount = items.size();
+
         for (Claim claim : claims) {
-            if (claim != null && !items.contains(claim)) {
-                items.add(claim);
+            if (claim != null) {
+                boolean c = items.stream().anyMatch(p -> p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+
+                if (!c) {
+                    items.add(claim);
+                }
             }
         }
 
+        notifyItemRangeInserted(initialCount, items.size() - initialCount);
+
         notFoundClaimUrlMap.clear();
         notFoundClaimIdMap.clear();
-        notifyDataSetChanged();
     }
     public void setItems(List<Claim> claims) {
+        if (items.size() > 0)
+            notifyItemRangeRemoved(0, items.size());
+
         items = new ArrayList<>();
         for (Claim claim : claims) {
             if (claim != null) {
                 items.add(claim);
             }
         }
-        notifyDataSetChanged();
+        notifyItemRangeInserted(0, items.size());
     }
 
     public void removeItems(List<Claim> claims) {
