@@ -239,6 +239,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static void clearUrlHistoryBefore(Date date, SQLiteDatabase db) {
         db.execSQL(SQL_CLEAR_URL_HISTORY_BEFORE_TIME, new Object[] { new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(new Date()) });
     }
+    public static void clearViewHistory(SQLiteDatabase db) {
+        db.execSQL(SQL_CLEAR_VIEW_HISTORY);
+    }
 
     // History items are essentially url suggestions
     public static List<UrlSuggestion> getRecentHistory(SQLiteDatabase db) {
