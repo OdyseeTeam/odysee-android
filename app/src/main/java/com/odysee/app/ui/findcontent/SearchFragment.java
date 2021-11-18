@@ -253,6 +253,35 @@ public class SearchFragment extends BaseFragment implements
                 currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null, loadingView, new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
+                Activity activity = getActivity();
+
+                if (activity != null) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Context context = getContext();
+                            if (context != null) {
+                                if (resultListAdapter == null) {
+                                    resultListAdapter = new ClaimListAdapter(claims, context);
+                                    resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
+                                    resolveFeaturedItem(buildVanityUrl(query));
+                                    resultListAdapter.setListener(SearchFragment.this);
+                                    if (resultList != null) {
+                                        resultList.setAdapter(resultListAdapter);
+                                    }
+                                } else {
+                                    resultListAdapter.addItems(claims);
+                                }
+
+                                int itemCount = resultListAdapter.getItemCount();
+                                Helper.setViewVisibility(noQueryView, View.GONE);
+                                Helper.setViewVisibility(noResultsView, itemCount == 0 ? View.VISIBLE : View.GONE);
+                                Helper.setViewText(noResultsView, getString(R.string.search_no_results, currentQuery));
+                            }
+                        }
+                    });
+                }
+
                 // Lighthouse doesn't return "valueType" of the claim, so another request is needed
                 // to determine if an item is a playlist and get the items on the playlist.
                 List<String> claimIds = new ArrayList<>();
@@ -270,7 +299,6 @@ public class SearchFragment extends BaseFragment implements
 
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
-                Activity activity = getActivity();
                 Thread t = new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -287,6 +315,15 @@ public class SearchFragment extends BaseFragment implements
 
                                     if (found != null) {
                                         claims.set(i, found);
+
+                                        if (activity != null && resultListAdapter != null) {
+                                            activity.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    resultListAdapter.setItem(found.getClaimId(), found);
+                                                }
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -296,33 +333,6 @@ public class SearchFragment extends BaseFragment implements
 
                         contentHasReachedEnd = hasReachedEnd;
                         searchLoading = false;
-
-                        if (activity != null) {
-                            activity.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Context context = getContext();
-                                    if (context != null) {
-                                        if (resultListAdapter == null) {
-                                            resultListAdapter = new ClaimListAdapter(claims, context);
-                                            resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
-                                            resolveFeaturedItem(buildVanityUrl(query));
-                                            resultListAdapter.setListener(SearchFragment.this);
-                                            if (resultList != null) {
-                                                resultList.setAdapter(resultListAdapter);
-                                            }
-                                        } else {
-                                            resultListAdapter.addItems(claims);
-                                        }
-
-                                        int itemCount = resultListAdapter.getItemCount();
-                                        Helper.setViewVisibility(noQueryView, View.GONE);
-                                        Helper.setViewVisibility(noResultsView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                                        Helper.setViewText(noResultsView, getString(R.string.search_no_results, currentQuery));
-                                    }
-                                }
-                            });
-                        }
                     }
                 });
                 t.start();

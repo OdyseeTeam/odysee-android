@@ -171,6 +171,17 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyItemRangeInserted(0, items.size());
     }
 
+    public void setItem(String claimId, Claim claim) {
+        if (claim != null) {
+            Claim r = this.items.stream().filter(o -> o.getClaimId() != null && o.getClaimId().equalsIgnoreCase(claimId)).findFirst().orElse(null);
+
+            if (r != null) {
+                int position = this.items.indexOf(r);
+                items.set(this.items.indexOf(r), claim);
+                notifyItemChanged(position, claim);
+            }
+        }
+    }
     public void removeItems(List<Claim> claims) {
         items.removeAll(claims);
         notifyDataSetChanged();
