@@ -249,11 +249,26 @@ public class SearchFragment extends BaseFragment implements
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
+        // If the query consists of a single word -characters not separated by spaces-,
+        // modify the request so it returns channels on top
+        final String[] split = currentQuery.split(" ");
+
+        if (split.length == 1) {
+            currentQuery = "@".concat(query);
+        }
+
         LighthouseSearchTask task = new LighthouseSearchTask(
                 currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null, loadingView, new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Activity activity = getActivity();
+                List<Claim> sanitizedClaims = new ArrayList<>(claims.size());
+
+                for (Claim item : claims) {
+                    if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                        sanitizedClaims.add(item);
+                    }
+                }
 
                 if (activity != null) {
                     activity.runOnUiThread(new Runnable() {
@@ -262,7 +277,7 @@ public class SearchFragment extends BaseFragment implements
                             Context context = getContext();
                             if (context != null) {
                                 if (resultListAdapter == null) {
-                                    resultListAdapter = new ClaimListAdapter(claims, context);
+                                    resultListAdapter = new ClaimListAdapter(sanitizedClaims, context);
                                     resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
                                     resolveFeaturedItem(buildVanityUrl(query));
                                     resultListAdapter.setListener(SearchFragment.this);
@@ -270,7 +285,7 @@ public class SearchFragment extends BaseFragment implements
                                         resultList.setAdapter(resultListAdapter);
                                     }
                                 } else {
-                                    resultListAdapter.addItems(claims);
+                                    resultListAdapter.addItems(sanitizedClaims);
                                 }
 
                                 int itemCount = resultListAdapter.getItemCount();
@@ -286,9 +301,9 @@ public class SearchFragment extends BaseFragment implements
                 // to determine if an item is a playlist and get the items on the playlist.
                 List<String> claimIds = new ArrayList<>();
 
-                for (int i = 0; i < claims.size(); i++) {
-                    if (!claims.get(i).getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
-                        claimIds.add(claims.get(i).getClaimId());
+                for (int i = 0; i < sanitizedClaims.size(); i++) {
+                    if (!sanitizedClaims.get(i).getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
+                        claimIds.add(sanitizedClaims.get(i).getClaimId());
                     }
                 }
 
@@ -306,21 +321,25 @@ public class SearchFragment extends BaseFragment implements
                             List<Claim> totalResults = future.get();
 
                             // For each claim returned from Lighthouse, replace it by the one using Search API
-                            for (int i = 0; i < claims.size(); i++) {
-                                if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(claims.get(i).getValueType())) {
+                            for (int i = 0; i < sanitizedClaims.size(); i++) {
+                                if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
                                     int finalI = i;
                                     Claim found = totalResults.stream().filter(filteredClaim -> {
-                                        return claims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
+                                        return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
                                     }).findAny().orElse(null);
 
                                     if (found != null) {
-                                        claims.set(i, found);
+                                        sanitizedClaims.set(i, found);
 
                                         if (activity != null && resultListAdapter != null) {
                                             activity.runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    resultListAdapter.setItem(found.getClaimId(), found);
+                                                    if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                                                        resultListAdapter.setItem(found.getClaimId(), found);
+                                                    } else {
+                                                        resultListAdapter.removeItem(found);
+                                                    }
                                                 }
                                             });
                                         }

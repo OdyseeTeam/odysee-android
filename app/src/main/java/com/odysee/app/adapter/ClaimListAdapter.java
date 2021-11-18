@@ -145,7 +145,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         for (Claim claim : claims) {
             if (claim != null) {
-                boolean c = items.stream().anyMatch(p -> p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+                boolean c = items.stream().anyMatch(p -> p.getClaimId() != null && p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
 
                 if (!c) {
                     items.add(claim);
@@ -188,9 +188,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public void removeItem(Claim claim) {
+        int position = items.indexOf(claim);
         items.remove(claim);
         selectedItems.remove(claim);
-        notifyDataSetChanged();
+        notifyItemRemoved(position);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
