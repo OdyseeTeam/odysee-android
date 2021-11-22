@@ -2088,6 +2088,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             scheduleWalletBalanceUpdate();
             loadRemoteNotifications(false);
         } else {
+            // Accounts can be removed from the system settings UI, so let's clear
+            // database's tables if there is no Odysee account on the device
+            try {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                DatabaseHelper.clearNotifications(db);
+                notificationListAdapter.clearNotifications();
+                loadUnseenNotificationsCount();
+
+                DatabaseHelper.clearViewHistory(db);
+                DatabaseHelper.clearUrlHistory(db);
+                DatabaseHelper.clearSubscriptions(db);
+                db.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
             BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
             bottomNavigationView.setSelectedItemId(R.id.action_home_menu);
 
@@ -2888,13 +2904,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
 
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            DatabaseHelper.clearNotifications(db);
-            notificationListAdapter.clearNotifications();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
     public boolean isSignedIn() {
@@ -3664,7 +3673,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             Supplier<List<LbryNotification>> task = new GetLocalNotificationsSupplier();
             CompletableFuture<List<LbryNotification>> completableFuture = CompletableFuture.supplyAsync(task);
             completableFuture.thenAccept(n -> {
-                updateLocalNotifications(n);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateLocalNotifications(n);
+                    }
+                });
             });
         } else {
             Thread thread = new Thread(new Runnable() {
