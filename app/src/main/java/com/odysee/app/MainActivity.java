@@ -116,6 +116,7 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -132,12 +133,15 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -166,6 +170,8 @@ import com.odysee.app.dialog.ContentScopeDialogFragment;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.AuthTokenInvalidatedException;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.exceptions.LbryioRequestException;
+import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.CameraPermissionListener;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchChannelsListener;
@@ -188,6 +194,8 @@ import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
+import com.odysee.app.supplier.NotificationListSupplier;
+import com.odysee.app.supplier.NotificationUpdateSupplier;
 import com.odysee.app.supplier.UnlockingTipsSupplier;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.RewardVerifiedHandler;
@@ -199,8 +207,6 @@ import com.odysee.app.tasks.lbryinc.FetchRewardsTask;
 import com.odysee.app.tasks.MergeSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
-import com.odysee.app.tasks.lbryinc.NotificationListTask;
-import com.odysee.app.tasks.lbryinc.NotificationUpdateTask;
 import com.odysee.app.tasks.localdata.FetchRecentUrlHistoryTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
 import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
@@ -787,12 +793,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         notificationsSwipeContainer = findViewById(R.id.notifications_list_swipe_container);
-        notificationsSwipeContainer.setColorSchemeResources(R.color.nextLbryGreen);
+        notificationsSwipeContainer.setColorSchemeResources(R.color.odyseePink);
         notificationsSwipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 notificationsSwipeContainer.setRefreshing(true);
                 loadRemoteNotifications(false);
+                // FIXME This is causing blank fragments after closing notification's list and opening a different bottom tab
             }
         });
 
@@ -1337,6 +1344,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         checkFirstRun();
         checkNowPlaying();
+
+        if (isSignedIn())
+            loadRemoteNotifications(false);
 
         scheduleWalletBalanceUpdate();
 
@@ -2758,7 +2768,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void showNotifications() {
-//        clearWunderbarFocus(findViewById(R.id.wunderbar));
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -2767,7 +2776,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (isSignedIn()) {
             if (remoteNotifcationsLastLoaded == null ||
                     (System.currentTimeMillis() - remoteNotifcationsLastLoaded.getTime() > REMOTE_NOTIFICATION_REFRESH_TTL)) {
-                loadRemoteNotifications(true);
+                loadRemoteNotifications(false);
             }
 
             if (notificationListAdapter != null) {
@@ -2801,26 +2810,47 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
             if (unseenIds.size() > 0) {
-                NotificationUpdateTask task = new NotificationUpdateTask(unseenIds, true);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                AccountManager am = AccountManager.get(this);
+                Map<String, String> options = new HashMap<>();
+                options.put("notification_ids", Helper.joinL(unseenIds, ","));
+                options.put("is_seen", "true");
+
+                if (am != null) {
+                    String at = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                    if (at != null)
+                        options.put("auth_token", at);
+                }
+
+                if (Build.VERSION.SDK_INT > M) {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Supplier<Boolean> task = new NotificationUpdateSupplier(options);
+                    CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, executorService);
+                    cf.thenAcceptAsync(result -> {
+                        if (result) {
+                            SQLiteDatabase db = dbHelper.getWritableDatabase();
+                            DatabaseHelper.markNotificationsSeen(db);
+                            loadUnseenNotificationsCount();
+                        }
+                    }, executorService);
+                } else {
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Lbryio.call("notification", "edit", options, null);
+                                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                                DatabaseHelper.markNotificationsSeen(db);
+                                db.close();
+                                loadUnseenNotificationsCount();
+                            } catch (LbryioRequestException | LbryioResponseException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    t.start();
+                }
             }
         }
-
-
-        (new AsyncTask<Void, Void, Void>() {
-            protected Void doInBackground(Void... params) {
-                try {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    DatabaseHelper.markNotificationsSeen(db);
-                } catch (Exception ex) {
-                    // pass
-                }
-                return null;
-            }
-            protected void onPostExecute(Void result) {
-                loadUnseenNotificationsCount();
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void navigateBackToNotifications() {
@@ -3642,51 +3672,163 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void loadUnseenNotificationsCount() {
-        (new AsyncTask<Void, Void, Integer>() {
+        Activity activity = this;
+        Thread t = new Thread(new Runnable() {
             @Override
-            protected Integer doInBackground(Void... params) {
+            public void run() {
                 try {
                     SQLiteDatabase db = dbHelper.getReadableDatabase();
-                    return DatabaseHelper.getUnseenNotificationsCount(db);
+                    int count = DatabaseHelper.getUnseenNotificationsCount(db);
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            displayUnseenNotificationCount(count);
+                        }
+                    });
                 } catch (Exception ex) {
-                    return 0;
+                    ex.printStackTrace();
                 }
             }
-            protected void onPostExecute(Integer count) {
-                displayUnseenNotificationCount(count);
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        });
+        t.start();
     }
 
     private void loadRemoteNotifications(boolean markRead) {
         findViewById(R.id.notification_list_empty_container).setVisibility(View.GONE);
-        NotificationListTask task = new NotificationListTask(this, findViewById(R.id.notifications_progress), new NotificationListTask.ListNotificationsHandler() {
-            @Override
-            public void onSuccess(List<LbryNotification> notifications) {
-                remoteNotifcationsLastLoaded = new Date();
 
-                loadUnseenNotificationsCount();
-                loadLocalNotifications();
-                if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
-                    markNotificationsSeen();
+        Map<String, String> options = new HashMap<>(1);
+        AccountManager am = AccountManager.get(this);
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+        if (odyseeAccount != null) {
+            options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
+        }
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            Activity activity = this;
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Supplier<List<LbryNotification>> supplier = new NotificationListSupplier(options);
+            CompletableFuture<List<LbryNotification>> cf = CompletableFuture.supplyAsync(supplier, executorService);
+            cf.thenAcceptAsync(result -> {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (notificationsSwipeContainer != null) {
+                            notificationsSwipeContainer.setRefreshing(false);
+                        }
+                    }
+                });
+                if (result != null) {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    for (LbryNotification notification : result) {
+                        DatabaseHelper.createOrUpdateNotification(notification, db);
+                    }
+                    remoteNotifcationsLastLoaded = new Date();
+
+                    loadUnseenNotificationsCount();
+                    loadLocalNotifications();
+                    if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
+                        markNotificationsSeen();
+                    }
                 }
 
-                if (notificationsSwipeContainer != null) {
-                    notificationsSwipeContainer.setRefreshing(false);
-                }
-            }
+            }, executorService);
+        } else {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Callable<List<LbryNotification>> callable = new Callable<List<LbryNotification>>() {
+                        @Override
+                        public List<LbryNotification> call() {
+                            List<LbryNotification> notifications = new ArrayList<>();
+                            try {
+                                JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("notification", "list", options, null));
+                                if (array != null) {
+                                    for (int i = 0; i < array.length(); i++) {
+                                        JSONObject item = array.getJSONObject(i);
+                                        if (item.has("notification_parameters")) {
+                                            LbryNotification notification = new LbryNotification();
 
-            @Override
-            public void onError(Exception exception) {
-                // pass
-                Log.e(TAG, "error loading remote notifications", exception);
-                loadLocalNotifications();
-                if (notificationsSwipeContainer != null) {
-                    notificationsSwipeContainer.setRefreshing(false);
+                                            JSONObject notificationParams = item.getJSONObject("notification_parameters");
+                                            if (notificationParams.has("device")) {
+                                                JSONObject device = notificationParams.getJSONObject("device");
+                                                notification.setTitle(Helper.getJSONString("title", null, device));
+                                                notification.setDescription(Helper.getJSONString("text", null, device));
+                                                notification.setTargetUrl(Helper.getJSONString("target", null, device));
+                                            }
+                                            if (notificationParams.has("dynamic") && !notificationParams.isNull("dynamic")) {
+                                                JSONObject dynamic = notificationParams.getJSONObject("dynamic");
+                                                if (dynamic.has("comment_author")) {
+                                                    notification.setAuthorThumbnailUrl(Helper.getJSONString("comment_author", null, dynamic));
+                                                }
+                                                if (dynamic.has("channelURI")) {
+                                                    String channelUrl = Helper.getJSONString("channelURI", null, dynamic);
+                                                    if (!Helper.isNullOrEmpty(channelUrl)) {
+                                                        notification.setTargetUrl(channelUrl);
+                                                    }
+                                                }
+                                                if (dynamic.has("hash") && "comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))) {
+                                                    notification.setTargetUrl(String.format("%s?comment_hash=%s", notification.getTargetUrl(), dynamic.getString("hash")));
+                                                }
+                                            }
+
+                                            notification.setRule(Helper.getJSONString("notification_rule", null, item));
+                                            notification.setRemoteId(Helper.getJSONLong("id", 0, item));
+                                            notification.setRead(Helper.getJSONBoolean("is_read", false, item));
+                                            notification.setSeen(Helper.getJSONBoolean("is_seen", false, item));
+
+                                            try {
+                                                SimpleDateFormat dateFormat = new SimpleDateFormat(Helper.ISO_DATE_FORMAT_JSON, Locale.US);
+                                                notification.setTimestamp(dateFormat.parse(Helper.getJSONString("created_at", dateFormat.format(new Date()), item)));
+                                            } catch (ParseException ex) {
+                                                notification.setTimestamp(new Date());
+                                            }
+
+                                            if (notification.getRemoteId() > 0 && !Helper.isNullOrEmpty(notification.getDescription())) {
+                                                notifications.add(notification);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | IllegalStateException ex) {
+                                ex.printStackTrace();
+                                return null;
+                            }
+
+                            return notifications;
+                        }
+                    };
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Future<List<LbryNotification>> future = executorService.submit(callable);
+
+                    try {
+                        List<LbryNotification> notifications = future.get();
+
+                        if (notifications != null) {
+                            remoteNotifcationsLastLoaded = new Date();
+
+                            loadUnseenNotificationsCount();
+                            loadLocalNotifications();
+                            if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
+                                markNotificationsSeen();
+                            }
+
+                            if (notificationsSwipeContainer != null) {
+                                notificationsSwipeContainer.setRefreshing(false);
+                            }
+                        } else {
+                            loadLocalNotifications();
+                            if (notificationsSwipeContainer != null) {
+                                notificationsSwipeContainer.setRefreshing(false);
+                            }
+                        }
+
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            });
+            t.start();
+        }
     }
 
     private void loadLocalNotifications() {
@@ -3763,13 +3905,36 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onNotificationClicked(LbryNotification notification) {
                 // set as seen and read
-                NotificationUpdateTask task = new NotificationUpdateTask(Arrays.asList(notification.getRemoteId()), true, true, true);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                markNotificationReadAndSeen(notification.getId());
-                notification.setSeen(true);
-                if (notificationListAdapter != null) {
-                    notificationListAdapter.notifyDataSetChanged();
+                Map<String, String> options = new HashMap<>();
+                options.put("notification_ids", String.valueOf(notification.getRemoteId()));
+                options.put("is_seen", "true");
+                options.put("is_read", "true");
+
+                AccountManager am = AccountManager.get(getApplicationContext());
+
+                if (am != null) {
+                    String at = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                    if (at != null)
+                        options.put("auth_token", at);
                 }
+
+                if (Build.VERSION.SDK_INT > M) {
+                    Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
+                    CompletableFuture.supplyAsync(supplier);
+                } else {
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Lbryio.call("notification", "edit", options, null);
+                            } catch (LbryioResponseException | LbryioRequestException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    t.start();
+                }
+                markNotificationReadAndSeen(notification.getId());
 
                 String targetUrl = notification.getTargetUrl();
                 if (targetUrl.startsWith(SPECIAL_URL_PREFIX)) {
@@ -3790,22 +3955,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void markNotificationReadAndSeen(long notificationId) {
-        (new AsyncTask<Void, Void, Void>() {
-            protected Void doInBackground(Void... params) {
+        Activity activity = this;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
                 if (dbHelper != null) {
                     try {
                         SQLiteDatabase db = dbHelper.getWritableDatabase();
                         DatabaseHelper.markNotificationReadAndSeen(notificationId, db);
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                loadUnseenNotificationsCount();
+                            }
+                        });
                     } catch (Exception ex) {
-                        // pass
+                        ex.printStackTrace();
                     }
                 }
-                return null;
             }
-            protected void onPostExecute() {
-                loadUnseenNotificationsCount();
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        });
+        t.start();
     }
 
     private void resolveCommentAuthors(List<String> urls) {

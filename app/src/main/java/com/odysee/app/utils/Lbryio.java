@@ -93,6 +93,8 @@ public final class Lbryio {
                 authToken = am.peekAuthToken(odyseeAccount, "auth_token_type");
             }
         }
+        if (options != null && options.containsKey("auth_token"))
+            authToken = options.get("auth_token");
         if (Helper.isNullOrEmpty(authToken) && !generatingAuthToken) {
             // Only call getAuthToken if not calling /user/new
             authToken = getAuthToken(context);
