@@ -411,8 +411,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private static final int STARTUP_STAGE_FILTER_LIST_LOADED = 9;
     private static final int DEFAULT_MINI_PLAYER_MARGIN = 4;
 
+    private boolean readyToDraw = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.AppTheme_NoActionBar);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        if (Build.VERSION.SDK_INT < 31) {
+            findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
+        } else {
+            findViewById(R.id.root).getViewTreeObserver().addOnPreDrawListener(
+                new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        // Check if the initial data is ready.
+                        if (readyToDraw) {
+                            // The content is ready; start drawing.
+                            findViewById(R.id.root).getViewTreeObserver().removeOnPreDrawListener(this);
+                            return true;
+                        } else {
+                            // The content is not ready; suspend.
+                            return false;
+                        }
+                    }
+                });
+        }
         instance = this;
         // workaround to fix dark theme because https://issuetracker.google.com/issues/37124582
         try {
@@ -445,13 +470,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // pass
         }
 
-        super.onCreate(savedInstanceState);
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
-        setContentView(R.layout.activity_main);
-
-        findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -2212,30 +2232,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void hideLaunchScreen() {
-        // Animate?
-        View launchSplash = findViewById(R.id.launch_splash);
-        if (launchSplash.getVisibility() == View.VISIBLE) {
-            int width = launchSplash.getWidth();
-            ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
-            valueAnimator.setInterpolator(new DecelerateInterpolator());
-            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    launchSplash.getLayoutParams().width = (int) animation.getAnimatedValue();
-                    launchSplash.requestLayout();
-                }
-            });
-            valueAnimator.setInterpolator(new DecelerateInterpolator());
-            valueAnimator.setDuration(200);
-            valueAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    launchSplash.clearAnimation();
-                    launchSplash.setVisibility(View.GONE);
-                    findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-                }
-            });
-            valueAnimator.start();
+        if (Build.VERSION.SDK_INT < 31) {
+            // Animate?
+            View launchSplash = findViewById(R.id.launch_splash);
+            if (launchSplash.getVisibility() == View.VISIBLE) {
+                int width = launchSplash.getWidth();
+                ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
+                valueAnimator.setInterpolator(new DecelerateInterpolator());
+                valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        launchSplash.getLayoutParams().width = (int) animation.getAnimatedValue();
+                        launchSplash.requestLayout();
+                    }
+                });
+                valueAnimator.setInterpolator(new DecelerateInterpolator());
+                valueAnimator.setDuration(200);
+                valueAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        launchSplash.clearAnimation();
+                        launchSplash.setVisibility(View.GONE);
+                        findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+                    }
+                });
+                valueAnimator.start();
+            }
+        } else {
+            readyToDraw = true;
         }
     }
 

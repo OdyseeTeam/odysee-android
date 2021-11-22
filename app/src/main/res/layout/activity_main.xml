@@ -127,12 +127,8 @@
         android:focusableInTouchMode="true"
         android:clickable="true"
         android:id="@+id/launch_splash"
+        android:background="@drawable/launch_screen"
         android:visibility="gone">
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/launch_screen" />
         <ProgressBar
             android:layout_width="36dp"
             android:layout_height="36dp"
