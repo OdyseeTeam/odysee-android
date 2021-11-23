@@ -23,7 +23,6 @@ import java.util.List;
 import com.odysee.app.R;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbryio;
 import com.odysee.app.views.CreditsBalanceView;
 
 import lombok.Getter;
@@ -84,6 +83,7 @@ public class RewardListAdapter extends RecyclerView.Adapter<RewardListAdapter.Vi
         custom.setRewardTitle(context.getString(R.string.custom_reward_title));
         custom.setRewardDescription(context.getString(R.string.custom_reward_description));
         items.add(custom);
+        notifyItemInserted(items.indexOf(custom));
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
