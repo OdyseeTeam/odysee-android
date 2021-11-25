@@ -50,6 +50,7 @@ import com.odysee.app.tasks.lbryinc.FetchSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.listener.ChannelItemSelectionListener;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -263,7 +264,6 @@ public class FollowingFragment extends BaseFragment implements
         discoverLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 Helper.setViewEnabled(discoverLink, false);
                 buildChannelIdsAndUrls();
                 currentSuggestedPage = 1;
@@ -427,13 +427,23 @@ public class FollowingFragment extends BaseFragment implements
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
+        ContentSources.Category primaryCategory = null;
+        for (ContentSources.Category category : ContentSources.DYNAMIC_CONTENT_CATEGORIES) {
+            if ("PRIMARY_CONTENT".equalsIgnoreCase(category.getKey())) {
+                primaryCategory = category;
+                break;
+            }
+        }
+
+
         return Lbry.buildClaimSearchOptions(
                 Claim.TYPE_CHANNEL,
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                primaryCategory != null ? Arrays.asList(primaryCategory.getChannelIds()) : null,
                 null,
                 excludeChannelIdsForDiscover,
-                Arrays.asList(Claim.ORDER_BY_EFFECTIVE_AMOUNT),
+                Arrays.asList(Claim.ORDER_BY_TRENDING_MIXED),
                 null,
                 currentSuggestedPage == 0 ? 1 : currentSuggestedPage,
                 SUGGESTED_PAGE_SIZE);
@@ -451,6 +461,7 @@ public class FollowingFragment extends BaseFragment implements
                 Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST),
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                null,
                 getChannelIds(),
                 null,
                 getContentSortOrder(),
