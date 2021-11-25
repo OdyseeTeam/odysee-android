@@ -569,7 +569,7 @@ public class Claim {
 
         @Override
         public String toString() {
-            String url = "https://image-processor.vanwanet.com/optimize/";
+            String url = "https://thumbnails.odysee.com/optimize/";
             return url.concat(appendedPath);
         }
     }
