@@ -32,7 +32,7 @@ import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -165,16 +165,19 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             @Override
             public void onClick(View view) {
                 if (claim != null) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
-                            setTitle(R.string.delete_channel).
-                            setMessage(R.string.confirm_delete_channel)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    deleteCurrentClaim();
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
+                    Context c = getContext();
+                    if (c != null) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(c).
+                                setTitle(R.string.delete_channel).
+                                setMessage(R.string.confirm_delete_channel)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        deleteCurrentClaim();
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    }
                 }
             }
         });
@@ -288,16 +291,18 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     boolean isFollowing = Lbryio.isFollowing(claim);
                     if (isFollowing) {
                         Context context = getContext();
-                        AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                                setTitle(R.string.confirm_unfollow).
-                                setMessage(R.string.confirm_unfollow_message)
-                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        doFollowUnfollow(isFollowing, view);
-                                    }
-                                }).setNegativeButton(R.string.no, null);
-                        builder.show();
+                        if (context != null) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                    setTitle(R.string.confirm_unfollow).
+                                    setMessage(R.string.confirm_unfollow_message)
+                                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            doFollowUnfollow(isFollowing, view);
+                                        }
+                                    }).setNegativeButton(R.string.no, null);
+                            builder.show();
+                        }
                     } else {
                         doFollowUnfollow(isFollowing, view);
                     }
@@ -345,7 +350,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         if (claim != null) {
             Helper.setViewVisibility(layoutDisplayArea, View.GONE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
-            AbandonChannelTask task = new AbandonChannelTask(Arrays.asList(claim.getClaimId()), layoutResolving, Lbryio.AUTH_TOKEN, new AbandonHandler() {
+            AbandonChannelTask task = new AbandonChannelTask(Collections.singletonList(claim.getClaimId()), layoutResolving, Lbryio.AUTH_TOKEN, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
@@ -423,7 +428,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private void checkParams() {
         boolean updateRequired = false;
         Map<String, Object> params = getParams();
-        String newUrl = null;
+        String newUrl;
         if (params != null) {
             if (params.containsKey("claim")) {
                 Claim claim = (Claim) params.get("claim");

@@ -40,7 +40,6 @@ import com.odysee.app.listener.FilePickerListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.tasks.UpdateSuggestedTagsTask;
@@ -319,7 +318,7 @@ public class ChannelFormFragment extends BaseFragment implements
         String depositString = Helper.getValue(inputDeposit.getText());
         double depositAmount = 0;
         try {
-            depositAmount = Double.valueOf(depositString);
+            depositAmount = Double.parseDouble(depositString);
         } catch (NumberFormatException ex) {
             // pass
             showError(getString(R.string.please_enter_valid_deposit));
