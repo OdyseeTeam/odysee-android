@@ -3253,9 +3253,10 @@ public class FileViewFragment extends BaseFragment implements
                         amountClaimed == 1 ? 1 : 2,
                         new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed));
             }
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).showMessage(message);
+            View root = getView();
+
+            if (root != null) {
+                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
             }
         }
 
