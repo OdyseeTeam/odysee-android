@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container_inline_channel_form_create"
+    android:id="@+id/channel_create_bottomsheet"
     android:layout_marginTop="16dp"
+    style="@style/Odysee_BottomSheetLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:visibility="gone"
-    tools:visibility="visible">
+    android:orientation="vertical">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/BottomSheet_Title"
+        android:text="@string/create_a_channel" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/channel_is_required"
+        style="@style/TextView_Light"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"/>
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -16,10 +28,9 @@
             android:id="@+id/inline_channel_form_input_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:hint="@string/channel_name"
             tools:text="channel"
-            android:textFontWeight="300"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -50,68 +61,60 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="30dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/lbc"
             android:textAllCaps="true"
-            android:textSize="10sp"
-            android:textFontWeight="300" />
+            android:textSize="11sp" />
 
-        <LinearLayout
-            android:id="@+id/inline_channel_form_inline_balance_container"
+        <com.odysee.app.views.CreditsBalanceView
+            android:id="@+id/channel_form_balanceview"
             android:layout_toEndOf="@id/inline_channel_form_inline_currency"
             android:layout_marginStart="24dp"
             android:layout_marginTop="28dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="invisible">
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_credits" />
-            <TextView
-                android:id="@+id/inline_channel_form_inline_balance_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
-                android:layout_marginStart="2dp" />
-        </LinearLayout>
+            app:iconSize="12dp"
+            android:visibility="invisible"
+            tools:visibility="visible" />
     </RelativeLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/inter"
+        android:layout_marginTop="8dp"
+        style="@style/TextView_Light"
         android:text="@string/deposit_remains_yours"
-        android:textFontWeight="300"
         android:textSize="12sp" />
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp">
+
         <TextView
             android:id="@+id/inline_channel_form_cancel_link"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
             android:fontFamily="@font/inter"
+            android:text="@string/cancel"
             android:textSize="12sp"
-            android:text="@string/cancel" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ProgressBar
             android:id="@+id/inline_channel_form_create_progress"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="24dp"
-            android:layout_toStartOf="@id/inline_channel_form_create_button"
-            android:visibility="gone" />
+            android:layout_marginEnd="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:visibility="gone"
+            tools:visibility="visible"
+            app:layout_constraintEnd_toStartOf="@+id/inline_channel_form_create_button" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/inline_channel_form_create_button"
@@ -120,6 +123,9 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:fontFamily="@font/inter"
-            android:text="@string/create"/>
-    </RelativeLayout>
+            android:text="@string/create"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>

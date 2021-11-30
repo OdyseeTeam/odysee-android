@@ -3823,6 +3823,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void refreshChannelCreationRequired(View root) {
+        if (Lbry.ownChannels.size() > 0) {
+            root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        } else {
+            root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+            root.findViewById(R.id.no_channels).setVisibility(View.VISIBLE);
+        }
+    }
+
     public void fetchOwnChannels() {
         AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {

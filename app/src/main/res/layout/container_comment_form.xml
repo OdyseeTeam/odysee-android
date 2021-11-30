@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="16dp">
-    <LinearLayout
+    <LinearLayout android:id="@+id/has_channels"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -37,8 +37,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
-
-        <include layout="@layout/container_inline_channel_form" />
 
         <LinearLayout
             android:id="@+id/comment_form_reply_to_container"
@@ -191,5 +189,23 @@
                 android:layout_marginStart="24dp"
                 android:visibility="gone" />
         </RelativeLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/no_channels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:textSize="14sp"
+            android:text="@string/channel_is_required_to_comment" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/create_channel_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/create_a_channel" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

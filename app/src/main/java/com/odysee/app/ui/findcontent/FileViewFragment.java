@@ -148,7 +148,6 @@ import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
 import com.odysee.app.listener.StoragePermissionListener;
-import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
@@ -157,7 +156,6 @@ import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Reactions;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
-import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.supplier.ReactToCommentSupplier;
@@ -181,6 +179,7 @@ import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.ui.controls.SolidIconView;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
@@ -200,8 +199,7 @@ public class FileViewFragment extends BaseFragment implements
         FetchClaimsListener,
         PIPModeListener,
         ScreenOrientationListener,
-        StoragePermissionListener,
-        WalletBalanceListener {
+        StoragePermissionListener {
     private static final String TAG = "OdyseeFile";
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
@@ -274,18 +272,12 @@ public class FileViewFragment extends BaseFragment implements
     private TextInputEditText inputComment;
     private TextView textCommentLimit;
     private MaterialButton buttonPostComment;
+    private MaterialButton buttonCreateChannel;
     private ImageView commentPostAsThumbnail;
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
 
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
+    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
@@ -317,6 +309,7 @@ public class FileViewFragment extends BaseFragment implements
         inputComment = root.findViewById(R.id.comment_form_body);
         textCommentLimit = root.findViewById(R.id.comment_form_text_limit);
         buttonPostComment = root.findViewById(R.id.comment_form_post);
+        buttonCreateChannel = root.findViewById(R.id.create_channel_button);
         commentPostAsThumbnail = root.findViewById(R.id.comment_form_thumbnail);
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
@@ -326,15 +319,6 @@ public class FileViewFragment extends BaseFragment implements
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
         likeReactionIcon = root.findViewById(R.id.like_icon);
         dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
-
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
 
         initUi(root);
 
@@ -418,7 +402,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.addFetchClaimsListener(this);
             activity.addPIPModeListener(this);
             activity.addScreenOrientationListener(this);
-            activity.addWalletBalanceListener(this);
             if (!MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
                 activity.addStoragePermissionListener(this);
             }
@@ -632,6 +615,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @SuppressLint("RequiresFeature")
     private void applyThemeToWebView() {
         Context context = getContext();
         if (context instanceof MainActivity && webView != null && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
@@ -832,7 +816,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
             activity.removeStoragePermissionListener(this);
-            activity.removeWalletBalanceListener(this);
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             activity.checkNowPlaying();
         }
@@ -1218,7 +1201,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
                     CustomTabsIntent intent = builder.build();
-                    intent.launchUrl(context, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
+                    intent.launchUrl(context, Uri.parse(String.format("https://lbry.com/dmca/%s", claim.getClaimId())));
                 }
             }
         });
@@ -1327,19 +1310,6 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.performClick();
             }
         });
-
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                commentChannelSpinner,
-                commentChannelSpinnerAdapter
-        );
 
         RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
@@ -1540,7 +1510,7 @@ public class FileViewFragment extends BaseFragment implements
 */
 
         loadViewCount();
-        loadReactions();
+        loadReactions(claim);
         checkIsFollowing();
 
         View root = getView();
@@ -2039,9 +2009,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void loadReactions() {
-        loadReactions(claim);
-    }
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(1);
@@ -3192,21 +3159,24 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void logFileView(String url, long timeToStart) {
-        if (claim != null) {
-            String authToken = Lbryio.AUTH_TOKEN;
+        AccountManager am = AccountManager.get(getContext());
+        Account account = Helper.getOdyseeAccount(am.getAccounts());
+
+        if (claim != null && account != null) {
+            String authToken = am.peekAuthToken(account, "auth_token_type");
             Map<String, String> options = new HashMap<>();
-            options.put("uri", url);
+            options.put("uri", claim.getPermanentUrl());
             options.put("claim_id", claim.getClaimId());
             options.put("outpoint", String.format("%s:%d", claim.getTxid(), claim.getNout()));
             if (timeToStart > 0) {
                 options.put("time_to_start", String.valueOf(timeToStart));
             }
-            if (!Helper.isNullOrEmpty(authToken)) {
+            if (authToken != null) {
                 options.put("auth_token", authToken);
             }
-
             Activity activity = getActivity();
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+
                 Supplier<Boolean> s = new Supplier<Boolean>() {
                     @Override
                     public Boolean get() {
@@ -3294,7 +3264,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private void claimEligibleRewards() {
         // attempt to claim eligible rewards after viewing or playing a file (fail silently)
-        final String authToken = Lbryio.AUTH_TOKEN;
+        final AccountManager am = AccountManager.get(getContext());
+        final String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+
         ClaimRewardTask firstStreamTask = new ClaimRewardTask(Reward.TYPE_FIRST_STREAM, null, authToken, eligibleRewardHandler);
         ClaimRewardTask dailyViewTask = new ClaimRewardTask(Reward.TYPE_DAILY_VIEW, null, authToken, eligibleRewardHandler);
         firstStreamTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -3409,14 +3381,6 @@ public class FileViewFragment extends BaseFragment implements
                 enableFullScreenMode();
             }
         }
-    }
-
-    @Override
-    public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineChannelCreatorInlineBalanceValue != null) {
-            inlineChannelCreatorInlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
-        }
-        checkRewardsDriver();
     }
 
     private void checkRewardsDriver() {
@@ -3584,7 +3548,6 @@ public class FileViewFragment extends BaseFragment implements
     }
     private void disableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, true);
@@ -3593,17 +3556,36 @@ public class FileViewFragment extends BaseFragment implements
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
                     showInlineChannelCreator();
-                } else {
-                    hideInlineChannelCreator();
                 }
             }
         }
     }
     private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
-    }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+        if (channelCreationBottomSheet == null)
+            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(new ChannelCreateDialogFragment.ChannelCreateListener() {
+                @Override
+                public void onChannelCreated(Claim claimResult) {
+                    // add the claim to the channel list and set it as the selected item
+                    if (commentChannelSpinnerAdapter != null) {
+                        commentChannelSpinnerAdapter.add(claimResult);
+                    }
+                    if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+                        commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+                    }
+
+                    if (commentChannelSpinner != null) {
+                        View formRoot = (View) commentChannelSpinner.getParent().getParent();
+                        formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+                        formRoot.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null && channelCreationBottomSheet != null) {
+            channelCreationBottomSheet.show(activity.getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+        }
     }
 
     private void updateChannelList(List<Claim> channels) {
@@ -3633,6 +3615,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void initCommentForm(View root) {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.refreshChannelCreationRequired(root);
+        }
+
         textCommentLimit.setText(String.format("%d / %d", Helper.getValue(inputComment.getText()).length(), Comment.MAX_LENGTH));
 
         buttonClearReplyToComment.setOnClickListener(new View.OnClickListener() {
@@ -3646,6 +3634,15 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 validateAndCheckPostComment();
+            }
+        });
+
+        buttonCreateChannel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!fetchingChannels) {
+                    showInlineChannelCreator();
+                }
             }
         });
 
@@ -3676,9 +3673,11 @@ public class FileViewFragment extends BaseFragment implements
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
                             showInlineChannelCreator();
+                            if (commentChannelSpinnerAdapter.getCount() > 1) {
+                                commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+                            }
                         }
                     } else {
-                        hideInlineChannelCreator();
                         updatePostAsChannel(claim);
                     }
                 }
@@ -3860,11 +3859,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void react(Comment comment, boolean like) {
-        JSONObject options = new JSONObject();
-        try {
-            options.put("comment_ids", comment.getId());
-            options.put("type", like ? "like" : "dislike");
-            options.put("clear_types", like ? "dislike" : "like");
+        if (Lbry.ownChannels.size() > 0) {
+            JSONObject options = new JSONObject();
+            try {
+                options.put("comment_ids", comment.getId());
+                options.put("type", like ? "like" : "dislike");
+                options.put("clear_types", like ? "dislike" : "like");
 
             /**
              * This covers the case of a fresh comment being made and added to the list, and then liked by
@@ -3872,91 +3872,98 @@ public class FileViewFragment extends BaseFragment implements
              * would perhaps be better to fix this upstream and make this situation impossible, but even then
              * this last line of defense doesn't hurt.
              */
-            if ( comment.getReactions() == null ) {
+            if (comment.getReactions() == null) {
                 comment.setReactions(Reactions.newInstanceWithNoLikesOrDislikes());
             }
 
             if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
                 options.put("remove", true);
+=======
+                if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
+                    options.put("remove", true);
+>>>>>>> Drive user to create channel when one is required
+
+                AccountManager am = AccountManager.get(getContext());
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (odyseeAccount != null) {
+                    options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
 
             AccountManager am = AccountManager.get(getContext());
-            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-            if (odyseeAccount != null) {
-                options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
+                CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
+                completableFuture.thenAccept(result -> {
+                    if (result) {
+                        refreshCommentAfterReacting(comment);
+                    }
+                });
+            } else {
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // This makes a network connection, so it needs to be executed on a different thread than main.
+                        if (Lbry.ownChannels.size() > 0) {
+                            try {
+                                options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+                                options.put("channel_name", Lbry.ownChannels.get(0).getName());
+                                JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
 
-        AccountManager am = AccountManager.get(getContext());
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(result -> {
-                if (result) {
-                    refreshCommentAfterReacting(comment);
-                }
-            });
-        } else {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // This makes a network connection, so it needs to be executed on a different thread than main.
-                    if (Lbry.ownChannels.size() > 0) {
-                        try {
-                            options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                            options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
-
-                            if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                                options.put("signature", jsonChannelSign.getString("signature"));
-                                options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                                if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                                    options.put("signature", jsonChannelSign.getString("signature"));
+                                    options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                                }
+                            } catch (JSONException | ApiCallException e) {
+                                e.printStackTrace();
                             }
-                        } catch (JSONException | ApiCallException e) {
+                        }
+                        ExecutorService executor = Executors.newSingleThreadExecutor();
+                        Callable<Boolean> callable = new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() {
+                                JSONObject data = null;
+                                if (am.getAccounts().length > 0) {
+                                    Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                                    try {
+                                        if (odyseeAccount != null) {
+                                            Response response = Comments.performRequest(options, "reaction.React");
+                                            String responseString = response.body().string();
+                                            JSONObject jsonResponse = new JSONObject(responseString);
+                                            if (jsonResponse.has("result")) {
+                                                data = jsonResponse.getJSONObject("result");
+                                            } else {
+                                                Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
+                                            }
+                                            response.close();
+                                        }
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                return data != null && !data.has("error");
+                            }
+                        };
+                        Future<Boolean> futureReactions = executor.submit(callable);
+                        Boolean result;
+                        try {
+                            // This runs on a different thread, so it will not block main thread
+                            result = futureReactions.get();
+                            if (result) {
+                                refreshCommentAfterReacting(comment);
+                            }
+                        } catch (InterruptedException | ExecutionException e) {
                             e.printStackTrace();
                         }
                     }
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Callable<Boolean> callable = new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() {
-                            JSONObject data = null;
-                            if (am.getAccounts().length > 0) {
-                                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                                try {
-                                    if (odyseeAccount != null) {
-                                        okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-                                        String responseString = response.body().string();
-                                        JSONObject jsonResponse = new JSONObject(responseString);
-                                        if (jsonResponse.has("result")) {
-                                            data = jsonResponse.getJSONObject("result");
-                                        } else {
-                                            Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
-                                        }
-                                        response.close();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            return data != null && !data.has("error");
-                        }
-                    };
-                    Future<Boolean> futureReactions = executor.submit(callable);
-                    Boolean result;
-                    try {
-                        // This runs on a different thread, so it will not block main thread
-                        result = futureReactions.get();
-                        if (result) {
-                            refreshCommentAfterReacting(comment);
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
+                });
 
-            thread.start();
+                thread.start();
+            }
+        } else {
+            showInlineChannelCreator();
         }
     }
 
@@ -3978,36 +3985,40 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void react(Claim claim, boolean like) {
-        Runnable runnable = () -> {
-            purgeLoadingReactionsTask();
+        if (Lbry.ownChannels.size() > 0) {
+            Runnable runnable = () -> {
+                purgeLoadingReactionsTask();
 
-            Map<String, String> options = new HashMap<>();
-            options.put("claim_ids", claim.getClaimId());
-            options.put("type", like ? "like" : "dislike");
-            options.put("clear_types", like ? "dislike" : "like");
+                Map<String, String> options = new HashMap<>();
+                options.put("claim_ids", claim.getClaimId());
+                options.put("type", like ? "like" : "dislike");
+                options.put("clear_types", like ? "dislike" : "like");
 
-            if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
-                options.put("remove", "true");
+                if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
+                    options.put("remove", "true");
+
+                try {
+                    JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
+
+                    if (jsonResponse != null && jsonResponse.has(claim.getClaimId())) {
+                        reactions.setLiked(jsonResponse.getJSONObject(claim.getClaimId()).has("like") && !reactions.isLiked());
+                        reactions.setDisliked(jsonResponse.getJSONObject(claim.getClaimId()).has("dislike") && !reactions.isDisliked());
+                        updateContentReactions();
+                    }
+                } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
+                    e.printStackTrace();
+                } finally {
+                    loadReactions(claim);
+                }
+            };
 
             try {
-                JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
-
-                if (jsonResponse != null && jsonResponse.has(claim.getClaimId())) {
-                    reactions.setLiked(jsonResponse.getJSONObject(claim.getClaimId()).has("like") && !reactions.isLiked());
-                    reactions.setDisliked(jsonResponse.getJSONObject(claim.getClaimId()).has("dislike") && !reactions.isDisliked());
-                    updateContentReactions();
-                }
-            } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
+                new Thread(runnable).start();
+            } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                loadReactions(claim);
             }
-        };
-
-        try {
-            new Thread(runnable).start();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } else {
+            showInlineChannelCreator();
         }
     }
 

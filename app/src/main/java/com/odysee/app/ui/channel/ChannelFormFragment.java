@@ -1,6 +1,7 @@
 package com.odysee.app.ui.channel;
 
 import android.Manifest;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -52,7 +53,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
-import com.odysee.app.utils.Lbryio;
+import com.odysee.app.views.CreditsBalanceView;
 
 import lombok.Getter;
 
@@ -72,8 +73,7 @@ public class ChannelFormFragment extends BaseFragment implements
     private MaterialButton buttonSave;
 
     private NestedScrollView scrollView;
-    private View inlineBalanceContainer;
-    private TextView inlineBalanceValue;
+    private CreditsBalanceView balanceView;
     private View uploadProgress;
     private View containerOptionalFields;
     private ImageView imageCover;
@@ -131,8 +131,7 @@ public class ChannelFormFragment extends BaseFragment implements
         iconContainer = root.findViewById(R.id.channel_form_icon_container);
         imageCover = root.findViewById(R.id.channel_form_cover_image);
         imageThumbnail = root.findViewById(R.id.channel_form_thumbnail);
-        inlineBalanceContainer = root.findViewById(R.id.channel_form_inline_balance_container);
-        inlineBalanceValue = root.findViewById(R.id.channel_form_inline_balance_value);
+        balanceView = root.findViewById(R.id.channel_form_balance);
         uploadProgress = root.findViewById(R.id.channel_form_upload_progress);
         channelSaveProgress = root.findViewById(R.id.channel_form_save_progress);
 
@@ -162,7 +161,7 @@ public class ChannelFormFragment extends BaseFragment implements
         inputDeposit.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean hasFocus) {
-                Helper.setViewVisibility(inlineBalanceContainer, hasFocus ? View.VISIBLE : View.INVISIBLE);
+                Helper.setViewVisibility(balanceView, hasFocus ? View.VISIBLE : View.INVISIBLE);
             }
         });
         linkShowOptional.setOnClickListener(new View.OnClickListener() {
@@ -334,7 +333,9 @@ public class ChannelFormFragment extends BaseFragment implements
             return;
         }
 
-        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, Lbryio.AUTH_TOKEN, new ClaimResultHandler() {
+        AccountManager am = AccountManager.get(getContext());
+        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();
@@ -371,7 +372,7 @@ public class ChannelFormFragment extends BaseFragment implements
                 showError(error != null ? error.getMessage() : getString(R.string.channel_save_failed));
                 postSave();
             }
-        });
+        }, authToken);
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -580,8 +581,8 @@ public class ChannelFormFragment extends BaseFragment implements
 
     @Override
     public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineBalanceValue != null) {
-            inlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
+        if (walletBalance != null && balanceView != null) {
+            balanceView.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
         }
         checkRewardsDriver();
     }

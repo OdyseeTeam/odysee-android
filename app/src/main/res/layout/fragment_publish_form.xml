@@ -253,7 +253,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp" />
-                        <include layout="@layout/container_inline_channel_form" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 

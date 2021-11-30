@@ -42,6 +42,7 @@ import com.odysee.app.tasks.lbryinc.FetchInviteStatusTask;
 import com.odysee.app.tasks.lbryinc.FetchReferralCodeTask;
 import com.odysee.app.tasks.lbryinc.InviteByEmailTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -54,7 +55,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
     private boolean fetchingChannels;
     private View layoutAccountDriver;
-    private View layoutSdkInitializing;
     private TextView textLearnMoreLink;
     private MaterialButton buttonGetStarted;
 
@@ -73,14 +73,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
     private View progressLoadingStatus;
 
     private CardView rewardDriverCard;
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
+    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -106,15 +99,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         inviteHistoryList.setLayoutManager(llm);
 
         channelSpinner = root.findViewById(R.id.invites_channel_spinner);
-
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
 
         initUi();
 
@@ -163,7 +147,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
             @Override
             public void onClick(View view) {
                 String email = Helper.getValue(inputEmail.getText());
-                if (email.indexOf("@") == -1) {
+                if (!email.contains("@")) {
                     showError(getString(R.string.provide_valid_email));
                     return;
                 }
@@ -213,7 +197,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
                             showInlineChannelCreator();
                         }
                     } else {
-                        hideInlineChannelCreator();
                         // build invite link
                         updateInviteLink(claim);
                     }
@@ -241,18 +224,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
         channelSpinnerAdapter = new InlineChannelSpinnerAdapter(getContext(), R.layout.spinner_item_channel, new ArrayList<>());
         channelSpinnerAdapter.addPlaceholder(false);
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                channelSpinner,
-                channelSpinnerAdapter
-        );
     }
 
     private void updateInviteLink(Claim claim) {
@@ -320,8 +291,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
     public void clearInputFocus() {
         inputEmail.clearFocus();
-        inlineChannelCreatorInputName.clearFocus();
-        inlineChannelCreatorInputDeposit.clearFocus();
     }
 
     public void onStop() {
@@ -330,10 +299,31 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
     }
 
     private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
-    }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+        if (channelCreationBottomSheet == null)
+            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(new ChannelCreateDialogFragment.ChannelCreateListener() {
+                @Override
+                public void onChannelCreated(Claim claimResult) {
+                    // add the claim to the channel list and set it as the selected item
+                    if (channelSpinnerAdapter != null) {
+                        channelSpinnerAdapter.add(claimResult);
+                    }
+                    if (channelSpinner != null && channelSpinnerAdapter != null) {
+                        channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+                    }
+
+                    if (channelSpinner != null) {
+                        View formRoot = (View) channelSpinner.getParent().getParent();
+                        formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+                        formRoot.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null && channelCreationBottomSheet != null) {
+            channelCreationBottomSheet.show(activity.getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+        }
     }
 
     private void fetchDefaultInviteLink() {
@@ -356,7 +346,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
     private void disableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, true);
@@ -364,8 +353,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         if (selectedClaim != null) {
             if (selectedClaim.isPlaceholder()) {
                 showInlineChannelCreator();
-            } else {
-                hideInlineChannelCreator();
             }
         }
     }
@@ -430,9 +417,6 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
     @Override
     public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineChannelCreatorInlineBalanceValue != null) {
-            inlineChannelCreatorInlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
-        }
         checkRewardsDriver();
     }
 

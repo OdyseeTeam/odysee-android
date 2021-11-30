@@ -28,4 +28,9 @@
         <item name="android:foreground">?attr/selectableItemBackground</item>
         <item name="android:paddingBottom">8dp</item>
     </style>
+    <style name="TextView_Light">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">300</item>
+        <item name="textSize">12sp</item>
+    </style>
 </resources>
