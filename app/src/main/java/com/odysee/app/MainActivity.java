@@ -708,12 +708,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 LayoutInflater layoutInflater = (LayoutInflater) MainActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 View customView = layoutInflater.inflate(R.layout.popup_user,null);
                 PopupWindow popupWindow = new PopupWindow(customView, getScaledValue(240), WindowManager.LayoutParams.WRAP_CONTENT);
+                popupWindow.setFocusable(true);
+                popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+                    @Override
+                    public void onDismiss() {
+                        findViewById(R.id.profile_button).setEnabled(true);
+                    }
+                });
 
                 ImageButton closeButton = customView.findViewById(R.id.popup_user_close_button);
                 closeButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        findViewById(R.id.profile_button).setEnabled(true);
                         popupWindow.dismiss();
                     }
                 });
@@ -749,7 +755,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        closeButton.performClick();
+                        popupWindow.dismiss();
                         hideNotifications();
                         openFragment(RewardsFragment.class, true, null);
                     }
@@ -757,7 +763,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        closeButton.performClick();
+                        popupWindow.dismiss();
                         hideNotifications();
                         openFragment(ChannelManagerFragment.class, true, null);
                     }
@@ -766,7 +772,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
-                        closeButton.performClick();
+                        popupWindow.dismiss();
                         simpleSignIn(R.id.action_home_menu);
                     }
                 });
@@ -774,15 +780,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 buttonSignOut.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        closeButton.performClick();
+                        popupWindow.dismiss();
                         if (isSignedIn) {
                             signOutUser();
                         }
                     }
                 });
 
-                int height = findViewById(R.id.toolbar).getLayoutParams().height + 32;
-                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 0, height);
+                int ypos = findViewById(R.id.toolbar).getLayoutParams().height + 36;
+                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 24, ypos);
                 View container = (View) popupWindow.getContentView().getParent();
                 WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
                 WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
