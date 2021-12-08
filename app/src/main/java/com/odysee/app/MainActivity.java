@@ -707,18 +707,29 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 findViewById(R.id.profile_button).setEnabled(false);
                 LayoutInflater layoutInflater = (LayoutInflater) MainActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 View customView = layoutInflater.inflate(R.layout.popup_user,null);
-                PopupWindow popupWindow = new PopupWindow(customView, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+                PopupWindow popupWindow = new PopupWindow(customView, getScaledValue(240), WindowManager.LayoutParams.WRAP_CONTENT);
+                popupWindow.setFocusable(true);
+                popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+                    @Override
+                    public void onDismiss() {
+                        findViewById(R.id.profile_button).setEnabled(true);
+                    }
+                });
 
                 ImageButton closeButton = customView.findViewById(R.id.popup_user_close_button);
                 closeButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        findViewById(R.id.profile_button).setEnabled(true);
                         popupWindow.dismiss();
                     }
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
-                Button buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
+
+
+                View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
+                View buttonChannels = customView.findViewById(R.id.button_channels);
+                View buttonSignOut = customView.findViewById(R.id.button_sign_out);
+
                 TextView userIdText = customView.findViewById(R.id.user_id);
 
                 AccountManager am = AccountManager.get(getApplicationContext());
@@ -727,7 +738,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
                     buttonShowRewards.setVisibility(View.VISIBLE);
-                    signUserButton.setText("Sign out");
+                    signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
                     SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
@@ -736,6 +747,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
+                    signUserButton.setVisibility(View.VISIBLE);
                     buttonShowRewards.setVisibility(View.GONE);
                     signUserButton.setText(getString(R.string.sign_in));
                 }
@@ -743,26 +755,47 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        closeButton.performClick();
+                        popupWindow.dismiss();
                         hideNotifications();
                         openFragment(RewardsFragment.class, true, null);
+                    }
+                });
+                buttonChannels.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(ChannelManagerFragment.class, true, null);
                     }
                 });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
-                        closeButton.performClick();
+                        popupWindow.dismiss();
+                        simpleSignIn(R.id.action_home_menu);
+                    }
+                });
+
+                buttonSignOut.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
                         if (isSignedIn) {
                             signOutUser();
-                        } else {
-                            simpleSignIn(R.id.action_home_menu);
                         }
                     }
                 });
 
-                int height = findViewById(R.id.toolbar).getLayoutParams().height + 32;
-                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 0, height);
+                int ypos = findViewById(R.id.toolbar).getLayoutParams().height + 36;
+                popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 24, ypos);
+                View container = (View) popupWindow.getContentView().getParent();
+                WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+                WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
+
+                p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                p.dimAmount = 0.3f;
+                wm.updateViewLayout(container, p);
 
             }
         });
