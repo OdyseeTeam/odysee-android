@@ -635,8 +635,11 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    AccountManager am = AccountManager.get(getContext());
+                    String authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
+
                     ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Callable<String> callable = new WalletGetUnusedAddress(getContext());
+                    Callable<String> callable = new WalletGetUnusedAddress(authToken);
                     Future<String> future = executor.submit(callable);
                     try {
                         String addr = future.get();

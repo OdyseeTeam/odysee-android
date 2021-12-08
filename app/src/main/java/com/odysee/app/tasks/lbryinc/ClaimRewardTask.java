@@ -1,18 +1,14 @@
 package com.odysee.app.tasks.lbryinc;
 
-import android.content.Context;
 import android.os.AsyncTask;
-import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.odysee.app.R;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
@@ -24,24 +20,21 @@ import com.odysee.app.utils.Lbryio;
 
 public class ClaimRewardTask extends AsyncTask<Void, Void, String> {
 
-    private final Context context;
     private final String type;
     private final String rewardCode;
-    private final View progressView;
     private double amountClaimed;
+    private final String authToken;
     private final ClaimRewardHandler handler;
     private Exception error;
 
-    public ClaimRewardTask(String type, String rewardCode, View progressView, Context context, ClaimRewardHandler handler) {
+    public ClaimRewardTask(String type, String rewardCode, String authToken, ClaimRewardHandler handler) {
         this.type = type;
         this.rewardCode = rewardCode;
-        this.progressView = progressView;
-        this.context = context;
+        this.authToken = authToken;
         this.handler = handler;
     }
 
     protected void onPreExecute() {
-        Helper.setViewVisibility(progressView, View.VISIBLE);
     }
 
     public String doInBackground(Void... params) {
@@ -57,7 +50,7 @@ public class ClaimRewardTask extends AsyncTask<Void, Void, String> {
             }
 
             // Get a new wallet address for the reward
-            String address = (String) Lbry.genericApiCall(Lbry.METHOD_ADDRESS_UNUSED);
+            String address = (String) Lbry.genericApiCall(Lbry.METHOD_ADDRESS_UNUSED, authToken);
             Map<String, String> options = new HashMap<>();
             options.put("reward_type", type);
             options.put("wallet_address", address);
@@ -67,16 +60,16 @@ public class ClaimRewardTask extends AsyncTask<Void, Void, String> {
             if (!Helper.isNullOrEmpty(txid)) {
                 options.put("transaction_id", txid);
             }
+            if (authToken != null) {
+                options.put("auth_token", authToken);
+            }
 
             JSONObject reward = (JSONObject) Lbryio.parseResponse(
                     Lbryio.call("reward", "claim", options, Helper.METHOD_POST, null));
-            amountClaimed = Helper.getJSONDouble("reward_amount", 0, reward);
-            String defaultMessage = context != null ?
-                    context.getResources().getQuantityString(
-                            R.plurals.claim_reward_message,
-                            amountClaimed == 1 ? 1 : 2,
-                            new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed)) : "";
-            message = Helper.getJSONString("reward_notification", defaultMessage, reward);
+            if (reward != null) {
+                amountClaimed = Helper.getJSONDouble("reward_amount", 0, reward);
+                message = Helper.getJSONString("reward_notification", "", reward);
+            }
         } catch (ApiCallException | JSONException | LbryioRequestException | LbryioResponseException ex) {
             error = ex;
         }
@@ -85,7 +78,6 @@ public class ClaimRewardTask extends AsyncTask<Void, Void, String> {
     }
 
     protected void onPostExecute(String message) {
-        Helper.setViewVisibility(progressView, View.INVISIBLE);
         if (handler != null) {
             if (message != null) {
                 handler.onSuccess(amountClaimed, message);

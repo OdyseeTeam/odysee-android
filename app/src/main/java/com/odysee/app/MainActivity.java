@@ -193,6 +193,7 @@ import com.odysee.app.model.lbryinc.LbryNotification;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.supplier.FetchRewardsSupplier;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
 import com.odysee.app.supplier.NotificationListSupplier;
 import com.odysee.app.supplier.NotificationUpdateSupplier;
@@ -203,7 +204,6 @@ import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.lbryinc.AndroidPurchaseTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
-import com.odysee.app.tasks.lbryinc.FetchRewardsTask;
 import com.odysee.app.tasks.MergeSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
@@ -750,9 +750,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         closeButton.performClick();
-//                        hideNotifications();
-//                        openFragment(RewardsFragment.class, true, null);
-                        startActivity(new Intent(view.getContext(), ComingSoon.class));
+                        hideNotifications();
+                        openFragment(RewardsFragment.class, true, null);
                     }
                 });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
@@ -1984,7 +1983,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Reward.TYPE_NEW_ANDROID,
                     null,
                     null,
-                    this,
                     new ClaimRewardTask.ClaimRewardHandler() {
                 @Override
                 public void onSuccess(double amountClaimed, String message) {
@@ -3333,21 +3331,88 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void fetchRewards() {
-        FetchRewardsTask task = new FetchRewardsTask(null, new FetchRewardsTask.FetchRewardsHandler() {
-            @Override
-            public void onSuccess(List<Reward> rewards) {
+        String authToken;
+        AccountManager am = AccountManager.get(this);
+        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+        if (odyseeAccount != null) {
+            authToken = am.peekAuthToken(odyseeAccount, "auth_token_type");
+        } else {
+            authToken = "";
+        }
+
+        Map<String, String> options = new HashMap<>();
+        options.put("multiple_rewards_per_type", "true");
+        if (odyseeAccount != null && authToken != null) {
+            options.put("auth_token", authToken);
+        }
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
+            CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, executorService);
+            cf.exceptionally(e -> {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showError(e.getMessage());
+                    }
+                });
+                return null;
+            }).thenAccept(rewards -> {
                 Lbryio.updateRewardsLists(rewards);
 
                 if (Lbryio.totalUnclaimedRewardAmount > 0) {
                     updateRewardsUsdValue();
                 }
-            }
+            });
+        } else {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Callable<List<Reward>> callable = new Callable<List<Reward>>() {
+                        @Override
+                        public List<Reward> call() {
+                            List<Reward> rewards = null;
+                            try {
+                                JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", options, null));
+                                rewards = new ArrayList<>();
+                                if (results != null) {
+                                    for (int i = 0; i < results.length(); i++) {
+                                        rewards.add(Reward.fromJSONObject(results.getJSONObject(i)));
+                                    }
+                                }
+                            } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        showError(ex.getMessage());
+                                    }
+                                });
+                            }
 
-            @Override
-            public void onError(Exception error) {
-            }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            return rewards;
+                        }
+                    };
+
+                    Future<List<Reward>> future = executorService.submit(callable);
+
+                    try {
+                        List<Reward> rewards = future.get();
+
+                        if (rewards != null) {
+                            Lbryio.updateRewardsLists(rewards);
+
+                            if (Lbryio.totalUnclaimedRewardAmount > 0) {
+                                updateRewardsUsdValue();
+                            }
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+        }
     }
 
     public void updateRewardsUsdValue() {

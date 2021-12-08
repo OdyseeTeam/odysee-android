@@ -179,7 +179,6 @@ import com.odysee.app.tasks.file.GetFileTask;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
-import com.odysee.app.tasks.lbryinc.LogFileViewTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.controls.SolidIconView;
 import com.odysee.app.utils.Comments;
@@ -3134,19 +3133,84 @@ public class FileViewFragment extends BaseFragment implements
 
     private void logFileView(String url, long timeToStart) {
         if (claim != null) {
-            LogFileViewTask task = new LogFileViewTask(url, claim, timeToStart, new GenericTaskHandler() {
-                @Override
-                public void beforeStart() { }
+            AccountManager am = AccountManager.get(getContext());
+            String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+            Map<String, String> options = new HashMap<>();
+            options.put("uri", claim.getPermanentUrl());
+            options.put("claim_id", claim.getClaimId());
+            options.put("outpoint", String.format("%s:%d", claim.getTxid(), claim.getNout()));
+            if (timeToStart > 0) {
+                options.put("time_to_start", String.valueOf(timeToStart));
+            }
+            if (authToken != null) {
+                options.put("auth_token", authToken);
+            }
+            Activity activity = getActivity();
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
 
-                @Override
-                public void onSuccess() {
-                    claimEligibleRewards();
-                }
+                Supplier<Boolean> s = new Supplier<Boolean>() {
+                    @Override
+                    public Boolean get() {
+                        try {
+                            Lbryio.call("file", "view", options,  null).close();
+                            return true;
+                        } catch (LbryioRequestException | LbryioResponseException ex) {
+                            return false;
+                        }
+                    }
+                };
 
-                @Override
-                public void onError(Exception error) { }
-            });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(s);
+                cf.whenComplete((result, ex) -> {
+                    if (result) {
+                        if (activity != null) {
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    claimEligibleRewards();
+                                }
+                            });
+                        }
+                        if (ex != null) {
+                            if (activity != null) {
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ((MainActivity) activity).showError(ex.getMessage());
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            } else {
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Lbryio.call("file", "view", options,  null).close();
+                            if (activity != null) {
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        claimEligibleRewards();
+                                    }
+                                });
+                            }
+                        } catch (LbryioRequestException | LbryioResponseException ex) {
+                            if (activity != null) {
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ((MainActivity) activity).showError(ex.getMessage());
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+                t.start();
+            }
         }
     }
 
@@ -3171,9 +3235,11 @@ public class FileViewFragment extends BaseFragment implements
 
     private void claimEligibleRewards() {
         // attempt to claim eligible rewards after viewing or playing a file (fail silently)
-        Context context = getContext();
-        ClaimRewardTask firstStreamTask = new ClaimRewardTask(Reward.TYPE_FIRST_STREAM, null, null, context, eligibleRewardHandler);
-        ClaimRewardTask dailyViewTask = new ClaimRewardTask(Reward.TYPE_DAILY_VIEW, null, null, context, eligibleRewardHandler);
+        final AccountManager am = AccountManager.get(getContext());
+        final String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+
+        ClaimRewardTask firstStreamTask = new ClaimRewardTask(Reward.TYPE_FIRST_STREAM, null, authToken, eligibleRewardHandler);
+        ClaimRewardTask dailyViewTask = new ClaimRewardTask(Reward.TYPE_DAILY_VIEW, null, authToken, eligibleRewardHandler);
         firstStreamTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         dailyViewTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
@@ -3187,9 +3253,10 @@ public class FileViewFragment extends BaseFragment implements
                         amountClaimed == 1 ? 1 : 2,
                         new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed));
             }
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).showMessage(message);
+            View root = getView();
+
+            if (root != null) {
+                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
             }
         }
 
