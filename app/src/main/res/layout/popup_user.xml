@@ -1,38 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="8dp"
-    android:orientation="vertical"
-    android:background="@color/actionBarForeground">
-    <ImageButton
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:id="@+id/popup_user_close_button"
-        android:src="@drawable/ic_close"
-        android:background="@drawable/flag_transparent"
-        android:text="Close"
-        app:tint="@color/profile_username" />
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:id="@+id/user_id"
-        tools:text="user@example.com"
-        android:visibility="gone"
-        tools:visibility="visible"
-        android:textColor="@color/profile_username"/>
-    <Button
-        android:id="@+id/button_show_rewards"
+    android:layout_margin="24dp">
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Rewards" />
-    <com.google.android.material.button.MaterialButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/button_sign_user"
-        android:text="Sign in"/>
-</LinearLayout>
+        android:orientation="vertical">
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:orientation="horizontal">
+            <ImageButton
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:id="@+id/popup_user_close_button"
+                android:src="@drawable/ic_close"
+                android:background="@drawable/flag_transparent"
+                android:text="@string/close"
+                app:tint="@color/foreground" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginStart="8dp"
+                android:id="@+id/user_id"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:visibility="gone"
+                android:singleLine="true"
+                android:ellipsize="middle"
+                tools:text="user@example.com"
+                tools:visibility="visible" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <RelativeLayout
+            android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:id="@+id/button_channels"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+            <TextView
+                android:layout_marginLeft="40dp"
+                android:layout_marginStart="40dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="@string/channels"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:id="@+id/button_show_rewards"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+            <TextView
+                android:layout_marginLeft="40dp"
+                android:layout_marginStart="40dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="@string/rewards"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:id="@+id/button_sign_out"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginBottom="8dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="40dp"
+                android:layout_marginStart="40dp"
+                android:layout_centerVertical="true"
+                android:text="@string/sign_out"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/button_sign_user"
+            android:layout_marginTop="12dp"
+            android:text="@string/sign_in"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
