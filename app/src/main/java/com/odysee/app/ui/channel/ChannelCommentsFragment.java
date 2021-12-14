@@ -29,11 +29,9 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
@@ -80,6 +78,7 @@ public class ChannelCommentsFragment extends Fragment {
     private ImageView commentPostAsThumbnail;
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
+    private MaterialButton buttonUserSignedInRequired;
 
     ChannelCreateDialogFragment channelCreationBottomSheet;
 
@@ -102,6 +101,7 @@ public class ChannelCommentsFragment extends Fragment {
         commentPostAsThumbnail = root.findViewById(R.id.comment_form_thumbnail);
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
+        buttonUserSignedInRequired = root.findViewById(R.id.sign_in_user_button);
 
         RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
         commentList.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -340,6 +340,17 @@ public class ChannelCommentsFragment extends Fragment {
         }
 
         textCommentLimit.setText(String.format("%d / %d", Helper.getValue(inputComment.getText()).length(), Comment.MAX_LENGTH));
+
+        buttonUserSignedInRequired.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null) {
+                    activity.simpleSignIn(0);
+                }
+            }
+        });
 
         buttonClearReplyToComment.setOnClickListener(new View.OnClickListener() {
             @Override

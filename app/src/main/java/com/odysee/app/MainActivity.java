@@ -3824,12 +3824,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void refreshChannelCreationRequired(View root) {
-        if (Lbry.ownChannels.size() > 0) {
-            root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
-            root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        if (isSignedIn()) {
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.GONE);
+
+            if (Lbry.ownChannels.size() > 0) {
+                root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+                root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            } else {
+                root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+                root.findViewById(R.id.no_channels).setVisibility(View.VISIBLE);
+            }
         } else {
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.VISIBLE);
+
             root.findViewById(R.id.has_channels).setVisibility(View.GONE);
-            root.findViewById(R.id.no_channels).setVisibility(View.VISIBLE);
+            root.findViewById(R.id.no_channels).setVisibility(View.GONE);
         }
     }
 

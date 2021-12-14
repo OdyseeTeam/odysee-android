@@ -208,4 +208,22 @@
             android:layout_height="wrap_content"
             android:text="@string/create_a_channel" />
     </LinearLayout>
+    <LinearLayout android:id="@+id/user_not_signed_in"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:textSize="14sp"
+            android:text="@string/signed_in_required" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/sign_in_user_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sign_in" />
+    </LinearLayout>
 </androidx.cardview.widget.CardView>
