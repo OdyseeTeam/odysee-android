@@ -37,11 +37,6 @@ public class ChannelCreateUpdateTask extends AsyncTask<Void, Void, Claim> {
         this.handler = handler;
     }
 
-    public ChannelCreateUpdateTask(Claim claim, BigDecimal deposit, boolean update, View progressView, ClaimResultHandler handler, String authToken) {
-        this(claim, deposit, update, progressView, handler);
-        this.authToken = authToken;
-    }
-
     protected void onPreExecute() {
         Helper.setViewVisibility(progressView, View.VISIBLE);
         if (handler != null) {

@@ -108,7 +108,7 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
                 String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
 
                 ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(
-                        claimToSave, new BigDecimal(depositString), false, progressView, new ClaimResultHandler() {
+                        claimToSave, new BigDecimal(depositString), false, progressView, authToken, new ClaimResultHandler() {
                     @Override
                     public void beforeStart() {
                         Helper.setViewEnabled(inputChannelName, false);
@@ -150,7 +150,7 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
 
                         showError(error.getMessage());
                     }
-                }, authToken);
+                });
                 task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
         });

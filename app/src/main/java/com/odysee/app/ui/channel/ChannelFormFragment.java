@@ -335,7 +335,7 @@ public class ChannelFormFragment extends BaseFragment implements
 
         AccountManager am = AccountManager.get(getContext());
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, new ClaimResultHandler() {
+        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();
@@ -372,7 +372,7 @@ public class ChannelFormFragment extends BaseFragment implements
                 showError(error != null ? error.getMessage() : getString(R.string.channel_save_failed));
                 postSave();
             }
-        }, authToken);
+        });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
