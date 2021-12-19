@@ -26,7 +26,7 @@ public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
     private Exception error;
     private String authToken;
 
-    public ClaimListTask(String type, View progressView, ClaimListResultHandler handler, String token) {
+    public ClaimListTask(String type, View progressView, String token, ClaimListResultHandler handler) {
         this(Arrays.asList(type), progressView, handler);
         this.authToken = token;
     }
@@ -54,10 +54,12 @@ public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
             options.put("resolve", true);
 
             JSONObject result;
-            if (authToken != "")
-                result = (JSONObject) Lbry.directApiCall(Lbry.METHOD_CLAIM_LIST, options, authToken);
-            else
+            if (!Helper.isNullOrEmpty(authToken)) {
+                result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_CLAIM_LIST, options, authToken);
+            } else {
                 result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_CLAIM_LIST, options);
+            }
+
             JSONArray items = result.getJSONArray("items");
             claims = new ArrayList<>();
             for (int i = 0; i < items.length(); i++) {

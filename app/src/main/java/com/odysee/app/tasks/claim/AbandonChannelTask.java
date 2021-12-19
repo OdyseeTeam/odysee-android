@@ -21,10 +21,12 @@ public class AbandonChannelTask extends AsyncTask<Void, Void, Boolean> {
     private List<Exception> failedExceptions;
     private final View progressView;
     private final AbandonHandler handler;
+    private String authToken;
 
-    public AbandonChannelTask(List<String> claimIds, View progressView, AbandonHandler handler) {
+    public AbandonChannelTask(List<String> claimIds, View progressView, String authToken, AbandonHandler handler) {
         this.claimIds = claimIds;
         this.progressView = progressView;
+        this.authToken = authToken;
         this.handler = handler;
     }
 
@@ -42,7 +44,7 @@ public class AbandonChannelTask extends AsyncTask<Void, Void, Boolean> {
                 Map<String, Object> options = new HashMap<>();
                 options.put("claim_id", claimId);
                 options.put("blocking", true);
-                JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_CHANNEL_ABANDON, options);
+                JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_CHANNEL_ABANDON, options, authToken);
                 successfulClaimIds.add(claimId);
             } catch (ApiCallException ex) {
                 failedClaimIds.add(claimId);

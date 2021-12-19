@@ -144,7 +144,6 @@ public final class Lbry {
 
     public static Response apiCall(String method, Map<String, Object> params, String connectionString, String authToken) throws LbryRequestException {
         long counter = new Double(System.currentTimeMillis() / 1000.0).longValue();
-
         if (Helper.isNullOrEmpty(authToken) &&
                 params != null && params.containsKey("auth_token") && params.get("auth_token") != null) {
             authToken = params.get("auth_token").toString();

@@ -26,12 +26,14 @@ public class ChannelCreateUpdateTask extends AsyncTask<Void, Void, Claim> {
     private Exception error;
     private final ClaimResultHandler handler;
     private final View progressView;
+    private String authToken;
 
-    public ChannelCreateUpdateTask(Claim claim, BigDecimal deposit, boolean update, View progressView, ClaimResultHandler handler) {
+    public ChannelCreateUpdateTask(Claim claim, BigDecimal deposit, boolean update, View progressView, String authToken, ClaimResultHandler handler) {
         this.claim = claim;
         this.deposit = deposit;
         this.update = update;
         this.progressView = progressView;
+        this.authToken = authToken;
         this.handler = handler;
     }
 
@@ -75,7 +77,7 @@ public class ChannelCreateUpdateTask extends AsyncTask<Void, Void, Claim> {
         Claim claimResult = null;
         String method = !update ? Lbry.METHOD_CHANNEL_CREATE : Lbry.METHOD_CHANNEL_UPDATE;
         try {
-            JSONObject result = (JSONObject) Lbry.genericApiCall(method, options);
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(method, options, authToken);
             if (result.has("outputs")) {
                 JSONArray outputs = result.getJSONArray("outputs");
                 for (int i = 0; i < outputs.length(); i++) {

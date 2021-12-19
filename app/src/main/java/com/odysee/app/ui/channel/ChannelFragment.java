@@ -301,7 +301,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         if (claim != null) {
             Helper.setViewVisibility(layoutDisplayArea, View.GONE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
-            AbandonChannelTask task = new AbandonChannelTask(Arrays.asList(claim.getClaimId()), layoutResolving, new AbandonHandler() {
+            AbandonChannelTask task = new AbandonChannelTask(Arrays.asList(claim.getClaimId()), layoutResolving, Lbryio.AUTH_TOKEN, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();

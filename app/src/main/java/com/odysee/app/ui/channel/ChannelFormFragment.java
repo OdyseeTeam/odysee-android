@@ -53,6 +53,8 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
+
 import lombok.Getter;
 
 public class ChannelFormFragment extends BaseFragment implements
@@ -333,7 +335,7 @@ public class ChannelFormFragment extends BaseFragment implements
             return;
         }
 
-        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, new ClaimResultHandler() {
+        ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(claim, new BigDecimal(depositString), editMode, channelSaveProgress, Lbryio.AUTH_TOKEN, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();

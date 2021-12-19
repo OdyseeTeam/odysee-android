@@ -29,6 +29,8 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -193,7 +195,7 @@ public class BaseFragment extends Fragment {
                 }
 
                 ChannelCreateUpdateTask task =  new ChannelCreateUpdateTask(
-                        claimToSave, new BigDecimal(depositString), false, progressView, new ClaimResultHandler() {
+                        claimToSave, new BigDecimal(depositString), false, progressView, Lbryio.AUTH_TOKEN, new ClaimResultHandler() {
                     @Override
                     public void beforeStart() {
                         Helper.setViewEnabled(inputChannelName, false);

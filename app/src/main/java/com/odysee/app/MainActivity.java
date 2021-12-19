@@ -184,6 +184,7 @@ import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
+import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
@@ -216,6 +217,7 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
@@ -1056,7 +1058,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (claim != null) {
             params.put("claim", claim);
         }
-//        openFragment(ChannelFormFragment.class, true, NavMenuItem.ID_ITEM_CHANNELS, params);
+        openFragment(ChannelFormFragment.class, true, params);
     }
 
     public void openPublishesOnSuccessfulPublish() {
@@ -1969,6 +1971,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void loadAuthToken() {
         // Check if an auth token is present and then set it for Lbryio
+        AccountManager am = AccountManager.get(this);
+        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+        if (!Helper.isNullOrEmpty(authToken)) {
+            Lbryio.AUTH_TOKEN = authToken;
+            return;
+        }
+
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         String encryptedAuthToken = sp.getString(PREFERENCE_KEY_AUTH_TOKEN, null);
         if (!Helper.isNullOrEmpty(encryptedAuthToken)) {
@@ -2976,6 +2985,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void signOutUser() {
         Lbryio.currentUser = null;
         Lbryio.AUTH_TOKEN = "";
+
         SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
         sharedPref.edit().remove("auth_token").apply();
         sharedPref.edit().remove("subscriptions_filter_visibility").apply();
@@ -2987,7 +2997,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
-
     }
 
     public boolean isSignedIn() {
@@ -3676,7 +3685,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void fetchOwnChannels() {
         AccountManager am = AccountManager.get(this);
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(claims));
@@ -3689,7 +3698,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 Log.e("FetchingChannels", "onError: ".concat(error.getLocalizedMessage()));
             }
-        }, am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
+        });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
