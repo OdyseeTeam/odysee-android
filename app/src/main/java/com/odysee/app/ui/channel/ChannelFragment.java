@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +16,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
@@ -78,6 +82,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private View buttonDelete;
     private View buttonShare;
     private View buttonTip;
+    private View buttonReport;
     private View buttonFollowUnfollow;
     private View buttonBell;
     private SolidIconView iconBell;
@@ -111,6 +116,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonDelete = root.findViewById(R.id.channel_view_delete);
         buttonShare = root.findViewById(R.id.channel_view_share);
         buttonTip = root.findViewById(R.id.channel_view_tip);
+        buttonReport = root.findViewById(R.id.channel_view_report);
         buttonFollowUnfollow = root.findViewById(R.id.channel_view_follow_unfollow);
         textFollow = root.findViewById(R.id.channel_view_text_follow);
         iconFollow = root.findViewById(R.id.channel_view_icon_follow);
@@ -193,6 +199,22 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     if (context instanceof MainActivity) {
                         dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
                     }
+                }
+            }
+        });
+
+        buttonReport.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (claim != null) {
+                    Context context = getContext();
+                    CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+                    ctcspb.setToolbarColor(ContextCompat.getColor(context, R.color.colorPrimary));
+                    CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+                    CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+                    CustomTabsIntent intent = builder.build();
+                    intent.launchUrl(context, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
                 }
             }
         });
