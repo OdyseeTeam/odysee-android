@@ -3133,21 +3133,20 @@ public class FileViewFragment extends BaseFragment implements
 
     private void logFileView(String url, long timeToStart) {
         if (claim != null) {
-            AccountManager am = AccountManager.get(getContext());
-            String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+            String authToken = Lbryio.AUTH_TOKEN;
             Map<String, String> options = new HashMap<>();
-            options.put("uri", claim.getPermanentUrl());
+            options.put("uri", url);
             options.put("claim_id", claim.getClaimId());
             options.put("outpoint", String.format("%s:%d", claim.getTxid(), claim.getNout()));
             if (timeToStart > 0) {
                 options.put("time_to_start", String.valueOf(timeToStart));
             }
-            if (authToken != null) {
+            if (!Helper.isNullOrEmpty(authToken)) {
                 options.put("auth_token", authToken);
             }
+
             Activity activity = getActivity();
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-
                 Supplier<Boolean> s = new Supplier<Boolean>() {
                     @Override
                     public Boolean get() {
@@ -3235,9 +3234,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void claimEligibleRewards() {
         // attempt to claim eligible rewards after viewing or playing a file (fail silently)
-        final AccountManager am = AccountManager.get(getContext());
-        final String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-
+        final String authToken = Lbryio.AUTH_TOKEN;
         ClaimRewardTask firstStreamTask = new ClaimRewardTask(Reward.TYPE_FIRST_STREAM, null, authToken, eligibleRewardHandler);
         ClaimRewardTask dailyViewTask = new ClaimRewardTask(Reward.TYPE_DAILY_VIEW, null, authToken, eligibleRewardHandler);
         firstStreamTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

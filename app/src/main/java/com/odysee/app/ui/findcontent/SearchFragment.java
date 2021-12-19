@@ -251,10 +251,11 @@ public class SearchFragment extends BaseFragment implements
 
         // If the query consists of a single word -characters not separated by spaces-,
         // modify the request so it returns channels on top
-        final String[] split = currentQuery.split(" ");
-
-        if (split.length == 1) {
-            currentQuery = "@".concat(query);
+        if (currentQuery != null) {
+            final String[] split = currentQuery.split(" ");
+            if (split.length == 1) {
+                currentQuery = "@".concat(query);
+            }
         }
 
         LighthouseSearchTask task = new LighthouseSearchTask(
