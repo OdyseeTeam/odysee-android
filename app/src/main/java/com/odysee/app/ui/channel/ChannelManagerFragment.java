@@ -32,6 +32,7 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.claim.AbandonChannelTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -40,6 +41,7 @@ import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
+import com.odysee.app.utils.Lbryio;
 
 public class ChannelManagerFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
@@ -115,7 +117,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
 
     private void fetchChannels() {
         Helper.setViewVisibility(emptyView, View.GONE);
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, getLoading(), new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, getLoading(), Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(claims));
@@ -219,7 +221,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                 if (context instanceof MainActivity) {
                     Map<String, Object> params = new HashMap<>();
                     params.put("claim", claim);
-//                    ((MainActivity) context).openFragment(ChannelFormFragment.class, true, NavMenuItem.ID_ITEM_CHANNELS, params);
+                    ((MainActivity) context).openFragment(ChannelFormFragment.class, true, params);
                 }
 
                 actionMode.finish();
@@ -260,7 +262,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
 
         Helper.setViewVisibility(channelList, View.INVISIBLE);
         Helper.setViewVisibility(fabNewChannel, View.INVISIBLE);
-        AbandonChannelTask task = new AbandonChannelTask(claimIds, bigLoading, new AbandonHandler() {
+        AbandonChannelTask task = new AbandonChannelTask(claimIds, bigLoading, Lbryio.AUTH_TOKEN, new AbandonHandler() {
             @Override
             public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                 View root = getView();
