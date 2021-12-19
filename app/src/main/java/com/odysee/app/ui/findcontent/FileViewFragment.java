@@ -1215,7 +1215,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
                     CustomTabsIntent intent = builder.build();
-                    intent.launchUrl(context, Uri.parse(String.format("https://lbry.com/dmca/%s", claim.getClaimId())));
+                    intent.launchUrl(context, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
                 }
             }
         });
