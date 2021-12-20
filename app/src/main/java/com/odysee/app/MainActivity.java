@@ -1972,10 +1972,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private void loadAuthToken() {
         // Check if an auth token is present and then set it for Lbryio
         AccountManager am = AccountManager.get(this);
-        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        if (!Helper.isNullOrEmpty(authToken)) {
-            Lbryio.AUTH_TOKEN = authToken;
-            return;
+        Account account = Helper.getOdyseeAccount(am.getAccounts());
+        if (account != null) {
+            String authToken = am.peekAuthToken(account, "auth_token_type");
+            if (!Helper.isNullOrEmpty(authToken)) {
+                Lbryio.AUTH_TOKEN = authToken;
+                return;
+            }
         }
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
