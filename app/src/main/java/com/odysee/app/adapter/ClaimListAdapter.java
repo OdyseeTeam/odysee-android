@@ -456,7 +456,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         if (type == VIEW_TYPE_FEATURED && item.isUnresolved()) {
             vh.durationView.setVisibility(View.GONE);
             vh.titleView.setText("Nothing here. Publish something!");
-            vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
+            String name = item.getName();
+            if (!Helper.isNullOrEmpty(name)) {
+                vh.alphaView.setText(name.substring(0, Math.min(5, name.length() - 1)));
+            }
         } else {
             if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType()) || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
                 if (!Helper.isNullOrEmpty(thumbnailUrl)) {
