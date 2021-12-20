@@ -833,7 +833,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onRefresh() {
                 notificationsSwipeContainer.setRefreshing(true);
                 loadRemoteNotifications(false);
-                // FIXME This is causing blank fragments after closing notification's list and opening a different bottom tab
             }
         });
 
@@ -3941,8 +3940,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void loadLocalNotifications() {
-        findViewById(R.id.notification_list_empty_container).setVisibility(View.GONE);
-        findViewById(R.id.notifications_progress).setVisibility(View.VISIBLE);
+        // Path to here could from from not the main thread, so let's ensure changing visibility
+        // is requested from the main thread
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                findViewById(R.id.notification_list_empty_container).setVisibility(View.GONE);
+                findViewById(R.id.notifications_progress).setVisibility(View.VISIBLE);
+            }
+        });
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Supplier<List<LbryNotification>> task = new GetLocalNotificationsSupplier();
