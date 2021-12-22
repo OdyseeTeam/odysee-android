@@ -72,9 +72,6 @@ public class ChannelCreateUpdateTask extends AsyncTask<Void, Void, Claim> {
         if (claim.getTags() != null && claim.getTags().size() > 0) {
             options.put("tags", claim.getTags());
         }
-        if (authToken != null) {
-            options.put("auth_token", authToken);
-        }
         options.put("blocking", true);
 
         Claim claimResult = null;
