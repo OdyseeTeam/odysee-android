@@ -573,6 +573,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             sharedPreferencesEditor.commit();
         }
 
+        // Preliminary internal releases of Odysee was using SharedPreferences to store the authentication token.
+        // Currently, it is using Android AccountManager, so let's check if value is stored and remove it for
+        // for privacy concerns.
+        if (sharedPreferences.contains("auth_token")) {
+            sharedPreferencesEditor.remove("auth_token").apply();
+        }
+
         // Create Fragment instances here so they are not recreated when selected on the bottom navigation bar
         Fragment homeFragment = new AllContentFragment();
         Fragment followingFragment = new FollowingFragment();
@@ -742,10 +749,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
-                    SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString("auth_token", Lbryio.AUTH_TOKEN);
-                    editor.apply();
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
