@@ -14,9 +14,9 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
+import com.odysee.app.callable.ChannelCreateUpdate;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
-import com.odysee.app.tasks.claim.ChannelCreateUpdateTask;
-import com.odysee.app.tasks.claim.ClaimResultHandler;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
@@ -24,6 +24,11 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 
 import java.math.BigDecimal;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
     ChannelCreateListener listener;
@@ -106,52 +111,69 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
 
                 AccountManager am = AccountManager.get(getContext());
                 String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                MainActivity activity = (MainActivity) getActivity();
 
-                ChannelCreateUpdateTask task = new ChannelCreateUpdateTask(
-                        claimToSave, new BigDecimal(depositString), false, progressView, authToken, new ClaimResultHandler() {
-                    @Override
-                    public void beforeStart() {
-                        Helper.setViewEnabled(inputChannelName, false);
-                        Helper.setViewEnabled(inputDeposit, false);
-                        Helper.setViewEnabled(createButton, false);
-                        Helper.setViewEnabled(linkCancel, false);
-                    }
+                enableViews(inputChannelName, inputDeposit, createButton, linkCancel, false);
+                Helper.setViewVisibility(progressView, View.VISIBLE);
 
+                Callable<Claim> c = new ChannelCreateUpdate(claimToSave, new BigDecimal(depositString), false, authToken);
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<Claim> future = executor.submit(c);
+
+                Thread t = new Thread(new Runnable() {
                     @Override
-                    public void onSuccess(Claim claimResult) {
-                        if (!BuildConfig.DEBUG) {
-                            LogPublishTask logPublishTask = new LogPublishTask(claimResult);
-                            logPublishTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    public void run() {
+                        try {
+                            Claim result = future.get();
+
+                            if (result != null) {
+                                if (!BuildConfig.DEBUG) {
+                                    LogPublishTask logPublishTask = new LogPublishTask(result);
+                                    logPublishTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                }
+
+                                // channel created
+                                Bundle bundle = new Bundle();
+                                bundle.putString("claim_id", result.getClaimId());
+                                bundle.putString("claim_name", result.getName());
+                                LbryAnalytics.logEvent(LbryAnalytics.EVENT_CHANNEL_CREATE, bundle);
+
+                                if (activity != null) {
+                                    activity.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (listener != null) {
+                                                listener.onChannelCreated(result);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        } catch (ExecutionException ex) {
+                            Throwable cause = ex.getCause();
+
+                            if (cause instanceof ApiCallException) {
+                                showError(cause.getMessage());
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            if (activity != null) {
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Helper.setViewVisibility(progressView, View.GONE);
+                                        enableViews(inputChannelName, inputDeposit, createButton, linkCancel, true);
+
+                                        dismiss();
+                                    }
+                                });
+                            }
+
                         }
-
-                        // channel created
-                        Bundle bundle = new Bundle();
-                        bundle.putString("claim_id", claimResult.getClaimId());
-                        bundle.putString("claim_name", claimResult.getName());
-                        LbryAnalytics.logEvent(LbryAnalytics.EVENT_CHANNEL_CREATE, bundle);
-
-                        Helper.setViewEnabled(inputChannelName, true);
-                        Helper.setViewEnabled(inputDeposit, true);
-                        Helper.setViewEnabled(createButton, true);
-                        Helper.setViewEnabled(linkCancel, true);
-
-                        if (listener != null) {
-                            listener.onChannelCreated(claimResult);
-                        }
-
-                        dismiss();
-                    }
-
-                    @Override
-                    public void onError(Exception error) {
-                        Helper.setViewEnabled(inputChannelName, true);
-                        Helper.setViewEnabled(inputDeposit, true);
-                        Helper.setViewEnabled(createButton, true);
-
-                        showError(error.getMessage());
                     }
                 });
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                t.start();
             }
         });
 
@@ -160,11 +182,23 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
         return v;
     }
 
+    private void enableViews(TextInputEditText inputChannelName, TextInputEditText inputDeposit, Button createButton, TextView linkCancel, boolean b) {
+        Helper.setViewEnabled(inputChannelName, b);
+        Helper.setViewEnabled(inputDeposit, b);
+        Helper.setViewEnabled(createButton, b);
+        Helper.setViewEnabled(linkCancel, b);
+    }
+
     private void showError(String message) {
         MainActivity activity = (MainActivity) getActivity();
 
         if (activity != null) {
-            activity.showError(message);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.showError(message, activity.findViewById(R.id.main_activity_other_fragment));
+                }
+            });
         }
     }
 

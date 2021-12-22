@@ -21,7 +21,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -51,6 +50,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -82,24 +82,17 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
-import androidx.browser.customtabs.CustomTabColorSchemeParams;
-import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -107,7 +100,6 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -193,6 +185,7 @@ import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
+import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
@@ -225,7 +218,6 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.channel.ChannelCommentsFragment;
 import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -296,7 +288,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean userInstallInitialised;
     @Getter
     private boolean initialCategoriesLoaded;
-    private boolean initialBlockedChannelsLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
     @Getter
@@ -305,14 +296,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private int queuedSyncCount = 0;
     private String cameraOutputFilename;
     private Bitmap nowPlayingClaimBitmap;
-    private Fragment currentDisplayFragment;
 
     @Setter
     private BackPressInterceptor backPressInterceptor;
     private WebSocketClient webSocketClient;
 
     private int bottomNavigationHeight = 0;
-    private ActivityResultLauncher<Intent> activityResultLauncher;
 
     @Getter
     private String firebaseMessagingToken;
@@ -377,8 +366,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
-    public static final String PREFERENCE_KEY_INTERNAL_EMAIL_REWARD_CLAIMED = "com.odysee.app.preference.internal.EmailRewardClaimed";
-    public static final String PREFERENCE_KEY_INTERNAL_FIRST_YOUTUBE_SYNC_DONE = "com.odysee.app.preference.internal.FirstYouTubeSyncDone";
+
+    public static final String PREFERENCE_KEY_AUTH_TOKEN = "com.odysee.app.Preference.AuthToken";
 
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
@@ -436,8 +425,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
+
         if (Build.VERSION.SDK_INT < 31) {
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
@@ -465,33 +454,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } catch (Exception ex) {
             // pass (don't fail initialization on some _weird_ device implementations)
         }
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+//        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
 
         initKeyStore();
         loadAuthToken();
 
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        }
-
-        activityResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        // first run completed or skipped
-                        checkFirstYouTubeSync();
-                        return;
-                    }
-
-                    if (result.getResultCode() == Activity.RESULT_CANCELED) {
-                        // back button pressed, so it was cancelled
-                        finish();
-                    }
-                }
-            });
-
+//        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
+//            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+//        }
         initSpecialRouteMap();
 
         LbryAnalytics.init(this);
@@ -604,19 +574,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             sharedPreferencesEditor.commit();
         }
 
-        // Preliminary internal releases of Odysee was using SharedPreferences to store the authentication token.
-        // Currently, it is using Android AccountManager, so let's check if value is stored and remove it for
-        // for privacy concerns.
-        if (sharedPreferences.contains("auth_token")) {
-            sharedPreferencesEditor.remove("auth_token").apply();
-        }
-
-        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor defaultSharedPreferencesEditor = defaultSharedPreferences.edit();
-        if (defaultSharedPreferences.contains("com.odysee.app.Preference.AuthToken")) {
-            defaultSharedPreferencesEditor.remove("com.odysee.app.Preference.AuthToken").apply();
-        }
-
         // Create Fragment instances here so they are not recreated when selected on the bottom navigation bar
         Fragment homeFragment = new AllContentFragment();
         Fragment followingFragment = new FollowingFragment();
@@ -627,7 +584,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         fragmentManager.addOnBackStackChangedListener(backStackChangedListener);
 
         BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
-        bottomNavigation.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
+        bottomNavigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 Fragment selectedFragment;
@@ -657,8 +614,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         fragmentTag = "LIBRARY";
                         break;
                 }
-
-                currentDisplayFragment = selectedFragment;
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -686,7 +641,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 //                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
 //                hideActionBar();
-                clearPlayingPlayer();
                 startActivity(new Intent(view.getContext(), ComingSoon.class));
             }
         });
@@ -702,9 +656,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 if (!isSearchUIActive()) {
                     try {
-                        SearchFragment searchFragment = SearchFragment.class.newInstance();
-                        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
-                        currentDisplayFragment = searchFragment;
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container_search, SearchFragment.class.newInstance(), "SEARCH").commit();
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
@@ -776,9 +729,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
 
-                View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
-                View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
+                View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonSignOut = customView.findViewById(R.id.button_sign_out);
 
                 TextView userIdText = customView.findViewById(R.id.user_id);
@@ -786,61 +738,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 AccountManager am = AccountManager.get(getApplicationContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
-
-                buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
-                buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
-                buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
-                buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
-
                 if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
+                    buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
+                    SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("auth_token", Lbryio.AUTH_TOKEN);
+                    editor.apply();
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
                     signUserButton.setVisibility(View.VISIBLE);
-                    signUserButton.setText(getString(R.string.sign_up_log_in));
+                    buttonShowRewards.setVisibility(View.GONE);
+                    signUserButton.setText(getString(R.string.sign_in));
                 }
 
-                customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        popupWindow.dismiss();
-
-                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
-                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
-                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
-
-                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
-                        CustomTabsIntent intent = builder.build();
-                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b/Community-Guidelines:c"));
-                    }
-                });
-
-                customView.findViewById(R.id.button_help_support).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        popupWindow.dismiss();
-
-                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
-                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
-                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
-
-                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
-                        CustomTabsIntent intent = builder.build();
-                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b?view=about"));
-                    }
-                });
-
-                buttonChannels.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        popupWindow.dismiss();
-                        hideNotifications();
-                        openFragment(ChannelManagerFragment.class, true, null);
-                    }
-                });
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -849,11 +763,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         openFragment(RewardsFragment.class, true, null);
                     }
                 });
-                buttonYouTubeSync.setOnClickListener(new View.OnClickListener() {
+                buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
-                        startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
+                        hideNotifications();
+                        openFragment(ChannelManagerFragment.class, true, null);
                     }
                 });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
@@ -875,11 +790,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
-                int[] coords = new int[2];
-                View profileButton = findViewById(R.id.profile_button);
-                profileButton.getLocationInWindow(coords);
-                int ypos = coords[1] + profileButton.getHeight() - 32;
-
+                int ypos = findViewById(R.id.toolbar).getLayoutParams().height + 36;
                 popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 24, ypos);
                 View container = (View) popupWindow.getContentView().getParent();
                 WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -939,16 +850,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         accountManager = AccountManager.get(this);
     }
 
-    /**
-     * Call this method when starting a new activity to avoid display glitches when user re-opens app from picture-in-picture
-     */
-    private void clearPlayingPlayer() {
-        if (appPlayer != null && appPlayer.isPlaying()) {
-            appPlayer.stop();
-            clearNowPlayingClaim();
-        }
-    }
-
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -959,7 +860,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 actionBar.setDisplayHomeAsUpEnabled(false);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -1476,6 +1376,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         updateMiniPlayerMargins();
         enteringPIPMode = false;
 
+        checkFirstRun();
         checkNowPlaying();
 
         if (isSignedIn())
@@ -1517,11 +1418,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean isFirstRunCompleted() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED, false);
-    }
-
-    public boolean isFirstYouTubeSyncDone() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_YOUTUBE_SYNC_DONE, false);
     }
 
     public void checkPurchases() {
@@ -1972,6 +1868,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void checkNowPlaying() {
+        Fragment fragment = getCurrentFragment();
+        if (fragment instanceof FileViewFragment) {
+            return;
+        }
+
         // Don't show the toolbar when returning from the Share Activity
         if (getSupportFragmentManager().findFragmentByTag("FileView") == null)
             findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
@@ -1980,7 +1881,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
-        if (appPlayer != null && !playerReassigned) {
+        if (appPlayer != null) {
+            // TODO This will reset player when changing tabs. See if it is needed
             PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
             playerView.setPlayer(appPlayer);
@@ -2051,47 +1953,42 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void checkFirstRun() {
-        if (!isFirstRunCompleted()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    activityResultLauncher.launch(new Intent(MainActivity.this, FirstRunActivity.class));
-                }
-            });
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean firstRunCompleted = sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED, false);
+        if (!firstRunCompleted) {
+            startActivity(new Intent(this, FirstRunActivity.class));
             return;
-        } else if (!isFirstYouTubeSyncDone()) {
-            // if first run is already done, then check first YT sync instead
-            checkFirstYouTubeSync();
+        }
+
+        if (!appStarted) {
+            // first run completed, startup
+            startup();
+            return;
         }
 
         fetchRewards();
     }
 
-    private void checkFirstYouTubeSync() {
-        if (!Lbryio.isSignedIn()) {
-            return;
-        }
-
-        if (!isFirstYouTubeSyncDone()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
-                }
-            });
-        }
-    }
-
-    /**
-     * Checks if an auth token is present and then sets it for Lbryio
-     */
     private void loadAuthToken() {
+        // Check if an auth token is present and then set it for Lbryio
         AccountManager am = AccountManager.get(this);
         Account account = Helper.getOdyseeAccount(am.getAccounts());
         if (account != null) {
             String authToken = am.peekAuthToken(account, "auth_token_type");
             if (!Helper.isNullOrEmpty(authToken)) {
                 Lbryio.AUTH_TOKEN = authToken;
+                return;
+            }
+        }
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        String encryptedAuthToken = sp.getString(PREFERENCE_KEY_AUTH_TOKEN, null);
+        if (!Helper.isNullOrEmpty(encryptedAuthToken)) {
+            try {
+                Lbryio.AUTH_TOKEN = new String(decrypt(Base64.decode(encryptedAuthToken, Base64.NO_WRAP), this, Lbry.KEYSTORE), StandardCharsets.UTF_8);
+            } catch (Exception ex) {
+                // pass. A new auth token would have to be generated if the old one cannot be decrypted
+                Log.e(TAG, "Could not decrypt existing auth token.", ex);
             }
         }
     }
@@ -2332,12 +2229,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         return;
                     }
 
-                    checkFirstRun();
-
-                    if (!initialBlockedChannelsLoaded) {
-                        loadBlockedChannels();
-                    }
-
                     if (!initialCategoriesLoaded) {
                         loadInitialCategories();
                         return;
@@ -2357,27 +2248,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // if the user install has already been initialised, proceed to load categories
         loadInitialCategories();
-    }
-
-    private void loadBlockedChannels() {
-        if (!initialBlockedChannelsLoaded) {
-            ExecutorService service = Executors.newSingleThreadExecutor();
-            service.execute(new Runnable() {
-                @Override
-                public void run() {
-                    SQLiteDatabase db = dbHelper.getReadableDatabase();
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
-                    initialBlockedChannelsLoaded = true;
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            finishChannelBlocking(true);
-                        }
-                    });
-                }
-            });
-        }
     }
 
     private void loadInitialCategories() {
@@ -2524,7 +2394,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!userSyncEnabled()) {
             return;
         }
-        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
+        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
             @Override
             public void onSuccess() {
                 // push wallet sync changes
@@ -2543,7 +2413,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
                     //openNavFragments.get
@@ -2591,24 +2461,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         }
                     }
                 }
-
-                if (blockedChannels != null && blockedChannels.size() > 0) {
-                    // TODO: Find out the most recently updated blocked channels and merge / update?
-                    List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
-                    for (LbryUri uri : blockedChannels) {
-                        if (!newBlockedChannels.contains(uri)) {
-                            newBlockedChannels.add(uri);
-                        }
-                    }
-                    Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
-                }
             }
 
             @Override
             public void onError(Exception error) {
                 Log.e(TAG, String.format("load shared user state failed: %s", error != null ? error.getMessage() : "no error message"), error);
             }
-        }, Lbryio.AUTH_TOKEN);
+        });
         loadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -2922,6 +2781,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
 
             private void handleAuthTokenGenerated(Intent intent) {
+                // store the value
+                String encryptedAuthToken = intent.getStringExtra("authToken");
+                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                sp.edit().putString(PREFERENCE_KEY_AUTH_TOKEN, encryptedAuthToken).apply();
             }
 
             private void handleOpenContentTag(Intent intent) {
@@ -2942,10 +2805,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).show();
     }
     public void showError(String message) {
-        Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
-                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+        showError(message, findViewById(R.id.content_main));
     }
 
+    public void showError(String message, @NotNull View root) {
+        Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+    }
     public void showNotifications() {
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
@@ -3090,8 +2955,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
             } else {
                 moveTaskToBack(true);
-                checkNowPlaying();
             }
+
+            return;
         }
     }
 
@@ -3125,6 +2991,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Lbryio.currentUser = null;
         Lbryio.AUTH_TOKEN = "";
 
+        SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
+        sharedPref.edit().remove("auth_token").apply();
+        sharedPref.edit().remove("subscriptions_filter_visibility").apply();
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
+
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
         } else {
@@ -3138,8 +3010,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void simpleSignIn(int sourceTabId) {
-        clearPlayingPlayer();
         Intent intent = new Intent(this, SignInActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         intent.putExtra("sourceTabId", sourceTabId);
         startActivity(intent);
         overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
@@ -3286,10 +3158,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private Fragment getCurrentFragment() {
-        if (currentDisplayFragment != null) {
-            return currentDisplayFragment;
-        }
-
         return getSupportFragmentManager().findFragmentById(R.id.content_main);
     }
 
@@ -3765,7 +3633,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 transaction.addToBackStack(null);
             }
             transaction.commit();
-            currentDisplayFragment = fragment;
         } catch (Exception ex) {
             // pass
         }
@@ -3812,8 +3679,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             getSupportActionBar().setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
 
             transaction.commit();
-
-            currentDisplayFragment = fragment;
             findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
@@ -4266,129 +4131,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
-    }
-
-    public void handleBlockChannel(final Claim channel) {
-        if (channel != null) {
-            // show confirm dialog
-            AlertDialog.Builder builder = new AlertDialog.Builder(this).
-                    setTitle(getString(R.string.confirm_block_channel_title, channel.getName())).
-                    setMessage(R.string.confirm_block_channel)
-                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            blockChannel(channel);
-                        }
-                    }).setNegativeButton(R.string.no, null);
-            builder.show();
-        }
-    }
-
-    public void handleUnblockChannel(final Claim channel) {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        service.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    DatabaseHelper.removeBlockedChannel(channel.getClaimId(), db);
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            finishChannelUnblocking(true, channel);
-                        }
-                    });
-                } catch (SQLiteException ex) {
-                    // pass
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            finishChannelUnblocking(false, null);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    public void blockChannel(Claim channel) {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        service.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    DatabaseHelper.createOrUpdateBlockedChannel(channel.getClaimId(), channel.getName(), db);
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            finishChannelBlocking(true, channel);
-                        }
-                    });
-                } catch (SQLiteException ex) {
-                    // pass
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            finishChannelBlocking(false);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-
-    public void finishChannelBlocking(boolean success) {
-        finishChannelBlocking(success, null);
-    }
-
-    public void finishChannelBlocking(boolean success, Claim channel) {
-        if (!success) {
-            showMessage(getString(R.string.channel_could_not_be_blocked));
-            return;
-        }
-
-        if (channel != null) {
-            showMessage(getString(R.string.channel_blocked, channel.getName()));
-        }
-
-        // refresh claim adapters where appropriate
-        applyBlockedChannelFilters();
-        saveSharedUserState();
-    }
-
-    public void finishChannelUnblocking(boolean success, Claim channel) {
-        if (!success) {
-            showMessage(getString(R.string.channel_could_not_be_unblocked));
-            return;
-        }
-
-        if (channel != null) {
-            showMessage(getString(R.string.channel_unblocked, channel.getName()));
-        }
-
-        applyBlockedChannelFilters();
-        saveSharedUserState();
-    }
-
-    private void applyBlockedChannelFilters() {
-        Fragment current = getCurrentFragment();
-        if (current != null) {
-            if (current instanceof AllContentFragment) {
-                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // content view
-            } else if (current instanceof FileViewFragment) {
-                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
-            } else if (current instanceof SearchFragment) {
-                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // search results
-            } else if (current instanceof ChannelFragment) {
-                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // channel comments
-            }
         }
     }
 
