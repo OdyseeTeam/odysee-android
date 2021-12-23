@@ -744,16 +744,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 AccountManager am = AccountManager.get(getApplicationContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
+
+                buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+
                 if (isSignedIn) {
                     userIdText.setVisibility(View.VISIBLE);
-                    buttonShowRewards.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
                     signUserButton.setVisibility(View.VISIBLE);
-                    buttonShowRewards.setVisibility(View.GONE);
                     signUserButton.setText(getString(R.string.sign_in));
                 }
 
@@ -792,7 +795,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
-                int ypos = findViewById(R.id.toolbar).getLayoutParams().height + 36;
+                int[] coords = new int[2];
+                View profileButton = findViewById(R.id.profile_button);
+                profileButton.getLocationInWindow(coords);
+                int ypos = coords[1] + profileButton.getHeight() - 32;
+
                 popupWindow.showAtLocation(findViewById(R.id.fragment_container_main_activity), Gravity.TOP|Gravity.END, 24, ypos);
                 View container = (View) popupWindow.getContentView().getParent();
                 WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);

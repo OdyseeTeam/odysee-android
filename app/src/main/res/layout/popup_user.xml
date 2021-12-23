@@ -101,6 +101,9 @@
             android:layout_height="wrap_content"
             android:id="@+id/button_sign_user"
             android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:layout_marginLeft="40dp"
+            android:layout_marginStart="40dp"
             android:text="@string/sign_in"/>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
