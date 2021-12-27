@@ -51,7 +51,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import lombok.Setter;
 
-public class ChannelCommentsFragment extends Fragment {
+public class ChannelCommentsFragment extends Fragment implements ChannelCreateDialogFragment.ChannelCreateListener {
 
     @Setter
     private Claim claim;
@@ -79,8 +79,6 @@ public class ChannelCommentsFragment extends Fragment {
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
     private MaterialButton buttonUserSignedInRequired;
-
-    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -273,36 +271,33 @@ public class ChannelCommentsFragment extends Fragment {
             Claim selectedClaim = (Claim) commentChannelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        if (channelCreationBottomSheet == null)
-            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(new ChannelCreateDialogFragment.ChannelCreateListener() {
-                @Override
-                public void onChannelCreated(Claim claimResult) {
-                    // add the claim to the channel list and set it as the selected item
-                    if (commentChannelSpinnerAdapter != null) {
-                        commentChannelSpinnerAdapter.add(claimResult);
-                    }
-                    if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
-                        commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
-                    }
-
-                    if (commentChannelSpinner != null) {
-                        View formRoot = (View) commentChannelSpinner.getParent().getParent();
-                        formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
-                        formRoot.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
+    private void showChannelCreator() {
         MainActivity activity = (MainActivity) getActivity();
 
-        if (activity != null && channelCreationBottomSheet != null) {
-            channelCreationBottomSheet.show(activity.getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
+    }
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (commentChannelSpinnerAdapter != null) {
+            commentChannelSpinnerAdapter.add(claimResult);
+        }
+        if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (commentChannelSpinner != null) {
+            View formRoot = (View) commentChannelSpinner.getParent().getParent();
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            formRoot.setVisibility(View.VISIBLE);
         }
     }
 
@@ -370,7 +365,7 @@ public class ChannelCommentsFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 if (!fetchingChannels) {
-                    showInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         });
@@ -401,7 +396,7 @@ public class ChannelCommentsFragment extends Fragment {
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
                             if (commentChannelSpinnerAdapter.getCount() > 1) {
                                 commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
                             }

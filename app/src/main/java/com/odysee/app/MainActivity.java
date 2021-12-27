@@ -218,6 +218,7 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -404,6 +405,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
+
+    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     AccountManager accountManager;
 
@@ -3690,6 +3693,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void refreshChannelCreationRequired(View root) {
         if (isSignedIn()) {
+            fetchOwnChannels();
             root.findViewById(R.id.user_not_signed_in).setVisibility(View.GONE);
 
             if (Lbry.ownChannels.size() > 0) {
@@ -3705,6 +3709,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             root.findViewById(R.id.has_channels).setVisibility(View.GONE);
             root.findViewById(R.id.no_channels).setVisibility(View.GONE);
         }
+    }
+
+    /**
+     * This shows the bottom sheet with the channel creator UI to quickly create a channel when one is required.
+     *
+     * There is no need for any method to hide it as it is either done by Android framework or programmatically
+     * by our BottomSheetDialog implementation.
+     * @param listener ChannelCreateDialogFragment.ChannelCreateListener implementation to run when a channel has been created
+     */
+    public void showChannelCreator(ChannelCreateDialogFragment.ChannelCreateListener listener) {
+        if (channelCreationBottomSheet == null) {
+            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(listener);
+        }
+
+        channelCreationBottomSheet.show(getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
     }
 
     public void fetchOwnChannels() {

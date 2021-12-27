@@ -90,7 +90,7 @@ import lombok.Data;
 import lombok.Getter;
 
 public class PublishFormFragment extends BaseFragment implements
-        FilePickerListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener {
+        FilePickerListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener, ChannelCreateDialogFragment.ChannelCreateListener {
 
     private static final String H264_CODEC = "h264";
     private static final int MAX_VIDEO_DIMENSION = 1920;
@@ -151,8 +151,6 @@ public class PublishFormFragment extends BaseFragment implements
 
     private View linkPublishCancel;
     private MaterialButton buttonPublish;
-
-    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     private boolean uploading;
     private String lastSelectedThumbnailFile;
@@ -355,7 +353,7 @@ public class PublishFormFragment extends BaseFragment implements
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder() && !claim.isPlaceholderAnonymous()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
                         }
                     }
                 }
@@ -902,36 +900,16 @@ public class PublishFormFragment extends BaseFragment implements
             Claim selectedClaim = (Claim) channelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        if (channelCreationBottomSheet == null)
-            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(new ChannelCreateDialogFragment.ChannelCreateListener() {
-                @Override
-                public void onChannelCreated(Claim claimResult) {
-                    // add the claim to the channel list and set it as the selected item
-                    if (channelSpinnerAdapter != null) {
-                        channelSpinnerAdapter.add(claimResult);
-                    }
-                    if (channelSpinner != null && channelSpinnerAdapter != null) {
-                        channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
-                    }
-
-                    if (channelSpinner != null) {
-                        View formRoot = (View) channelSpinner.getParent().getParent();
-                        formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
-                        formRoot.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
+    private void showChannelCreator() {
         MainActivity activity = (MainActivity) getActivity();
 
-        if (activity != null && channelCreationBottomSheet != null) {
-            channelCreationBottomSheet.show(activity.getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+        if (activity != null) {
+            activity.showChannelCreator(this);
         }
     }
 
@@ -1309,6 +1287,23 @@ public class PublishFormFragment extends BaseFragment implements
             String rewardsDriverText = String.format("%s\n%s",
                     getString(R.string.publishing_requires_credits), getString(R.string.tap_here_to_get_some));
             checkRewardsDriverCard(rewardsDriverText, Helper.MIN_DEPOSIT);
+        }
+    }
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (channelSpinnerAdapter != null) {
+            channelSpinnerAdapter.add(claimResult);
+        }
+        if (channelSpinner != null && channelSpinnerAdapter != null) {
+            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (channelSpinner != null) {
+            View formRoot = (View) channelSpinner.getParent().getParent();
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            formRoot.setVisibility(View.VISIBLE);
         }
     }
 

@@ -198,7 +198,8 @@ public class FileViewFragment extends BaseFragment implements
         FetchClaimsListener,
         PIPModeListener,
         ScreenOrientationListener,
-        StoragePermissionListener {
+        StoragePermissionListener,
+        ChannelCreateDialogFragment.ChannelCreateListener {
     private static final String TAG = "OdyseeFile";
     private static final int RELATED_CONTENT_SIZE = 16;
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
@@ -275,8 +276,6 @@ public class FileViewFragment extends BaseFragment implements
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
     private MaterialButton buttonCommentSignedInUserRequired;
-
-    ChannelCreateDialogFragment channelCreationBottomSheet;
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
@@ -775,6 +774,8 @@ public class FileViewFragment extends BaseFragment implements
                 enableFullScreenMode();
             }
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
+
+            activity.refreshChannelCreationRequired(getView());
         }
 
         if (MainActivity.appPlayer != null) {
@@ -3473,36 +3474,33 @@ public class FileViewFragment extends BaseFragment implements
             Claim selectedClaim = (Claim) commentChannelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        if (channelCreationBottomSheet == null)
-            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(new ChannelCreateDialogFragment.ChannelCreateListener() {
-                @Override
-                public void onChannelCreated(Claim claimResult) {
-                    // add the claim to the channel list and set it as the selected item
-                    if (commentChannelSpinnerAdapter != null) {
-                        commentChannelSpinnerAdapter.add(claimResult);
-                    }
-                    if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
-                        commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
-                    }
-
-                    if (commentChannelSpinner != null) {
-                        View formRoot = (View) commentChannelSpinner.getParent().getParent();
-                        formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
-                        formRoot.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
+    private void showChannelCreator() {
         MainActivity activity = (MainActivity) getActivity();
 
-        if (activity != null && channelCreationBottomSheet != null) {
-            channelCreationBottomSheet.show(activity.getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
+    }
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (commentChannelSpinnerAdapter != null) {
+            commentChannelSpinnerAdapter.add(claimResult);
+        }
+        if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (commentChannelSpinner != null) {
+            View formRoot = (View) commentChannelSpinner.getParent().getParent();
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            formRoot.setVisibility(View.VISIBLE);
         }
     }
 
@@ -3559,7 +3557,7 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (!fetchingChannels) {
-                    showInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         });
@@ -3601,7 +3599,7 @@ public class FileViewFragment extends BaseFragment implements
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
                             if (commentChannelSpinnerAdapter.getCount() > 1) {
                                 commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
                             }
@@ -3877,7 +3875,7 @@ public class FileViewFragment extends BaseFragment implements
                     thread.start();
                 }
             } else {
-                showInlineChannelCreator();
+                showChannelCreator();
             }
         } else {
             showError(getString(R.string.signed_in_required));
@@ -3939,7 +3937,7 @@ public class FileViewFragment extends BaseFragment implements
                     e.printStackTrace();
                 }
             } else {
-                showInlineChannelCreator();
+                showChannelCreator();
             }
         } else {
             showError(getString(R.string.signed_in_required));
