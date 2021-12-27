@@ -576,6 +576,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             sharedPreferencesEditor.remove("auth_token").apply();
         }
 
+        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor defaultSharedPreferencesEditor = defaultSharedPreferences.edit();
+        if (defaultSharedPreferences.contains("com.odysee.app.Preference.AuthToken")) {
+            defaultSharedPreferencesEditor.remove("com.odysee.app.Preference.AuthToken").apply();
+        }
+
         // Create Fragment instances here so they are not recreated when selected on the bottom navigation bar
         Fragment homeFragment = new AllContentFragment();
         Fragment followingFragment = new FollowingFragment();
