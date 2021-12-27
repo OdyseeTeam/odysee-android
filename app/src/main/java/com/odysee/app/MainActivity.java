@@ -50,7 +50,6 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -184,7 +183,6 @@ import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
@@ -365,8 +363,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
-
-    public static final String PREFERENCE_KEY_AUTH_TOKEN = "com.odysee.app.Preference.AuthToken";
 
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
@@ -1971,26 +1967,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         fetchRewards();
     }
 
+    /**
+     * Checks if an auth token is present and then sets it for Lbryio
+     */
     private void loadAuthToken() {
-        // Check if an auth token is present and then set it for Lbryio
         AccountManager am = AccountManager.get(this);
         Account account = Helper.getOdyseeAccount(am.getAccounts());
         if (account != null) {
             String authToken = am.peekAuthToken(account, "auth_token_type");
             if (!Helper.isNullOrEmpty(authToken)) {
                 Lbryio.AUTH_TOKEN = authToken;
-                return;
-            }
-        }
-
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        String encryptedAuthToken = sp.getString(PREFERENCE_KEY_AUTH_TOKEN, null);
-        if (!Helper.isNullOrEmpty(encryptedAuthToken)) {
-            try {
-                Lbryio.AUTH_TOKEN = new String(decrypt(Base64.decode(encryptedAuthToken, Base64.NO_WRAP), this, Lbry.KEYSTORE), StandardCharsets.UTF_8);
-            } catch (Exception ex) {
-                // pass. A new auth token would have to be generated if the old one cannot be decrypted
-                Log.e(TAG, "Could not decrypt existing auth token.", ex);
             }
         }
     }
@@ -2783,10 +2769,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
 
             private void handleAuthTokenGenerated(Intent intent) {
-                // store the value
-                String encryptedAuthToken = intent.getStringExtra("authToken");
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-                sp.edit().putString(PREFERENCE_KEY_AUTH_TOKEN, encryptedAuthToken).apply();
             }
 
             private void handleOpenContentTag(Intent intent) {
@@ -2990,12 +2972,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void signOutUser() {
         Lbryio.currentUser = null;
         Lbryio.AUTH_TOKEN = "";
-
-        SharedPreferences sharedPref = getSharedPreferences("lbry_shared_preferences", Context.MODE_PRIVATE);
-        sharedPref.edit().remove("auth_token").apply();
-        sharedPref.edit().remove("subscriptions_filter_visibility").apply();
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
