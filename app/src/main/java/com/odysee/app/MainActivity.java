@@ -32,8 +32,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
@@ -404,6 +406,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
 
+    ScheduledExecutorService searchWorker;
+    ScheduledFuture<?> scheduledSearchFuture;
     AccountManager accountManager;
 
     // startup stages (to be able to determine how far a user made it if startup fails)
@@ -676,7 +680,64 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     String query = queryText.getText().toString();
-                    ((SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH")).search(query, 0);
+
+                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                    if (searchFragment != null) {
+                        searchFragment.search(query, 0);
+                    }
+                }
+            }
+        });
+
+        ((EditText)findViewById(R.id.search_query_text)).addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                if (searchWorker == null) {
+                    searchWorker = Executors.newSingleThreadScheduledExecutor();
+                }
+
+                // Cancel any previously scheduled search as soon as possible if not yet running.
+                // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
+                if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+                    scheduledSearchFuture.cancel(false);
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!s.toString().equals("")) {
+                    Runnable runnable = new Runnable() {
+                        public void run() {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    EditText queryText = findViewById(R.id.search_query_text);
+
+                                    findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                                    String query = queryText.getText().toString();
+
+                                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                                    if (searchFragment != null) {
+                                        searchFragment.search(query, 0);
+                                    }
+                                }
+                            });
+                        }
+                    };
+                    scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
+                } else {
+                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                    if (searchFragment != null) {
+                        searchFragment.search("", 0);
+                    }
                 }
             }
         });
@@ -695,15 +756,24 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.search_close_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getSupportFragmentManager().beginTransaction()
-                        .remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                EditText queryText = findViewById(R.id.search_query_text);
+                InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
+                Fragment searchFragment = getSupportFragmentManager().findFragmentByTag("SEARCH");
+                if (searchFragment != null) {
+                    getSupportFragmentManager().beginTransaction()
+                            .remove(searchFragment).commit();
+                }
+
                 ((EditText)findViewById(R.id.search_query_text)).setText("");
                 showBottomNavigation();
                 switchToolbarForSearch(false);
 
                 // On tablets, multiple fragments could be visible. Don't show Home Screen when File View is visible
-                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE)
+                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE) {
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+                }
 
                 showWalletBalance();
                 findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
@@ -872,6 +942,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return super.onOptionsItemSelected(item);
     }
 
+    public void cancelScheduledSearchFuture() {
+        if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+            scheduledSearchFuture.cancel(true);
+        }
+    }
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }

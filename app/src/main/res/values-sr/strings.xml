@@ -262,7 +262,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Nema rezultata za \'%1$s\'. Molimo pretražite nešto drugo.</string>
-    <string name="search_no_query">Možete pretraživati bilo šta uključujući filmove, muziku, knjige, softver i još mnogo toga.</string>
     <string name="no_related_content">Trenutno nema sličnih sadržaja za prikaz.</string>
 
     <!-- Wallet -->
