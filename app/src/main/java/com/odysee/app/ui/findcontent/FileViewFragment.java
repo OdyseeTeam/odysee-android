@@ -111,7 +111,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -137,6 +136,8 @@ import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.callable.LighthouseSearch;
+import com.odysee.app.callable.BuildCommentReactOptions;
+import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
@@ -149,7 +150,6 @@ import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
 import com.odysee.app.listener.StoragePermissionListener;
-import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
@@ -158,10 +158,8 @@ import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Reactions;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
-import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
-import com.odysee.app.supplier.ReactToCommentSupplier;
 import com.odysee.app.tasks.BufferEventTask;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
@@ -3980,12 +3978,13 @@ public class FileViewFragment extends BaseFragment implements
              * would perhaps be better to fix this upstream and make this situation impossible, but even then
              * this last line of defense doesn't hurt.
              */
-            if ( comment.getReactions() == null ) {
+            if (comment.getReactions() == null) {
                 comment.setReactions(Reactions.newInstanceWithNoLikesOrDislikes());
             }
 
-            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
+            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked())) {
                 options.put("remove", true);
+            }
 
             AccountManager am = AccountManager.get(getContext());
             Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
@@ -3996,76 +3995,37 @@ public class FileViewFragment extends BaseFragment implements
             e.printStackTrace();
         }
 
-        AccountManager am = AccountManager.get(getContext());
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(result -> {
-                if (result) {
-                    refreshCommentAfterReacting(comment);
-                }
-            });
-        } else {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // This makes a network connection, so it needs to be executed on a different thread than main.
-                    if (Lbry.ownChannels.size() > 0) {
-                        try {
-                            options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                            options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSignName(options, options.getString("channel_id"), options.getString("channel_name"));
-
-                            if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                                options.put("signature", jsonChannelSign.getString("signature"));
-                                options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
-                            }
-                        } catch (JSONException | ApiCallException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Callable<Boolean> callable = new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() {
-                            JSONObject data = null;
-                            if (am.getAccounts().length > 0) {
-                                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                                try {
-                                    if (odyseeAccount != null) {
-                                        okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-                                        String responseString = response.body().string();
-                                        JSONObject jsonResponse = new JSONObject(responseString);
-                                        if (jsonResponse.has("result")) {
-                                            data = jsonResponse.getJSONObject("result");
-                                        } else {
-                                            Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
-                                        }
-                                        response.close();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            return data != null && !data.has("error");
-                        }
-                    };
-                    Future<Boolean> futureReactions = executor.submit(callable);
-                    Boolean result;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // This makes a network connection, so it needs to be executed on a different thread than main.
+                if (Lbry.ownChannels.size() > 0) {
                     try {
-                        // This runs on a different thread, so it will not block main thread
-                        result = futureReactions.get();
-                        if (result) {
-                            refreshCommentAfterReacting(comment);
+                        // This makes a network connection, so it needs to be executed on a different thread than main.
+                        Callable<JSONObject> optionsCallable = new BuildCommentReactOptions(options);
+                        Future<JSONObject> optionsFuture = executor.submit(optionsCallable);
+
+                        JSONObject opt = optionsFuture.get();
+
+                        Future<?> futureReactions = executor.submit(new ReactToComment(opt));
+                        futureReactions.get();
+
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
                         }
-                    } catch (InterruptedException | ExecutionException e) {
+                        refreshCommentAfterReacting(comment);
+                    } catch (Exception e) {
                         e.printStackTrace();
+                    } finally {
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
+                        }
                     }
                 }
-            });
-
-            thread.start();
-        }
+            }
+        });
+        thread.start();
     }
 
     private void refreshCommentAfterReacting(Comment comment) {
