@@ -1288,6 +1288,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (claim != null && claim.getSigningChannel() != null) {
+                    removeNotificationAsSource();
+
                     Claim publisher = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof  MainActivity) {
@@ -1344,6 +1346,23 @@ public class FileViewFragment extends BaseFragment implements
         LinearLayoutManager commentsListLLM = new LinearLayoutManager(getContext());
         relatedContentList.setLayoutManager(relatedContentListLLM);
         commentsList.setLayoutManager(commentsListLLM);
+    }
+
+    private void removeNotificationAsSource() {
+        // If we arrived here from a notification, navigating to a channel
+        // will show the notifications panel and a very weird layout after
+        // it.
+        // So let's avoid it by removing that flag. User will need to re-open
+        // the panel again to keep visiting content from notifications
+        Map<String, Object> params = getParams();
+        if (params != null && params.containsKey("source")) {
+            String notificationSource = (String) params.get("source");
+
+            if ("notification".equalsIgnoreCase(notificationSource)) {
+                params.remove("source");
+                setParams(params);
+            }
+        }
     }
 
     private void updatePlaybackSpeedView(View root) {
@@ -2831,9 +2850,9 @@ public class FileViewFragment extends BaseFragment implements
                         commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
-                                if (!Helper.isNullOrEmpty(claim.getName()) &&
-                                        claim.getName().startsWith("@") &&
+                                if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
                                         ctx instanceof MainActivity) {
+                                    removeNotificationAsSource();
                                     ((MainActivity) ctx).openChannelClaim(claim);
                                 }
                             }
