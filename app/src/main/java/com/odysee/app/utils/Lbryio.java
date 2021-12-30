@@ -4,14 +4,11 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
-
-import androidx.preference.PreferenceManager;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -26,7 +23,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -267,12 +263,6 @@ public final class Lbryio {
                 if (error.getStatusCode() == 403) {
                     // auth token invalidated
                     AUTH_TOKEN = null;
-                    // remove the cached auth token
-                    if (context != null) {
-                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                        sp.edit().remove(MainActivity.PREFERENCE_KEY_AUTH_TOKEN).apply();
-                    }
-
                     throw new AuthTokenInvalidatedException();
                 }
             }
