@@ -23,6 +23,9 @@
     <string name="about">About</string>
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign out</string>
+    <string name="sign_up_log_in">Sign Up or Log In</string>
+    <string name="community_guidelines">Community Guidelines</string>
+    <string name="help_and_support">Help &amp; Support</string>
     <string name="startup_failed">App startup failed. Please check your data connection and try again. If this problem persists, please email hello@lbry.com</string>
     <string name="no_claim_search_content">No content to display at this time. Please refine your selection or check back later.</string>
 

@@ -9,6 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
         android:orientation="vertical">
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
@@ -40,8 +41,19 @@
                 tools:visibility="visible" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/button_sign_user"
+            android:layout_marginTop="12dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/sign_up_log_in"/>
+
         <RelativeLayout
-            android:layout_marginTop="16dp"
             android:clickable="true"
             android:focusable="true"
             android:focusableInTouchMode="false"
@@ -68,12 +80,48 @@
             android:layout_width="match_parent"
             android:layout_height="40dp">
             <TextView
-                android:layout_marginLeft="40dp"
-                android:layout_marginStart="40dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:layout_marginStart="40dp"
+                android:layout_marginLeft="40dp"
                 android:text="@string/rewards"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:id="@+id/button_community_guidelines"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="40dp"
+                android:layout_marginLeft="40dp"
+                android:text="@string/community_guidelines"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:id="@+id/button_help_support"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="40dp"
+                android:layout_marginLeft="40dp"
+                android:text="@string/help_and_support"
                 android:textSize="14sp" />
         </RelativeLayout>
 
@@ -95,15 +143,5 @@
                 android:text="@string/sign_out"
                 android:textSize="14sp" />
         </RelativeLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/button_sign_user"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
-            android:layout_marginLeft="40dp"
-            android:layout_marginStart="40dp"
-            android:text="@string/sign_in"/>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
