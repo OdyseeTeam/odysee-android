@@ -92,6 +92,8 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.view.ActionMode;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -760,8 +762,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
                     signUserButton.setVisibility(View.VISIBLE);
-                    signUserButton.setText(getString(R.string.sign_in));
+                    signUserButton.setText(getString(R.string.sign_up_log_in));
                 }
+
+                customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
+                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+                        CustomTabsIntent intent = builder.build();
+                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b/Community-Guidelines:c"));
+                    }
+                });
+
+                customView.findViewById(R.id.button_help_support).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
+                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+                        CustomTabsIntent intent = builder.build();
+                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b?view=about"));
+                    }
+                });
 
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
                     @Override
