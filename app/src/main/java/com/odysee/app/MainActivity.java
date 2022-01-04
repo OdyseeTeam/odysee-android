@@ -768,6 +768,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
+                        popupWindow.dismiss();
+
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
                         CustomTabColorSchemeParams ctcsp = ctcspb.build();
@@ -781,6 +783,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 customView.findViewById(R.id.button_help_support).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
+                        popupWindow.dismiss();
+
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
                         CustomTabColorSchemeParams ctcsp = ctcspb.build();
