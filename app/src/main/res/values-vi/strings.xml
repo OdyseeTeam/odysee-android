@@ -236,7 +236,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Không tìm thấy kết quả nào cho \'%1$s\'. Vui lòng nhập một cụm từ tìm kiếm khác</string>
-    <string name="search_no_query">Bạn có thể tìm kiếm mọi thứ, bao gồm phim, nhạc, sách điện tử, phần mềm và nhiều thứ khác.</string>
     <string name="no_related_content">Không có nội dung liên quan để hiển thị tại thời điểm này</string>
 
     <!-- Wallet -->

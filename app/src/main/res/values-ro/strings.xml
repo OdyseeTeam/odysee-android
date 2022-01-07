@@ -251,7 +251,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Nu s-au găsit rezultate pentru „%1$s”. Caută ceva diferit.</string>
-    <string name="search_no_query">Poţi căuta orice, inclusiv filme, muzică, cărţi, programe, etc.</string>
     <string name="no_related_content">Nu există conţinut asemănător de afişat.</string>
 
     <!-- Wallet -->

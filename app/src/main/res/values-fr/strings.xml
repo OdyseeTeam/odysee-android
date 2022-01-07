@@ -254,7 +254,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Aucun résultat trouvé pour \'%1$s\'. Veuillez saisir un terme de recherche différent.</string>
-    <string name="search_no_query">Vous pouvez rechercher n\'importe quoi, y compris des films, de la musique, des livres électroniques, des logiciels et plus encore.</string>
     <string name="no_related_content">Aucun contenu associé à afficher pour le moment.</string>
 
     <!-- Wallet -->

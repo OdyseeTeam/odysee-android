@@ -243,7 +243,6 @@
 
     <!-- Search -->
     <string name="search_no_results">%1$s için bir sonuç çıkmadı. Lütfen başka bir terim arayın.</string>
-    <string name="search_no_query">Film, müzik, e-kitap, yazılım ve daha fazlasını arayabilirsiniz.</string>
     <string name="no_related_content">Şu anda alakalı bir içerik bulunamadı.</string>
 
     <!-- Wallet -->

@@ -243,7 +243,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Geen resultaten gevonden voor \'\'%1$s. Voer een andere zoekterm in.</string>
-    <string name="search_no_query">U kunt alles zoeken, inclusief films, muziek, e-boeken, software en meer.</string>
     <string name="no_related_content">Geen gerelateerde inhoud om op dit moment weer te geven.</string>
 
     <!-- Wallet -->

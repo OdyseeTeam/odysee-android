@@ -270,7 +270,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Brak wyników dla %1$s\'. Wprowadź inny termin wyszukiwania.</string>
-    <string name="search_no_query">Możesz wyszukiwać wszystko, w tym filmy, muzykę, książki elektroniczne, oprogramowanie i nie tylko.</string>
     <string name="no_related_content">Brak powiązanych treści do wyświetlenia w tej chwili.</string>
 
     <!-- Wallet -->
