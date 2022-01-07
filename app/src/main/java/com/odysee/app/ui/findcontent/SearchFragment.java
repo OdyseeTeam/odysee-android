@@ -55,6 +55,7 @@ public class SearchFragment extends BaseFragment implements
     private ProgressBar loadingView;
     private RecyclerView resultList;
     private TextView explainerView;
+    private View lassoSpacemanView;
 
     @Setter
     private String currentQuery;
@@ -68,6 +69,7 @@ public class SearchFragment extends BaseFragment implements
 
         loadingView = root.findViewById(R.id.search_loading);
         explainerView = root.findViewById(R.id.search_explainer);
+        lassoSpacemanView = root.findViewById(R.id.lasso_spaceman);
 
         resultList = root.findViewById(R.id.search_result_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -115,6 +117,7 @@ public class SearchFragment extends BaseFragment implements
             logSearch(currentQuery);
             search(currentQuery, currentFrom);
         } else {
+            lassoSpacemanView.setVisibility(View.VISIBLE);
             explainerView.setText(getString(R.string.search_type_to_discover));
             explainerView.setVisibility(View.VISIBLE);
         }
@@ -151,6 +154,7 @@ public class SearchFragment extends BaseFragment implements
         }
 
         if (Helper.isNullOrEmpty(query)) {
+            lassoSpacemanView.setVisibility(View.VISIBLE);
             explainerView.setText(getString(R.string.search_type_to_discover));
             resultList.setVisibility(View.GONE);
             explainerView.setVisibility(View.VISIBLE);
@@ -301,6 +305,7 @@ public class SearchFragment extends BaseFragment implements
 
                                 int itemCount = resultListAdapter.getItemCount();
                                 Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
+                                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
                                 Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
                             }
                         }
@@ -371,6 +376,7 @@ public class SearchFragment extends BaseFragment implements
             public void onError(Exception error) {
                 Context context = getContext();
                 int itemCount = resultListAdapter == null ? 0 : resultListAdapter.getItemCount();
+                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
                 Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
                 if (context != null) {
                     Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
