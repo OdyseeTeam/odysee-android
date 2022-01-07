@@ -182,6 +182,16 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
         return v;
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.destroyChannelCreator();
+        }
+    }
+
     private void enableViews(TextInputEditText inputChannelName, TextInputEditText inputDeposit, Button createButton, TextView linkCancel, boolean b) {
         Helper.setViewEnabled(inputChannelName, b);
         Helper.setViewEnabled(inputDeposit, b);

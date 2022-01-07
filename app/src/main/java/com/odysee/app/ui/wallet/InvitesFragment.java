@@ -316,8 +316,9 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
         if (channelSpinner != null) {
             View formRoot = (View) channelSpinner.getParent().getParent();
-            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
             formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
         }
     }
 

@@ -296,8 +296,9 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
 
         if (commentChannelSpinner != null) {
             View formRoot = (View) commentChannelSpinner.getParent().getParent();
-            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
             formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
         }
     }
 

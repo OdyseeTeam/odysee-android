@@ -3726,6 +3726,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         channelCreationBottomSheet.show(getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
     }
 
+    /**
+     * Call this to nullify the bottom sheet object so listener is always assigned from the calling class
+     */
+    public void destroyChannelCreator() {
+        channelCreationBottomSheet = null;
+    }
     public void fetchOwnChannels() {
         AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
