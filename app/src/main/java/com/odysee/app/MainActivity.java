@@ -2428,7 +2428,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!userSyncEnabled()) {
             return;
         }
-        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
+        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
             @Override
             public void onSuccess() {
                 // push wallet sync changes

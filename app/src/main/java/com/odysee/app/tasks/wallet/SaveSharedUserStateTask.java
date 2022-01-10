@@ -35,8 +35,10 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     private static final String VERSION = "0.1";
     private final SaveSharedUserStateHandler handler;
     private Exception error;
+    private String authToken;
 
-    public SaveSharedUserStateTask(SaveSharedUserStateHandler handler) {
+    public SaveSharedUserStateTask(String authToken, SaveSharedUserStateHandler handler) {
+        this.authToken = authToken;
         this.handler = handler;
     }
 
@@ -93,7 +95,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             Map<String, Object> options = new HashMap<>();
             options.put("key", KEY);
             options.put("value", sharedObject.toString());
-            Lbry.genericApiCall(Lbry.METHOD_PREFERENCE_SET, options);
+            Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_SET, options, authToken);
 
             return true;
         } catch (ApiCallException | JSONException ex) {
