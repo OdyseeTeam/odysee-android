@@ -863,6 +863,7 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener bellIconListener = new View.OnClickListener()  {
         @Override
         public void onClick(View view) {
+            // View is not displayed when user is not signed in, so no need to check for it
             if (claim != null && claim.getSigningChannel() != null) {
                 Claim publisher = claim.getSigningChannel();
                 boolean isNotificationsDisabled = Lbryio.isNotificationsDisabled(publisher);
@@ -899,24 +900,33 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener followUnfollowListener = new View.OnClickListener() {
         @Override
         public void onClick(final View view) {
-            if (claim != null && claim.getSigningChannel() != null) {
-                Claim publisher = claim.getSigningChannel();
-                boolean isFollowing = Lbryio.isFollowing(publisher);
-                if (isFollowing) {
-                    // show unfollow confirmation
-                    Context context = getContext();
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                            setTitle(R.string.confirm_unfollow).
-                            setMessage(R.string.confirm_unfollow_message)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    doFollowUnfollow(true, view);
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
-                } else {
-                    doFollowUnfollow(false, view);
+            // TODO Extract this code to MainActivity and update views state from there for any currently visible fragments
+            MainActivity activity = (MainActivity) getActivity();
+
+            if (activity != null && activity.isSignedIn()) {
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim publisher = claim.getSigningChannel();
+                    boolean isFollowing = Lbryio.isFollowing(publisher);
+                    if (isFollowing) {
+                        // show unfollow confirmation
+                        Context context = getContext();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                setTitle(R.string.confirm_unfollow).
+                                setMessage(R.string.confirm_unfollow_message)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        doFollowUnfollow(true, view);
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    } else {
+                        doFollowUnfollow(false, view);
+                    }
+                }
+            } else {
+                if (activity != null) {
+                    activity.simpleSignIn(0);
                 }
             }
         }
@@ -1093,17 +1103,25 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_tip).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
-                        double sentAmount = amount.doubleValue();
-                        String message = getResources().getQuantityString(
-                                isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
-                                new DecimalFormat("#,###.##").format(sentAmount));
-                        Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
-                    });
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null && activity.isSignedIn()) {
+                    if (claim != null) {
+                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
+                            double sentAmount = amount.doubleValue();
+                            String message = getResources().getQuantityString(
+                                    isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
+                                    new DecimalFormat("#,###.##").format(sentAmount));
+                            Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
+                        });
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                        }
+                    }
+                } else {
+                    if (activity != null) {
+                        activity.simpleSignIn(0);
                     }
                 }
             }
@@ -3879,7 +3897,11 @@ public class FileViewFragment extends BaseFragment implements
                 showChannelCreator();
             }
         } else {
-            showError(getString(R.string.signed_in_required));
+            MainActivity activity = (MainActivity) getActivity();
+
+            if (activity != null) {
+                activity.simpleSignIn(0);
+            }
         }
     }
 
@@ -3941,7 +3963,11 @@ public class FileViewFragment extends BaseFragment implements
                 showChannelCreator();
             }
         } else {
-            showError(getString(R.string.signed_in_required));
+            MainActivity activity = (MainActivity) getActivity();
+
+            if (activity != null) {
+                activity.simpleSignIn(0);
+            }
         }
     }
 

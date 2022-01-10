@@ -209,20 +209,28 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonTip.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
-                        double sentAmount = amount.doubleValue();
-                        View view1 = getView();
-                        if (view1 != null) {
-                            String message = getResources().getQuantityString(
-                                    isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
-                                    new DecimalFormat("#,###.##").format(sentAmount));
-                            Snackbar.make(view1, message, Snackbar.LENGTH_LONG).show();
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null && activity.isSignedIn()) {
+                    if (claim != null) {
+                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
+                            double sentAmount = amount.doubleValue();
+                            View view1 = getView();
+                            if (view1 != null) {
+                                String message = getResources().getQuantityString(
+                                        isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
+                                        new DecimalFormat("#,###.##").format(sentAmount));
+                                Snackbar.make(view1, message, Snackbar.LENGTH_LONG).show();
+                            }
+                        });
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
                         }
-                    });
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                    }
+                } else {
+                    if (activity != null) {
+                        activity.simpleSignIn(0);
                     }
                 }
             }
@@ -283,28 +291,36 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonFollowUnfollow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    if (subscribing) {
-                        return;
-                    }
+                MainActivity activity = (MainActivity) getActivity();
 
-                    boolean isFollowing = Lbryio.isFollowing(claim);
-                    if (isFollowing) {
-                        Context context = getContext();
-                        if (context != null) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                                    setTitle(R.string.confirm_unfollow).
-                                    setMessage(R.string.confirm_unfollow_message)
-                                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            doFollowUnfollow(isFollowing, view);
-                                        }
-                                    }).setNegativeButton(R.string.no, null);
-                            builder.show();
+                if (activity != null && activity.isSignedIn()) {
+                    if (claim != null) {
+                        if (subscribing) {
+                            return;
                         }
-                    } else {
-                        doFollowUnfollow(isFollowing, view);
+
+                        boolean isFollowing = Lbryio.isFollowing(claim);
+                        if (isFollowing) {
+                            Context context = getContext();
+                            if (context != null) {
+                                AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                        setTitle(R.string.confirm_unfollow).
+                                        setMessage(R.string.confirm_unfollow_message)
+                                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                doFollowUnfollow(isFollowing, view);
+                                            }
+                                        }).setNegativeButton(R.string.no, null);
+                                builder.show();
+                            }
+                        } else {
+                            doFollowUnfollow(isFollowing, view);
+                        }
+                    }
+                } else {
+                    if (activity != null) {
+                        activity.simpleSignIn(0);
                     }
                 }
             }
