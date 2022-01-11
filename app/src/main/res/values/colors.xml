@@ -27,9 +27,7 @@
     <color name="borderTextArea">#777777</color>
     <color name="backgroundTextArea">#F1F1F1</color>
 
-    <color name="brighterLbryGreen">#40B887</color>
     <color name="odyseePink">#E50054</color>
-    <color name="nextLbryGreen">#38D9A9</color>
     <color name="odyseePinkSemiTransparent">#33E50054</color>
     <color name="tagPink">#44E50054</color>
     <color name="tagGrape">#77F255DA</color>
@@ -37,6 +35,7 @@
     <color name="divider">#DFDFDF</color>
     <color name="lightDivider">#F1F1F1</color>
 
+    <!-- Android OS colors are defined as private, so we must declare our own values -->
     <color name="lightGrey">#CCCCCC</color>
     <color name="actionGrey">#AAAAAA</color>
     <color name="lighterGrey">#E5E5E5</color>
@@ -48,7 +47,7 @@
     <color name="uriDescBlue">#3971DB</color>
     <color name="rewardDriverBlue">#2196f3</color>
 
-    <color name="statsVideo">@color/nextLbryGreen</color>
+    <color name="statsVideo">#38D9A9</color>
     <color name="statsAudio">#F6A637</color>
     <color name="statsImage">#FF4A7D</color>
     <color name="statsOther">#26BCF7</color>
@@ -60,7 +59,7 @@
 
     <color name="codeTagText">#2E3439</color>
     <color name="codeTagBackground">#D0E8FF</color>
-`
+
     <color name="close_button">#ff000000</color>
     <color name="closeimagebutton_outline">#000000</color>
     <color name="signin_close_background">@android:color/transparent</color>
