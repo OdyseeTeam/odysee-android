@@ -895,6 +895,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         accountManager = AccountManager.get(this);
     }
 
+    /**
+     * Call this method when starting a new activity to avoid display glitches when user re-opens app from picture-in-picture
+     */
     private void clearPlayingPlayer() {
         if (appPlayer != null && appPlayer.isPlaying()) {
             appPlayer.stop();
