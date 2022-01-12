@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
@@ -48,11 +49,15 @@ import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
+import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
 import lombok.Getter;
 
 // TODO: Similar code to FollowingFragment and Channel page fragment. Probably make common operations (sorting/filtering) into a control
 public class AllContentFragment extends BaseFragment implements DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+
+    public static int ALL_CONTENT_CONTEXT_GROUP_ID = 1;
 
     @Getter
     private boolean singleTagView;
@@ -417,6 +422,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             updateContentScopeLinkText();
             updateSortByLinkText();
         }
+
+        applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
     public void onPause() {
@@ -480,11 +487,13 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
+                claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
 
                 if (contentListAdapter == null) {
                     Context context = getContext();
                     if (context != null) {
                         contentListAdapter = new ClaimListAdapter(claims, context);
+                        contentListAdapter.setContextGroupId(ALL_CONTENT_CONTEXT_GROUP_ID);
                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -554,7 +563,34 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
     }
 
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim channel = claim.getSigningChannel();
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).handleBlockChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
+        return super.onContextItemSelected(item);
+    }
+
     public void displayDynamicCategories() {
         buildAndDisplayContentCategories();
+    }
+
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+        if (contentListAdapter != null) {
+            contentListAdapter.filterBlockedChannels(blockedChannels);
+        }
     }
 }

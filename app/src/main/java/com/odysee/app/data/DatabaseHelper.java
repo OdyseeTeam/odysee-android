@@ -21,7 +21,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 9;
+    public static final int DATABASE_VERSION = 10;
     public static final String DATABASE_NAME = "LbryApp.db";
     private static DatabaseHelper instance;
 
@@ -60,7 +60,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     ", is_read INTEGER DEFAULT 0 NOT NULL" +
                     ", is_seen INTEGER DEFAULT 0 NOT NULL " +
                     ", timestamp TEXT NOT NULL)",
-            "CREATE TABLE shuffle_watched (id INTEGER PRIMARY KEY NOT NULL, claim_id TEXT NOT NULL)"
+            "CREATE TABLE shuffle_watched (id INTEGER PRIMARY KEY NOT NULL, claim_id TEXT NOT NULL)",
+            "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)"
     };
     private static final String[] SQL_CREATE_INDEXES = {
             "CREATE UNIQUE INDEX idx_subscription_url ON subscriptions (url)",
@@ -72,6 +73,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "CREATE UNIQUE INDEX idx_notification_remote_id ON notifications (remote_id)",
             "CREATE INDEX idx_notification_timestamp ON notifications (timestamp)",
             "CREATE UNIQUE INDEX idx_shuffle_watched_claim ON shuffle_watched (claim_id)",
+            "CREATE INDEX idx_blocked_channel_name ON blocked_channels (name)"
     };
 
     private static final String[] SQL_V1_V2_UPGRADE = {
@@ -126,6 +128,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "DROP TABLE tmp_notifications",
             "CREATE UNIQUE INDEX idx_notification_remote_id ON notifications (remote_id)"
     };
+    private static final String[] SQL_V9_V10_UPGRADE = {
+            "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)",
+            "CREATE INDEX idx_blocked_channel_name ON blocked_channels (name)"
+    };
 
     private static final String SQL_INSERT_SUBSCRIPTION = "REPLACE INTO subscriptions (channel_name, url, is_notifications_disabled) VALUES (?, ?, ?)";
     private static final String SQL_UPDATE_SUBSCRIPTION_NOTIFICATION = "UPDATE subscriptions SET is_notification_disabled = ? WHERE url = ?";
@@ -165,7 +171,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_UNFOLLOW_TAGS = "UPDATE tags SET is_followed = 0";
     private static final String SQL_GET_FOLLOWED_TAGS = "SELECT name FROM tags WHERE is_followed = 1";
 
-
+    private static final String SQL_INSERT_BLOCKED_CHANNEL = "REPLACE INTO blocked_channels (claim_id, name) VALUES (?, ?)";
+    private static final String SQL_REMOVE_BLOCKED_CHANNEL = "DELETE FROM blocked_channels WHERE claim_id = ?";
+    private static final String SQL_REMOVE_ALL_BLOCKED_CHANNELS = "DELETE FROM blocked_channels";
+    private static final String SQL_GET_BLOCKED_CHANNELS = "SELECT claim_id, name FROM blocked_channels";
 
     public DatabaseHelper(Context context) {
         super(context, String.format("%s/%s", context.getFilesDir().getAbsolutePath(), DATABASE_NAME), null, DATABASE_VERSION);
@@ -220,6 +229,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 9) {
             for (String sql : SQL_V8_V9_UPGRADE) {
+                db.execSQL(sql);
+            }
+        }
+        if (oldVersion < 10) {
+            for (String sql : SQL_V9_V10_UPGRADE) {
                 db.execSQL(sql);
             }
         }
@@ -487,5 +501,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Helper.closeCursor(cursor);
         }
         return claimIds;
+    }
+
+    public static void createOrUpdateBlockedChannel(String claimId, String channelName, SQLiteDatabase db) {
+        db.execSQL(SQL_INSERT_BLOCKED_CHANNEL, new Object[] { claimId, channelName });
+    }
+
+    public static void removeBlockedChannel(String claimId, SQLiteDatabase db) {
+        db.execSQL(SQL_REMOVE_BLOCKED_CHANNEL, new Object[] { claimId });
+    }
+
+    public static void removeAllBlockedChannels(SQLiteDatabase db) {
+        db.execSQL(SQL_REMOVE_ALL_BLOCKED_CHANNELS);
+    }
+
+    public static List<LbryUri> getBlockedChannels(SQLiteDatabase db) {
+        List<LbryUri> blockedChannels = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(SQL_GET_BLOCKED_CHANNELS, null);
+            while (cursor.moveToNext()) {
+                LbryUri uri = LbryUri.tryParse(String.format("lbry://%s:%s", cursor.getString(1), cursor.getString(0)));
+                if (uri != null) {
+                    blockedChannels.add(uri);
+                }
+            }
+        } finally {
+            Helper.closeCursor(cursor);
+        }
+        return blockedChannels;
     }
 }

@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -218,6 +219,7 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCommentsFragment;
 import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -288,6 +290,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean userInstallInitialised;
     @Getter
     private boolean initialCategoriesLoaded;
+    private boolean initialBlockedChannelsLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
     @Getter
@@ -296,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private int queuedSyncCount = 0;
     private String cameraOutputFilename;
     private Bitmap nowPlayingClaimBitmap;
+    private Fragment currentDisplayFragment;
 
     @Setter
     private BackPressInterceptor backPressInterceptor;
@@ -625,6 +629,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         fragmentTag = "LIBRARY";
                         break;
                 }
+
+                currentDisplayFragment = selectedFragment;
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -667,8 +673,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 if (!isSearchUIActive()) {
                     try {
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.fragment_container_search, SearchFragment.class.newInstance(), "SEARCH").commit();
+                        SearchFragment searchFragment = SearchFragment.class.newInstance();
+                        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
+                        currentDisplayFragment = searchFragment;
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
@@ -904,6 +911,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 actionBar.setDisplayHomeAsUpEnabled(false);
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -2263,6 +2271,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         return;
                     }
 
+                    if (!initialBlockedChannelsLoaded) {
+                        loadBlockedChannels();
+                    }
+
                     if (!initialCategoriesLoaded) {
                         loadInitialCategories();
                         return;
@@ -2282,6 +2294,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // if the user install has already been initialised, proceed to load categories
         loadInitialCategories();
+    }
+
+    private void loadBlockedChannels() {
+        if (!initialBlockedChannelsLoaded) {
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    SQLiteDatabase db = dbHelper.getReadableDatabase();
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                    initialBlockedChannelsLoaded = true;
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(true);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     private void loadInitialCategories() {
@@ -2447,7 +2480,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
                     //openNavFragments.get
@@ -2494,6 +2527,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             f.fetchClaimSearchContent(true);
                         }
                     }
+                }
+
+                if (blockedChannels != null && blockedChannels.size() > 0) {
+                    // TODO: Find out the most recently updated blocked channels and merge / update?
+                    List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+                    for (LbryUri uri : blockedChannels) {
+                        if (!newBlockedChannels.contains(uri)) {
+                            newBlockedChannels.add(uri);
+                        }
+                    }
+                    Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
                 }
             }
 
@@ -3180,6 +3224,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private Fragment getCurrentFragment() {
+        if (currentDisplayFragment != null) {
+            return currentDisplayFragment;
+        }
+
         return getSupportFragmentManager().findFragmentById(R.id.content_main);
     }
 
@@ -3655,6 +3703,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 transaction.addToBackStack(null);
             }
             transaction.commit();
+            currentDisplayFragment = fragment;
         } catch (Exception ex) {
             // pass
         }
@@ -3701,6 +3750,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             getSupportActionBar().setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
 
             transaction.commit();
+
+            currentDisplayFragment = fragment;
             findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
@@ -4134,6 +4185,129 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    public void handleBlockChannel(final Claim channel) {
+        if (channel != null) {
+            // show confirm dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this).
+                    setTitle(getString(R.string.confirm_block_channel_title, channel.getName())).
+                    setMessage(R.string.confirm_block_channel)
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            blockChannel(channel);
+                        }
+                    }).setNegativeButton(R.string.no, null);
+            builder.show();
+        }
+    }
+
+    public void handleUnblockChannel(final Claim channel) {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    DatabaseHelper.removeBlockedChannel(channel.getClaimId(), db);
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(true, channel);
+                        }
+                    });
+                } catch (SQLiteException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(false, null);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void blockChannel(Claim channel) {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    DatabaseHelper.createOrUpdateBlockedChannel(channel.getClaimId(), channel.getName(), db);
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(true, channel);
+                        }
+                    });
+                } catch (SQLiteException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(false);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+
+    public void finishChannelBlocking(boolean success) {
+        finishChannelBlocking(success, null);
+    }
+
+    public void finishChannelBlocking(boolean success, Claim channel) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_blocked));
+            return;
+        }
+
+        if (channel != null) {
+            showMessage(getString(R.string.channel_blocked, channel.getName()));
+        }
+
+        // refresh claim adapters where appropriate
+        applyBlockedChannelFilters();
+        saveSharedUserState();
+    }
+
+    public void finishChannelUnblocking(boolean success, Claim channel) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_unblocked));
+            return;
+        }
+
+        if (channel != null) {
+            showMessage(getString(R.string.channel_unblocked, channel.getName()));
+        }
+
+        applyBlockedChannelFilters();
+        saveSharedUserState();
+    }
+
+    private void applyBlockedChannelFilters() {
+        Fragment current = getCurrentFragment();
+        if (current != null) {
+            if (current instanceof AllContentFragment) {
+                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // content view
+            } else if (current instanceof FileViewFragment) {
+                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
+            } else if (current instanceof SearchFragment) {
+                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // search results
+            } else if (current instanceof ChannelFragment) {
+                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // channel comments
+            }
         }
     }
 

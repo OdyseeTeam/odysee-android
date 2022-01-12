@@ -202,6 +202,7 @@ public class FileViewFragment extends BaseFragment implements
         StoragePermissionListener,
         WalletBalanceListener {
     private static final String TAG = "OdyseeFile";
+    public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
@@ -810,6 +811,7 @@ public class FileViewFragment extends BaseFragment implements
         }
         checkOwnClaim();
         fetchChannels();
+        applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
     public void onPause() {
@@ -2596,6 +2598,8 @@ public class FileViewFragment extends BaseFragment implements
                 loadingPlaceholders.add(placeholder);
             }
             relatedContentAdapter = new ClaimListAdapter(loadingPlaceholders, context);
+            relatedContentAdapter.setContextGroupId(FILE_CONTEXT_GROUP_ID);
+
             RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
             relatedContentList.setAdapter(relatedContentAdapter);
 
@@ -2620,6 +2624,8 @@ public class FileViewFragment extends BaseFragment implements
                                 filteredClaims.add(c);
                             }
                         }
+
+                        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
 
                         Context ctx = getContext();
                         if (ctx != null) {
@@ -2932,6 +2938,10 @@ public class FileViewFragment extends BaseFragment implements
                                     commentListAdapter.updatePosterForComment(claim.getClaimId(), claim);
                                 }
                             }
+
+                            // filter for blocked comments
+                            commentListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+
                             commentListAdapter.notifyDataSetChanged();
                         }
                     }
@@ -3424,6 +3434,21 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
+        if (item.getGroupId() == FILE_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+            if (relatedContentAdapter != null) {
+                int position = relatedContentAdapter.getPosition();
+                Claim claim = relatedContentAdapter.getItems().get(position);
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim channel = claim.getSigningChannel();
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).handleBlockChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
         View root = getView();
         if (root != null) {
             float speed = item.getItemId() / 100.0f;
@@ -3942,6 +3967,15 @@ public class FileViewFragment extends BaseFragment implements
             new Thread(runnable).start();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+        if (relatedContentAdapter != null) {
+            relatedContentAdapter.filterBlockedChannels(blockedChannels);
+        }
+        if (commentListAdapter != null) {
+            commentListAdapter.filterBlockedChannels(blockedChannels);
         }
     }
 

@@ -60,6 +60,13 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         // followed tags
         List<String> followedTags = Helper.getTagsForTagObjects(Lbry.followedTags);
 
+        // blocked channels
+        List<LbryUri> blockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+        List<String> blockedChannelUrls = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelUrls.add(uri.toString());
+        }
+
         // Get the previous saved state
         try {
             boolean isExistingValid = false;
@@ -75,6 +82,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
                     value.put("tags", Helper.jsonArrayFromList(followedTags));
                     value.put("following", buildUpdatedNotificationsDisabledStates(subs));
+                    value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
                     sharedObject = shared;
                 }
             }
@@ -85,6 +93,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                 value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
                 value.put("tags", Helper.jsonArrayFromList(followedTags));
                 value.put("following", buildUpdatedNotificationsDisabledStates(subs));
+                value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
 
                 sharedObject = new JSONObject();
                 sharedObject.put("type", "object");

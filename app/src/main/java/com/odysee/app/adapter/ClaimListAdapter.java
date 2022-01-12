@@ -3,9 +3,12 @@ package com.odysee.app.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.format.DateUtils;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -37,6 +40,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_STREAM = 1;
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
+    @Getter
+    @Setter
+    private int contextGroupId;
 
     private final Map<String, Claim> quickClaimIdMap;
     private final Map<String, Claim> quickClaimUrlMap;
@@ -57,6 +63,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private boolean inSelectionMode;
     @Setter
     private SelectionModeListener selectionModeListener;
+    @Getter
+    @Setter
+    private int position;
 
     public ClaimListAdapter(List<Claim> items, Context context) {
         this.context = context;
@@ -119,6 +128,24 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 claim.setSigningChannel(resolvedClaim.getSigningChannel());
             }
         }
+    }
+
+    public void filterBlockedChannels(List<LbryUri> blockedChannels) {
+        if (blockedChannels.size() == 0) {
+            return;
+        }
+        List<Claim> claimsToRemove = new ArrayList<>();
+        List<String> blockedChannelClaimIds = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelClaimIds.add(uri.getClaimId());
+        }
+        for (Claim claim : items) {
+            if (claim.getSigningChannel() != null && blockedChannelClaimIds.contains(claim.getSigningChannel().getClaimId())) {
+                claimsToRemove.add(claim);
+            }
+        }
+        items.removeAll(claimsToRemove);
+        notifyDataSetChanged();
     }
 
     public void clearItems() {
@@ -194,7 +221,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyItemRemoved(position);
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
+        @Getter
+        @Setter
+        private int contextGroupId;
+
         protected final View feeContainer;
         protected final TextView feeView;
         protected final ImageView thumbnailView;
@@ -212,6 +243,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final TextView fileSizeView;
         protected final ProgressBar downloadProgressView;
         protected final TextView deviceView;
+        protected final ImageButton optionsMenuView;
 
         protected final View loadingImagePlaceholder;
         protected final View loadingTextPlaceholder1;
@@ -235,10 +267,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             fileSizeView = v.findViewById(R.id.claim_file_size);
             downloadProgressView = v.findViewById(R.id.claim_download_progress);
             deviceView = v.findViewById(R.id.claim_view_device);
+            optionsMenuView = v.findViewById(R.id.claim_overflow_menu_icon);
 
             loadingImagePlaceholder = v.findViewById(R.id.claim_thumbnail_placeholder);
             loadingTextPlaceholder1 = v.findViewById(R.id.claim_text_loading_placeholder_1);
             loadingTextPlaceholder2 = v.findViewById(R.id.claim_text_loading_placeholder_2);
+
+            v.setOnCreateContextMenuListener(this);
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
 
@@ -335,6 +375,14 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return new ClaimListAdapter.ViewHolder(v);
     }
 
+    @Override
+    public void onViewRecycled(ViewHolder holder) {
+        if (holder.optionsMenuView != null) {
+            holder.optionsMenuView.setOnClickListener(null);
+        }
+        super.onViewRecycled(holder);
+    }
+
     @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onBindViewHolder(ClaimListAdapter.ViewHolder vh, int position) {
@@ -366,6 +414,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         boolean isPending = item.getConfirmations() == 0;
         boolean isSelected = isClaimSelected(original);
         vh.itemView.setSelected(isSelected);
+        vh.setContextGroupId(contextGroupId);
         vh.selectedOverlayView.setVisibility(isSelected ? View.VISIBLE : View.GONE);
         vh.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -434,6 +483,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 }
             }
         });
+
+        if (vh.optionsMenuView != null) {
+            vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    setPosition(vh.getBindingAdapterPosition());
+                    view.showContextMenu();
+                }
+            });
+        }
 
         vh.titleView.setText(Helper.isNullOrEmpty(item.getTitle()) ? item.getName() : item.getTitle());
         if (type == VIEW_TYPE_FEATURED) {
