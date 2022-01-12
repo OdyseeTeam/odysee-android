@@ -2621,6 +2621,8 @@ public class FileViewFragment extends BaseFragment implements
                             }
                         }
 
+                        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
+
                         Context ctx = getContext();
                         if (ctx != null) {
                             relatedContentAdapter.setItems(filteredClaims);
@@ -2932,6 +2934,10 @@ public class FileViewFragment extends BaseFragment implements
                                     commentListAdapter.updatePosterForComment(claim.getClaimId(), claim);
                                 }
                             }
+
+                            // filter for blocked comments
+                            commentListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+
                             commentListAdapter.notifyDataSetChanged();
                         }
                     }

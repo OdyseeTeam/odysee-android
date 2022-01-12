@@ -266,6 +266,9 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                                     commentListAdapter.updatePosterForComment(claim.getClaimId(), claim);
                                 }
                             }
+
+                            commentListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+
                             commentListAdapter.notifyDataSetChanged();
                         }
                     }

@@ -631,6 +631,7 @@ public class FollowingFragment extends BaseFragment implements
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
+                claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
 
                 // Sort claims so those which are livestreaming now are shwon on the top of the list
                 Collections.sort(claims, new Comparator<Claim>() {

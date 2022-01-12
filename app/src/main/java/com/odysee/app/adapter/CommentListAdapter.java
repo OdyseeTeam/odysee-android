@@ -97,6 +97,24 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         return urls;
     }
 
+    public void filterBlockedChannels(List<LbryUri> blockedChannels) {
+        if (blockedChannels.size() == 0) {
+            return;
+        }
+        List<Comment> commentsToRemove = new ArrayList<>();
+        List<String> blockedChannelClaimIds = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelClaimIds.add(uri.getClaimId());
+        }
+        for (Comment comment : items) {
+            if (comment.getPoster() != null && blockedChannelClaimIds.contains(comment.getPoster().getClaimId())) {
+                commentsToRemove.add(comment);
+            }
+        }
+        items.removeAll(commentsToRemove);
+        notifyDataSetChanged();
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         protected final TextView channelName;
         protected final TextView commentText;

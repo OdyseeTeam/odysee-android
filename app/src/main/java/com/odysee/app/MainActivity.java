@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -218,6 +219,7 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCommentsFragment;
 import com.odysee.app.ui.channel.ChannelFormFragment;
 import com.odysee.app.ui.channel.ChannelFragment;
 import com.odysee.app.ui.channel.ChannelManagerFragment;
@@ -288,6 +290,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean userInstallInitialised;
     @Getter
     private boolean initialCategoriesLoaded;
+    private boolean initialBlockedChannelsLoaded;
     private ActionMode actionMode;
     private BillingClient billingClient;
     @Getter
@@ -296,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private int queuedSyncCount = 0;
     private String cameraOutputFilename;
     private Bitmap nowPlayingClaimBitmap;
+    private Fragment currentDisplayFragment;
 
     @Setter
     private BackPressInterceptor backPressInterceptor;
@@ -625,6 +629,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         fragmentTag = "LIBRARY";
                         break;
                 }
+
+                currentDisplayFragment = selectedFragment;
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -904,6 +910,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 actionBar.setDisplayHomeAsUpEnabled(false);
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -2263,6 +2270,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         return;
                     }
 
+                    if (!initialBlockedChannelsLoaded) {
+                        loadBlockedChannels();
+                    }
+
                     if (!initialCategoriesLoaded) {
                         loadInitialCategories();
                         return;
@@ -2282,6 +2293,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // if the user install has already been initialised, proceed to load categories
         loadInitialCategories();
+    }
+
+    private void loadBlockedChannels() {
+        if (!initialBlockedChannelsLoaded) {
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    SQLiteDatabase db = dbHelper.getReadableDatabase();
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                    initialBlockedChannelsLoaded = true;
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(true);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     private void loadInitialCategories() {
@@ -3180,6 +3212,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private Fragment getCurrentFragment() {
+        if (currentDisplayFragment != null) {
+            return currentDisplayFragment;
+        }
+
         return getSupportFragmentManager().findFragmentById(R.id.content_main);
     }
 
@@ -4135,6 +4171,74 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
+    }
+
+    public void handleBlockChannel(final Claim channel) {
+        if (channel != null) {
+            // show confirm dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this).
+                    setTitle(getString(R.string.confirm_block_channel_title, channel.getName())).
+                    setMessage(R.string.confirm_block_channel)
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            blockChannel(channel);
+                        }
+                    }).setNegativeButton(R.string.no, null);
+            builder.show();
+        }
+    }
+
+    public void blockChannel(Claim channel) {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    DatabaseHelper.createOrUpdateBlockedChannel(channel.getClaimId(), channel.getName(), db);
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(true);
+                        }
+                    });
+                } catch (SQLiteException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(false);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void finishChannelBlocking(boolean success) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_blocked));
+            return;
+        }
+
+        // refresh claim adapters where appropriate
+        Fragment current = getCurrentFragment();
+        if (current != null) {
+            if (current instanceof AllContentFragment) {
+                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // content view
+            } else if (current instanceof FileViewFragment) {
+                //((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
+            } else if (current instanceof SearchFragment) {
+                //((SearchFragment) current).appyFliterForBlockedChannels(Lbryio.blockedChannels); // search results
+            } else if (current instanceof ChannelCommentsFragment) {
+                // channel comments
+            }
+        }
+
+        // TODO: Wallet sync for "blocked" list
     }
 
     private void checkSyncedWallet() {

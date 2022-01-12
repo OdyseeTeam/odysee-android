@@ -62,6 +62,7 @@ public final class Lbryio {
     public static List<Claim> cacheResolvedSubscriptions = new ArrayList<>();
     public static List<String> blockedOutpoints = new ArrayList<>();
     public static List<String> filteredOutpoints = new ArrayList<>();
+    public static List<LbryUri> blockedChannels = new ArrayList<>();
     public static double LBCUSDRate = 0;
     public static String AUTH_TOKEN;
     private static boolean generatingAuthToken = false;

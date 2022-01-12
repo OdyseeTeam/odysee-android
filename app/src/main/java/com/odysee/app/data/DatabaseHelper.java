@@ -171,6 +171,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_UNFOLLOW_TAGS = "UPDATE tags SET is_followed = 0";
     private static final String SQL_GET_FOLLOWED_TAGS = "SELECT name FROM tags WHERE is_followed = 1";
 
+    private static final String SQL_INSERT_BLOCKED_CHANNEL = "REPLACE INTO blocked_channels (claim_id, name) VALUES (?, ?)";
+    private static final String SQL_REMOVE_BLOCKED_CHANNEL = "DELETE FROM blocked_channels WHERE claim_id = ?";
+    private static final String SQL_GET_BLOCKED_CHANNELS = "SELECT claim_id, name FROM blocked_channels";
+
     public DatabaseHelper(Context context) {
         super(context, String.format("%s/%s", context.getFilesDir().getAbsolutePath(), DATABASE_NAME), null, DATABASE_VERSION);
         instance = this;
@@ -496,5 +500,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Helper.closeCursor(cursor);
         }
         return claimIds;
+    }
+
+    public static void createOrUpdateBlockedChannel(String claimId, String channelName, SQLiteDatabase db) {
+        db.execSQL(SQL_INSERT_BLOCKED_CHANNEL, new Object[] { claimId, channelName });
+    }
+
+    public static List<LbryUri> getBlockedChannels(SQLiteDatabase db) {
+        List<LbryUri> blockedChannels = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(SQL_GET_BLOCKED_CHANNELS, null);
+            while (cursor.moveToNext()) {
+                LbryUri uri = LbryUri.tryParse(String.format("lbry://%s:%s", cursor.getString(1), cursor.getString(0)));
+                if (uri != null) {
+                    blockedChannels.add(uri);
+                }
+            }
+        } finally {
+            Helper.closeCursor(cursor);
+        }
+        return blockedChannels;
     }
 }

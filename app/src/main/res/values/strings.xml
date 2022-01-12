@@ -63,6 +63,10 @@
 
     <!-- Claim lists -->
     <string name="anonymous">Anonymous</string>
+    <string name="block_channel">Block channel</string>
+    <string name="confirm_block_channel_title">Block %1$s?</string>
+    <string name="confirm_block_channel">Are you sure you want to block this channel? You will no longer see any content nor comments from this channel if you do so.</string>
+    <string name="channel_could_not_be_blocked">An error occurred while trying to block the channel. Please try again later.</string>
 
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>
