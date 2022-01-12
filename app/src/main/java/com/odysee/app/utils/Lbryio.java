@@ -398,6 +398,15 @@ public final class Lbryio {
     public static boolean isFollowing(Claim claim) {
         return subscriptions.contains(Subscription.fromClaim(claim));
     }
+    public static boolean isChannelBlocked(Claim channel) {
+        String channelClaimId = channel.getClaimId();
+        for (LbryUri uri : blockedChannels) {
+            if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
+                return true;
+            }
+        }
+        return false;
+    }
     public static boolean isNotificationsDisabled(Claim claim) {
         Subscription sub = Subscription.fromClaim(claim);
         int index = subscriptions.indexOf(sub);

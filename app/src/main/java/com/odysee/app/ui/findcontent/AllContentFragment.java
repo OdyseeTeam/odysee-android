@@ -57,6 +57,8 @@ import lombok.Getter;
 // TODO: Similar code to FollowingFragment and Channel page fragment. Probably make common operations (sorting/filtering) into a control
 public class AllContentFragment extends BaseFragment implements DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
+    public static int ALL_CONTENT_CONTEXT_GROUP_ID = 1;
+
     @Getter
     private boolean singleTagView;
     private List<String> tags;
@@ -242,7 +244,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         });
 
         checkParams(false);
-        setHasOptionsMenu(true);
         return root;
     }
 
@@ -421,6 +422,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             updateContentScopeLinkText();
             updateSortByLinkText();
         }
+
+        applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
     public void onPause() {
@@ -490,6 +493,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     Context context = getContext();
                     if (context != null) {
                         contentListAdapter = new ClaimListAdapter(claims, context);
+                        contentListAdapter.setContextGroupId(ALL_CONTENT_CONTEXT_GROUP_ID);
                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -562,7 +566,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_block) {
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
             if (contentListAdapter != null) {
                 int position = contentListAdapter.getPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
@@ -571,10 +575,10 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     Context context = getContext();
                     if (context instanceof MainActivity) {
                         ((MainActivity) context).handleBlockChannel(channel);
-                        return true;
                     }
                 }
             }
+            return true;
         }
 
         return super.onContextItemSelected(item);

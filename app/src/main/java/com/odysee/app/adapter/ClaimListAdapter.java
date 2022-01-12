@@ -40,6 +40,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_STREAM = 1;
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
+    @Getter
+    @Setter
+    private int contextGroupId;
 
     private final Map<String, Claim> quickClaimIdMap;
     private final Map<String, Claim> quickClaimUrlMap;
@@ -219,6 +222,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
+        @Getter
+        @Setter
+        private int contextGroupId;
+
         protected final View feeContainer;
         protected final TextView feeView;
         protected final ImageView thumbnailView;
@@ -271,7 +278,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-            contextMenu.add(Menu.NONE, R.id.action_block, Menu.NONE, R.string.block_channel);
+            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
 
@@ -370,7 +377,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     @Override
     public void onViewRecycled(ViewHolder holder) {
-        holder.optionsMenuView.setOnClickListener(null);
+        if (holder.optionsMenuView != null) {
+            holder.optionsMenuView.setOnClickListener(null);
+        }
         super.onViewRecycled(holder);
     }
 
@@ -405,6 +414,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         boolean isPending = item.getConfirmations() == 0;
         boolean isSelected = isClaimSelected(original);
         vh.itemView.setSelected(isSelected);
+        vh.setContextGroupId(contextGroupId);
         vh.selectedOverlayView.setVisibility(isSelected ? View.VISIBLE : View.GONE);
         vh.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -474,13 +484,15 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             }
         });
 
-        vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                setPosition(vh.getBindingAdapterPosition());
-                view.showContextMenu();
-            }
-        });
+        if (vh.optionsMenuView != null) {
+            vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    setPosition(vh.getBindingAdapterPosition());
+                    view.showContextMenu();
+                }
+            });
+        }
 
         vh.titleView.setText(Helper.isNullOrEmpty(item.getTitle()) ? item.getName() : item.getTitle());
         if (type == VIEW_TYPE_FEATURED) {

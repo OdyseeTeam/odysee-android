@@ -673,8 +673,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 if (!isSearchUIActive()) {
                     try {
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.fragment_container_search, SearchFragment.class.newInstance(), "SEARCH").commit();
+                        SearchFragment searchFragment = SearchFragment.class.newInstance();
+                        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
+                        currentDisplayFragment = searchFragment;
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
@@ -2479,7 +2480,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
                     //openNavFragments.get
@@ -2526,6 +2527,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             f.fetchClaimSearchContent(true);
                         }
                     }
+                }
+
+                if (blockedChannels != null && blockedChannels.size() > 0) {
+                    // TODO: Find out the most recently updated blocked channels and merge / update?
+                    List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+                    for (LbryUri uri : blockedChannels) {
+                        if (!newBlockedChannels.contains(uri)) {
+                            newBlockedChannels.add(uri);
+                        }
+                    }
+                    Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
                 }
             }
 
@@ -3691,6 +3703,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 transaction.addToBackStack(null);
             }
             transaction.commit();
+            currentDisplayFragment = fragment;
         } catch (Exception ex) {
             // pass
         }
@@ -3737,6 +3750,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             getSupportActionBar().setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
 
             transaction.commit();
+
+            currentDisplayFragment = fragment;
             findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
@@ -4189,6 +4204,35 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void handleUnblockChannel(final Claim channel) {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    DatabaseHelper.removeBlockedChannel(channel.getClaimId(), db);
+                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(true, channel);
+                        }
+                    });
+                } catch (SQLiteException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(false, null);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     public void blockChannel(Claim channel) {
         ExecutorService service = Executors.newSingleThreadExecutor();
         service.execute(new Runnable() {
@@ -4202,7 +4246,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelBlocking(true);
+                            finishChannelBlocking(true, channel);
                         }
                     });
                 } catch (SQLiteException ex) {
@@ -4218,27 +4262,53 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
     }
 
+
     public void finishChannelBlocking(boolean success) {
+        finishChannelBlocking(success, null);
+    }
+
+    public void finishChannelBlocking(boolean success, Claim channel) {
         if (!success) {
             showMessage(getString(R.string.channel_could_not_be_blocked));
             return;
         }
 
+        if (channel != null) {
+            showMessage(getString(R.string.channel_blocked, channel.getName()));
+        }
+
         // refresh claim adapters where appropriate
+        applyBlockedChannelFilters();
+        saveSharedUserState();
+    }
+
+    public void finishChannelUnblocking(boolean success, Claim channel) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_unblocked));
+            return;
+        }
+
+        if (channel != null) {
+            showMessage(getString(R.string.channel_unblocked, channel.getName()));
+        }
+
+        applyBlockedChannelFilters();
+        saveSharedUserState();
+    }
+
+    private void applyBlockedChannelFilters() {
         Fragment current = getCurrentFragment();
         if (current != null) {
             if (current instanceof AllContentFragment) {
                 ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // content view
             } else if (current instanceof FileViewFragment) {
-                //((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
+                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
             } else if (current instanceof SearchFragment) {
-                //((SearchFragment) current).appyFliterForBlockedChannels(Lbryio.blockedChannels); // search results
-            } else if (current instanceof ChannelCommentsFragment) {
-                // channel comments
+                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // search results
+            } else if (current instanceof ChannelFragment) {
+                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // channel comments
             }
         }
-
-        // TODO: Wallet sync for "blocked" list
     }
 
     private void checkSyncedWallet() {

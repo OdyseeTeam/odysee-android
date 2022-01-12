@@ -156,6 +156,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
 
         fetchChannels();
         checkAndLoadComments();
+        applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
     public void onStop() {
@@ -575,6 +576,12 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         if (root != null) {
             Helper.setViewVisibility(root.findViewById(R.id.channel_no_comments),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+        if (commentListAdapter != null) {
+            commentListAdapter.filterBlockedChannels(blockedChannels);
         }
     }
 

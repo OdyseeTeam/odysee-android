@@ -173,6 +173,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String SQL_INSERT_BLOCKED_CHANNEL = "REPLACE INTO blocked_channels (claim_id, name) VALUES (?, ?)";
     private static final String SQL_REMOVE_BLOCKED_CHANNEL = "DELETE FROM blocked_channels WHERE claim_id = ?";
+    private static final String SQL_REMOVE_ALL_BLOCKED_CHANNELS = "DELETE FROM blocked_channels";
     private static final String SQL_GET_BLOCKED_CHANNELS = "SELECT claim_id, name FROM blocked_channels";
 
     public DatabaseHelper(Context context) {
@@ -504,6 +505,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public static void createOrUpdateBlockedChannel(String claimId, String channelName, SQLiteDatabase db) {
         db.execSQL(SQL_INSERT_BLOCKED_CHANNEL, new Object[] { claimId, channelName });
+    }
+
+    public static void removeBlockedChannel(String claimId, SQLiteDatabase db) {
+        db.execSQL(SQL_REMOVE_BLOCKED_CHANNEL, new Object[] { claimId });
+    }
+
+    public static void removeAllBlockedChannels(SQLiteDatabase db) {
+        db.execSQL(SQL_REMOVE_ALL_BLOCKED_CHANNELS);
     }
 
     public static List<LbryUri> getBlockedChannels(SQLiteDatabase db) {
