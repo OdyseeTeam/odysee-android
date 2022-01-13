@@ -1920,11 +1920,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void checkNowPlaying() {
-        Fragment fragment = getCurrentFragment();
-        if (fragment instanceof FileViewFragment) {
-            return;
-        }
-
         // Don't show the toolbar when returning from the Share Activity
         if (getSupportFragmentManager().findFragmentByTag("FileView") == null)
             findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
@@ -1933,8 +1928,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
-        if (appPlayer != null) {
-            // TODO This will reset player when changing tabs. See if it is needed
+        if (appPlayer != null && !playerReassigned) {
             PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
             playerView.setPlayer(appPlayer);
@@ -3027,9 +3021,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
             } else {
                 moveTaskToBack(true);
+                checkNowPlaying();
             }
-
-            return;
         }
     }
 
