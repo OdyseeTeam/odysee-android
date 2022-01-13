@@ -521,9 +521,9 @@ public final class Lbry {
 
                     }
 
-                    // For now, only claims which are audio, videos, playlists or livestreaming right now can be viewed
+                    // For now, only claims which are audio, videos, playlists or possibly livestreams
                     if (Arrays.asList(Claim.TYPE_REPOST, Claim.TYPE_COLLECTION, Claim.TYPE_CHANNEL).contains(claim.getValueType().toLowerCase())
-                        || (!claim.hasSource() && claim.isLive())
+                        || (!claim.hasSource() && claim.getSigningChannel() != null && Claim.TYPE_STREAM.equals(claim.getValueType()))
                         || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio")))) {
                         claims.add(claim);
                     }

@@ -25,8 +25,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -650,18 +648,7 @@ public class FollowingFragment extends BaseFragment implements
                     return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
                 });
 
-                // Sort claims so those which are livestreaming now are shwon on the top of the list
-                Collections.sort(claims, new Comparator<Claim>() {
-                    @Override
-                    public int compare(Claim claim, Claim t1) {
-                        if (claim.isLive() && !t1.isLive())
-                            return -1;
-                        else if (!claim.isLive() && t1.isLive())
-                            return 1;
-                        else
-                            return 0;
-                    }
-                });
+                claims = Helper.sortingLivestreamingFirst(claims);
 
                 if (contentListAdapter == null) {
                     Context context = getContext();

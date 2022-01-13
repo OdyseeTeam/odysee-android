@@ -44,6 +44,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -500,6 +502,27 @@ public final class Helper {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns list of claims with currently livestreaming ones on top
+     * @param claims Claims to be sorted
+     * @return Sorted claims
+     */
+    public static List<Claim> sortingLivestreamingFirst(List<Claim> claims) {
+        Collections.sort(claims, new Comparator<Claim>() {
+            @Override
+            public int compare(Claim claim, Claim t1) {
+                if (claim.isLive() && !t1.isLive())
+                    return -1;
+                else if (!claim.isLive() && t1.isLive())
+                    return 1;
+                else
+                    return 0;
+            }
+        });
+
+        return claims;
     }
 
     public static String getRealPathFromURI_API19(final Context context, final Uri uri) {
