@@ -10,7 +10,6 @@ import lombok.Data;
 
 @Data
 public class LbryUri {
-    public static final String LBRY_TV_BASE_URL = "https://lbry.tv/";
     public static final String ODYSEE_COM_BASE_URL = "https://odysee.com/";
     public static final String PROTO_DEFAULT = "lbry://";
     public static final String REGEX_INVALID_URI = "[ =&#:$@%?;/\\\\\"<>%\\{\\}|^~\\[\\]`\u0000-\u0008\u000b-\u000c\u000e-\u001F\uD800-\uDFFF\uFFFE-\uFFFF]";
@@ -249,15 +248,6 @@ public class LbryUri {
 
     public static String normalize(String url) throws LbryUriException {
         return parse(url).toString();
-    }
-
-    /**
-     * @deprecated LBRY.TV will shutdown, so this will be useless. Use toOdyseeString() instead
-     * @return
-     */
-    @Deprecated
-    public String toTvString() {
-        return build(true, LBRY_TV_BASE_URL, false);
     }
 
     public String toOdyseeString() {
