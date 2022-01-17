@@ -658,6 +658,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 //                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
 //                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
 //                hideActionBar();
+                clearPlayingPlayer();
                 startActivity(new Intent(view.getContext(), ComingSoon.class));
             }
         });
@@ -899,6 +900,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         accountManager = AccountManager.get(this);
+    }
+
+    /**
+     * Call this method when starting a new activity to avoid display glitches when user re-opens app from picture-in-picture
+     */
+    private void clearPlayingPlayer() {
+        if (appPlayer != null && appPlayer.isPlaying()) {
+            appPlayer.stop();
+            clearNowPlayingClaim();
+        }
     }
 
     @Override
@@ -3069,6 +3080,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void simpleSignIn(int sourceTabId) {
+        clearPlayingPlayer();
         Intent intent = new Intent(this, SignInActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         intent.putExtra("sourceTabId", sourceTabId);
