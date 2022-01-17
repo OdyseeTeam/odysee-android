@@ -65,6 +65,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultControlDispatcher;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
@@ -75,6 +76,7 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
@@ -1835,12 +1837,12 @@ public class FileViewFragment extends BaseFragment implements
                             new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
                             new DefaultExtractorsFactory()
                     ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
-                }/* else {
+                } else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
-                            defaultRequestProperties.put("Referer", "https://bitwave.tv");
+                            defaultRequestProperties.put("Referer", "https://odysee.com");
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
@@ -1859,7 +1861,7 @@ public class FileViewFragment extends BaseFragment implements
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
-                }*/
+                }
 
                 if (mediaSource != null) {
                     MainActivity.appPlayer.setMediaSource(mediaSource, true);
