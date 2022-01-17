@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
@@ -45,16 +46,20 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
+
 import lombok.Setter;
 
 public class SearchFragment extends BaseFragment implements
         ClaimListAdapter.ClaimListItemListener, DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+    public static final int SEARCH_CONTEXT_GROUP_ID = 3;
     private static final int PAGE_SIZE = 25;
 
     private ClaimListAdapter resultListAdapter;
     private ProgressBar loadingView;
     private RecyclerView resultList;
     private TextView explainerView;
+    private View lassoSpacemanView;
 
     @Setter
     private String currentQuery;
@@ -68,6 +73,7 @@ public class SearchFragment extends BaseFragment implements
 
         loadingView = root.findViewById(R.id.search_loading);
         explainerView = root.findViewById(R.id.search_explainer);
+        lassoSpacemanView = root.findViewById(R.id.lasso_spaceman);
 
         resultList = root.findViewById(R.id.search_result_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -99,6 +105,26 @@ public class SearchFragment extends BaseFragment implements
         return root;
     }
 
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+            if (resultListAdapter != null) {
+                int position = resultListAdapter.getPosition();
+                Claim claim = resultListAdapter.getItems().get(position);
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim channel = claim.getSigningChannel();
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).handleBlockChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
+        return super.onContextItemSelected(item);
+    }
+
     public void onResume() {
         super.onResume();
         Context context = getContext();
@@ -115,9 +141,12 @@ public class SearchFragment extends BaseFragment implements
             logSearch(currentQuery);
             search(currentQuery, currentFrom);
         } else {
+            lassoSpacemanView.setVisibility(View.VISIBLE);
             explainerView.setText(getString(R.string.search_type_to_discover));
             explainerView.setVisibility(View.VISIBLE);
         }
+
+        applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
     public void onPause() {
@@ -152,6 +181,7 @@ public class SearchFragment extends BaseFragment implements
         }
 
         if (Helper.isNullOrEmpty(query)) {
+            lassoSpacemanView.setVisibility(View.VISIBLE);
             explainerView.setText(getString(R.string.search_type_to_discover));
             resultList.setVisibility(View.GONE);
             explainerView.setVisibility(View.VISIBLE);
@@ -289,6 +319,7 @@ public class SearchFragment extends BaseFragment implements
                             if (context != null) {
                                 if (resultListAdapter == null) {
                                     resultListAdapter = new ClaimListAdapter(sanitizedClaims, context);
+                                    resultListAdapter.setContextGroupId(SEARCH_CONTEXT_GROUP_ID);
                                     resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
                                     resolveFeaturedItem(buildVanityUrl(query));
                                     resultListAdapter.setListener(SearchFragment.this);
@@ -300,9 +331,12 @@ public class SearchFragment extends BaseFragment implements
                                     resultListAdapter.addItems(sanitizedClaims);
                                 }
 
+                                resultListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+
                                 int itemCount = resultListAdapter.getItemCount();
-                                Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
                                 Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
+                                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
+                                Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
                             }
                         }
                     });
@@ -372,6 +406,7 @@ public class SearchFragment extends BaseFragment implements
             public void onError(Exception error) {
                 Context context = getContext();
                 int itemCount = resultListAdapter == null ? 0 : resultListAdapter.getItemCount();
+                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
                 Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
                 if (context != null) {
                     Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
@@ -402,6 +437,12 @@ public class SearchFragment extends BaseFragment implements
                 // not a channel
                 activity.openFileClaim(claim);
             }
+        }
+    }
+
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+        if (resultListAdapter != null) {
+            resultListAdapter.filterBlockedChannels(blockedChannels);
         }
     }
 

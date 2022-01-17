@@ -25,19 +25,33 @@
         tools:visibility="gone"
         tools:listitem="@layout/list_item_stream"/>
 
-    <TextView
-        android:id="@+id/search_explainer"
+    <ImageView android:id="@+id/lasso_spaceman"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/search_explainer"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:src="@drawable/spaceman_happy"
+        android:contentDescription="Lasso spaceman" />
+    <TextView
+        android:id="@+id/search_explainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/lasso_spaceman"
         android:fontFamily="@font/inter"
         android:text="@string/search_type_to_discover"
         android:textFontWeight="300"
         android:textSize="14sp"
-        android:padding="32dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
         android:visibility="gone"
         tools:visibility="visible" />
 

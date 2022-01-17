@@ -93,6 +93,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private View layoutNothingAtLocation;
     private View layoutLoadingState;
 
+    private View blockUnblock;
+    private TextView blockUnblockText;
+
     // if this is set, scroll to the specific comment on load
     private String commentHash;
 
@@ -123,6 +126,25 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         iconUnfollow = root.findViewById(R.id.channel_view_icon_unfollow);
         buttonBell = root.findViewById(R.id.channel_view_subscribe_notify);
         iconBell = root.findViewById(R.id.channel_view_icon_bell);
+
+        blockUnblock = root.findViewById(R.id.channel_view_block_unblock);
+        blockUnblockText = root.findViewById(R.id.channel_view_block_unblock_text);
+
+        blockUnblock.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean blocked = Lbryio.isChannelBlocked(claim);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    if (blocked) {
+                        // handle unblock
+                        ((MainActivity) context).handleUnblockChannel(claim);
+                    } else {
+                        ((MainActivity) context).handleBlockChannel(claim);
+                    }
+                }
+            }
+        });
 
         tabPager = root.findViewById(R.id.channel_view_pager);
         tabLayout = root.findViewById(R.id.channel_view_tabs);
@@ -387,6 +409,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
         checkParams();
         checkOwnChannel();
+        checkChannelBlocked();
     }
 
     public void onPause() {
@@ -580,6 +603,15 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         }
     }
 
+    public void checkChannelBlocked() {
+        if (claim != null) {
+            boolean channelBlocked = Lbryio.isChannelBlocked(claim);
+            if (blockUnblockText != null) {
+                blockUnblockText.setText(channelBlocked ? R.string.unblock_channel : R.string.block_channel);
+            }
+        }
+    }
+
     private void resetSubCount() {
         subCount = -1;
         Helper.setViewText(textFollowerCount, null);
@@ -610,9 +642,21 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         }
     }
 
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+        if (tabPager != null && tabPager.getAdapter() != null) {
+            Fragment commentsFragment = ((ChannelPagerAdapter) tabPager.getAdapter()).getCommentsFragment();
+            if (commentsFragment instanceof ChannelCommentsFragment) {
+                ((ChannelCommentsFragment) commentsFragment).applyFilterForBlockedChannels(blockedChannels);
+            }
+        }
+
+        checkChannelBlocked();
+    }
+
     private static class ChannelPagerAdapter extends FragmentStateAdapter {
         private final Claim channelClaim;
         private final String commentHash;
+        private Fragment commentsFragmentInstance;
         public ChannelPagerAdapter(Claim channelClaim, String commentHash, FragmentActivity activity) {
             super(activity);
             this.channelClaim = channelClaim;
@@ -659,11 +703,16 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                     if (!Helper.isNullOrEmpty(commentHash)) {
                         commentsFragment.setCommentHash(commentHash);
                     }
+                    commentsFragmentInstance = commentsFragment;
                     return commentsFragment;
             }
 
             // TODO: createFragment is defined as a @NonNull and should never be able to return null.
             return null;
+        }
+
+        public Fragment getCommentsFragment() {
+            return commentsFragmentInstance;
         }
 
         public long getItemId(int position) {

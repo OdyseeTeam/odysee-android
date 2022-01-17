@@ -36,6 +36,7 @@ import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
 import lombok.Setter;
 

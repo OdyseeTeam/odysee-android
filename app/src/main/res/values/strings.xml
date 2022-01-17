@@ -23,6 +23,9 @@
     <string name="about">About</string>
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign out</string>
+    <string name="sign_up_log_in">Sign Up or Log In</string>
+    <string name="community_guidelines">Community Guidelines</string>
+    <string name="help_and_support">Help &amp; Support</string>
     <string name="startup_failed">App startup failed. Please check your data connection and try again. If this problem persists, please email hello@lbry.com</string>
     <string name="no_claim_search_content">No content to display at this time. Please refine your selection or check back later.</string>
 
@@ -60,6 +63,14 @@
 
     <!-- Claim lists -->
     <string name="anonymous">Anonymous</string>
+    <string name="block_channel">Block channel</string>
+    <string name="unblock_channel">Unblock channel</string>
+    <string name="confirm_block_channel_title">Block %1$s?</string>
+    <string name="confirm_block_channel">Are you sure you want to block this channel? You will no longer see any content nor comments from this channel if you do so.</string>
+    <string name="channel_could_not_be_blocked">An error occurred while trying to block the channel. Please try again later.</string>
+    <string name="channel_could_not_be_unblocked">An error occurred while trying to unblock the channel. Please try again later.</string>
+    <string name="channel_blocked">You have blocked all content and comments from %1$s</string>
+    <string name="channel_unblocked">You have unblocked all content and comments from %1$s</string>
 
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>

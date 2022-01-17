@@ -38,6 +38,7 @@ import org.json.JSONObject;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.Comment;
 import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
@@ -808,6 +810,37 @@ public final class Helper {
             id.append(chars.charAt(random.nextInt(chars.length())));
         }
         return id.toString();
+    }
+
+    public static List<Claim> filterClaimsByBlockedChannels(List<Claim> claims, List<LbryUri> blockedChannels) {
+        List<Claim> filtered = new ArrayList<>();
+        List<String> blockedChannelClaimIds = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelClaimIds.add(uri.getClaimId());
+        }
+        for (Claim claim : claims) {
+            if (blockedChannelClaimIds.contains(claim.getClaimId()) ||
+                    (claim.getSigningChannel() != null && blockedChannelClaimIds.contains(claim.getSigningChannel().getClaimId()))) {
+                continue;
+            }
+            filtered.add(claim);
+        }
+        return filtered;
+    }
+
+    public static List<Comment> filterCommentsByBlockedChannels(List<Comment> comments, List<LbryUri> blockedChannels) {
+        List<Comment> filtered = new ArrayList<>();
+        List<String> blockedChannelClaimIds = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelClaimIds.add(uri.getClaimId());
+        }
+        for (Comment comment : comments) {
+            if (comment.getPoster() == null || blockedChannelClaimIds.contains(comment.getPoster().getClaimId())) {
+                continue;
+            }
+            filtered.add(comment);
+        }
+        return filtered;
     }
 
     public static List<Claim> filterClaimsByOutpoint(List<Claim> claims) {

@@ -35,8 +35,10 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     private static final String VERSION = "0.1";
     private final SaveSharedUserStateHandler handler;
     private Exception error;
+    private String authToken;
 
-    public SaveSharedUserStateTask(SaveSharedUserStateHandler handler) {
+    public SaveSharedUserStateTask(String authToken, SaveSharedUserStateHandler handler) {
+        this.authToken = authToken;
         this.handler = handler;
     }
 
@@ -58,11 +60,18 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         // followed tags
         List<String> followedTags = Helper.getTagsForTagObjects(Lbry.followedTags);
 
+        // blocked channels
+        List<LbryUri> blockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+        List<String> blockedChannelUrls = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelUrls.add(uri.toString());
+        }
+
         // Get the previous saved state
         try {
             boolean isExistingValid = false;
             JSONObject sharedObject = null;
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY));
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
                 JSONObject shared = result.getJSONObject("shared");
                 if (shared.has("type")
@@ -73,6 +82,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
                     value.put("tags", Helper.jsonArrayFromList(followedTags));
                     value.put("following", buildUpdatedNotificationsDisabledStates(subs));
+                    value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
                     sharedObject = shared;
                 }
             }
@@ -83,6 +93,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                 value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
                 value.put("tags", Helper.jsonArrayFromList(followedTags));
                 value.put("following", buildUpdatedNotificationsDisabledStates(subs));
+                value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
 
                 sharedObject = new JSONObject();
                 sharedObject.put("type", "object");
@@ -93,7 +104,8 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             Map<String, Object> options = new HashMap<>();
             options.put("key", KEY);
             options.put("value", sharedObject.toString());
-            Lbry.genericApiCall(Lbry.METHOD_PREFERENCE_SET, options);
+
+            Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_SET, options, authToken);
 
             return true;
         } catch (ApiCallException | JSONException ex) {

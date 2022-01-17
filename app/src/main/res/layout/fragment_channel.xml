@@ -43,13 +43,40 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="220dp">
+
             <ImageView
                 android:id="@+id/channel_view_cover_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_above="@id/channel_view_tabs"
-                android:src="@drawable/default_channel_cover"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                android:src="@drawable/default_channel_cover" />
+            <LinearLayout
+                android:id="@+id/channel_view_block_unblock"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@color/channelCoverBackground"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_block"
+                    app:tint="@color/white" />
+                <TextView
+                    android:id="@+id/channel_view_block_unblock_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:text="@string/block_channel"
+                    android:layout_marginStart="2dp"/>
+            </LinearLayout>
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

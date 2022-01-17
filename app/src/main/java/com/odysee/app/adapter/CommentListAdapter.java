@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
+import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
@@ -97,6 +98,24 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         return urls;
     }
 
+    public void filterBlockedChannels(List<LbryUri> blockedChannels) {
+        if (blockedChannels.size() == 0) {
+            return;
+        }
+        List<Comment> commentsToRemove = new ArrayList<>();
+        List<String> blockedChannelClaimIds = new ArrayList<>();
+        for (LbryUri uri : blockedChannels) {
+            blockedChannelClaimIds.add(uri.getClaimId());
+        }
+        for (Comment comment : items) {
+            if (comment.getPoster() != null && blockedChannelClaimIds.contains(comment.getPoster().getClaimId())) {
+                commentsToRemove.add(comment);
+            }
+        }
+        items.removeAll(commentsToRemove);
+        notifyDataSetChanged();
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         protected final TextView channelName;
         protected final TextView commentText;
@@ -109,6 +128,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         protected final View replyLink;
         protected final View commentActions;
         protected final View viewReplies;
+        protected final View blockChannelView;
 
         public ViewHolder (View v) {
             super(v);
@@ -122,6 +142,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             noThumbnailView = v.findViewById(R.id.comment_no_thumbnail);
             alphaView = v.findViewById(R.id.comment_thumbnail_alpha);
             commentActions = v.findViewById(R.id.comment_actions_area);
+            blockChannelView = v.findViewById(R.id.comment_block_channel);
             viewReplies = v.findViewById(R.id.textview_view_replies);
         }
     }
@@ -185,6 +206,18 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 holder.itemView.setVisibility(View.VISIBLE);
             }
         }
+
+        holder.blockChannelView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Claim channel = comment.getPoster();
+                if (channel != null) {
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).handleBlockChannel(channel);
+                    }
+                }
+            }
+        });
 
         holder.channelName.setText(comment.getChannelName());
         holder.commentTimeView.setText(DateUtils.getRelativeTimeSpanString(
