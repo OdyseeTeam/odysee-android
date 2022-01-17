@@ -136,6 +136,7 @@ import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
+import com.odysee.app.callable.LighthouseSearch;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
@@ -166,7 +167,6 @@ import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
 import com.odysee.app.tasks.CommentListTask;
 import com.odysee.app.tasks.GenericTaskHandler;
-import com.odysee.app.tasks.LighthouseSearchTask;
 import com.odysee.app.tasks.ReadTextFileTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.AbandonStreamTask;
@@ -2616,67 +2616,39 @@ public class FileViewFragment extends BaseFragment implements
                 String title = claim.getTitle();
                 String claimId = claim.getClaimId();
 
-                LighthouseSearchTask relatedTask = new LighthouseSearchTask(
-                        title, RELATED_CONTENT_SIZE, 0, canShowMatureContent, claimId, relatedLoading, new ClaimSearchResultHandler() {
+                final boolean nsfw = canShowMatureContent;
+                relatedLoading.setVisibility(View.VISIBLE);
+
+                // Making a request which explicitly uses a certain value form the amount of results needed
+                // and no processing any possible exception, so using a callable instead of an AsyncTask
+                // makes sense for all Android API Levels
+                Thread t = new Thread(new Runnable() {
                     @Override
-                    public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                        List<Claim> filteredClaims = new ArrayList<>();
-                        for (Claim c : claims) {
-                            if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
-                                filteredClaims.add(c);
-                            }
-                        }
+                    public void run() {
+                        ExecutorService executor = Executors.newSingleThreadExecutor();
+                        LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0, nsfw, claimId);
+                        Future<List<Claim>> future = executor.submit(callable);
 
-                        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
+                        try {
+                            List<Claim> result = future.get();
 
-                        Context ctx = getContext();
-                        if (ctx != null) {
-                            relatedContentAdapter.setItems(filteredClaims);
-                            relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                                @Override
-                                public void onClaimClicked(Claim claim) {
-                                    if (claim.isLoadingPlaceholder()) {
-                                        return;
+                            MainActivity a = (MainActivity) getActivity();
+
+                            if (a != null) {
+                                a.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        relatedContentRequestSuccedded(result);
+                                        relatedLoading.setVisibility(View.GONE);
                                     }
-
-                                    if (context instanceof MainActivity) {
-                                        MainActivity activity = (MainActivity) context;
-                                        if (claim.getName().startsWith("@")) {
-                                            activity.openChannelClaim(claim);
-                                        } else {
-                                            Map<String, Object> params = new HashMap<>(1);
-                                            params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
-
-                                            setParams(params);
-                                            checkParams();
-                                        }
-                                    }
-                                }
-                            });
-
-                            View v = getView();
-                            if (v != null) {
-                                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
-                                relatedContentList.setAdapter(relatedContentAdapter);
-                                relatedContentAdapter.notifyDataSetChanged();
-
-                                Helper.setViewVisibility(
-                                        v.findViewById(R.id.file_view_no_related_content),
-                                        relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+                                });
                             }
-
-                            // if related content loads before comment, this will affect the scroll position
-                            // so just ensure that we are at the correct position
-                            scrollToCommentHash();
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
                         }
-                    }
-
-                    @Override
-                    public void onError(Exception error) {
-
                     }
                 });
-                relatedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                t.start();
             } else {
                 TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
                 relatedOrPlayList.setText(claim.getTitle());
@@ -2731,6 +2703,58 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void relatedContentRequestSuccedded(List<Claim> claims) {
+        List<Claim> filteredClaims = new ArrayList<>();
+        for (Claim c : claims) {
+            if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+                filteredClaims.add(c);
+            }
+        }
+
+        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
+
+        Context ctx = getContext();
+        if (ctx != null) {
+            relatedContentAdapter.setItems(filteredClaims);
+            relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim) {
+                    if (claim.isLoadingPlaceholder()) {
+                        return;
+                    }
+
+                    if (ctx instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) ctx;
+                        if (claim.getName().startsWith("@")) {
+                            activity.openChannelClaim(claim);
+                        } else {
+                            Map<String, Object> params = new HashMap<>(1);
+                            params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+
+                            setParams(params);
+                            checkParams();
+                        }
+                    }
+                }
+            });
+
+            View v = getView();
+            if (v != null) {
+                View root = getView();
+                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+                relatedContentList.setAdapter(relatedContentAdapter);
+                relatedContentAdapter.notifyDataSetChanged();
+
+                Helper.setViewVisibility(
+                        v.findViewById(R.id.file_view_no_related_content),
+                        relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+            }
+
+            // if related content loads before comment, this will affect the scroll position
+            // so just ensure that we are at the correct position
+            scrollToCommentHash();
+        }
+    }
     private void loadComments() {
         View root = getView();
         if (root != null && claim != null) {
