@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/comment_form_card"
     android:orientation="vertical"
     android:layout_width="match_parent"
@@ -47,13 +47,14 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:orientation="horizontal"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <View
                 android:id="@+id/comment_form_reply_to_vertical_bar"
                 android:layout_width="3dp"
                 android:layout_height="match_parent"
-                android:background="@color/nextLbryGreen"
+                android:background="@color/odyseePink"
                 android:orientation="vertical" />
 
             <RelativeLayout

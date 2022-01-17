@@ -186,7 +186,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             return Color.RED;
         }
         if (RULE_COMMENT.equalsIgnoreCase(rule)) {
-            return ContextCompat.getColor(context, R.color.nextLbryGreen);
+            return ContextCompat.getColor(context, R.color.statsImage);
         }
 
         return ContextCompat.getColor(context, R.color.odyseePink);
