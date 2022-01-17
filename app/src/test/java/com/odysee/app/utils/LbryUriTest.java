@@ -114,19 +114,6 @@ public class LbryUriTest {
     }
 
     @Test
-    public void lbryToTvString() {
-        LbryUri obtained = new LbryUri();
-
-        try {
-            obtained = LbryUri.parse("lbry://@lbry#3f/lbryturns4#6",false);
-        } catch (LbryUriException e) {
-            e.printStackTrace();
-        }
-
-        assertEquals("https://lbry.tv/@lbry:3f/lbryturns4:6", obtained.toTvString());
-    }
-
-    @Test
     public void lbryToOdyseeString() {
         LbryUri obtained = new LbryUri();
 
