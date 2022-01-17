@@ -71,7 +71,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         try {
             boolean isExistingValid = false;
             JSONObject sharedObject = null;
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY));
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
                 JSONObject shared = result.getJSONObject("shared");
                 if (shared.has("type")
@@ -104,6 +104,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             Map<String, Object> options = new HashMap<>();
             options.put("key", KEY);
             options.put("value", sharedObject.toString());
+
             Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_SET, options, authToken);
 
             return true;
