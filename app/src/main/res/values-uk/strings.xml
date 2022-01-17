@@ -259,7 +259,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Нічого не було знайдено по запиту \'%1$s\'. Будь ласка, введіть інший запит.</string>
-    <string name="search_no_query">Ви можете шукати будь-що, включаючи кіно, музику, електронні книги, програми та багато іншого.</string>
     <string name="no_related_content">Нема нічого схожого для показу зараз.</string>
 
     <!-- Wallet -->

@@ -254,7 +254,6 @@
 
     <!-- Search -->
     <string name="search_no_results">No s\'han trobat resultats per \'%1$s\', Sisplau, introdueix termes de cerca diferents.</string>
-    <string name="search_no_query">Pots cercar qualsevol cosa, incloent pel·lícules, música, ebooks, software i més.</string>
     <string name="no_related_content">No hi ha contingut relacionat per mostrar en aquest moment.</string>
 
     <!-- Wallet -->

@@ -246,7 +246,6 @@
 
     <!-- Search -->
     <string name="search_no_results">沒有「%1$s」的搜尋結果。請嘗試其他關鍵字。</string>
-    <string name="search_no_query">你可以搜尋電影、音樂、電子書、軟體以及更多。</string>
     <string name="no_related_content">目前沒有可顯示的相關內容。</string>
 
     <!-- Wallet -->

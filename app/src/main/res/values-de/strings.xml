@@ -245,7 +245,6 @@ Bitte versuche es später erneut.</string>
 
     <!-- Search -->
     <string name="search_no_results">Keine Ergebnisse für \'%1$s\'  gefunden. Bitte gib einen anderen Suchbegriff ein.</string>
-    <string name="search_no_query">Sie können nach allem suchen, einschließlich Filmen, Musik, E-Books, Software und mehr.</string>
     <string name="no_related_content">Derzeit sind keine ähnlichen Inhalte anzuzeigen.</string>
 
     <!-- Wallet -->

@@ -270,7 +270,6 @@
 
     <!-- Search -->
     <string name="search_no_results">לא נמצאו תוצאות עבור \'%1$s\'. אנא הזן תנאי חיפוש אחרים.</string>
-    <string name="search_no_query">אתם יכולים לחפש הכל - כולל סרטים, מוזיקה, ספרים אלקטרונים, תוכנה ועוד.</string>
     <string name="no_related_content">אין תכנים קשורים להצגה בזמן זה.</string>
 
     <!-- Wallet -->

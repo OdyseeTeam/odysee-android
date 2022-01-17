@@ -243,7 +243,6 @@
 
     <!-- Search -->
     <string name="search_no_results">\'%1$s\' માટે કોઈ પરિણામ મળ્યાં નથી. કૃપા કરી કોઈ અલગ શોધ શબ્દ દાખલ કરો.</string>
-    <string name="search_no_query">તમે ફિલ્મો, સંગીત, ઈબુક્સ, સોફ્ટવેર અને વધુ સહિત કંઈપણ શોધી શકો છો.</string>
     <string name="no_related_content">આ સમયે પ્રદર્શિત કરવા માટે કોઈ સંબંધિત સામગ્રી નથી.</string>
 
     <!-- Wallet -->

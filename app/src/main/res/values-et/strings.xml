@@ -213,7 +213,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Vasteid ei leitud otsingule \'%1$s\'. Palun sisesta muu otsingutermin.</string>
-    <string name="search_no_query">Sa võid otsida igat tüüpi materjale, kaasa arvatud filmid, videod, muusika, e-raamatud, tarkvara ja muu.</string>
     <string name="no_related_content">Seostuvat sisu ei leitud.</string>
 
     <!-- Wallet -->

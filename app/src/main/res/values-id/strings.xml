@@ -246,7 +246,6 @@
 
     <!-- Search -->
     <string name="search_no_results">Tidak ditemukan hasil untuk \'%1$s\'. Silakan masukkan istilah pencarian yang berbeda.</string>
-    <string name="search_no_query">Anda dapat mencari apa saja termasuk film, musik, ebooks, perangkat lunak, dan lainnya.</string>
     <string name="no_related_content">Tidak ada konten terkait untuk ditampilkan saat ini.</string>
 
     <!-- Wallet -->
