@@ -493,7 +493,7 @@ public final class Lbry {
 
                     // Livestreams don't have a source set. Then request a livestream URL only for
                     // audio and video, even for reposted claims
-                    if (!claim.hasSource() && claim.getSigningChannel() != null) {
+                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !claim.hasSource() && claim.getSigningChannel() != null) {
                         String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
 
                         Request.Builder builder = new Request.Builder().url(urlLivestream);
