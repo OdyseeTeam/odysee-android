@@ -145,8 +145,11 @@ public class SignInActivity extends Activity {
             @Override
             public void onClick(View view) {
                 if (currentEmail == null) {
+                    showError(getString(R.string.no_current_email));
                     return;
                 }
+
+                beforeSignInTransition();
                 handleUserSignInWithoutPassword(currentEmail);
             }
         });
