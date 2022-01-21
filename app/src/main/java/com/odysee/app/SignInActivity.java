@@ -213,22 +213,25 @@ public class SignInActivity extends Activity {
         return false;
     }
 
-    private void performSignIn(final String email, final String password) {
-        if (requestInProgress) {
-            return;
-        }
-
+    private void beforeSignInTransition() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 //TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
                 findViewById(R.id.signin_buttons).setVisibility(View.INVISIBLE);
+                activityProgress.setVisibility(View.VISIBLE);
             }
         });
+    }
 
-        activityProgress.setVisibility(View.VISIBLE);
+    private void performSignIn(final String email, final String password) {
+        if (requestInProgress) {
+            return;
+        }
+
         if (!emailSignInChecked) {
             requestInProgress = true;
+            beforeSignInTransition();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -286,6 +289,8 @@ public class SignInActivity extends Activity {
             return;
         }
 
+        beforeSignInTransition();
+        requestInProgress = true;
         executor.execute(new Runnable() {
             @Override
             public void run() {
