@@ -3082,7 +3082,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void simpleSignIn(int sourceTabId) {
         clearPlayingPlayer();
         Intent intent = new Intent(this, SignInActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         intent.putExtra("sourceTabId", sourceTabId);
         startActivity(intent);
         overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);

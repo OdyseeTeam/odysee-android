@@ -150,7 +150,7 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SignInActivity"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTop"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarTranslucent"
             android:windowSoftInputMode="adjustResize" />
