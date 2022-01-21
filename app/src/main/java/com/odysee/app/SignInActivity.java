@@ -84,6 +84,8 @@ public class SignInActivity extends Activity {
     private View layoutVerify;
     private TextView textTitle;
     private TextView textAddedEmail;
+    private TextView textAgreeToTerms;
+    private TextView textUseMagicLink;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
@@ -120,6 +122,8 @@ public class SignInActivity extends Activity {
         walletSyncDoneButton = findViewById(R.id.verification_wallet_done_button);
         textWalletSyncLoading = findViewById(R.id.verification_wallet_loading_text);
         inputWalletSyncPassword = findViewById(R.id.verification_wallet_password_input);
+        textAgreeToTerms = findViewById(R.id.agree_to_terms_note);
+        textUseMagicLink = findViewById(R.id.use_magic_link_text);
 
         buttonPrimary = findViewById(R.id.button_primary);
         buttonSecondary = findViewById(R.id.button_secondary);
@@ -129,10 +133,24 @@ public class SignInActivity extends Activity {
             public void onClick(View v) {
                 signInMode = !signInMode;
                 textTitle.setText(signInMode ? R.string.log_in_odysee : R.string.join_odysee);
+                textAgreeToTerms.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 buttonPrimary.setText(signInMode ? R.string.continue_text : R.string.sign_up);
                 buttonSecondary.setText(signInMode ? R.string.sign_up : R.string.sign_in);
                 layoutPassword.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 inputPassword.setText("");
+            }
+        });
+
+        textUseMagicLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentEmail == null) {
+                    showError(getString(R.string.no_current_email));
+                    return;
+                }
+
+                beforeSignInTransition();
+                handleUserSignInWithoutPassword(currentEmail);
             }
         });
 
@@ -153,8 +171,7 @@ public class SignInActivity extends Activity {
             }
         });
 
-        TextView agreeToTerms = findViewById(R.id.agree_to_terms_note);
-        agreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
+        textAgreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
 
         buttonPrimary.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -213,22 +230,25 @@ public class SignInActivity extends Activity {
         return false;
     }
 
-    private void performSignIn(final String email, final String password) {
-        if (requestInProgress) {
-            return;
-        }
-
+    private void beforeSignInTransition() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 //TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
                 findViewById(R.id.signin_buttons).setVisibility(View.INVISIBLE);
+                activityProgress.setVisibility(View.VISIBLE);
             }
         });
+    }
 
-        activityProgress.setVisibility(View.VISIBLE);
+    private void performSignIn(final String email, final String password) {
+        if (requestInProgress) {
+            return;
+        }
+
         if (!emailSignInChecked) {
             requestInProgress = true;
+            beforeSignInTransition();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -252,6 +272,7 @@ public class SignInActivity extends Activity {
                             setCurrentEmail(email);
                             emailSignInChecked = true;
                             displaySignInControls();
+                            displayMagicLink();
                         }
                     } catch (LbryioRequestException | LbryioResponseException ex) {
                         if (ex instanceof LbryioResponseException) {
@@ -286,6 +307,8 @@ public class SignInActivity extends Activity {
             return;
         }
 
+        beforeSignInTransition();
+        requestInProgress = true;
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -378,6 +401,15 @@ public class SignInActivity extends Activity {
                 restoreControls(true);
                 layoutPassword.setVisibility(View.VISIBLE);
                 buttonPrimary.setText(R.string.sign_in);
+            }
+        });
+    }
+
+    private void displayMagicLink() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                textUseMagicLink.setVisibility(View.VISIBLE);
             }
         });
     }
