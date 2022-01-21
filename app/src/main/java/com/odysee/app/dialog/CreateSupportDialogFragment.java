@@ -14,6 +14,8 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -292,6 +294,19 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
 
         onWalletBalanceUpdated(Lbry.walletBalance);
         updateInfoText();
+
+        inputAmount.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (hasFocus) {
+                    Context context = getContext();
+                    if (context != null) {
+                        ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
+                    }
+                }
+            }
+        });
+        inputAmount.requestFocus();
 
         return view;
     }
