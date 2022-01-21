@@ -85,6 +85,7 @@ public class SignInActivity extends Activity {
     private TextView textTitle;
     private TextView textAddedEmail;
     private TextView textAgreeToTerms;
+    private TextView textUseMagicLink;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
@@ -122,6 +123,7 @@ public class SignInActivity extends Activity {
         textWalletSyncLoading = findViewById(R.id.verification_wallet_loading_text);
         inputWalletSyncPassword = findViewById(R.id.verification_wallet_password_input);
         textAgreeToTerms = findViewById(R.id.agree_to_terms_note);
+        textUseMagicLink = findViewById(R.id.use_magic_link_text);
 
         buttonPrimary = findViewById(R.id.button_primary);
         buttonSecondary = findViewById(R.id.button_secondary);
@@ -136,6 +138,16 @@ public class SignInActivity extends Activity {
                 buttonSecondary.setText(signInMode ? R.string.sign_up : R.string.sign_in);
                 layoutPassword.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 inputPassword.setText("");
+            }
+        });
+
+        textUseMagicLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentEmail == null) {
+                    return;
+                }
+                handleUserSignInWithoutPassword(currentEmail);
             }
         });
 
@@ -257,6 +269,7 @@ public class SignInActivity extends Activity {
                             setCurrentEmail(email);
                             emailSignInChecked = true;
                             displaySignInControls();
+                            displayMagicLink();
                         }
                     } catch (LbryioRequestException | LbryioResponseException ex) {
                         if (ex instanceof LbryioResponseException) {
@@ -385,6 +398,15 @@ public class SignInActivity extends Activity {
                 restoreControls(true);
                 layoutPassword.setVisibility(View.VISIBLE);
                 buttonPrimary.setText(R.string.sign_in);
+            }
+        });
+    }
+
+    private void displayMagicLink() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                textUseMagicLink.setVisibility(View.VISIBLE);
             }
         });
     }
