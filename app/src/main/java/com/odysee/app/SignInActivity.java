@@ -84,6 +84,7 @@ public class SignInActivity extends Activity {
     private View layoutVerify;
     private TextView textTitle;
     private TextView textAddedEmail;
+    private TextView textAgreeToTerms;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
@@ -120,6 +121,7 @@ public class SignInActivity extends Activity {
         walletSyncDoneButton = findViewById(R.id.verification_wallet_done_button);
         textWalletSyncLoading = findViewById(R.id.verification_wallet_loading_text);
         inputWalletSyncPassword = findViewById(R.id.verification_wallet_password_input);
+        textAgreeToTerms = findViewById(R.id.agree_to_terms_note);
 
         buttonPrimary = findViewById(R.id.button_primary);
         buttonSecondary = findViewById(R.id.button_secondary);
@@ -129,6 +131,7 @@ public class SignInActivity extends Activity {
             public void onClick(View v) {
                 signInMode = !signInMode;
                 textTitle.setText(signInMode ? R.string.log_in_odysee : R.string.join_odysee);
+                textAgreeToTerms.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 buttonPrimary.setText(signInMode ? R.string.continue_text : R.string.sign_up);
                 buttonSecondary.setText(signInMode ? R.string.sign_up : R.string.sign_in);
                 layoutPassword.setVisibility(signInMode ? View.GONE : View.VISIBLE);
@@ -153,8 +156,7 @@ public class SignInActivity extends Activity {
             }
         });
 
-        TextView agreeToTerms = findViewById(R.id.agree_to_terms_note);
-        agreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
+        textAgreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
 
         buttonPrimary.setOnClickListener(new View.OnClickListener() {
             @Override
