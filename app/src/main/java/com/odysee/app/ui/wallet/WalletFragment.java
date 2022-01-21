@@ -152,7 +152,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         textNoRecentTransactions = root.findViewById(R.id.wallet_no_recent_transactions);
         buttonBuyLBC = root.findViewById(R.id.wallet_buy_lbc_button);
         textConvertCredits = root.findViewById(R.id.wallet_hint_convert_credits);
-        textConvertCreditsBittrex = root.findViewById(R.id.wallet_hint_convert_credits_bittrex);
         textWhatSyncMeans = root.findViewById(R.id.wallet_hint_what_sync_means);
         textWalletReceiveAddress = root.findViewById(R.id.wallet_receive_address);
         buttonCopyReceiveAddress = root.findViewById(R.id.wallet_copy_receive_address);
@@ -274,7 +273,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         onWalletBalanceUpdated(Lbry.walletBalance);
 
         Helper.applyHtmlForTextView(textConvertCredits);
-        Helper.applyHtmlForTextView(textConvertCreditsBittrex);
         Helper.applyHtmlForTextView(textWhatSyncMeans);
         Helper.applyHtmlForTextView(linkManualBackup);
         Helper.applyHtmlForTextView(linkSyncFAQ);
