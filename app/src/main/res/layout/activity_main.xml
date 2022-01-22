@@ -128,6 +128,7 @@
         android:clickable="true"
         android:id="@+id/launch_splash"
         android:background="@drawable/launch_screen"
+        android:fitsSystemWindows="false"
         android:visibility="gone">
         <ProgressBar
             android:layout_width="36dp"
