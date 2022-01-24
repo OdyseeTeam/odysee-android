@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">LBRY\'ye hoşgeldiniz.</string>
     <string name="welcome_paragraph">LBRY topluluk tarafından kontrol edilen, video, müzik, kitap ve fazlasını arayıp yayınlayabileceğiniz bir içerik platformudur.</string>
     <string name="welcome_tos">Devam ederek, &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; kabul ediyor ve 13 yaşından büyük olduğumu onaylıyorum.</string>
-    <string name="use_lbry">LBRY Kullan »</string>
+    <string name="use_odysee">LBRY Kullan »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Video, müzik ve daha fazlasını ara</string>

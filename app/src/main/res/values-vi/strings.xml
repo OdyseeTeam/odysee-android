@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Chào mừng đến với LBRY</string>
     <string name="welcome_paragraph">LBRY là một nền tảng nội dung do cộng đồng kiểm soát, nơi bạn có thể tìm và xuất bản video, nhạc, sách và hơn thế nữa.</string>
     <string name="welcome_tos">Bằng cách tiếp tục, tôi đồng ý với &lt;a href=\"https://lbry.com/termsofservice\"&gt; Điều khoản dịch vụ &lt;/a&gt; và xác nhận tôi đã trên 13 tuổi.</string>
-    <string name="use_lbry">Sử dụng LBRY »</string>
+    <string name="use_odysee">Sử dụng LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Tìm kiếm video, âm nhạc và nhiều hơn nữa</string>

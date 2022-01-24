@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY minangka platform konten sing dikontrol karo komunitas sing sampeyan bisa nemokake lan nerbitake video, musik, buku, lan liya-liyane.</string>
     <string name="welcome_tos">Kanthi terus, aku setuju karo &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; lan konfirmasi aku umur 13 taun.</string>
     <string name="welcome_please_wait">Mangga ngenteni nalika wis siyap...</string>
-    <string name="use_lbry">Gunakake LBRY »</string>
+    <string name="use_odysee">Gunakake LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Goleki film, musik, lan liya-liyane</string>

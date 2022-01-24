@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Welkom tot LBRY.</string>
     <string name="welcome_paragraph">LBRY is \'n gemeenskapsgebaseerde contentsplatform waar je video\'s, musiek, boeke en meer kan vind en publiseer</string>
     <string name="welcome_tos">Deur voort te gaan, stem ek in tot die &lt;a href=\"https://lbry.com/termsofservice\"&gt;TDiensvoorwaardes&lt;/a&gt; en bevestig dat ek ouer as 13 is.</string>
-    <string name="use_lbry">Gebruik LBRY »</string>
+    <string name="use_odysee">Gebruik LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Soek films, musiek en meer</string>

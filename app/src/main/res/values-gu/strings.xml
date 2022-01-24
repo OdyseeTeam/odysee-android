@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">LBRY માં આપનું સ્વાગત છે.</string>
     <string name="welcome_paragraph">LBRY એ સમુદાય-નિયંત્રિત સામગ્રી પ્લેટફોર્મ છે જ્યાં તમે વિડિઓઝ, સંગીત, પુસ્તકો અને વધુ શોધી અને પ્રકાશિત કરી શકો છો.</string>
     <string name="welcome_tos">ચાલુ રાખીને, હું &lt; ને સંમત છું. a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; અને પુષ્ટિ કરો કે હું 13 વર્ષથી વધુ વયની છું.</string>
-    <string name="use_lbry">LBRY વાપરો »</string>
+    <string name="use_odysee">LBRY વાપરો »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">વિડિઓઝ, સંગીત અને વધુ શોધો</string>

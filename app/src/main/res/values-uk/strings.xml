@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Вітаємо в LBRY.</string>
     <string name="welcome_paragraph">LBRY - це платформа, керована спільнотою, в якій ви можете знаходити та публікувати відео, музику, книги та ін.</string>
     <string name="welcome_tos">Продовжуючи, я погоджуюся з  &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; та підтверджую, що мені більше 13 років. </string>
-    <string name="use_lbry">Використовуйте LBRY »</string>
+    <string name="use_odysee">Використовуйте LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Шукати кіно, музику та інше</string>

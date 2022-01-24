@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="36dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:src="@drawable/odysee_brand" />
+    </RelativeLayout>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/signin_form"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/first_run_rewards_verification_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="36dp"
+            android:layout_marginEnd="36dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/reward_verification"
+            android:fontFamily="@font/inter"
+            android:textColor="@color/joinodysee_text"
+            android:textSize="24sp"
+            android:textFontWeight="300" />
+
+        <TextView
+            android:id="@+id/first_run_reward_verification_desc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="36dp"
+            android:layout_marginEnd="36dp"
+            android:fontFamily="@font/inter"
+            android:textSize="16sp"
+            android:text="@string/not_reward_eligible"
+            android:textFontWeight="300" />
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/reward_verification_options_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:layout_marginStart="36dp"
+            android:layout_marginEnd="36dp"
+            app:tabMode="scrollable"/>
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/reward_verification_options_view_pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.appcompat.widget.LinearLayoutCompat>

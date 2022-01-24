@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">‏‪LBRY‬ היא פלטפורמת תוכן בניהול קהילתי, ובה אפשר למצוא סרטונים, מוזיקה, ספרים, ועוד.</string>
     <string name="welcome_tos">אם אתה בוחר להמשיך, אתה מסכים ל&lt;a href=\"https://lbry.com/termsofservice\"&gt;תנאי השירות&lt;/a&gt; ומצהיר שגילך מעל 13 שנים.</string>
     <string name="welcome_please_wait">אנא המתן בזמן שאנחנו מכינים כמה דברים...</string>
-    <string name="use_lbry">השתמש ב-LBRY »</string>
+    <string name="use_odysee">השתמש ב-LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">חפש סרטונים, מוזיקה ועוד</string>

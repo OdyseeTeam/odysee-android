@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/verification_activity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="36dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:src="@drawable/odysee_brand" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/signin_form"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/signin_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/join_odysee"
+            android:fontFamily="@font/inter"
+            android:textColor="@color/joinodysee_text"
+            android:textSize="24sp"
+            android:textFontWeight="300" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:hint="@string/email"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/verification_email_input"
+                android:inputType="textEmailAddress"
+                android:maxLength="256" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_signin_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:hint="@string/password"
+            android:maxLength="100"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:enabled="true">
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/signin_password"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/signin_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="9">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_primary"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="4"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="@font/inter"
+                android:text="@string/sign_up"
+                android:textColor="@color/white"
+                app:cornerRadius="8dp" />
+            <View android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="1dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_secondary"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="4"
+                style="@style/VerificationButton"
+                android:textColor="@color/colorPrimary"
+                android:fontFamily="@font/inter"
+                android:text="@string/sign_in" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+        <ProgressBar
+            android:id="@+id/signin_activity_progress"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="invisible"
+            tools:visibility="visible" />
+        <TextView
+            android:id="@+id/use_magic_link_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/use_magic_link"
+            android:layout_gravity="center_horizontal"
+            android:textColor="@color/colorPrimary"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?selectableItemBackground"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/agree_to_terms_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/joinodysee_text"
+            android:text="@string/agree_to_terms" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/verification_email_verify_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_margin="36dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="@font/inter"
+            android:text="@string/sign_in"
+            android:textColor="@color/signin_text"
+            android:textFontWeight="300"
+            android:textSize="28sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:text="@string/email_sent_to"
+            android:textColor="@color/joinodysee_text"
+            android:textFontWeight="300"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/verification_email_added_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:ellipsize="middle"
+            android:fontFamily="@font/inter"
+            android:singleLine="true"
+            android:textAlignment="center"
+            android:textColor="@color/joinodysee_text"
+            android:textFontWeight="300"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter"
+            android:text="@string/please_click_link"
+            android:textColor="@color/joinodysee_text"
+            android:textFontWeight="300"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:weightSum="9">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/verification_email_resend_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:fontFamily="@font/inter"
+                android:text="@string/resend" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="3" />
+
+            <TextView
+                android:id="@+id/verification_email_edit_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:fontFamily="@font/inter"
+                android:gravity="right"
+                android:text="@string/edit"
+                android:textColor="@color/joinodysee_text"
+                android:textFontWeight="300" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+    <LinearLayout android:id="@+id/verification_wallet_sync_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="36dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <LinearLayout
+            android:id="@+id/verification_wallet_sync_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:textSize="24sp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:layout_centerVertical="true"
+                    android:text="@string/wallet_sync"
+                    android:textFontWeight="300" />
+                <ProgressBar
+                    android:id="@+id/verification_wallet_loading_progress"
+                    android:visibility="gone"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginTop="24dp" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/verification_wallet_loading_text"
+                android:visibility="gone"
+                android:textSize="16sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:layout_marginTop="8dp"
+                android:text="@string/retrieving_account_information"
+                android:textFontWeight="300" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/verification_wallet_input_area"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/verification_wallet_sync_paragraph"
+                android:textSize="16sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="@string/please_enter_your_password"
+                android:textFontWeight="300"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="@string/wallet_password"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/verification_wallet_password_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:gravity="center"
+                    android:inputType="textPassword"
+                    android:singleLine="true"
+                    android:textSize="20sp"
+                    android:textAlignment="center"
+                    android:textFontWeight="300" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:textSize="12sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:layout_marginTop="16dp"
+                android:text="@string/wallet_security_purposes"
+                android:textFontWeight="300" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/verification_wallet_done_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/inter"
+                android:text="@string/done" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:layout_gravity="center_horizontal"
+        android:src="@drawable/signin_monsters" />
+</LinearLayout>
