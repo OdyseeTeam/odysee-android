@@ -2569,7 +2569,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onError(Exception error) {
                 Log.e(TAG, String.format("load shared user state failed: %s", error != null ? error.getMessage() : "no error message"), error);
             }
-        });
+        }, Lbryio.AUTH_TOKEN);
         loadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

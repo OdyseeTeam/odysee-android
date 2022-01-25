@@ -39,14 +39,16 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     private final Context context;
     private final LoadSharedUserStateHandler handler;
     private Exception error;
+    private final String authToken;
 
     private List<Subscription> subscriptions;
     private List<Tag> followedTags;
     private List<LbryUri> blockedChannels;
 
-    public LoadSharedUserStateTask(Context context, LoadSharedUserStateHandler handler) {
+    public LoadSharedUserStateTask(Context context, LoadSharedUserStateHandler handler, String authToken) {
         this.context = context;
         this.handler = handler;
+        this.authToken = authToken;
     }
 
     protected Boolean doInBackground(Void... params) {
@@ -55,7 +57,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         // Get the previous saved state
         try {
             SQLiteDatabase db = null;
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY));
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
                 if (context instanceof MainActivity) {
                     db = ((MainActivity) context).getDbHelper().getWritableDatabase();
