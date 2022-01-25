@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Bine ai venit în LBRY.</string>
     <string name="welcome_paragraph">LBRY este o platformă de conţinut controlată de comunitate unde poţi găsi sau publica videoclipuri, muzică, cărţi şi altele.</string>
     <string name="welcome_tos">Continuând, sunt de acord cu &lt;a href=\"https://lbry.com/termsofservice\"&gt;Termenii serviciului&lt;/a&gt; şi confirm că am vârsta peste 13 ani.</string>
-    <string name="use_lbry">Pornire LBRY »</string>
+    <string name="use_odysee">Pornire LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Căutare filme, muzică şi altele</string>

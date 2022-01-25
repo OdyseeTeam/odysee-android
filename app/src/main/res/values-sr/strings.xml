@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY je sadržajna platforma pod kontrolom zajednice gde možete pronaći i objaviti video zapise, muziku, knjige i drugo.</string>
     <string name="welcome_tos">Ukoliko nastavite, slažete se sa &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; i potvrđjujete da ste stariji od 13 godina.</string>
     <string name="welcome_please_wait">Molimo pričekajte dok neke stvari ne budu bile spremne...</string>
-    <string name="use_lbry">Koristite LBRY</string>
+    <string name="use_odysee">Koristite LBRY</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Pretraga filmova, muzike i još mnogo čega</string>

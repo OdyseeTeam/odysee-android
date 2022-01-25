@@ -25,7 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.odysee.app.R;
-import com.odysee.app.listener.SignInListener;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.verification.CheckUserEmailVerifiedTask;
 import com.odysee.app.tasks.verification.EmailNewTask;
@@ -36,7 +36,7 @@ import lombok.Setter;
 public class EmailVerificationFragment extends Fragment {
 
     @Setter
-    private SignInListener listener;
+    private VerificationListener listener;
     private View layoutCollect;
     private View layoutVerify;
     private ProgressBar emailAddProgress;

@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.odysee.app.adapter.VerificationPagerAdapter;
-import com.odysee.app.listener.SignInListener;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.listener.WalletSyncListener;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.User;
@@ -40,7 +40,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
-public class VerificationActivity extends FragmentActivity implements SignInListener, WalletSyncListener {
+public class VerificationActivity extends FragmentActivity implements VerificationListener, WalletSyncListener {
 
     public static final int VERIFICATION_FLOW_SIGN_IN = 1;
     public static final int VERIFICATION_FLOW_REWARDS = 2;

@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY 是一個由社群主導的內容平台，你能夠找到和發佈影片、音樂、書籍及更多內容。</string>
     <string name="welcome_tos">在繼續的同時，我已同意 &lt;a href=\"https://lbry.com/termsofservice\"&gt;服務條款&lt;/a&gt; 並確保自己已年滿十三歲或以上。</string>
     <string name="welcome_please_wait">在準備就緒前請稍候片刻……</string>
-    <string name="use_lbry">使用 LBRY »</string>
+    <string name="use_odysee">使用 LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">搜尋影片、音樂以及更多</string>

@@ -10,25 +10,16 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_margin="36dp">
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp">
 
-        <TextView
-            android:textSize="28sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/phone_number"
-            android:layout_marginBottom="16dp"
-            android:textColor="@color/white"
-            android:textFontWeight="300" />
         <TextView
             android:textSize="16sp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/enter_phone_number"
-            android:textColor="@color/white"
             android:textFontWeight="300" />
 
         <LinearLayout
@@ -83,8 +74,9 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_margin="36dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
         android:visibility="gone">
 
         <TextView
@@ -94,7 +86,6 @@
             android:fontFamily="@font/inter"
             android:text="@string/verify_phone_number"
             android:layout_marginBottom="16dp"
-            android:textColor="@color/white"
             android:textFontWeight="300" />
         <TextView
             android:id="@+id/verification_phone_verify_paragraph"
@@ -103,7 +94,6 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/enter_phone_verify_code"
-            android:textColor="@color/white"
             android:textFontWeight="300" />
 
         <EditText
@@ -152,7 +142,6 @@
                 android:layout_alignParentEnd="true"
                 android:fontFamily="@font/inter"
                 android:text="@string/edit"
-                android:textColor="@color/white"
                 android:textFontWeight="300" />
         </RelativeLayout>
     </LinearLayout>

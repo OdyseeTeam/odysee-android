@@ -13,6 +13,9 @@
         <item name="android:windowBackground">@drawable/launch_screen</item>
         <item name="android:windowFullscreen">true</item>
     </style>
+    <style name="FirstRunTheme" parent="AppTheme.NoActionBar">
+        <!--item name="android:windowTranslucentStatus">true</item-->
+    </style>
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>

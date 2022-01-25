@@ -87,11 +87,16 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
 import androidx.browser.customtabs.CustomTabColorSchemeParams;
 import androidx.browser.customtabs.CustomTabsIntent;
@@ -307,6 +312,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private WebSocketClient webSocketClient;
 
     private int bottomNavigationHeight = 0;
+    private ActivityResultLauncher<Intent> activityResultLauncher;
 
     @Getter
     private String firebaseMessagingToken;
@@ -371,6 +377,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
+    public static final String PREFERENCE_KEY_INTERNAL_EMAIL_REWARD_CLAIMED = "com.odysee.app.preference.internal.EmailRewardClaimed";
 
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
@@ -457,14 +464,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } catch (Exception ex) {
             // pass (don't fail initialization on some _weird_ device implementations)
         }
-//        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
 
         initKeyStore();
         loadAuthToken();
 
-//        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-//            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-//        }
+        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+
+        activityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_CANCELED) {
+                        // There are no request codes
+                        finish();
+                    }
+                }
+            });
+
         initSpecialRouteMap();
 
         LbryAnalytics.init(this);
@@ -1440,7 +1460,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         updateMiniPlayerMargins();
         enteringPIPMode = false;
 
-        checkFirstRun();
         checkNowPlaying();
 
         if (isSignedIn())
@@ -2011,16 +2030,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void checkFirstRun() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean firstRunCompleted = sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED, false);
-        if (!firstRunCompleted) {
-            startActivity(new Intent(this, FirstRunActivity.class));
-            return;
-        }
-
-        if (!appStarted) {
-            // first run completed, startup
-            startup();
+        if (!isFirstRunCompleted()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activityResultLauncher.launch(new Intent(MainActivity.this, FirstRunActivity.class));
+                }
+            });
             return;
         }
 
@@ -2276,6 +2292,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                         return;
                     }
+
+                    checkFirstRun();
 
                     if (!initialBlockedChannelsLoaded) {
                         loadBlockedChannels();

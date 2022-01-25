@@ -36,7 +36,7 @@
     <string name="welcome_paragraph">LBRY is a community-controlled content platform where you can find and publish videos, music, books, and more.</string>
     <string name="welcome_tos">By continuing, I agree to the &lt;a href="https://lbry.com/termsofservice"&gt;Terms of Service&lt;/a&gt; and confirm I am over the age of 13.</string>
     <string name="welcome_please_wait">Please wait while we get some things ready…</string>
-    <string name="use_lbry">Use LBRY »</string>
+    <string name="use_odysee">Use Odysee</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Search videos, music and more</string>
@@ -595,6 +595,8 @@
         <item quantity="one">%1$s available credit</item>
         <item quantity="other">%1$s available credits</item>
     </plurals>
+    <string name="not_reward_eligible">You are not reward eligible. Join the Odysee Rewards program today using one of these options.</string>
+    <string name="reward_eligible">You are now reward eligible. Watch content on Odysee to claim your rewards!</string>
 
     <!-- Reward drivers -->
     <string name="publishing_requires_credits">Publishing requires credits.</string>
@@ -696,6 +698,18 @@
 
     <string name="join_odysee">Join Odysee</string>
     <string name="log_in_odysee">Log in to Odysee</string>
+    <string name="skip">Skip</string>
+
+    <string name="no_channel_name">No channel name specified.</string>
+    <string name="first_run_create_channel_desc">Your channel will be used for publishing content and commenting. You can add more channels or remove this one later.</string>
+    <string name="your_odysee_channel_name">Your Odysee channel name</string>
+
+    <string name="phone">Phone</string>
+    <string name="twitter">Twitter</string>
+    <string name="paid">Paid</string>
+    <string name="manual">Manual</string>
+    <string name="reward_verification_manual_desc">Please request to be verified on the &lt;a href="https://verification.odysee.com/"&gt;Odysee Rewards Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to a few days.</string>
+    <string name="reward_verification_manual_enjoy_content">You can continue to enjoy content in the meantime!</string>
 
     <!-- Font Awesome -->
     <string name="fa_gift" translatable="false">&#xf06b;</string>

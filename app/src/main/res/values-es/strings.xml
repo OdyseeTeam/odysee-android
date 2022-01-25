@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY es una plataforma de contenido controlada por la comunidad donde puedes encontrar y publicar videos, música, libros y más.</string>
     <string name="welcome_tos">Al continuar, acepto los &lt;a href=\"https://lbry.com/termsofservice\"&gt; Términos de servicio &lt;/a&gt; y confirmo que tengo más de 13 años.</string>
     <string name="welcome_please_wait">Por favor espere mientras preparamos algunas cosas...</string>
-    <string name="use_lbry">Usar LBRY »</string>
+    <string name="use_odysee">Usar LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Busca vídeos, música y más</string>
