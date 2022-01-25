@@ -1,7 +1,9 @@
 # Odysee Android
 
+To build the app, even as a debug APK, you will need to copy `app/twitter.properties.sample` file as `app/twitter.properties`
+
 ## Release
-To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit app/build.gradle file the following way:
+To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit `app/build.gradle` file the following way:
 
 ```groovy
 android {
