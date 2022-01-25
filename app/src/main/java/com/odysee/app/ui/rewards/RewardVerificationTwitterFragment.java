@@ -1,4 +1,4 @@
-package com.odysee.app.ui.verification;
+package com.odysee.app.ui.rewards;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -18,115 +18,52 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
-
-import com.odysee.app.MainActivity;
 import com.odysee.app.R;
-import com.odysee.app.VerificationActivity;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.TwitterOauth;
 import com.odysee.app.model.lbryinc.RewardVerified;
-import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.TwitterOauthHandler;
 import com.odysee.app.tasks.lbryinc.TwitterVerifyTask;
 import com.odysee.app.tasks.verification.TwitterAccessTokenTask;
+import com.odysee.app.tasks.verification.TwitterRequestTokenTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbryio;
+
 import lombok.Setter;
 
-public class ManualVerificationFragment extends Fragment {
+public class RewardVerificationTwitterFragment extends Fragment {
     @Setter
     private VerificationListener listener;
     private PopupWindow popup;
+    private boolean twitterOauthInProgress;
+    private MaterialButton buttonVerifyWithTwitter;
+    private TwitterOauth currentOauth;
     private View mainView;
     private View loadingView;
 
-    private TwitterOauth currentOauth;
-    private boolean twitterOauthInProgress = false;
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
+        View root = inflater.inflate(R.layout.fragment_reward_verification_twitter, container, false);
 
-    private static final double SKIP_QUEUE_PRICE = 4.99;
-
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_verification_manual, container, false);
-
-        mainView = root.findViewById(R.id.verification_manual_main);
-        loadingView = root.findViewById(R.id.verification_manual_loading);
-
-        Context context = getContext();
-        MaterialButton buttonSkipQueue = root.findViewById(R.id.verification_manual_skip_queue);
-        buttonSkipQueue.setText(context.getString(R.string.skip_queue_button_text, String.valueOf(SKIP_QUEUE_PRICE)));
-
-        Helper.applyHtmlForTextView(root.findViewById(R.id.verification_manual_discord_verify));
-        root.findViewById(R.id.verification_manual_twitter_button).setOnClickListener(new View.OnClickListener() {
+        mainView = root.findViewById(R.id.reward_verification_twitter_main);
+        loadingView = root.findViewById(R.id.reward_verification_twitter_loading);
+        buttonVerifyWithTwitter = root.findViewById(R.id.reward_verification_twitter_button);
+        buttonVerifyWithTwitter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // start twitter verification
                 if (currentOauth != null) {
                     // Twitter three-legged oauth already completed, verify directly
                     twitterVerify(currentOauth);
                 } else {
                     // show twitter sign-in flow
-//                    twitterVerificationFlow();
-                }
-            }
-        });
-
-        root.findViewById(R.id.verification_manual_skip_queue_verify).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showLoading();
-                if (MainActivity.instance != null) {
-                    MainActivity.instance.checkPurchases(new GenericTaskHandler() {
-                        @Override
-                        public void beforeStart() {
-
-                        }
-
-                        @Override
-                        public void onSuccess() {
-                            hideLoading();
-                            listener.onManualVerifyContinue();
-                        }
-
-                        @Override
-                        public void onError(Exception error) {
-                            hideLoading();
-                            showError(error.getMessage());
-                        }
-                    });
-                }
-            }
-        });
-
-        root.findViewById(R.id.verification_manual_phone_number_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ((VerificationActivity) getContext()).showPhoneVerification();
-            }
-        });
-
-
-        root.findViewById(R.id.verification_manual_continue_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (listener != null) {
-                    listener.onManualVerifyContinue();
-                }
-            }
-        });
-
-        root.findViewById(R.id.verification_manual_skip_queue).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (listener != null) {
-                    listener.onSkipQueueAction();
+                    twitterVerificationFlow();
                 }
             }
         });
 
         return root;
     }
-/*
 
     private void twitterVerificationFlow() {
         twitterOauthInProgress = true;
@@ -154,9 +91,9 @@ public class ManualVerificationFragment extends Fragment {
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-*/
+
     public void showLoading() {
-        Helper.setViewVisibility(mainView, View.INVISIBLE);
+        Helper.setViewVisibility(mainView, View.GONE);
         Helper.setViewVisibility(loadingView, View.VISIBLE);
     }
 

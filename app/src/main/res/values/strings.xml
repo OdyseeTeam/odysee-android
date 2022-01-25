@@ -596,6 +596,7 @@
         <item quantity="other">%1$s available credits</item>
     </plurals>
     <string name="not_reward_eligible">You are not reward eligible. Join the Odysee Rewards program today using one of these options.</string>
+    <string name="reward_eligible">You are now reward eligible. Watch content on Odysee to claim your rewards!</string>
 
     <!-- Reward drivers -->
     <string name="publishing_requires_credits">Publishing requires credits.</string>
@@ -707,7 +708,7 @@
     <string name="twitter">Twitter</string>
     <string name="paid">Paid</string>
     <string name="manual">Manual</string>
-    <string name="reward_verification_manual_desc">Please request to be verified on the Odysee Discord server. A manual review can take anywhere from several minutes to a few days.</string>
+    <string name="reward_verification_manual_desc">Please request to be verified on the &lt;a href="https://verification.odysee.com/"&gt;Odysee Rewards Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to a few days.</string>
     <string name="reward_verification_manual_enjoy_content">You can continue to enjoy content in the meantime!</string>
 
     <!-- Font Awesome -->

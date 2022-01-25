@@ -1,6 +1,6 @@
 package com.odysee.app.listener;
 
-public interface SignInListener {
+public interface VerificationListener {
     void onEmailAdded(String email);
     void onEmailEdit();
     void onEmailVerified();

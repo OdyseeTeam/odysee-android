@@ -58,10 +58,12 @@
             android:layout_marginTop="36dp"
             android:layout_marginStart="36dp"
             android:layout_marginEnd="36dp"
+            android:visibility="invisible"
             app:tabMode="scrollable"/>
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/reward_verification_options_view_pager"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:visibility="invisible" />
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>

@@ -4,11 +4,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.odysee.app.listener.SignInListener;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.listener.WalletSyncListener;
 import com.odysee.app.ui.verification.EmailVerificationFragment;
 import com.odysee.app.ui.verification.ManualVerificationFragment;
-import com.odysee.app.ui.verification.PhoneVerificationFragment;
+import com.odysee.app.ui.rewards.RewardVerificationPhoneFragment;
 import com.odysee.app.ui.verification.WalletVerificationFragment;
 import lombok.SneakyThrows;
 
@@ -39,14 +39,14 @@ public class VerificationPagerAdapter extends FragmentStateAdapter {
             case 0:
             default:
                 EmailVerificationFragment evFragment = EmailVerificationFragment.class.newInstance();
-                if (activity instanceof SignInListener) {
-                    evFragment.setListener((SignInListener) activity);
+                if (activity instanceof VerificationListener) {
+                    evFragment.setListener((VerificationListener) activity);
                 }
                 return evFragment;
             case 1:
-                PhoneVerificationFragment pvFragment = PhoneVerificationFragment.class.newInstance();
-                if (activity instanceof SignInListener) {
-                    pvFragment.setListener((SignInListener) activity);
+                RewardVerificationPhoneFragment pvFragment = RewardVerificationPhoneFragment.class.newInstance();
+                if (activity instanceof VerificationListener) {
+                    pvFragment.setListener((VerificationListener) activity);
                 }
                 return pvFragment;
             case 2:
@@ -57,8 +57,8 @@ public class VerificationPagerAdapter extends FragmentStateAdapter {
                 return wvFragment;
             case 3:
                 ManualVerificationFragment mvFragment = ManualVerificationFragment.class.newInstance();
-                if (activity instanceof SignInListener) {
-                    mvFragment.setListener((SignInListener) activity);
+                if (activity instanceof VerificationListener) {
+                    mvFragment.setListener((VerificationListener) activity);
                 }
                 return mvFragment;
         }
