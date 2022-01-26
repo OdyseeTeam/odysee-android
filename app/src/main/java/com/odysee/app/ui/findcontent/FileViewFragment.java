@@ -1842,7 +1842,7 @@ public class FileViewFragment extends BaseFragment implements
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
-                            defaultRequestProperties.put("Referer", "https://odysee.com");
+                            defaultRequestProperties.put("Referer", "https://bitwave.tv");
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
