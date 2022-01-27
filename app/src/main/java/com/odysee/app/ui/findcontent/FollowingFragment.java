@@ -24,8 +24,11 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 
@@ -632,6 +635,13 @@ public class FollowingFragment extends BaseFragment implements
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
                 claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
+
+                Date d = new Date();
+                Calendar cal = new GregorianCalendar();
+                cal.setTime(d);
+
+                // Remove claims with a release time in the future
+                claims.removeIf(e -> ((Claim.StreamMetadata) e.getValue()).getReleaseTime() > (cal.getTimeInMillis() / 1000L));
 
                 // Sort claims so those which are livestreaming now are shwon on the top of the list
                 Collections.sort(claims, new Comparator<Claim>() {
