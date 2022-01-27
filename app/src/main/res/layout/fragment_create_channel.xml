@@ -36,7 +36,7 @@
             android:layout_marginBottom="16dp"
             android:text="@string/create_a_channel"
             android:fontFamily="@font/inter"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textSize="24sp"
             android:textFontWeight="300" />
 

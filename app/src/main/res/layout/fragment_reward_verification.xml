@@ -23,7 +23,6 @@
     </RelativeLayout>
 
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/signin_form"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -36,7 +35,7 @@
             android:layout_marginBottom="16dp"
             android:text="@string/reward_verification"
             android:fontFamily="@font/inter"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textSize="24sp"
             android:textFontWeight="300" />
 

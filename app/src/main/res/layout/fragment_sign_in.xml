@@ -36,7 +36,7 @@
             android:layout_marginBottom="8dp"
             android:text="@string/join_odysee"
             android:fontFamily="@font/inter"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textSize="24sp"
             android:textFontWeight="300" />
         <com.google.android.material.textfield.TextInputLayout
@@ -125,7 +125,7 @@
             android:id="@+id/agree_to_terms_note"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:text="@string/agree_to_terms" />
     </LinearLayout>
     <LinearLayout android:id="@+id/verification_email_verify_container"
@@ -151,7 +151,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter"
             android:text="@string/email_sent_to"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -164,7 +164,7 @@
             android:fontFamily="@font/inter"
             android:singleLine="true"
             android:textAlignment="center"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textFontWeight="300"
             android:textSize="20sp" />
 
@@ -174,7 +174,7 @@
             android:layout_marginTop="16dp"
             android:fontFamily="@font/inter"
             android:text="@string/please_click_link"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:textFontWeight="300"
             android:textSize="16sp" />
 
@@ -208,7 +208,7 @@
                 android:fontFamily="@font/inter"
                 android:gravity="right"
                 android:text="@string/edit"
-                android:textColor="@color/joinodysee_text"
+                android:textColor="@color/title_text"
                 android:textFontWeight="300" />
         </LinearLayout>
     </LinearLayout>
