@@ -17,11 +17,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryRequestException;
@@ -37,6 +38,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public final class Lbry {
     private static final Object lock = new Object();
@@ -478,7 +480,7 @@ public final class Lbry {
     public static List<Claim> claimSearch(Map<String, Object> options, String connectionString) throws ApiCallException {
         if (claimSearchCache.containsKey(options)) {
             ClaimSearchCacheValue value = claimSearchCache.get(options);
-            if (!value.isExpired(TTL_CLAIM_SEARCH_VALUE)) {
+            if (value != null && !value.isExpired(TTL_CLAIM_SEARCH_VALUE)) {
                 return claimSearchCache.get(options).getClaims();
             }
         }
@@ -486,14 +488,22 @@ public final class Lbry {
         List<Claim> claims = new ArrayList<>();
         try {
             JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_CLAIM_SEARCH, options, connectionString));
-            JSONArray items = result.getJSONArray("items");
-            if (items != null) {
+            JSONArray items;
+            if (result != null) {
+                items = result.getJSONArray("items");
+
                 for (int i = 0; i < items.length(); i++) {
                     Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
+                    String claimValueType = claim.getValueType();
+                    String claimMediaType = claim.getMediaType();
 
-                    // Livestreams don't have a source set. Then request a livestream URL only for
-                    // audio and video, even for reposted claims
-                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !claim.hasSource() && claim.getSigningChannel() != null) {
+                    // Using Java Stream API to make it easier to add new future claim types
+                    List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
+                                                    .collect(Collectors.toList());
+
+                    // Livestreams don't have set a source. Then request a livestream URL only for
+                    // audio and video
+                    if (!claimTypes.contains(claimValueType) && !claim.hasSource() && claim.getSigningChannel() != null) {
                         String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
 
                         Request.Builder builder = new Request.Builder().url(urlLivestream);
@@ -501,30 +511,31 @@ public final class Lbry {
 
                         OkHttpClient client = new OkHttpClient.Builder().build();
 
-                        try {
-                            Response resp = client.newCall(request).execute();
-                            String responseString = resp.body().string();
-                            resp.close();
-                            JSONObject json = new JSONObject(responseString);
-                            if (resp.code() >= 200 && resp.code() < 300) {
-                                if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
-                                    JSONObject jsonData = (JSONObject) json.get("data");
-                                    if (jsonData.has("live")) {
-                                        claim.setLive(jsonData.getBoolean("live"));
-                                        claim.setLivestreamUrl(jsonData.getString("url"));
+                        try (Response resp = client.newCall(request).execute()) {
+                            ResponseBody body = resp.body();
+                            int responseCode = resp.code();
+                            if (body != null) {
+                                String responseString = body.string();
+                                JSONObject json = new JSONObject(responseString);
+                                if (responseCode >= 200 && responseCode < 300) {
+                                    if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
+                                        JSONObject jsonData = (JSONObject) json.get("data");
+                                        if (jsonData.has("live")) {
+                                            claim.setLive(jsonData.getBoolean("live"));
+                                            claim.setLivestreamUrl(jsonData.getString("url"));
+                                        }
                                     }
                                 }
                             }
                         } catch (IOException | JSONException e) {
                             e.printStackTrace();
                         }
-
                     }
 
-                    // For now, only claims which are audio, videos, playlists or possibly livestreams
-                    if (Arrays.asList(Claim.TYPE_REPOST, Claim.TYPE_COLLECTION, Claim.TYPE_CHANNEL).contains(claim.getValueType().toLowerCase())
-                        || (!claim.hasSource() && claim.getSigningChannel() != null && Claim.TYPE_STREAM.equals(claim.getValueType()))
-                        || (claim.hasSource() && (claim.getMediaType().contains("video") || claim.getMediaType().contains("audio")))) {
+                    // For now, only claims which are audio, videos, playlists or livestreaming right now can be viewed
+                    if (claimTypes.contains(claimValueType.toLowerCase())
+                            || (!claim.hasSource() && claim.isLive())
+                            || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
                         claims.add(claim);
                     }
 
