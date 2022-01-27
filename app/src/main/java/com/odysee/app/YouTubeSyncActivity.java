@@ -48,8 +48,6 @@ import lombok.SneakyThrows;
 
 public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyncListener {
     private static final String RETURN_URL = "https://odysee.com/ytsync";
-    private static final String SYNC_STATUS_SYNCED = "synced";
-    private static final String TRANSFER_STATE_COMPLETED_TRANSFER = "completed_transfer";
 
     private ViewPager2 viewPager;
     private PopupWindow popup;
@@ -229,6 +227,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
     private void showOauthWebView(String oauthUrl) {
         WebView webView = new WebView(this);
         webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 12) Chrome/97.0.4692.98");
+        webView.getSettings().setJavaScriptEnabled(true);
         webView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         webView.loadUrl(oauthUrl);
         webView.setWebViewClient(new WebViewClient() {

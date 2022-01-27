@@ -721,6 +721,30 @@
     <string name="add_another_channel">New sync</string>
     <string name="explore_odysee">Explore Odysee</string>
     <string name="you_will_be_able">You will be able to claim your channel once it has finished syncing. &lt;a href="https://odysee.com/@OdyseeHelp:b/youtube-sync:b#transfer"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="completed_transfer">Completed transfer</string>
+    <string name="dot_separator">•</string>
+    <string name="claim_your_handle">Claim your handle %1$s</string>
+    <string name="agree_to_sync">Agree to sync</string>
+    <string name="wait_for_your_videos">Wait for your videos to be synced</string>
+    <string name="sync_stats_message">Syncing %1$,d video(s) from your channel with %2$,d subscriptions.</string>
+    <string name="claim_your_channel">Claim your channel</string>
+    <string name="claim_channel">Claim channel</string>
+    <string name="successfully_claimed_youtube_channels">You have successfully claimed your YouTube channels.</string>
+    <string name="not_eligible_to_be_synced">%1$s is not eligible to be synced</string>
+    <plurals name="claim_channel">
+        <item quantity="one">Claim channel</item>
+        <item quantity="other">Claim channels</item>
+    </plurals>
+
+    <plurals name="yt_sync_followers">
+        <item quantity="one">%1$d follower</item>
+        <item quantity="other">%1$,d followers</item>
+    </plurals>
+    <plurals name="yt_sync_uploads">
+        <item quantity="one">%1$d upload</item>
+        <item quantity="other">%1$,d uploads</item>
+    </plurals>
+
 
     <!-- Font Awesome -->
     <string name="fa_gift" translatable="false">&#xf06b;</string>

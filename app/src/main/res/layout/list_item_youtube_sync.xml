@@ -1,48 +1,227 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="24dp"
+    android:orientation="vertical">
     <RelativeLayout
+        android:id="@+id/yt_sync_item_completed_area"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <ImageView
-            android:id="@+id/yt_sync_item_thumbnail"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:layout_centerVertical="true" />
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp">
+        <RelativeLayout
+            android:id="@+id/yt_sync_item_media_container"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerVertical="true">
+            <RelativeLayout
+                android:background="@drawable/bg_channel_icon"
+                android:id="@+id/yt_sync_item_no_thumbnail"
+                android:layout_width="80dp"
+                android:layout_height="80dp">
+                <TextView
+                    android:id="@+id/yt_sync_item_thumbnail_alpha"
+                    android:layout_centerInParent="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:textAllCaps="true"
+                    android:textSize="48sp"
+                    android:textColor="@color/white"
+                    android:textFontWeight="300" />
+            </RelativeLayout>
+            <ImageView
+                android:id="@+id/yt_sync_item_thumbnail"
+                android:layout_width="80dp"
+                android:layout_height="80dp" />
+        </RelativeLayout>
+
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_toEndOf="@id/yt_sync_item_thumbnail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:layout_centerVertical="true">
+            android:layout_toEndOf="@id/yt_sync_item_media_container"
+            android:orientation="vertical">
+
             <TextView
                 android:id="@+id/yt_sync_text_yt_channel_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter"
-                android:textStyle="bold"
-                android:textSize="14sp" />
+                android:singleLine="true"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/yt_sync_text_lbry_channel_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="@font/inter"
-                android:textSize="14sp"  />
+                android:singleLine="true"
+                android:ellipsize="middle"
+                android:textSize="14sp"
+                android:textFontWeight="300" />
+
             <TextView
                 android:id="@+id/yt_sync_text_followers_uploads"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="@font/inter"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:textFontWeight="300" />
+
+            <TextView
+                android:id="@+id/yt_sync_text_transfer_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/inter"
+                android:textSize="14sp"
+                android:textFontWeight="300" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </RelativeLayout>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/yt_sync_item_pending_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
+        android:orientation="vertical">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/yt_sync_item_claim_handle_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/yt_sync_item_handle_check"
+                android:fontFamily="@font/inter"
+                android:text="@string/claim_your_handle"
+                android:textSize="16sp" />
+            <ImageView
+                android:id="@+id/yt_sync_item_handle_check"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_circle_checked"
+                app:tint="@color/colorPrimary" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/yt_sync_item_agree_check"
                 android:fontFamily="@font/inter"
-                android:textSize="14sp" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-    </RelativeLayout>
+                android:text="@string/agree_to_sync"
+                android:textSize="16sp" />
+            <ImageView
+                android:id="@+id/yt_sync_item_agree_check"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_circle_checked"
+                app:tint="@color/colorPrimary" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/yt_sync_item_wait_check"
+                android:fontFamily="@font/inter"
+                android:text="@string/wait_for_your_videos"
+                android:textSize="16sp" />
+
+            <ImageView
+                android:id="@+id/yt_sync_item_wait_check"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_circle_unchecked"
+                app:tint="@color/colorPrimary" />
+            <ProgressBar
+                android:id="@+id/yt_sync_item_wait_progress"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:visibility="gone" />
+        </RelativeLayout>
+        <TextView
+            android:id="@+id/yt_sync_item_stats_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/inter"
+            android:text="@string/sync_stats_message"
+            android:textSize="13sp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+            <TextView
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/yt_sync_item_claim_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:fontFamily="@font/inter"
+                android:text="@string/claim_your_channel"
+                android:textSize="16sp" />
+            <ImageView
+                android:id="@+id/yt_sync_item_claim_check"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_circle_unchecked"
+                app:tint="@color/colorPrimary" />
+        </RelativeLayout>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/yt_sync_item_ineligible_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/yt_sync_item_ineligible_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:textSize="16sp"
+            android:text="@string/not_eligible_to_be_synced"
+            />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="@color/divider" />
 </androidx.appcompat.widget.LinearLayoutCompat>

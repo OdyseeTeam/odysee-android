@@ -26,24 +26,51 @@
         android:layout_marginTop="36dp"
         android:orientation="vertical">
 
-        <TextView
+        <RelativeLayout
             android:id="@+id/youtube_sync_status_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="36dp"
-            android:layout_marginEnd="36dp"
-            android:fontFamily="@font/inter"
-            android:text="@string/youtube_sync"
-            android:textColor="@color/title_text"
-            android:textFontWeight="300"
-            android:textSize="24sp" />
+            android:layout_marginEnd="36dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:text="@string/youtube_sync"
+                android:textColor="@color/title_text"
+                android:textFontWeight="300"
+                android:textSize="24sp" />
+            <ProgressBar
+                android:id="@+id/youtube_sync_status_load_progress"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:indeterminate="true"
+                android:visibility="invisible" />
+        </RelativeLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/sync_channel_list"
+            android:id="@+id/youtube_sync_item_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_above="@id/youtube_sync_claim_channel_button"
+            android:layout_below="@id/youtube_sync_status_title"
+            android:paddingTop="24dp"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/youtube_sync_claim_channel_button"
             android:layout_above="@id/youtube_sync_status_hint"
-            android:layout_below="@id/youtube_sync_status_title" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:fontFamily="@font/inter"
+            android:layout_marginLeft="36dp"
+            android:layout_marginRight="36dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/claim_channel" />
 
         <TextView
             android:id="@+id/youtube_sync_status_hint"
@@ -66,22 +93,28 @@
             android:layout_alignParentBottom="true">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/youtube_sync_new_sync"
                 style="@style/Widget.AppCompat.Button.Borderless"
+                android:id="@+id/youtube_sync_new_sync"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter"
                 android:text="@string/add_another_channel"
-                android:textColor="@color/colorPrimary" />
+                android:textColor="@color/colorPrimary"
+                android:textSize="12sp"
+                />
 
             <com.google.android.material.button.MaterialButton
+                style="@style/Widget.AppCompat.Button.Borderless"
                 android:id="@+id/youtube_sync_explore_odysee"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
                 android:layout_alignParentEnd="true"
+                android:layout_marginBottom="24dp"
                 android:fontFamily="@font/inter"
-                android:text="@string/explore_odysee" />
+                android:text="@string/explore_odysee"
+                android:textColor="@color/colorPrimary"
+                android:textSize="12sp"
+                />
         </RelativeLayout>
     </RelativeLayout>
 </androidx.appcompat.widget.LinearLayoutCompat>
