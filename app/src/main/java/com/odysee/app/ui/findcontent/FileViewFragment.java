@@ -190,7 +190,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
-import com.odysee.app.xyz.CommentEnabledCheck;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

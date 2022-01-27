@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.math.BigDecimal;
@@ -61,7 +60,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
-import com.odysee.app.xyz.CommentEnabledCheck;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import lombok.Setter;
 
