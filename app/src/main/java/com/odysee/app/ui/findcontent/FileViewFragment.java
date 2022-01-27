@@ -78,11 +78,10 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.Loader;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
@@ -1826,17 +1825,23 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
-                String userAgent = Util.getUserAgent(context, getString(R.string.app_name));
 
                 String mediaSourceUrl;
-                DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("Odysee");
+                DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+                if (context != null) {
+                    dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+                }
                 MediaSource mediaSource = null;
                 if (claim.hasSource()) {
                     mediaSourceUrl = getStreamingUrl();
+
+                    CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
+                    cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
+                    cacheDataSourceFactory.setCache(MainActivity.playerCache);
+
                     mediaSource = new ProgressiveMediaSource.Factory(
-                            new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
-                            new DefaultExtractorsFactory()
-                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
+                            cacheDataSourceFactory, new DefaultExtractorsFactory()
+                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                 } else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
@@ -1846,7 +1851,7 @@ public class FileViewFragment extends BaseFragment implements
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
-                            if (claim.getThumbnailUrl() != null) {
+                            if (claim.getThumbnailUrl() != null && context != null) {
                                 ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
                                 Glide.with(context.getApplicationContext()).
                                         asBitmap().
