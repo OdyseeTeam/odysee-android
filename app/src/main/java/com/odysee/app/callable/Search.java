@@ -1,7 +1,6 @@
 package com.odysee.app.callable;
 
 import com.odysee.app.model.Claim;
-import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 
 import java.util.List;
@@ -17,6 +16,6 @@ public class Search implements Callable<List<Claim>> {
 
     @Override
     public List<Claim> call() throws Exception {
-        return Helper.filterInvalidReposts(Lbry.claimSearch(options, Lbry.API_CONNECTION_STRING));
+        return Lbry.claimSearch(options, Lbry.API_CONNECTION_STRING);
     }
 }
