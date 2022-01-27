@@ -94,7 +94,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="18dp"
                     android:drawableEnd="@drawable/ic_arrow_dropdown"
-                    android:drawableTint="@color/joinodysee_text"
+                    android:drawableTint="@color/title_text"
                     android:gravity="end"
                     android:text="@string/view_more"
                     android:textSize="@dimen/wallet_detail_balance_font_size" />

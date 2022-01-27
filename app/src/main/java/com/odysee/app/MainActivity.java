@@ -378,6 +378,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_EMAIL_REWARD_CLAIMED = "com.odysee.app.preference.internal.EmailRewardClaimed";
+    public static final String PREFERENCE_KEY_INTERNAL_FIRST_YOUTUBE_SYNC_DONE = "com.odysee.app.preference.internal.FirstYouTubeSyncDone";
 
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
@@ -478,8 +479,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             new ActivityResultCallback<ActivityResult>() {
                 @Override
                 public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // first run completed or skipped
+                        checkFirstYouTubeSync();
+                        return;
+                    }
+
                     if (result.getResultCode() == Activity.RESULT_CANCELED) {
-                        // There are no request codes
+                        // back button pressed, so it was cancelled
                         finish();
                     }
                 }
@@ -769,8 +776,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
 
-                View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
+                View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
+                View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
                 View buttonSignOut = customView.findViewById(R.id.button_sign_out);
 
                 TextView userIdText = customView.findViewById(R.id.user_id);
@@ -779,8 +787,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
 
-                buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
 
                 if (isSignedIn) {
@@ -824,6 +833,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
+                buttonChannels.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(ChannelManagerFragment.class, true, null);
+                    }
+                });
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -832,12 +849,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         openFragment(RewardsFragment.class, true, null);
                     }
                 });
-                buttonChannels.setOnClickListener(new View.OnClickListener() {
+                buttonYouTubeSync.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
-                        hideNotifications();
-                        openFragment(ChannelManagerFragment.class, true, null);
+                        startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
                     }
                 });
                 signUserButton.setOnClickListener(new View.OnClickListener() {
@@ -1503,6 +1519,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED, false);
     }
 
+    public boolean isFirstYouTubeSyncDone() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_YOUTUBE_SYNC_DONE, false);
+    }
+
     public void checkPurchases() {
         if (billingClient != null) {
             Purchase.PurchasesResult result = billingClient.queryPurchases(BillingClient.SkuType.INAPP);
@@ -2038,9 +2059,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             });
             return;
+        } else if (!isFirstYouTubeSyncDone()) {
+            // if first run is already done, then check first YT sync instead
+            checkFirstYouTubeSync();
         }
 
         fetchRewards();
+    }
+
+    private void checkFirstYouTubeSync() {
+        if (!Lbryio.isSignedIn()) {
+            return;
+        }
+
+        if (!isFirstYouTubeSyncDone()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
+                }
+            });
+        }
     }
 
     /**
