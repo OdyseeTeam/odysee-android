@@ -3866,6 +3866,16 @@ public class FileViewFragment extends BaseFragment implements
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
 
+            /**
+             * This covers the case of a fresh comment being made and added to the list, and then liked by
+             * the commenter themself, but the {@link Reactions} field is not instantiated in this case. It
+             * would perhaps be better to fix this upstream and make this situation impossible, but even then
+             * this last line of defense doesn't hurt.
+             */
+            if ( comment.getReactions() == null ) {
+                comment.setReactions(Reactions.newInstanceWithNoLikesOrDislikes());
+            }
+
             if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
                 options.put("remove", true);
 
