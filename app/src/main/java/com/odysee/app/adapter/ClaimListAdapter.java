@@ -22,6 +22,9 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_STREAM = 1;
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
+    private static final int VIEW_TYPE_LIVESTREAM = 4; // featured search result
     @Getter
     @Setter
     private int contextGroupId;
@@ -291,6 +295,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     public int getItemViewType(int position) {
         if (items.get(position).isFeatured()) {
             return VIEW_TYPE_FEATURED;
+        } else if (items.get(position).isLive() || items.get(position).isHighlightLive()) {
+            return VIEW_TYPE_LIVESTREAM;
         }
 
         Claim claim = items.get(position);
@@ -540,10 +546,23 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                         publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                 long duration = item.getDuration();
-                vh.durationView.setVisibility((duration > 0 || item.isLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
-                if (item.isLive()) {
+                vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
+                if (type == VIEW_TYPE_LIVESTREAM) {
                     vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-                    vh.durationView.setText(context.getResources().getString(R.string.live).toUpperCase());
+
+                    Date ct = new Date();
+                    Calendar cal = GregorianCalendar.getInstance(); // locale-specific
+                    cal.setTime(ct);
+
+                    long nowTime = cal.getTimeInMillis() / 1000L;
+                    String liveText;
+                    if (((Claim.StreamMetadata) item.getValue()).getReleaseTime() > nowTime) {
+                        liveText = context.getResources().getString(R.string.soon).toUpperCase();
+                    } else {
+                        liveText = context.getResources().getString(R.string.live).toUpperCase();
+                    }
+
+                    vh.durationView.setText(liveText);
                 } else {
                     vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
                     if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
