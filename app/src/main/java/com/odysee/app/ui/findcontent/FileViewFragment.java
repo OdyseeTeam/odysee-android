@@ -1740,8 +1740,8 @@ public class FileViewFragment extends BaseFragment implements
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
 
-            showComments(expandCommentArea, commentsDisabledText, commentsList);
-            commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+            hideComments(expandCommentArea, commentsDisabledText, commentsList);
+            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getClaimName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {

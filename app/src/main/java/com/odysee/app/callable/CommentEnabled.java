@@ -27,7 +27,7 @@ public class CommentEnabled implements Callable<Boolean> {
 
     @Override
     public Boolean call() {
-        Map<String, Object> params = new HashMap<>(4);
+        Map<String, Object> params = new HashMap<>(3);
         params.put("claim_id", channelId);
         params.put("channel_id", channelId);
         params.put("channel_name", channelName);

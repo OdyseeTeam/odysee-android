@@ -184,7 +184,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
             View commentForm = root.findViewById(R.id.container_comment_form);
             RecyclerView commentsList = root.findViewById(R.id.channel_comments_list);
 
-            showComments(commentsDisabledText, commentForm, commentsList);
+            hideComments(commentsDisabledText, commentForm, commentsList);
             commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {

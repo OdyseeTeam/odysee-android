@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId "com.odysee.app"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 30
         versionCode 14
         versionName "0.0.14"
 //        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
