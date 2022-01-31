@@ -38,7 +38,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 public final class Lbry {
     private static final Object lock = new Object();
@@ -501,40 +500,9 @@ public final class Lbry {
                     List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
                                                     .collect(Collectors.toList());
 
-                    // Livestreams don't have set a source. Then request a livestream URL only for
-                    // audio and video
-                    if (!claimTypes.contains(claimValueType) && !claim.hasSource() && claim.getSigningChannel() != null) {
-                        String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
-
-                        Request.Builder builder = new Request.Builder().url(urlLivestream);
-                        Request request = builder.build();
-
-                        OkHttpClient client = new OkHttpClient.Builder().build();
-
-                        try (Response resp = client.newCall(request).execute()) {
-                            ResponseBody body = resp.body();
-                            int responseCode = resp.code();
-                            if (body != null) {
-                                String responseString = body.string();
-                                JSONObject json = new JSONObject(responseString);
-                                if (responseCode >= 200 && responseCode < 300) {
-                                    if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
-                                        JSONObject jsonData = (JSONObject) json.get("data");
-                                        if (jsonData.has("live")) {
-                                            claim.setLive(jsonData.getBoolean("live"));
-                                            claim.setLivestreamUrl(jsonData.getString("url"));
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (IOException | JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    // For now, only claims which are audio, videos, playlists or livestreaming right now can be viewed
+                    // For now, only claims which are audio, videos, playlists or already/scheduled livestreaming now can be viewed
                     if (claimTypes.contains(claimValueType.toLowerCase())
-                            || (!claim.hasSource() && claim.isLive())
+                            || !claim.hasSource()
                             || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
                         claims.add(claim);
                     }
