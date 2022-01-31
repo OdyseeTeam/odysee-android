@@ -711,6 +711,41 @@
     <string name="reward_verification_manual_desc">Please request to be verified on the &lt;a href="https://verification.odysee.com/"&gt;Odysee Rewards Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to a few days.</string>
     <string name="reward_verification_manual_enjoy_content">You can continue to enjoy content in the meantime!</string>
 
+    <!-- YouTube Sync -->
+    <string name="sync_your_youtube_channel">Sync your YouTube channel to Odysee</string>
+    <string name="get_your_youtube_videos">Get your YouTube videos in front of the Odysee audience.</string>
+    <string name="i_want_to_sync">I want to sync my content to Odysee and the LBRY network and agree to these &lt;a href="https://odysee.com/$/youtubetos"&gt;terms&lt;/a&gt;. I have also read and I understand &lt;a href="https://odysee.com/@OdyseeHelp:b/youtube-sync:b"&gt;how the program works&lt;/a&gt;.</string>
+    <string name="this_will_verify">This will verify you are an active YouTuber. Channel names channot be changed once chosen, please be extra careful. Additional instructions will be emailed to after you verify your email on the next page. &lt;a href="https://odysee.com/@OdyseeHelp:b/youtube-sync:b"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="claim_now">Claim Now</string>
+    <string name="youtube_sync">YouTube Sync</string>
+    <string name="add_another_channel">New sync</string>
+    <string name="explore_odysee">Explore Odysee</string>
+    <string name="you_will_be_able">You will be able to claim your channel once it has finished syncing. &lt;a href="https://odysee.com/@OdyseeHelp:b/youtube-sync:b#transfer"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="completed_transfer">Completed transfer</string>
+    <string name="dot_separator">•</string>
+    <string name="claim_your_handle">Claim your handle %1$s</string>
+    <string name="agree_to_sync">Agree to sync</string>
+    <string name="wait_for_your_videos">Wait for your videos to be synced</string>
+    <string name="sync_stats_message">Syncing %1$,d video(s) from your channel with %2$,d subscriptions.</string>
+    <string name="claim_your_channel">Claim your channel</string>
+    <string name="claim_channel">Claim channel</string>
+    <string name="successfully_claimed_youtube_channels">You have successfully claimed your YouTube channels.</string>
+    <string name="not_eligible_to_be_synced">%1$s is not eligible to be synced</string>
+    <plurals name="claim_channel">
+        <item quantity="one">Claim channel</item>
+        <item quantity="other">Claim channels</item>
+    </plurals>
+
+    <plurals name="yt_sync_followers">
+        <item quantity="one">%1$d follower</item>
+        <item quantity="other">%1$,d followers</item>
+    </plurals>
+    <plurals name="yt_sync_uploads">
+        <item quantity="one">%1$d upload</item>
+        <item quantity="other">%1$,d uploads</item>
+    </plurals>
+
+
     <!-- Font Awesome -->
     <string name="fa_gift" translatable="false">&#xf06b;</string>
     <string name="fa_lock" translatable="false">&#xf023;</string>

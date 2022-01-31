@@ -23,4 +23,11 @@ public class Reactions {
         this.liked = liked;
         this.disliked = disliked;
     }
+
+    /**
+     * Convenience function for common construction case.
+     */
+    public static Reactions newInstanceWithNoLikesOrDislikes() {
+        return new Reactions(0, 0, false, false);
+    }
 }

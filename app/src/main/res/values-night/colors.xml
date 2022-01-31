@@ -25,7 +25,7 @@
     <color name="close_button">@android:color/white</color>
     <color name="closeimagebutton_outline">@android:color/transparent</color>
     <color name="signin_close_background">#12E50054</color>
-    <color name="joinodysee_text">#ffffff</color>
+    <color name="title_text">#ffffff</color>
 
     <color name="profile_username">@android:color/black</color>
 
