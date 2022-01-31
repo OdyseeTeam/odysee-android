@@ -513,9 +513,9 @@ public final class Helper {
         Collections.sort(claims, new Comparator<Claim>() {
             @Override
             public int compare(Claim claim, Claim t1) {
-                if (claim.isLive() && !t1.isLive())
+                if (claim.isHighlightLive() && !t1.isHighlightLive())
                     return -1;
-                else if (!claim.isLive() && t1.isLive())
+                else if (!claim.isHighlightLive() && t1.isHighlightLive())
                     return 1;
                 else
                     return 0;
