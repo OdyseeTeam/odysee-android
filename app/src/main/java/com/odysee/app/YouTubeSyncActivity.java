@@ -26,9 +26,14 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.YouTubeSyncListener;
+import com.odysee.app.model.YouTubeSyncItem;
 import com.odysee.app.ui.ytsync.YouTubeSyncSetupFragment;
 import com.odysee.app.ui.ytsync.YouTubeSyncStatusFragment;
 import com.odysee.app.utils.Helper;
@@ -39,6 +44,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +55,7 @@ import lombok.SneakyThrows;
 public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyncListener {
     private static final String RETURN_URL = "https://odysee.com/ytsync";
 
+    private boolean oauthInProgress;
     private ViewPager2 viewPager;
     private PopupWindow popup;
 
@@ -76,7 +83,9 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
 
     public void onResume() {
         super.onResume();
-        checkStatus();
+        if (!oauthInProgress) {
+            checkStatus();
+        }
     }
 
     public boolean isDarkMode() {
@@ -94,7 +103,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
             public void run() {
                 try {
                     JSONArray status = (JSONArray) Lbryio.parseResponse(Lbryio.call("yt", "transfer", null, Helper.METHOD_POST, null));
-                    if (status.length() > 0) {
+                    if (status.length() > 0 && containsTransferableChannel(status)) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -109,7 +118,18 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
                                 }, 500);
                             }
                         });
+                        return;
                     }
+
+                    // no transferable channels, show setup screen
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // pass
+                            mainProgress.setVisibility(View.GONE);
+                            viewPager.setVisibility(View.VISIBLE);
+                        }
+                    });
                 } catch (LbryioRequestException | LbryioResponseException ex) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -122,6 +142,29 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
                 }
             }
         });
+    }
+
+    private boolean containsTransferableChannel(JSONArray status) {
+        try {
+            for (int i = 0; i < status.length(); i++) {
+                JSONObject object = status.getJSONObject(i);
+                Type type = new TypeToken<YouTubeSyncItem>() {}.getType();
+                Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+                YouTubeSyncItem item = gson.fromJson(object.toString(), type);
+
+                YouTubeSyncItem.Channel channel = item.getChannel();
+                String transferState = channel.getTransferState();
+                boolean transferable = !YouTubeSyncStatusFragment.TRANSFER_STATE_COMPLETED_TRANSFER.equalsIgnoreCase(transferState) &&
+                        !YouTubeSyncStatusFragment.TRANSFER_STATE_TRANSFERRED.equalsIgnoreCase(transferState);
+                if (transferable) {
+                    return true;
+                }
+            }
+        } catch (JSONException ex) {
+            // pass
+        }
+
+        return false;
     }
 
     @Override
@@ -196,9 +239,9 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
     }
 
     private void restoreSetupControls() {
-        Helper.setViewEnabled(inputSource, false);
-        Helper.setViewVisibility(skip, View.INVISIBLE);
-        Helper.setViewVisibility(eventSource, View.INVISIBLE);
+        Helper.setViewEnabled(inputSource, true);
+        Helper.setViewVisibility(skip, View.VISIBLE);
+        Helper.setViewVisibility(eventSource, View.VISIBLE);
         Helper.setViewVisibility(progress, View.GONE);
     }
 
@@ -238,6 +281,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
                     if (popup != null) {
                         popup.dismiss();
                     }
+                    oauthInProgress = false;
                     return false;
                 }
 
@@ -254,6 +298,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
                 if (popup != null) {
                     popup.dismiss();
                 }
+                oauthInProgress = false;
                 restoreSetupControls();
             }
         });
@@ -264,6 +309,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
             @Override
             public void onDismiss() {
                 popup = null;
+                oauthInProgress = false;
                 restoreSetupControls();
             }
         });
@@ -275,6 +321,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
         popup.setFocusable(true);
         popup.showAtLocation(parent, Gravity.CENTER, 0, 0);
         popup.update();
+        oauthInProgress = true;
     }
 
     private static class YouTubeSyncPagerAdapter extends FragmentStateAdapter {
