@@ -9,6 +9,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -60,6 +61,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
+import lombok.Getter;
 import lombok.Setter;
 
 public class ChannelCommentsFragment extends Fragment implements WalletBalanceListener {
@@ -68,6 +70,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     private Claim claim;
     @Setter
     private String commentHash;
+
+    @Getter
     private CommentListAdapter commentListAdapter;
 
     private Comment replyToComment;
@@ -200,7 +204,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
+                        commentListAdapter = new CommentListAdapter(comments, ctx, claim);
                         commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -564,7 +568,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Context context = getContext();
         if (context instanceof MainActivity) {
             ((MainActivity) context).showError(message);

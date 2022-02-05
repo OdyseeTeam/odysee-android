@@ -9,10 +9,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.odysee.app.model.Comment;
 
 public class CommentItemDecoration extends RecyclerView.ItemDecoration {
-    final private int amount;
+    final private int marginInPx;
 
-    public CommentItemDecoration(int amount) {
-        this.amount = amount;
+    public CommentItemDecoration(int marginInPx) {
+        this.marginInPx = marginInPx;
     }
 
     @Override
@@ -24,7 +24,7 @@ public class CommentItemDecoration extends RecyclerView.ItemDecoration {
             Comment comment = adapter.items.get(position);
 
             if (comment.getParentId()!= null) {
-                outRect.left = amount;
+                outRect.left = marginInPx;
             }
         }
     }

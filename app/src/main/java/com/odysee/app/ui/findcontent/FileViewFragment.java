@@ -2153,7 +2153,7 @@ public class FileViewFragment extends BaseFragment implements
                 jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
                 try {
-                    JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
+                    JSONObject jsonChannelSign = Comments.channelSignName(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
 
                     if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                         jsonParams.put("signature", jsonChannelSign.getString("signature"));
@@ -2883,7 +2883,7 @@ public class FileViewFragment extends BaseFragment implements
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
+                        commentListAdapter = new CommentListAdapter(comments, ctx, claim);
                         commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
                             public void onClaimClicked(Claim claim) {
@@ -3906,7 +3906,7 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
                             options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
+                            JSONObject jsonChannelSign = Comments.channelSignName(options, options.getString("channel_id"), options.getString("channel_name"));
 
                             if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                                 options.put("signature", jsonChannelSign.getString("signature"));

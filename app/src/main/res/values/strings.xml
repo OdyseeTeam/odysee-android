@@ -97,6 +97,18 @@
     <string name="creator_disabled_comments">The creator of this content has disabled comments.</string>
     <string name="comment_view_replies">View replies</string>
     <string name="comment_hide_replies">Hide replies</string>
+    <string name="pin_comment">Pin</string>
+    <string name="add_as_moderator">Add as moderator</string>
+    <string name="remove_comment">Remove</string>
+    <string name="mute">Mute</string>
+    <string name="copy_link">Copy Link</string>
+    <string name="block_from_comment">Block</string>
+    <string name="confirm_comment_remove_dialog_title">Remove Comment</string>
+    <string name="confirm_comment_remove_dialog_message">Are you sure you want to remove this comment?</string>
+    <string name="unable_to_delete_comment">Unable to delete this comment, please try again later.</string>
+    <string name="unable_to_edit_comment">Unable to edit this comment, please try again later.</string>
+    <string name="edit_comment_dialog_title">Edit Comment</string>
+
 
     <string name="share_lbry_content">Share LBRY content</string>
     <string name="view">View</string>

@@ -8,7 +8,10 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.format.DateUtils;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -34,11 +37,15 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
 
+import lombok.Getter;
 import lombok.Setter;
 
 public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.ViewHolder> {
     protected final List<Comment> items;
+
+    @Getter
     private final Context context;
+
     @Setter
     private ClaimListAdapter.ClaimListItemListener listener;
     @Setter
@@ -49,7 +56,9 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     private ReactClickListener reactListener;
     private List<String> childsToBeShown;
 
-    public CommentListAdapter(List<Comment> items, Context context) {
+    private final Claim claim;
+
+    public CommentListAdapter(List<Comment> items, Context context, Claim claim) {
         this.items = new ArrayList<>(items);
         this.childsToBeShown= new ArrayList<>();
         this.context = context;
@@ -61,6 +70,15 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 item.setPoster(Lbry.claimCache.get(key));
             }
         }
+
+        this.claim = claim;
+    }
+
+    public void showError(String message) {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).showError(message);
+        }
     }
 
     public void clearItems() {
@@ -70,13 +88,23 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     }
 
 
-    public int getPositionForComment(String commentHash) {
+    public int getPositionForComment(String commentId) {
         for (int i = 0; i < items.size(); i++) {
-            if (commentHash.equalsIgnoreCase(items.get(i).getId())) {
+            if (commentId.equalsIgnoreCase(items.get(i).getId())) {
                 return i;
             }
         }
         return -1;
+    }
+
+    private Comment getCommentForId(final String commentId) {
+        final int position = getPositionForComment(commentId);
+
+        if ( position >= 0 ) {
+            return items.get(position);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -116,7 +144,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         notifyDataSetChanged();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
         protected final TextView channelName;
         protected final TextView commentText;
         protected final ImageView thumbnailView;
@@ -129,8 +157,12 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         protected final View commentActions;
         protected final View viewReplies;
         protected final View blockChannelView;
+        protected final View moreOptionsView;
 
-        public ViewHolder (View v) {
+        private final CommentListAdapter adapter;
+        protected Comment comment = null;
+
+        public ViewHolder (View v, CommentListAdapter adapter) {
             super(v);
             channelName = v.findViewById(R.id.comment_channel_name);
             commentTimeView = v.findViewById(R.id.comment_time);
@@ -144,6 +176,37 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             commentActions = v.findViewById(R.id.comment_actions_area);
             blockChannelView = v.findViewById(R.id.comment_block_channel);
             viewReplies = v.findViewById(R.id.textview_view_replies);
+            moreOptionsView = v.findViewById(R.id.comment_more_options);
+
+            this.adapter = adapter;
+
+            v.setOnCreateContextMenuListener(this);
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+            if ( this.comment != null ) {
+                final int contextGroupId = 0;
+                final MenuItem.OnMenuItemClickListener clickListener = item -> {
+                    final CommentOption option = CommentOption.fromActionId(item.getItemId());
+
+                    if ( option != null ) {
+                        option.performAction(adapter, comment);
+
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+
+                for ( final CommentOption ithOption : CommentOption.values() ) {
+                    if ( ithOption.isAvailable(this.comment, this.adapter.claim) ) {
+                        final MenuItem menuItem = contextMenu.add(contextGroupId, ithOption.actionId, Menu.NONE, ithOption.stringId);
+                        menuItem.setIcon(ithOption.iconId);
+                        menuItem.setOnMenuItemClickListener(clickListener);
+                    }
+                }
+            }
         }
     }
 
@@ -171,6 +234,63 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         }
     }
 
+    public void updateCommentText(Comment comment, final String text) {
+        if (items.contains(comment)) {
+            final int position = getPositionForComment(comment.getId());
+            items.get(position).setText(text);
+            notifyItemChanged(position);
+        }
+    }
+
+    /**
+     * Removes the given comment and any children from the tree.
+     */
+    public void removeComment(final Comment commentToRemove) {
+
+        if (items.contains(commentToRemove)) {
+
+            for ( int i = items.size()-1; i >= 0; i-- ) {
+                final Comment ith = items.get(i);
+
+                boolean remove = false;
+
+                if ( ith.getId().equals(commentToRemove.getId()) ) {
+                    remove = true;
+                } else {
+                    // Have to travel up the potential reply chain to remove all children.
+                    String parentId = ith.getParentId();
+
+                    while ( parentId != null ) {
+                        final Comment parentComment = getCommentForId(parentId);
+
+                        if ( parentComment != null ) {
+                            if ( parentComment.getId() == commentToRemove.getId() ) {
+                                remove = true;
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+
+                        parentId = parentComment.getParentId();
+                    }
+                }
+
+                if ( remove == true ) {
+                    items.remove(i);
+                    childsToBeShown.remove(commentToRemove.getId());
+                }
+            }
+
+            notifyDataSetChanged();
+
+            /**
+             * For some reason getting out of bounds exception in {@link CommentItemDecoration} so doing the blanket {@link #notifyDataSetChanged()}.
+             */
+//            notifyItemRemoved(indexOfComment);
+        }
+    }
+
     public void updatePosterForComment(String channelId, Claim channel) {
         for (Comment c : items) {
             if (channelId.equalsIgnoreCase(c.getChannelId())) {
@@ -183,7 +303,15 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     @Override
     public  ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.list_item_comment, parent, false);
-        return new CommentListAdapter.ViewHolder(v);
+        return new CommentListAdapter.ViewHolder(v, this);
+    }
+
+    @Override
+    public void onViewRecycled(CommentListAdapter.ViewHolder holder) {
+        if (holder.moreOptionsView != null) {
+            holder.moreOptionsView.setOnClickListener(null);
+        }
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -207,6 +335,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             }
         }
 
+        holder.comment = comment;
+
         holder.blockChannelView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -218,6 +348,20 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 }
             }
         });
+
+        if ( CommentOption.areAnyOptionsAvailable(comment, claim) ) {
+            holder.moreOptionsView.setVisibility(collapsed ? View.INVISIBLE : View.VISIBLE);
+
+            holder.moreOptionsView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    view.showContextMenu();
+                }
+            });
+        } else {
+            holder.moreOptionsView.setVisibility(View.INVISIBLE);
+            holder.moreOptionsView.setOnClickListener(null);
+        }
 
         holder.channelName.setText(comment.getChannelName());
         holder.commentTimeView.setText(DateUtils.getRelativeTimeSpanString(
@@ -356,6 +500,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             } else {
                 holder.viewReplies.setVisibility(View.GONE);
             }
+        } else {
+            holder.viewReplies.setVisibility(View.GONE);
         }
     }
 

@@ -7,7 +7,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Comment;
@@ -57,7 +56,7 @@ public class CommentCreateTask extends AsyncTask<Void, Void, Comment> {
                 comment_body.put("auth_token", authToken);
             }
 
-            JSONObject jsonChannelSign = Comments.channelSign(comment_body, comment.getChannelId(), comment.getChannelName());
+            JSONObject jsonChannelSign = Comments.channelSignWithCommentData(comment_body, comment, comment.getText());
 
             if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                 comment_body.put("signature", jsonChannelSign.getString("signature"));

@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.model.Comment;
+
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,30 +26,46 @@ public class Comments {
     private static final String STATUS_ENDPOINT = "https://comments.lbry.com";
     public static final String COMMENT_SERVER_ENDPOINT = "https://comments.lbry.com/api/v2";
 
-    public static JSONObject channelSign(JSONObject commentBody, String channelId, String channelName) throws ApiCallException, JSONException {
-        byte[] commentBodyBytes;
+    public static JSONObject channelSignName(JSONObject commentBody, final String channelId, final String channelName) throws ApiCallException, JSONException {
+        // NOTE: Intentionally passing in channelName twice in a row.
+        return channelSignPrivate(commentBody, channelId, channelName, channelName);
+    }
 
-        if (commentBody.has("comment"))
-            commentBodyBytes = commentBody.getString("comment").getBytes(StandardCharsets.UTF_8);
-        else
-            commentBodyBytes = channelName.getBytes(StandardCharsets.UTF_8);
+    public static JSONObject channelSignWithCommentData(JSONObject commentBody, Comment comment, final String hexDataSource) throws ApiCallException, JSONException {
+        return channelSignPrivate(commentBody, comment.getChannelId(), comment.getChannelName(), hexDataSource);
+    }
 
-        String encodedCommentBody;
+    public static JSONObject channelSignPrivate(JSONObject commentBody, final String channelId, final String channelName, final String hexDataSource) throws ApiCallException, JSONException {
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)
-            encodedCommentBody = Hex.encodeHexString(commentBodyBytes, false);
-        else
-            encodedCommentBody = new String(Hex.encodeHex(commentBodyBytes));
+        final String hexData = toHexString(hexDataSource);
 
         Map<String, Object> signingParams = new HashMap<>(3);
-        signingParams.put("hexdata", encodedCommentBody);
+        signingParams.put("hexdata", hexData);
         signingParams.put("channel_id", channelId);
         signingParams.put("channel_name", channelName);
 
         if (commentBody.has("auth_token"))
             return (JSONObject) Lbry.directApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
+
+        // TODO: Experimented with this call since the above call is deprecated. I was trying to track down a signing bug and don't know if this
+        // helped or hurt since there were too many other variables at play, and now I don't want to rock the boat unnecessarily.
+        // Delete when decided on.
+//            return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
         else
             return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
+    }
+
+    private static String toHexString(final String value) {
+        final byte[] commentBodyBytes = value.getBytes(StandardCharsets.UTF_8);
+
+        final String hexString;
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)
+            hexString = Hex.encodeHexString(commentBodyBytes, false);
+        else
+            hexString = new String(Hex.encodeHex(commentBodyBytes));
+
+        return hexString;
     }
 
     /**
@@ -74,11 +92,12 @@ public class Comments {
 
         Map<String, Object> requestParams = new HashMap<>(4);
         requestParams.put("jsonrpc", "2.0");
-        requestParams.put("id", TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+        requestParams.put("id", 1);
         requestParams.put("method", method);
         requestParams.put("params", params);
 
-        RequestBody requestBody = RequestBody.create(Lbry.buildJsonParams(requestParams).toString(), JSON);
+        final String jsonString = Lbry.buildJsonParams(requestParams).toString();
+        RequestBody requestBody = RequestBody.create(jsonString, JSON);
 
         Request commentCreateRequest = new Request.Builder()
                                                   .url(commentServer.concat("?m=").concat(method))
