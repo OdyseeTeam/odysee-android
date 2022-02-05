@@ -227,6 +227,7 @@ public class FileViewFragment extends BaseFragment implements
     private CommentEnabledCheck commentEnabledCheck;
     private CommentListAdapter commentListAdapter;
     private Player.Listener fileViewPlayerListener;
+    private View commentLoadingArea;
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
@@ -330,6 +331,7 @@ public class FileViewFragment extends BaseFragment implements
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
+        commentLoadingArea = root.findViewById(R.id.file_comments_loading);
 
         likeReactionAmount = root.findViewById(R.id.likes_amount);
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
@@ -1740,8 +1742,8 @@ public class FileViewFragment extends BaseFragment implements
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
 
-            hideComments(expandCommentArea, commentsDisabledText, commentsList);
-            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getClaimName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+            commentLoadingArea.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {
@@ -1753,6 +1755,7 @@ public class FileViewFragment extends BaseFragment implements
                         } else {
                             hideComments(expandCommentArea, commentsDisabledText, commentsList);
                         }
+                        commentLoadingArea.setVisibility(View.GONE);
                     });
                 }
             });

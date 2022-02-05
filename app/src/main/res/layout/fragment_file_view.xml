@@ -848,6 +848,17 @@
                         android:background="@color/divider" />
                 </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/file_comments_loading"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center">
+                    <ProgressBar
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:visibility="visible" />
+                </LinearLayout>
+
                 <LinearLayout android:id="@+id/file_view_comments_area"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

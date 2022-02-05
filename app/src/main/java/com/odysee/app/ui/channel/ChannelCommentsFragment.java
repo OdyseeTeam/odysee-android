@@ -100,6 +100,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     private View inlineChannelCreatorCancelLink;
     private View inlineChannelCreatorProgress;
     private MaterialButton inlineChannelCreatorCreateButton;
+    private View loadingCommentView;
+    private View commentsNestedLayout;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -134,6 +136,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
         inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
         inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
+        loadingCommentView = root.findViewById(R.id.channel_comments_loading_spinner);
+        commentsNestedLayout = root.findViewById(R.id.channel_comments_area);
 
         RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
         commentList.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -153,6 +157,12 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         );
 
         return root;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        commentsNestedLayout.setVisibility(View.GONE);
     }
 
     public void onResume() {
@@ -184,7 +194,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
             View commentForm = root.findViewById(R.id.container_comment_form);
             RecyclerView commentsList = root.findViewById(R.id.channel_comments_list);
 
-            hideComments(commentsDisabledText, commentForm, commentsList);
+            loadingCommentView.setVisibility(View.VISIBLE);
             commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
@@ -200,6 +210,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                         } else {
                             hideComments(commentsDisabledText, commentForm, commentsList);
                         }
+                        loadingCommentView.setVisibility(View.GONE);
+                        commentsNestedLayout.setVisibility(View.VISIBLE);
                     });
                 }
             });
