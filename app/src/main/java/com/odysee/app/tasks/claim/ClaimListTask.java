@@ -17,6 +17,7 @@ import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.Lbryio;
 
 public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
     private final List<String> types;

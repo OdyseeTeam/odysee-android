@@ -49,7 +49,6 @@ public class AbandonChannelTask extends AsyncTask<Void, Void, Boolean> {
             } catch (ApiCallException ex) {
                 failedClaimIds.add(claimId);
                 failedExceptions.add(ex);
-                ex.printStackTrace();
             }
         }
 

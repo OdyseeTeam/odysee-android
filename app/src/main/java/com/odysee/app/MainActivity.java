@@ -2084,7 +2084,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
      * Checks if an auth token is present and then sets it for Lbryio
      */
     private void loadAuthToken() {
-        // Check if an auth token is present and then set it for Lbryio
         AccountManager am = AccountManager.get(this);
         Account account = Helper.getOdyseeAccount(am.getAccounts());
         if (account != null) {
