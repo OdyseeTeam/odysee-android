@@ -641,7 +641,10 @@ public class FollowingFragment extends BaseFragment implements
                 cal.setTime(d);
 
                 // Remove claims with a release time in the future
-                claims.removeIf(e -> ((Claim.StreamMetadata) e.getValue()).getReleaseTime() > (cal.getTimeInMillis() / 1000L));
+                claims.removeIf(e -> {
+                    Claim.GenericMetadata metadata = e.getValue();
+                    return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
+                });
 
                 // Sort claims so those which are livestreaming now are shwon on the top of the list
                 Collections.sort(claims, new Comparator<Claim>() {
