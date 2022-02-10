@@ -41,6 +41,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.ViewHolder> {
+
     protected final List<Comment> items;
 
     @Getter
@@ -50,18 +51,17 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     private ClaimListAdapter.ClaimListItemListener listener;
     @Setter
     public Boolean collapsed = true;
-    @Setter
-    private ReplyClickListener replyListener;
-    @Setter
-    private ReactClickListener reactListener;
     private List<String> childsToBeShown;
 
     private final Claim claim;
 
-    public CommentListAdapter(List<Comment> items, Context context, Claim claim) {
+    private final CommentListListener commentListListener;
+
+    public CommentListAdapter(List<Comment> items, Context context, Claim claim, CommentListListener commentListListener) {
         this.items = new ArrayList<>(items);
         this.childsToBeShown= new ArrayList<>();
         this.context = context;
+        this.commentListListener = commentListListener;
 
         for (Comment item : this.items) {
             ClaimCacheKey key = new ClaimCacheKey();
@@ -72,6 +72,13 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         }
 
         this.claim = claim;
+
+        this.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onChanged() {
+                commentListListener.onListChanged();
+            }
+        });
     }
 
     public void showError(String message) {
@@ -188,10 +195,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             if ( this.comment != null ) {
                 final int contextGroupId = 0;
                 final MenuItem.OnMenuItemClickListener clickListener = item -> {
-                    final CommentOption option = CommentOption.fromActionId(item.getItemId());
+                    final CommentAction commentAction = CommentAction.fromActionId(item.getItemId());
 
-                    if ( option != null ) {
-                        option.performAction(adapter, comment);
+                    if ( commentAction != null ) {
+                        commentAction.performAction(adapter, comment);
 
                         return true;
                     } else {
@@ -199,10 +206,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                     }
                 };
 
-                for ( final CommentOption ithOption : CommentOption.values() ) {
-                    if ( ithOption.isAvailable(this.comment, this.adapter.claim) ) {
-                        final MenuItem menuItem = contextMenu.add(contextGroupId, ithOption.actionId, Menu.NONE, ithOption.stringId);
-                        menuItem.setIcon(ithOption.iconId);
+                for ( final CommentAction ithAction : CommentAction.values() ) {
+                    if ( ithAction.isAvailable(this.comment, this.adapter.claim) ) {
+                        final MenuItem menuItem = contextMenu.add(contextGroupId, ithAction.actionId, Menu.NONE, ithAction.stringId);
+                        menuItem.setIcon(ithAction.iconId);
                         menuItem.setOnMenuItemClickListener(clickListener);
                     }
                 }
@@ -349,7 +356,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             }
         });
 
-        if ( CommentOption.areAnyOptionsAvailable(comment, claim) ) {
+        if ( CommentAction.areAnyActionsAvailable(comment, claim) ) {
             holder.moreOptionsView.setVisibility(collapsed ? View.INVISIBLE : View.VISIBLE);
 
             holder.moreOptionsView.setOnClickListener(new View.OnClickListener() {
@@ -441,8 +448,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(context);
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
-                    reactListener.onCommentReactClicked(comment, true);
+                if (odyseeAccount != null && comment.getClaimId() != null && commentListListener != null) {
+                    commentListListener.onCommentReactClicked(comment, true);
                 }
             }
         });
@@ -451,8 +458,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(context);
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
-                    reactListener.onCommentReactClicked(comment, false);
+                if (odyseeAccount != null && comment.getClaimId() != null && commentListListener != null) {
+                    commentListListener.onCommentReactClicked(comment, false);
                 }
             }
         });
@@ -480,8 +487,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         holder.replyLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (replyListener != null) {
-                    replyListener.onReplyClicked(comment);
+                if (commentListListener != null) {
+                    commentListListener.onReplyClicked(comment);
                 }
             }
         });
@@ -553,11 +560,17 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         notifyItemRangeChanged(firstChild, lastIndex - firstChild);
     }
 
-    public interface ReplyClickListener {
-        void onReplyClicked(Comment comment);
-    }
+    public interface CommentListListener {
+        /**
+         * This is fed by {@link RecyclerView.AdapterDataObserver#onChanged()}.
+         * Callers could use {@link #registerAdapterDataObserver(RecyclerView.AdapterDataObserver)}
+         * directly but since {@link CommentListAdapter} is used in two places I want to be very explicit about the
+         * contract that this adapter requires, and enforce things through the constructor.
+         */
+        void onListChanged();
 
-    public interface ReactClickListener {
         void onCommentReactClicked(Comment c, boolean liked);
+
+        void onReplyClicked(Comment comment);
     }
 }

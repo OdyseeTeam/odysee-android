@@ -45,12 +45,7 @@ public class Comments {
         signingParams.put("channel_name", channelName);
 
         if (commentBody.has("auth_token"))
-            return (JSONObject) Lbry.directApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
-
-        // TODO: Experimented with this call since the above call is deprecated. I was trying to track down a signing bug and don't know if this
-        // helped or hurt since there were too many other variables at play, and now I don't want to rock the boat unnecessarily.
-        // Delete when decided on.
-//            return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
+            return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
         else
             return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
     }

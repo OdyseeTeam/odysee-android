@@ -2,25 +2,37 @@ package com.odysee.app.adapter;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
-import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.FragmentActivity;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.odysee.app.R;
+import com.odysee.app.dialog.EditCommentDialogFragment;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.Comment;
-import com.odysee.app.tasks.CommentOptionTask;
+import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public enum CommentOption {
+import java.io.IOException;
+
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
+public enum CommentAction {
     PIN(R.id.action_pin, R.string.pin_comment, R.drawable.ic_delete, "Pin") {
         @Override
         protected boolean isAvailable(Comment comment, final Claim claim) {
@@ -49,47 +61,12 @@ public enum CommentOption {
 
         @Override
         public void performAction(CommentListAdapter adapter, Comment comment) {
-            final EditText editText = new EditText(adapter.getContext());
-            final int                    marginInPixels = Helper.getDimenAsPixels(adapter.getContext(), R.dimen.edit_text_dialog_margin);
-            editText.setText(comment.getText());
-            final FrameLayout editTextWrapper = new FrameLayout(adapter.getContext());
-            editTextWrapper.setPadding(marginInPixels, 0, marginInPixels, 0);
-            editTextWrapper.addView(editText);
+            final EditCommentDialogFragment editCommentDialog = EditCommentDialogFragment.newInstance();
+            editCommentDialog.setCommentListAdapter(adapter);
+            editCommentDialog.setComment(comment);
 
-            AlertDialog.Builder builder = new AlertDialog.Builder(adapter.getContext()).
-                    setTitle(R.string.edit_comment_dialog_title).
-                    setView(editTextWrapper)
-                    .setPositiveButton(R.string.done, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            final String newCommentText = editText.getText().toString();
-
-                            if ( newCommentText == null || newCommentText.isEmpty() ) {
-                                CommentOption.executeRemoveCommentTask(adapter, comment);
-                            } else if ( newCommentText.equals(comment.getText()) ) {
-                                // Nothing to do. Automatically closes dialog and we're back we're started.
-                            } else {
-                                CommentOption.executeCommentOptionTask(adapter, comment, EDIT, newCommentText, new CommentOptionTask.CommentOptionTaskHandler() {
-                                    @Override
-                                    public void fillJsonRpcParams(JSONObject params) throws JSONException {
-                                        params.put("comment", newCommentText);
-                                    }
-
-                                    @Override
-                                    public void onSuccess() {
-                                        adapter.updateCommentText(comment, newCommentText);
-                                    }
-
-                                    @Override
-                                    public void onError(Exception error) {
-                                        adapter.showError(adapter.getContext().getString(R.string.unable_to_edit_comment));
-                                    }
-                                });
-                            }
-                        }
-                    }).setNegativeButton(R.string.cancel, null);
-
-            builder.show();
+            final FragmentActivity activity = (FragmentActivity)adapter.getContext();
+            editCommentDialog.show(activity.getSupportFragmentManager(), EditCommentDialogFragment.TAG);
         }
 
         @Override
@@ -123,8 +100,10 @@ public enum CommentOption {
             }
 
             for ( final Claim ithOwnChannel : Lbry.ownChannels ) {
-                if ( ithOwnChannel.getClaimId().equals(claim.getSigningChannel().getClaimId()) ) {
-                    return true;
+                if ( ithOwnChannel != null && claim.getSigningChannel() != null) {
+                    if (ithOwnChannel.getClaimId().equals(claim.getSigningChannel().getClaimId())) {
+                        return true;
+                    }
                 }
             }
 
@@ -139,7 +118,12 @@ public enum CommentOption {
             .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    CommentOption.executeRemoveCommentTask(adapter, comment);
+                    CommentAction.executeRemoveCommentTask(adapter, comment, new Runnable() {
+                        @Override
+                        public void run() {
+                            // Nothing to do here.
+                        }
+                    });
                 }
             }).setNegativeButton(R.string.no, null);
 
@@ -200,8 +184,14 @@ public enum CommentOption {
         }
     };
 
-    private static void executeRemoveCommentTask(CommentListAdapter adapter, Comment comment) {
-        executeCommentOptionTask(adapter, comment, REMOVE, comment.getId(), new CommentOptionTask.CommentOptionTaskHandler() {
+    public interface CommentActionTaskHandler {
+        void fillJsonRpcParams(JSONObject params) throws JSONException;
+        void onSuccess();
+        void onError(Exception error);
+    }
+
+    public static void executeRemoveCommentTask(CommentListAdapter adapter, Comment comment, final Runnable onComplete) {
+        executeCommentActionTask(adapter, comment, REMOVE, comment.getId(), new CommentActionTaskHandler() {
             @Override
             public void fillJsonRpcParams(JSONObject params) throws JSONException {
                 params.put("mod_channel_id", comment.getChannelId());
@@ -211,23 +201,93 @@ public enum CommentOption {
             @Override
             public void onSuccess() {
                 adapter.removeComment(comment);
+
+                onComplete.run();
             }
 
             @Override
             public void onError(Exception error) {
                 adapter.showError(adapter.getContext().getString(R.string.unable_to_delete_comment));
+
+                onComplete.run();
             }
         });
     }
 
-    private static void executeCommentOptionTask(CommentListAdapter adapter, Comment comment, CommentOption option, String hexDataSource, CommentOptionTask.CommentOptionTaskHandler taskHandler) {
+    public static void executeCommentActionTask(CommentListAdapter adapter, Comment comment, CommentAction action, String hexDataSource, CommentActionTaskHandler taskHandler) {
         AccountManager am            = AccountManager.get(adapter.getContext());
         Account        odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
         final String   authToken     = am.peekAuthToken(odyseeAccount, "auth_token_type");
 
-        CommentOptionTask task = new CommentOptionTask(comment, option, authToken, hexDataSource, taskHandler);
+        final Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Comment              createdComment = null;
+                ResponseBody responseBody   = null;
+                try {
+                    // check comments status endpoint
+                    Comments.checkCommentsEndpointStatus();
 
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    JSONObject comment_body = new JSONObject();
+
+                    if (!Helper.isNullOrEmpty(comment.getParentId())) {
+                        comment_body.put("parent_id", comment.getParentId());
+                    }
+
+                    comment_body.put("comment_id", comment.getId());
+
+                    taskHandler.fillJsonRpcParams(comment_body);
+
+                    if (authToken != null) {
+                        comment_body.put("auth_token", authToken);
+                    }
+
+                    JSONObject jsonChannelSign = Comments.channelSignWithCommentData(comment_body, comment, hexDataSource);
+
+                    if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                        comment_body.put("signature", jsonChannelSign.getString("signature"));
+                        comment_body.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                    }
+
+                    Response resp = Comments.performRequest(comment_body, "comment." + action.jsonRpcMethod);
+                    responseBody = resp.body();
+                    if (responseBody != null) {
+                        String responseString = responseBody.string();
+                        resp.close();
+                        JSONObject jsonResponse = new JSONObject(responseString);
+
+                        if ( action.isSuccess(jsonResponse) == false ) {
+                            final Exception error = new Exception("JSONRPC call failed.");
+                            onCommentActionTaskError(adapter, taskHandler, error);
+                        } else {
+                            ((Activity)adapter.getContext()).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    taskHandler.onSuccess();
+                                }
+                            });
+                        }
+                    }
+                } catch (ApiCallException | ClassCastException | IOException | JSONException ex) {
+                    onCommentActionTaskError(adapter, taskHandler, ex);
+                } finally {
+                    if (responseBody != null) {
+                        responseBody.close();
+                    }
+                }
+            }
+        });
+
+        thread.start();
+    }
+
+    private static void onCommentActionTaskError(CommentListAdapter adapter, final CommentActionTaskHandler handler, final Exception error) {
+        ((Activity)adapter.getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                handler.onError(error);
+            }
+        });
     }
 
     /**
@@ -246,8 +306,8 @@ public enum CommentOption {
         return false;
     }
 
-    public static boolean areAnyOptionsAvailable(Comment comment, Claim claim) {
-        for ( final CommentOption ith : CommentOption.values() ) {
+    public static boolean areAnyActionsAvailable(Comment comment, Claim claim) {
+        for ( final CommentAction ith : CommentAction.values() ) {
             if ( ith.isAvailable(comment, claim) ) {
                 return true;
             }
@@ -256,8 +316,8 @@ public enum CommentOption {
         return false;
     }
 
-    public static CommentOption fromActionId(int actionId) {
-        for ( final CommentOption ith : CommentOption.values() ) {
+    public static CommentAction fromActionId(int actionId) {
+        for ( final CommentAction ith : CommentAction.values() ) {
             if ( ith.actionId == actionId ) {
                 return ith;
             }
@@ -271,7 +331,7 @@ public enum CommentOption {
     protected final int iconId;
     public final String jsonRpcMethod;
 
-    CommentOption(final int actionId, final int stringId, final int iconId, final String jsonRpcMethod) {
+    CommentAction(final int actionId, final int stringId, final int iconId, final String jsonRpcMethod) {
         this.actionId = actionId;
         this.stringId = stringId;
         this.iconId   = iconId;
