@@ -1316,6 +1316,7 @@ public class FileViewFragment extends BaseFragment implements
         expandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Prevents crash for when comment list isn't loaded yet but user tries to expand.
                 if ( commentListAdapter != null ) {
                     switchCommentListVisibility(commentListAdapter.collapsed);
                     commentListAdapter.switchExpandedState();

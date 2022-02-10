@@ -551,8 +551,6 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                 inputComment.setText(null);
                 clearReplyToComment();
 
-                final boolean thisIsFirstComment = commentListAdapter == null;
-
                 ensureCommentListAdapterCreated(new ArrayList<Comment>());
 
                 if (commentListAdapter != null) {
