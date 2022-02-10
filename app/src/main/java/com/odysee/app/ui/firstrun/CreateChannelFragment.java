@@ -6,10 +6,12 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.odysee.app.R;
 import com.odysee.app.utils.FirstRunStepHandler;
@@ -22,6 +24,7 @@ public class CreateChannelFragment extends Fragment {
     @Setter
     private FirstRunStepHandler firstRunStepHandler;
 
+    private SwitchMaterial switchYtSyncOptIn;
     private TextInputEditText inputChannelName;
     private View viewInputError;
 
@@ -31,6 +34,17 @@ public class CreateChannelFragment extends Fragment {
 
         inputChannelName = root.findViewById(R.id.first_run_channel_name_input);
         viewInputError = root.findViewById(R.id.first_run_channel_name_input_error);
+        switchYtSyncOptIn = root.findViewById(R.id.first_run_channel_yt_sync);
+
+        switchYtSyncOptIn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
+                inputChannelName.setEnabled(!checked);
+                if (firstRunStepHandler != null) {
+                    firstRunStepHandler.onYouTubeSyncOptInCheckChanged(checked);
+                }
+            }
+        });
 
         inputChannelName.addTextChangedListener(new TextWatcher() {
             @Override

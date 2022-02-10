@@ -72,5 +72,16 @@
             android:text="@string/channel_name_invalid_characters"
             android:textFontWeight="300"
             android:visibility="invisible" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/first_run_channel_yt_sync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/first_run_youtube_sync_opt_in"
+            android:fontFamily="@font/inter"
+            android:textSize="16sp"
+            android:textFontWeight="300" />
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>
