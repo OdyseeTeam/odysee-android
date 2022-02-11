@@ -65,11 +65,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:singleLine="true"
                     android:textAllCaps="true"
                     android:textColor="@color/white"
-                    android:textFontWeight="300"
                     android:textSize="24sp" />
             </RelativeLayout>
             <ImageView
@@ -150,7 +149,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
-                android:layout_toLeftOf="@id/claim_overflow_menu_icon"
                 android:layout_toStartOf="@id/claim_overflow_menu_icon"
                 android:orientation="vertical">
                 <LinearLayout
@@ -211,11 +209,10 @@
                             android:id="@+id/claim_pending_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
+                            style="@style/TextView_Light"
                             android:text="@string/pending"
                             android:textSize="11sp"
                             android:textStyle="italic"
-                            android:textFontWeight="300"
                             android:visibility="gone" />
 
                         <TextView
@@ -223,9 +220,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:fontFamily="@font/inter"
-                            android:textSize="11sp"
-                            android:textFontWeight="300" />
+                            style="@style/TextView_Light"
+                            android:textSize="11sp" />
                     </RelativeLayout>
 
                 </LinearLayout>
@@ -244,11 +240,10 @@
                     android:layout_marginTop="4dp"
                     android:layout_gravity="end"
                     android:ellipsize="end"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:singleLine="true"
                     android:textColor="@color/lightGrey"
-                    android:textSize="10sp"
-                    android:textFontWeight="300" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <ImageButton
@@ -256,7 +251,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_marginLeft="8dp"
                 android:layout_marginStart="8dp"
                 style="?android:attr/actionOverflowButtonStyle" />
         </RelativeLayout>

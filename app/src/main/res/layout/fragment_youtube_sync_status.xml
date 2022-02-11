@@ -35,10 +35,9 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/youtube_sync"
                 android:textColor="@color/title_text"
-                android:textFontWeight="300"
                 android:textSize="24sp" />
             <ProgressBar
                 android:id="@+id/youtube_sync_status_load_progress"

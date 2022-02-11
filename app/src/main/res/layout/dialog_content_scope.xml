@@ -43,10 +43,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/everyone"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_scope_everyone_item_selected"
             android:layout_width="wrap_content"
@@ -78,10 +77,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/tags_you_follow"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_scope_tags_item_selected"
             android:layout_width="wrap_content"

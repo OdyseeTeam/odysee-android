@@ -10,16 +10,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:fontFamily="@font/inter"
+        style="@style/TextView_Light"
         android:text="@string/reward_verification_manual_desc"
-        android:textSize="14sp"
-        android:textFontWeight="300" />
+        android:textSize="14sp" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/inter"
+        style="@style/TextView_Light"
         android:text="@string/reward_verification_manual_enjoy_content"
         android:textSize="14sp"
-        android:layout_marginTop="8dp"
-        android:textFontWeight="300" />
+        android:layout_marginTop="8dp" />
 </androidx.appcompat.widget.LinearLayoutCompat>

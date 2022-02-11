@@ -74,9 +74,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
-                        android:fontFamily="@font/inter"
-                        android:textFontWeight="300"
-                        android:textSize="12sp"
+                        style="@style/TextView_Light"
                         android:text="@string/trending" />
                     <ImageView
                         android:layout_width="16dp"
@@ -94,9 +92,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="2dp"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
-                    android:textSize="12sp"
+                    style="@style/TextView_Light"
                     android:text="@string/from"
                     android:visibility="gone" />
                 <LinearLayout
@@ -115,9 +111,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:layout_marginStart="4dp"
-                        android:fontFamily="@font/inter"
-                        android:textFontWeight="300"
-                        android:textSize="12sp"
+                        style="@style/TextView_Light"
                         android:text="@string/past_week" />
                     <ImageView
                         android:layout_width="16dp"
@@ -137,9 +131,7 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:clickable="true"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
-                android:textSize="12sp"
+                style="@style/TextView_Light"
                 android:text="@string/customize"
                 android:visibility="gone" />
         </RelativeLayout>
@@ -149,10 +141,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:fontFamily="@font/inter"
             android:text="@string/no_claim_search_content"
+            style="@style/TextView_Light"
             android:textSize="14sp"
-            android:textFontWeight="300"
             android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView

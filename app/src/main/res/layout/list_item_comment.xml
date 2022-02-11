@@ -32,11 +32,10 @@
                     android:layout_centerInParent="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
                     android:textAllCaps="true"
+                    style="@style/TextView_Light"
                     android:textSize="24sp"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300" />
+                    android:textColor="@color/white" />
             </RelativeLayout>
             <ImageView
                 android:layout_centerHorizontal="true"
@@ -61,7 +60,7 @@
                     android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="@TestChannel"
+                    tools:text="\@TestChannel"
                     style="@style/Comment_Publisher"
                     android:fontFamily="@font/inter"
                     android:focusable="true" />
@@ -83,11 +82,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:lineSpacingMultiplier="1.1"
-                android:fontFamily="@font/inter"
                 tools:text="This is a test comment"
-                android:textFontWeight="300"
-                android:textIsSelectable="true"
-                android:textSize="14sp" />
+                style="@style/TextView_Light"
+                android:textSize="14sp"
+                android:textIsSelectable="true" />
 
             <LinearLayout android:id="@+id/comment_actions_area"
                 android:layout_width="match_parent"
@@ -101,11 +99,10 @@
                     android:layout_height="match_parent"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
-                    android:fontFamily="@font/inter"
                     android:gravity="center_vertical"
                     android:text="@string/reply"
                     android:textColor="@color/colorPrimary"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="16sp"
                     android:focusable="true" />
 

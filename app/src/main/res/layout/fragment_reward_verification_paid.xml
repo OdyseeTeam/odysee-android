@@ -12,13 +12,12 @@
         android:layout_marginTop="16dp"
         android:orientation="vertical">
     <TextView
-        android:textSize="14sp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="@font/inter"
-        android:text="@string/skip_queue_verification_desc"
-        android:textFontWeight="300" />
+        style="@style/TextView_Light"
+        android:textSize="14sp"
+        android:text="@string/skip_queue_verification_desc" />
     <com.google.android.material.button.MaterialButton
         android:id="@+id/reward_verification_skip_queue_button"
         android:layout_width="match_parent"

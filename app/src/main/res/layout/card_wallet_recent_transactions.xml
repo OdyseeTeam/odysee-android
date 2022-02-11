@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
     android:elevation="4dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -31,11 +31,10 @@
                 android:layout_centerVertical="true"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/view_all"
-                android:textColor="@color/odyseePink"
                 android:textSize="14sp"
-                android:textFontWeight="300"/>
+                android:textColor="@color/odyseePink"/>
         </RelativeLayout>
 
         <View
@@ -65,9 +64,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="@string/loading_transactions"
-                    android:fontFamily="@font/inter"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:textSize="14sp"/>
             </LinearLayout>
         </RelativeLayout>
 
@@ -78,10 +76,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             android:text="@string/no_recent_transactions"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textSize="14sp"
-            android:textAlignment="center"
-            android:textFontWeight="300" />
+            android:textAlignment="center" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/wallet_recent_transactions_list"

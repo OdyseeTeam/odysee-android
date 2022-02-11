@@ -15,13 +15,6 @@
         android:textSize="12sp"
         android:textAllCaps="true"
         android:textStyle="bold" />
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0.5dp"
-        android:background="@color/divider"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp" />
 
     <RelativeLayout
         android:id="@+id/sort_by_trending_item"
@@ -29,24 +22,24 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:layout_marginTop="8dp"
+        android:padding="12dp" android:focusable="true">
         <ImageView
             android:id="@+id/sort_by_trending_item_icon"
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:layout_centerVertical="true"
             android:src="@drawable/ic_trending"
-            app:tint="@color/foreground" />
+            app:tint="@color/foreground"/>
         <TextView
-            android:layout_toEndOf="@+id/sort_by_trending_item_icon"
+            style="@style/TextView_Light"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
+            android:layout_marginStart="16dp"
+            android:layout_toEndOf="@+id/sort_by_trending_item_icon"
             android:text="@string/trending_content"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp"/>
         <ImageView
             android:id="@+id/sort_by_trending_item_selected"
             android:layout_width="wrap_content"
@@ -64,7 +57,7 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <ImageView
             android:id="@+id/sort_by_new_item_icon"
             android:layout_width="18dp"
@@ -78,10 +71,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/new_content"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/sort_by_new_item_selected"
             android:layout_width="wrap_content"
@@ -99,7 +91,7 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <ImageView
             android:id="@+id/sort_by_top_item_icon"
             android:layout_width="18dp"
@@ -113,10 +105,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/top_content"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/sort_by_top_item_selected"
             android:layout_width="wrap_content"

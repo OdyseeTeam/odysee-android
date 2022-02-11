@@ -19,11 +19,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
-            android:textSize="14sp"
-            android:textFontWeight="300"
-            />
+            android:textSize="14sp" />
         <TextView
             android:id="@+id/transaction_amount"
             android:gravity="end"
@@ -31,10 +29,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:textSize="14sp"
-            android:textFontWeight="300"
             android:textAlignment="viewEnd"
             android:textDirection="ltr"/>
     </LinearLayout>
@@ -54,12 +51,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:textColor="@color/odyseePink"
-            android:textSize="14sp"
-            android:textFontWeight="300"
-            />
+            android:textSize="14sp" />
         <TextView
             android:id="@+id/transaction_fee"
             android:gravity="end"
@@ -67,11 +62,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:textColor="@color/lightGrey"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -87,13 +81,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:textColor="@color/odyseePink"
-            android:textSize="12sp"
-            android:textFontWeight="300"
-            android:textAlignment="viewStart"
-            />
+            android:textAlignment="viewStart" />
         <TextView
             android:id="@+id/transaction_date"
             android:gravity="end"
@@ -101,11 +92,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:textColor="@color/lightGrey"
-            android:textSize="12sp"
-            android:textFontWeight="300"
             android:visibility="gone" />
         <TextView
             android:id="@+id/transaction_pending_text"
@@ -114,13 +103,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
-            android:singleLine="true"
+            style="@style/TextView_Light"
             android:text="@string/pending"
             android:textColor="@color/lightGrey"
-            android:textSize="12sp"
+            android:singleLine="true"
             android:textStyle="italic"
-            android:textFontWeight="300"
             android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

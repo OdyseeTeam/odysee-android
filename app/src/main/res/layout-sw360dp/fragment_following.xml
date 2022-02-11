@@ -74,8 +74,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/filter_by_channel" />
                 <ImageView
@@ -101,8 +100,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/new_text" />
                 <ImageView
@@ -131,8 +129,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/past_week" />
                 <ImageView
@@ -152,8 +149,7 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:clickable="true"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
                 android:text="@string/discover"
                 android:focusable="true" />
@@ -165,8 +161,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:fontFamily="@font/inter"
-            android:textFontWeight="300"
+            style="@style/TextView_Light"
             android:text="@string/lbry_works_better"
             android:textSize="14sp"
             android:layout_marginTop="4dp"
@@ -198,10 +193,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/no_claim_search_content"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
-                android:textFontWeight="300"
                 android:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView

@@ -16,10 +16,9 @@
             android:id="@+id/inline_channel_form_input_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:hint="@string/channel_name"
             tools:text="channel"
-            android:textFontWeight="300"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -50,11 +49,10 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="30dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/lbc"
             android:textAllCaps="true"
-            android:textSize="10sp"
-            android:textFontWeight="300" />
+            android:textSize="11sp" />
 
         <LinearLayout
             android:id="@+id/inline_channel_form_inline_balance_container"
@@ -74,8 +72,7 @@
                 android:id="@+id/inline_channel_form_inline_balance_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:layout_marginStart="2dp" />
         </LinearLayout>
     </RelativeLayout>
@@ -84,10 +81,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="@font/inter"
-        android:text="@string/deposit_remains_yours"
-        android:textFontWeight="300"
-        android:textSize="12sp" />
+        style="@style/TextView_Light"
+        android:text="@string/deposit_remains_yours" />
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -102,7 +97,7 @@
             android:layout_centerVertical="true"
             android:fontFamily="@font/inter"
             android:textSize="12sp"
-            android:text="@string/cancel" />
+            android:text="@string/cancel" android:focusable="true"/>
 
         <ProgressBar
             android:id="@+id/inline_channel_form_create_progress"
