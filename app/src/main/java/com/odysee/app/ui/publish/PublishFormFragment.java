@@ -50,10 +50,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
@@ -1295,6 +1292,8 @@ public class PublishFormFragment extends BaseFragment implements
         // add the claim to the channel list and set it as the selected item
         if (channelSpinnerAdapter != null) {
             channelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
         }
         if (channelSpinner != null && channelSpinnerAdapter != null) {
             channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);

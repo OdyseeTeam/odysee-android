@@ -31,6 +31,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.odysee.app.BuildConfig;
@@ -293,6 +294,8 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
         // add the claim to the channel list and set it as the selected item
         if (commentChannelSpinnerAdapter != null) {
             commentChannelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
         }
         if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
             commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);

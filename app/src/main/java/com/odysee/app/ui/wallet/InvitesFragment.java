@@ -25,6 +25,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.odysee.app.MainActivity;
@@ -309,6 +310,8 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         // add the claim to the channel list and set it as the selected item
         if (channelSpinnerAdapter != null) {
             channelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
         }
         if (channelSpinner != null && channelSpinnerAdapter != null) {
             channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
