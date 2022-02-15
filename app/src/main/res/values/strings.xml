@@ -155,6 +155,7 @@
     <!-- Channel view -->
     <string name="no_channel_info">There\'s nothing here yet.\nPlease check back later.</string>
     <string name="content">Content</string>
+    <string name="scheduled_livestreams">Scheduled Livestreams</string>
     <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>
