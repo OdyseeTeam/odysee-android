@@ -7,7 +7,6 @@ import android.os.AsyncTask;
 import android.view.View;
 import android.widget.ProgressBar;
 
-import org.h2.engine.Database;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,14 +18,11 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
-import com.odysee.app.exceptions.LbryioRequestException;
-import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
-import com.odysee.app.utils.Lbryio;
 
 public class FetchSubscriptionsTask extends AsyncTask<Void, Void, List<Subscription>> {
     private final Context context;
