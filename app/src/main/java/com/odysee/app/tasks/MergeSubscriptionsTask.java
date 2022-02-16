@@ -42,7 +42,6 @@ public class MergeSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
     protected List<Subscription> doInBackground(Void... params) {
         List<Subscription> combined = new ArrayList<>(base);
         List<Subscription> localSubs = new ArrayList<>();
-        List<Subscription> remoteSubs = new ArrayList<>();
         diff = new ArrayList<>();
         SQLiteDatabase db = null;
         try {
@@ -66,44 +65,6 @@ public class MergeSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
                 }
             }
 
-            // fetch remote subscriptions
-            JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("subscription", "list", context));
-            if (array != null) {
-                // check for any remote subs that may have been removed, and unsubscribe from them
-                for (int i = 0; i < array.length(); i++) {
-                    JSONObject item = array.getJSONObject(i);
-                    // TODO: Refactor by creating static Subscription.fromJSON method
-                    String claimId = item.getString("claim_id");
-                    String channelName = item.getString("channel_name");
-                    boolean isNotificationsDisabled  = item.getBoolean("is_notifications_disabled");
-
-                    LbryUri url = new LbryUri();
-                    url.setChannelName(channelName);
-                    url.setClaimId(claimId);
-                    Subscription subscription = new Subscription(channelName, url.toString(), isNotificationsDisabled);
-                    remoteSubs.add(subscription);
-                }
-            }
-
-            List<Subscription> remoteUnsubs = new ArrayList<>();
-            List<Subscription> finalRemoteSubs = new ArrayList<>();
-            if (remoteSubs.size() > 0) {
-                for (int i = 0; i < remoteSubs.size(); i++) {
-                    Subscription sub = remoteSubs.get(i);
-                    if (!combined.contains(sub)) {
-                        Map<String, String> options = new HashMap<>();
-                        LbryUri uri = LbryUri.tryParse(sub.getUrl());
-                        if (uri != null) {
-                            options.put("claim_id", uri.getChannelClaimId());
-                            Lbryio.parseResponse(Lbryio.call("subscription", "delete", options, context));
-                            remoteUnsubs.add(sub);
-                        } else {
-                            finalRemoteSubs.add(sub);
-                        }
-                    }
-                }
-            }
-
             if (!replaceLocal) {
                 for (int i = 0; i < localSubs.size(); i++) {
                     Subscription local = localSubs.get(i);
@@ -111,17 +72,8 @@ public class MergeSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
                         diff.add(local);
                     }
                 }
-                for (int i = 0; i < finalRemoteSubs.size(); i++) {
-                    Subscription remote = finalRemoteSubs.get(i);
-                    if (!combined.contains(remote)) {
-                        combined.add(remote);
-                        if (!diff.contains(remote)) {
-                            diff.add(remote);
-                        }
-                    }
-                }
             }
-        } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | IllegalStateException | SQLiteException ex) {
+        } catch (ClassCastException | IllegalStateException | SQLiteException ex) {
             error = ex;
             return null;
         }

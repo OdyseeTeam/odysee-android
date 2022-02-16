@@ -49,9 +49,9 @@ import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
-import com.odysee.app.tasks.lbryinc.FetchSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.listener.ChannelItemSelectionListener;
+import com.odysee.app.tasks.lbryinc.FetchSubscriptionsTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
@@ -418,7 +418,7 @@ public class FollowingFragment extends BaseFragment implements
     }
 
     private void fetchSubscriptions() {
-        FetchSubscriptionsTask task = new FetchSubscriptionsTask(getContext(), channelListLoading, this);
+        FetchSubscriptionsTask task = new FetchSubscriptionsTask(getContext(), channelListLoading, Lbryio.AUTH_TOKEN, this);
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -437,7 +437,6 @@ public class FollowingFragment extends BaseFragment implements
                 break;
             }
         }
-
 
         return Lbry.buildClaimSearchOptions(
                 Claim.TYPE_CHANNEL,

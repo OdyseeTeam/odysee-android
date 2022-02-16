@@ -147,7 +147,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         return false;
     }
 
-    protected boolean isNotificationsDisabledForSubUrl(String url, JSONArray following) {
+    public static boolean isNotificationsDisabledForSubUrl(String url, JSONArray following) {
         if (following == null) {
             return true;
         }
