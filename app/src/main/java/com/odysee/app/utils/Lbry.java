@@ -156,7 +156,6 @@ public final class Lbry {
             requestBody.put("method", method);
             requestBody.put("params", requestParams);
             requestBody.put("counter", counter);
-            requestBody.put("id", counter);
         } catch (JSONException ex) {
             throw new LbryRequestException("Could not build the JSON request body.", ex);
         }
