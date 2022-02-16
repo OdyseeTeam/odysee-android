@@ -78,10 +78,11 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.Loader;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
@@ -190,6 +191,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -223,8 +225,10 @@ public class FileViewFragment extends BaseFragment implements
     private Claim claim;
     private String currentUrl;
     private ClaimListAdapter relatedContentAdapter;
+    private CommentEnabledCheck commentEnabledCheck;
     private CommentListAdapter commentListAdapter;
     private Player.Listener fileViewPlayerListener;
+    private View commentLoadingArea;
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
@@ -284,6 +288,12 @@ public class FileViewFragment extends BaseFragment implements
     // if this is set, scroll to the specific comment on load
     private String commentHash;
 
+    @Override
+    public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        commentEnabledCheck = new CommentEnabledCheck();
+    }
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_file_view, container, false);
@@ -317,6 +327,7 @@ public class FileViewFragment extends BaseFragment implements
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
         buttonCommentSignedInUserRequired = root.findViewById(R.id.sign_in_user_button);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
+        commentLoadingArea = root.findViewById(R.id.file_comments_loading);
 
         likeReactionAmount = root.findViewById(R.id.likes_amount);
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
@@ -1719,21 +1730,40 @@ public class FileViewFragment extends BaseFragment implements
     private void checkAndLoadComments(boolean forceReload) {
         View root = getView();
         if (root != null) {
+            View expandCommentArea = root.findViewById(R.id.expand_commentarea_button);
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
-            if (claim.getTags().contains("disable-comments") || claim.getSigningChannel().getTags().contains("disable-comments")) {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
-                Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentsList, View.GONE);
-            } else {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
-                Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
-                    loadComments();
+
+            commentLoadingArea.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                Activity activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isEnabled) {
+                            showComments(expandCommentArea, commentsDisabledText, commentsList);
+                            if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
+                                loadComments();
+                            }
+                        } else {
+                            hideComments(expandCommentArea, commentsDisabledText, commentsList);
+                        }
+                        commentLoadingArea.setVisibility(View.GONE);
+                    });
                 }
-            }
+            });
         }
+    }
+
+    private void showComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
+        Helper.setViewVisibility(commentsDisabledText, View.GONE);
+        Helper.setViewVisibility(commentsList, View.VISIBLE);
+    }
+
+    private void hideComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
+        Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
+        Helper.setViewVisibility(commentsList, View.GONE);
     }
 
     private void showUnsupportedView() {
@@ -1817,23 +1847,17 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
+                String userAgent = Util.getUserAgent(context, getString(R.string.app_name));
 
                 String mediaSourceUrl;
-                DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
-                if (context != null) {
-                    dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
-                }
+                DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("Odysee");
                 MediaSource mediaSource = null;
                 if (claim.hasSource()) {
                     mediaSourceUrl = getStreamingUrl();
-
-                    CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
-                    cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
-                    cacheDataSourceFactory.setCache(MainActivity.playerCache);
-
                     mediaSource = new ProgressiveMediaSource.Factory(
-                            cacheDataSourceFactory, new DefaultExtractorsFactory()
-                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
+                            new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
+                            new DefaultExtractorsFactory()
+                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
                 } else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
@@ -1843,7 +1867,7 @@ public class FileViewFragment extends BaseFragment implements
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
-                            if (claim.getThumbnailUrl() != null && context != null) {
+                            if (claim.getThumbnailUrl() != null) {
                                 ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
                                 Glide.with(context.getApplicationContext()).
                                         asBitmap().

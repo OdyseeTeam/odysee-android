@@ -31,15 +31,15 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="@style/TextView_Light"
             android:text="@string/share_this_link"
+            style="@style/TextView_Light"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            style="@style/TextView_Light"
             android:text="@string/your_invite_link"
+            style="@style/TextView_Light"
             android:textSize="14sp" />
 
         <RelativeLayout
@@ -66,8 +66,7 @@
                     android:textSize="14sp"
                     android:letterSpacing="0.05"
                     android:singleLine="true"
-                    android:ellipsize="middle"
-                    android:focusable="true" />
+                    android:ellipsize="middle" />
             </LinearLayout>
             <ImageButton
                 android:id="@+id/invites_copy_invite_link"
@@ -85,8 +84,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            style="@style/TextView_Light"
             android:text="@string/customize_invite_link"
+            style="@style/TextView_Light"
             android:textSize="14sp" />
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/invites_channel_spinner"
@@ -94,5 +93,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
 
+        <include layout="@layout/container_inline_channel_form" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

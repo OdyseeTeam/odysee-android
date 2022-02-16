@@ -2,6 +2,7 @@ package com.odysee.app.ui.channel;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
@@ -53,6 +55,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import lombok.Setter;
 
@@ -63,6 +66,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
     @Setter
     private String commentHash;
     private CommentListAdapter commentListAdapter;
+    private CommentEnabledCheck commentEnabledCheck;
 
     private Comment replyToComment;
     private View containerReplyToComment;
@@ -84,6 +88,15 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
     private MaterialButton buttonUserSignedInRequired;
+    private View loadingCommentView;
+    private View commentsNestedLayout;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        commentEnabledCheck = new CommentEnabledCheck();
+    }
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -106,12 +119,21 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
         buttonUserSignedInRequired = root.findViewById(R.id.sign_in_user_button);
 
+        loadingCommentView = root.findViewById(R.id.channel_comments_loading_spinner);
+        commentsNestedLayout = root.findViewById(R.id.channel_comments_area);
+
         RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
         commentList.setLayoutManager(new LinearLayoutManager(getContext()));
 
         initCommentForm(root);
 
         return root;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        commentsNestedLayout.setVisibility(View.GONE);
     }
 
     public void onResume() {
@@ -133,19 +155,40 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
             View commentForm = root.findViewById(R.id.container_comment_form);
             RecyclerView commentsList = root.findViewById(R.id.channel_comments_list);
 
-            if (claim.getTags().contains("disable-comments")) {
-                Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentForm, View.GONE);
-                Helper.setViewVisibility(commentsList, View.GONE);
-            } else {
-                Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentForm, View.VISIBLE);
-                Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
-                    loadComments();
+            loadingCommentView.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                Activity activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isEnabled) {
+                            showComments(commentsDisabledText, commentForm, commentsList);
+                            Helper.setViewVisibility(commentsDisabledText, View.GONE);
+                            Helper.setViewVisibility(commentForm, View.VISIBLE);
+                            Helper.setViewVisibility(commentsList, View.VISIBLE);
+                            if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
+                                loadComments();
+                            }
+                        } else {
+                            hideComments(commentsDisabledText, commentForm, commentsList);
+                        }
+                        loadingCommentView.setVisibility(View.GONE);
+                        commentsNestedLayout.setVisibility(View.VISIBLE);
+                    });
                 }
-            }
+            });
         }
+    }
+
+    private void hideComments(View commentsDisabledText, View commentForm, View commentsList) {
+        Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
+        Helper.setViewVisibility(commentForm, View.GONE);
+        Helper.setViewVisibility(commentsList, View.GONE);
+    }
+
+    private void showComments(View commentsDisabledText, View commentForm, View commentsList) {
+        Helper.setViewVisibility(commentsDisabledText, View.GONE);
+        Helper.setViewVisibility(commentForm, View.VISIBLE);
+        Helper.setViewVisibility(commentsList, View.VISIBLE);
     }
 
     private void loadComments() {

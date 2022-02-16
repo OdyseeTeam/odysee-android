@@ -22,10 +22,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/use_this_address_hint"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp" />
 
         <RelativeLayout
             android:layout_width="match_parent"

@@ -100,14 +100,16 @@
 
     <style name="TextView_Light">
         <item name="android:fontFamily">@font/inter_light</item>
+        <item name="textSize">12sp</item>
     </style>
-
+    <style name="TextView_SemiBold">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+    </style>
     <style name="Odysee_BottomSheetLayout">
         <item name="paddingStart">8dp</item>
         <item name="paddingEnd">8dp</item>
         <item name="textSize">12sp</item>
     </style>
-
     <style name="BottomSheet_Title">
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">20sp</item>

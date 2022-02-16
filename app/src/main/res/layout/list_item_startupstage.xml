@@ -17,10 +17,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_gravity="center_vertical"
-        android:fontFamily="@font/inter"
         tools:text="@string/installation_id_loaded"
-        android:textColor="@color/white"
-        android:textFontWeight="300"
+        style="@style/TextView_Light"
         android:textSize="14sp" />
 
 </LinearLayout>

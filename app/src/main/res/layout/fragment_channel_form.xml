@@ -65,11 +65,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/uploading"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:textColor="@color/white" />
             </LinearLayout>
             <RelativeLayout
                 android:id="@+id/channel_form_icon_container"
@@ -92,11 +90,10 @@
                         android:layout_centerInParent="true"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:textAllCaps="true"
                         android:textSize="48sp"
-                        android:textColor="@color/white"
-                        android:textFontWeight="300" />
+                        android:textColor="@color/white" />
                 </RelativeLayout>
                 <ImageView
                     android:id="@+id/channel_form_thumbnail"
@@ -219,10 +216,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:fontFamily="@font/inter"
-                        android:text="@string/deposit_remains_yours"
-                        android:textFontWeight="300"
-                        android:textSize="12sp" />
+                        style="@style/TextView_Light"
+                        android:text="@string/deposit_remains_yours" />
 
                     <LinearLayout
                         android:id="@+id/channel_form_optional_fields_container"
@@ -280,9 +275,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
                             android:layout_marginBottom="8dp"
-                            android:fontFamily="@font/inter"
                             android:text="@string/tags"
-                            android:textFontWeight="600"
+                            style="@style/TextView_SemiBold"
                             android:textSize="14sp" />
                         <include layout="@layout/container_inline_tag_form" />
                     </LinearLayout>

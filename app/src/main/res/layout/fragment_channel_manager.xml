@@ -48,10 +48,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_gravity="center_horizontal"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textAlignment="center"
-                android:textSize="16sp"
-                android:textFontWeight="300"/>
+                android:textSize="16sp" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/channel_manager_create_button"
                 android:layout_width="match_parent"

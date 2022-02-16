@@ -24,6 +24,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.loader.content.AsyncTaskLoader;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -62,11 +63,13 @@ import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
+import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.firstrun.CreateChannelFragment;
 import com.odysee.app.ui.firstrun.RewardVerificationFragment;
 import com.odysee.app.ui.firstrun.SignInFragment;
@@ -94,6 +97,7 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
     private static final String PREFERENCE_KEY_INTERNAL_CURRENT_FIRST_RUN_STEP = "com.odysee.app.CurrentFirstRunStep";
 
     private int currentStep;
+    private boolean ytSyncOptInChecked;
     private String currentChannelName;
     private ViewPager2 viewPager;
     private ImageView pagerIndicator1;
@@ -192,7 +196,11 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
             @Override
             public void onClick(View view) {
                 if (currentStep == FIRST_RUN_STEP_CHANNEL) {
-                    handleCreateChannel();
+                    if (!ytSyncOptInChecked) {
+                        handleCreateChannel();
+                    } else {
+                        proceedToRewardsStep();
+                    }
                 } else if (currentStep == FIRST_RUN_STEP_REWARDS) {
                     // final step (Use Odysee)
                     finishFirstRun();
@@ -243,7 +251,6 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
                     try {
                         String walletAddress = (String) Lbry.authenticatedGenericApiCall(Lbry.METHOD_ADDRESS_UNUSED, null, authToken);
 
-
                         Map<String, String> options = new HashMap<>();
                         options.put("reward_type", Reward.TYPE_CONFIRM_EMAIL);
                         options.put("wallet_address", walletAddress);
@@ -262,18 +269,24 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
                                     prefs.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_EMAIL_REWARD_CLAIMED, true).apply();
                                 }
                             });
-                            emailRewardChecked();
                         }
+
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                checkWalletBalanceForChannelStep();
+                            }
+                        });
                     } catch (ApiCallException | LbryioRequestException | LbryioResponseException ex) {
                         // failed, but we can still continue
-                        emailRewardChecked();
+                        checkWalletBalanceForChannelStep();
                     }
                 }
             });
             return;
         }
 
-        emailRewardChecked();
+        checkWalletBalanceForChannelStep();
     }
 
     private void emailRewardChecked() {
@@ -286,6 +299,28 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
                 displayControlsForStep(currentStep);
             }
         });
+    }
+
+    private void checkWalletBalanceForChannelStep() {
+        WalletBalanceTask task = new WalletBalanceTask(Lbryio.AUTH_TOKEN, new WalletBalanceTask.WalletBalanceHandler() {
+            @Override
+            public void onSuccess(WalletBalance walletBalance) {
+                if (walletBalance.getAvailable().doubleValue() < Helper.MIN_SPEND) {
+                    // proceed to rewards step
+                    viewPager.setVisibility(View.VISIBLE);
+                    progressIndicator.setVisibility(View.GONE);
+                    proceedToRewardsStep();
+                } else {
+                    emailRewardChecked();
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                emailRewardChecked();
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private void handleCreateChannel() {
@@ -500,6 +535,13 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
     public void onChannelNameUpdated(String channelName) {
         currentChannelName = channelName;
         buttonContinue.setVisibility(Helper.isNullOrEmpty(channelName) ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    @Override
+    public void onYouTubeSyncOptInCheckChanged(boolean checked) {
+        ytSyncOptInChecked = checked;
+        buttonContinue.setVisibility(checked ? View.VISIBLE : View.INVISIBLE);
+        buttonContinue.setText(checked ? R.string.continue_text : R.string.create);
     }
 
     public void showError(String message) {

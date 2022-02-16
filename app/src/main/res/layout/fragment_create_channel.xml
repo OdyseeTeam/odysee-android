@@ -35,18 +35,16 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="@string/create_a_channel"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textColor="@color/title_text"
-            android:textSize="24sp"
-            android:textFontWeight="300" />
+            android:textSize="24sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textSize="16sp"
-            android:text="@string/first_run_create_channel_desc"
-            android:textFontWeight="300" />
+            android:text="@string/first_run_create_channel_desc" />
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -66,11 +64,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textColor="@color/red"
             android:textSize="13sp"
             android:text="@string/channel_name_invalid_characters"
-            android:textFontWeight="300"
             android:visibility="invisible" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/first_run_channel_yt_sync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/first_run_youtube_sync_opt_in"
+            android:fontFamily="@font/inter"
+            android:textSize="16sp"
+            android:textFontWeight="300" />
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>

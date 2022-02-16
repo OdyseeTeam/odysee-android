@@ -48,11 +48,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/uploading_thumbnail"
-                        android:textColor="@color/white"
-                        android:textFontWeight="300"
-                        android:textSize="12sp" />
+                        android:textColor="@color/white" />
                 </LinearLayout>
 
                 <RelativeLayout
@@ -99,10 +97,9 @@
                                 android:id="@+id/publish_form_input_title"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:inputType="textMultiLine"
                                 android:singleLine="false"
-                                android:textFontWeight="300"
                                 android:textSize="14sp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -115,9 +112,8 @@
                                 android:id="@+id/publish_form_input_description"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:singleLine="true"
-                                android:textFontWeight="300"
                                 android:textSize="14sp" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
@@ -151,18 +147,15 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentEnd="true"
-                                android:fontFamily="@font/inter"
-                                android:textFontWeight="300"
+                                style="@style/TextView_Light"
                                 android:textSize="16sp" />
                         </RelativeLayout>
                         <TextView
                             android:id="@+id/publish_form_video_opt_status"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
-                            android:text="@string/video_being_optimized"
-                            android:textFontWeight="300"
-                            android:textSize="12sp" />
+                            style="@style/TextView_Light"
+                            android:text="@string/video_being_optimized" />
 
                         <ProgressBar
                             android:id="@+id/publish_form_video_opt_real_progress"
@@ -193,8 +186,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_centerVertical="true"
                                 android:layout_toEndOf="@id/publish_form_video_opt_progress"
-                                android:fontFamily="@font/inter"
-                                android:textFontWeight="300"
+                                style="@style/TextView_Light"
                                 android:textSize="14sp" />
                         </RelativeLayout>
                     </LinearLayout>
@@ -288,9 +280,8 @@
                             android:id="@+id/publish_form_no_price"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
                             android:text="@string/free_publish"
-                            android:textFontWeight="300"
+                            style="@style/TextView_Light"
                             android:textSize="14sp" />
 
                         <RelativeLayout
@@ -307,8 +298,7 @@
                                     android:id="@+id/publish_form_input_price"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:fontFamily="@font/inter"
-                                    android:textFontWeight="300"
+                                    style="@style/TextView_Light"
                                     android:textSize="14sp"
                                     android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
@@ -354,17 +344,16 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:textSize="14sp"
                                 android:text="@string/randomize"
-                                android:textFontWeight="300" />
+                                android:focusable="true"/>
                         </RelativeLayout>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter"
+                            style="@style/TextView_Light"
                             android:text="@string/content_address_desc"
-                            android:textFontWeight="300"
                             android:textSize="14sp" />
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -376,9 +365,8 @@
                                 android:id="@+id/publish_form_input_address"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:inputType="textNoSuggestions"
-                                android:textFontWeight="300"
                                 android:textSize="14sp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -387,11 +375,9 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:fontFamily="@font/inter"
+                            style="@style/TextView_Light"
                             android:text="@string/address_invalid_characters"
                             android:textColor="@color/red"
-                            android:textFontWeight="300"
-                            android:textSize="12sp"
                             android:visibility="invisible" />
 
                         <RelativeLayout
@@ -421,11 +407,10 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginTop="30dp"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:text="@string/lbc"
                                 android:textAllCaps="true"
-                                android:textSize="10sp"
-                                android:textFontWeight="300" />
+                                android:textSize="11sp" />
 
                             <LinearLayout
                                 android:id="@+id/publish_form_inline_balance_container"
@@ -445,8 +430,7 @@
                                     android:id="@+id/publish_form_inline_balance_value"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:fontFamily="@font/inter"
-                                    android:textFontWeight="300"
+                                    style="@style/TextView_Light"
                                     android:layout_marginStart="2dp" />
                             </LinearLayout>
                         </RelativeLayout>
@@ -455,10 +439,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:fontFamily="@font/inter"
-                            android:text="@string/deposit_remains_yours"
-                            android:textFontWeight="300"
-                            android:textSize="12sp" />
+                            style="@style/TextView_Light"
+                            android:text="@string/deposit_remains_yours" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -486,9 +468,8 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:text="@string/language"
-                                android:textFontWeight="300"
                                 android:textSize="14sp" />
                             <androidx.appcompat.widget.AppCompatSpinner
                                 android:id="@+id/publish_form_language_spinner"
@@ -500,9 +481,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:fontFamily="@font/inter"
+                                style="@style/TextView_Light"
                                 android:text="@string/license"
-                                android:textFontWeight="300"
                                 android:textSize="14sp" />
                             <androidx.appcompat.widget.AppCompatSpinner
                                 android:id="@+id/publish_form_license_spinner"
@@ -521,9 +501,8 @@
                                     android:id="@+id/publish_form_input_license_other"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:fontFamily="@font/inter"
+                                    style="@style/TextView_Light"
                                     android:inputType="textNoSuggestions"
-                                    android:textFontWeight="300"
                                     android:textSize="14sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
@@ -540,9 +519,9 @@
                 android:layout_gravity="end"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="16dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/show_extra_fields"
-                android:textFontWeight="300" />
+                android:focusable="true"/>
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -558,9 +537,8 @@
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:layout_marginTop="24dp"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/cancel"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:text="@string/cancel" android:focusable="true"/>
 
 
                 <ProgressBar

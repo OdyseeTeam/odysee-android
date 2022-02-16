@@ -33,4 +33,8 @@
         <item name="android:textFontWeight">300</item>
         <item name="textSize">12sp</item>
     </style>
+    <style name="TextView_SemiBold">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
 </resources>

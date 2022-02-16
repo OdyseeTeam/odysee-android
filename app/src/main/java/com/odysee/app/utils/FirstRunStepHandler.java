@@ -5,6 +5,7 @@ public interface FirstRunStepHandler {
     void onRequestInProgress(boolean showProgress);
     void onRequestCompleted(int step);
     void onChannelNameUpdated(String channelName);
+    void onYouTubeSyncOptInCheckChanged(boolean checked);
     void onStarted();
     void onSkipped();
 }

@@ -30,10 +30,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/earn_credits_for_inviting"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:textSize="14sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/invite_history_list"

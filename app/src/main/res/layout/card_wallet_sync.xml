@@ -38,21 +38,19 @@
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
                 android:layout_gravity="center_vertical"
                 android:text="@string/sync_status"
-                android:textFontWeight="600"
+                style="@style/TextView_SemiBold"
                 android:textSize="16sp" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/wallet_switch_sync_status"
-                android:fontFamily="@font/inter"
                 android:layout_weight="6"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:text="@string/off"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="16sp" />
         </LinearLayout>
 
@@ -75,10 +73,9 @@
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
                 android:layout_gravity="center_vertical"
                 android:text="@string/email"
-                android:textFontWeight="600"
+                style="@style/TextView_SemiBold"
                 android:textSize="16sp" />
 
             <TextView
@@ -88,10 +85,9 @@
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
                 android:layout_gravity="center_vertical"
                 android:text="@string/no_connected_email"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="16sp" />
         </LinearLayout>
 
@@ -122,7 +118,7 @@
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="right"
+                android:gravity="end"
                 android:text="@string/sync_faq"
                 android:textColorLink="@color/odyseePink"/>
         </LinearLayout>

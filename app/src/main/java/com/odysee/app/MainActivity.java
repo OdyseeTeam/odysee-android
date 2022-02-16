@@ -228,6 +228,7 @@ import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
+import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
@@ -351,7 +352,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // preference keys
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
-    public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
+    public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -370,6 +372,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_REWARDS_NOT_INTERESTED = "com.odysee.app.preference.internal.RewardsNotInterested";
     public static final String PREFERENCE_KEY_INTERNAL_NEW_ANDROID_REWARD_CLAIMED = "com.odysee.app.preference.internal.NewAndroidRewardClaimed";
     public static final String PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE = "com.odysee.app.preference.internal.InitialSubscriptionMergeDone";
+    public static final String PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED = "com.odysee.app.preference.internal.InitialBlockedListLoaded";
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
@@ -801,6 +804,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     signUserButton.setText(getString(R.string.sign_up_log_in));
                 }
 
+                customView.findViewById(R.id.button_app_settings).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        openFragment(SettingsFragment.class, true, null);
+                    }
+                });
+
                 customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -984,19 +995,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public boolean isBackgroundPlaybackEnabled() {
-        return false; // TODO This is a workaround for audio keep playing after app is no longer on the foreground
-//        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-//        return sp.getBoolean(PREFERENCE_KEY_BACKGROUND_PLAYBACK, true);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
     }
 
     public boolean isMediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_MEDIA_AUTOPLAY, true);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
     }
 
     public boolean initialSubscriptionMergeDone() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE, false);
+    }
+
+    public boolean initialBlockedListLoaded() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, false);
     }
 
     private void initSpecialRouteMap() {
@@ -2127,7 +2142,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void initMediaSession() {
         ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(), MediaButtonReceiver.class);
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "LBRYMediaSession", mediaButtonReceiver, null);
+        mediaSession = new MediaSessionCompat(this, "LBRYMediaSession", mediaButtonReceiver, null);
         MediaSessionConnector connector = new MediaSessionConnector(mediaSession);
         connector.setPlayer(MainActivity.appPlayer);
         mediaSession.setActive(true);
@@ -2561,7 +2576,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             Lbryio.cacheResolvedSubscriptions.clear();
 
                             FollowingFragment f = (FollowingFragment) getSupportFragmentManager().findFragmentByTag("FOLLOWING");
-
                             if (f != null) {
                                 f.fetchLoadedSubscriptions(true);
                             }
@@ -2580,8 +2594,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Lbry.followedTags = new ArrayList<>(followedTags);
 
                     AllContentFragment f = (AllContentFragment) getSupportFragmentManager().findFragmentByTag("HOME");
-
-                    if (f!= null) {
+                    if (f != null) {
                         if (!f.isSingleTagView() &&
                                 f.getCurrentContentScope() == ContentScopeDialogFragment.ITEM_TAGS &&
                                 !previousTags.equals(followedTags)) {
@@ -2591,14 +2604,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
 
                 if (blockedChannels != null && blockedChannels.size() > 0) {
-                    // TODO: Find out the most recently updated blocked channels and merge / update?
-                    List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
-                    for (LbryUri uri : blockedChannels) {
-                        if (!newBlockedChannels.contains(uri)) {
-                            newBlockedChannels.add(uri);
+                    if (!initialBlockedListLoaded()) {
+                        // first time the blocked list is loaded, so we attempt to merge the entries
+                        List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+                        for (LbryUri uri : blockedChannels) {
+                            if (!newBlockedChannels.contains(uri)) {
+                                newBlockedChannels.add(uri);
+                            }
                         }
+
+                        Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                        sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, true).apply();
+                    } else {
+                        // replace the blocked channels list entirely
+                        Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
                     }
-                    Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
                 }
             }
 
@@ -3404,42 +3425,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Lbryio.newInstall(context);
                     startupStages.set(STARTUP_STAGE_NEW_INSTALL_DONE - 1, new StartupStage(STARTUP_STAGE_NEW_INSTALL_DONE, true));
 
-                    // (light) fetch subscriptions
-                    if (Lbryio.subscriptions.size() == 0) {
-                        List<Subscription> subscriptions = new ArrayList<>();
-                        List<String> subUrls = new ArrayList<>();
-                        JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("subscription", "list", context));
-                        if (array != null) {
-                            for (int i = 0; i < array.length(); i++) {
-                                JSONObject item = array.getJSONObject(i);
-                                String claimId = item.getString("claim_id");
-                                String channelName = item.getString("channel_name");
-                                boolean isNotificationsDisabled = item.getBoolean("is_notifications_disabled");
-
-                                LbryUri url = new LbryUri();
-                                url.setChannelName(channelName);
-                                url.setClaimId(claimId);
-                                subscriptions.add(new Subscription(channelName, url.toString(), isNotificationsDisabled));
-                                subUrls.add(url.toString());
-                            }
-                            Lbryio.subscriptions = subscriptions;
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-
-                            // resolve subscriptions
-                            if (subUrls.size() > 0 && Lbryio.cacheResolvedSubscriptions.size() != Lbryio.subscriptions.size()) {
-                                Lbryio.cacheResolvedSubscriptions = Lbry.resolve(subUrls, Lbry.API_CONNECTION_STRING);
-                            }
-                            // if no exceptions occurred here, subscriptions have been loaded and resolved
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                        } else {
-                            // user has not subscribed to anything
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                        }
-                    } else {
-                        startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-                        startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                    }
+                    startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
+                    startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
 
                     JSONObject blockedObject = (JSONObject) Lbryio.parseResponse(Lbryio.call("file", "list_blocked", context));
                     JSONArray blockedArray = blockedObject.getJSONArray("outpoints");
@@ -4510,5 +4497,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    public void resetCurrentDisplayFragment() {
+        currentDisplayFragment = null;
     }
 }

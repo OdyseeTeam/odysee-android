@@ -2,6 +2,7 @@ package com.odysee.app.tasks.lbryinc;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -15,23 +16,26 @@ import java.util.List;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
-import com.odysee.app.exceptions.LbryioRequestException;
-import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
-import com.odysee.app.utils.Lbryio;
 
 public class FetchSubscriptionsTask extends AsyncTask<Void, Void, List<Subscription>> {
     private final Context context;
     private final FetchSubscriptionsHandler handler;
     private final ProgressBar progressBar;
+    private String authToken;
     private Exception error;
 
-    public FetchSubscriptionsTask(Context context, ProgressBar progressBar, FetchSubscriptionsHandler handler) {
+    public FetchSubscriptionsTask(Context context, ProgressBar progressBar, String authToken, FetchSubscriptionsHandler handler) {
         this.context = context;
         this.progressBar = progressBar;
         this.handler = handler;
+        this.authToken = authToken;
     }
     protected void onPreExecute() {
         Helper.setViewVisibility(progressBar, View.VISIBLE);
@@ -40,29 +44,49 @@ public class FetchSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
         List<Subscription> subscriptions = new ArrayList<>();
         SQLiteDatabase db = null;
         try {
-            JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("subscription", "list", context));
             if (context instanceof MainActivity) {
                 db = ((MainActivity) context).getDbHelper().getWritableDatabase();
-            }
-            if (array != null) {
-                for (int i = 0; i < array.length(); i++) {
-                    JSONObject item = array.getJSONObject(i);
-                    String claimId = item.getString("claim_id");
-                    String channelName = item.getString("channel_name");
-                    boolean isNotificationsDisabled = item.getBoolean("is_notifications_disabled");
+                if (db != null) {
+                    subscriptions = new ArrayList<>(DatabaseHelper.getSubscriptions(db));
+                }
 
-                    LbryUri url = new LbryUri();
-                    url.setChannelName(channelName);
-                    url.setClaimId(claimId);
-                    Subscription subscription = new Subscription(channelName, url.toString(), isNotificationsDisabled);
-                    subscriptions.add(subscription);
-                    // Persist the subscription locally if it doesn't exist
-                    if (db != null) {
-                        DatabaseHelper.createOrUpdateSubscription(subscription, db);
+                if (subscriptions.size() == 0) {
+                    // if there are no subs in the local store, check the wallet shared object
+                    JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", "shared"), authToken);
+                    JSONObject shared = result.getJSONObject("shared");
+                    if (shared.has("type")
+                            && "object".equalsIgnoreCase(shared.getString("type"))
+                            && shared.has("value")) {
+                        JSONObject value = shared.getJSONObject("value");
+
+                        JSONArray subscriptionUrls =
+                                value.has("subscriptions") && !value.isNull("subscriptions") ? value.getJSONArray("subscriptions") : null;
+                        JSONArray following =
+                                value.has("following") && !value.isNull("following") ? value.getJSONArray("following") : null;
+
+                        if (subscriptionUrls != null) {
+                            subscriptions = new ArrayList<>();
+                            for (int i = 0; i < subscriptionUrls.length(); i++) {
+                                String url = subscriptionUrls.getString(i);
+                                try {
+                                    LbryUri uri = LbryUri.parse(LbryUri.normalize(url));
+                                    Subscription subscription = new Subscription();
+                                    subscription.setChannelName(uri.getChannelName());
+                                    subscription.setUrl(uri.toString());
+                                    subscription.setNotificationsDisabled(LoadSharedUserStateTask.isNotificationsDisabledForSubUrl(uri.toString(), following));
+                                    subscriptions.add(subscription);
+                                    if (db != null) {
+                                        DatabaseHelper.createOrUpdateSubscription(subscription, db);
+                                    }
+                                } catch (LbryUriException | SQLiteException | IllegalStateException ex) {
+                                    // pass
+                                }
+                            }
+                        }
                     }
                 }
             }
-        } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | IllegalStateException ex) {
+        } catch (ClassCastException | ApiCallException | JSONException | IllegalStateException ex) {
             error = ex;
             return null;
         }
