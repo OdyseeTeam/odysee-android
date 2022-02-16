@@ -27,9 +27,8 @@
                 android:id="@+id/wallet_balance_usd_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textSize="16sp"
-                android:textFontWeight="300"
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
@@ -38,8 +37,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
             <LinearLayout
@@ -59,10 +57,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="bottom"
-                    android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/immediately_spendable"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
             </LinearLayout>
 
@@ -82,10 +79,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/boosting_content"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
                 <TextView
@@ -97,7 +93,8 @@
                     android:drawableTint="@color/title_text"
                     android:gravity="end"
                     android:text="@string/view_more"
-                    android:textSize="@dimen/wallet_detail_balance_font_size" />
+                    android:textSize="@dimen/wallet_detail_balance_font_size"
+                    tools:ignore="UseCompatTextViewDrawableXml"/>
             </LinearLayout>
 
             <ListView

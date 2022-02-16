@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -24,42 +23,38 @@
             android:visibility="visible"
             android:layout_margin="36dp">
             <TextView
-                android:textSize="28sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="28sp"
                 android:text="@string/reward_verification"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/get_instantly_verified"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
 
 
             <TextView
-                android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="20sp"
                 android:text="@string/twitter_verification"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/twitter_verification_desc"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_manual_twitter_button"
                 android:layout_width="match_parent"
@@ -70,23 +65,21 @@
 
 
             <TextView
-                android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="20sp"
                 android:text="@string/phone_number_verification"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/phone_number_verification_desc"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_manual_phone_number_button"
                 android:layout_width="match_parent"
@@ -96,23 +89,21 @@
                 android:text="@string/phone_number_verify" />
 
             <TextView
-                android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="20sp"
                 android:text="@string/skip_queue_verification"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/skip_queue_verification_desc"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_manual_skip_queue"
                 android:layout_width="match_parent"
@@ -121,14 +112,13 @@
                 android:fontFamily="@font/inter"
                 android:text="@string/skip_queue_button_text" />
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/skip_queue_manual_check"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_manual_skip_queue_verify"
                 android:layout_width="match_parent"
@@ -138,34 +128,31 @@
                 android:text="@string/verify_purchase" />
 
             <TextView
-                android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="20sp"
                 android:text="@string/manual_reward_verification"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
             <TextView
                 android:id="@+id/verification_manual_discord_verify"
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/request_to_be_verified"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
 
             <TextView
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
+                android:textSize="16sp"
                 android:text="@string/enjoy_free_content"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_manual_continue_button"

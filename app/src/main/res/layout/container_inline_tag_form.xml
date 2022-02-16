@@ -11,10 +11,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="6dp"
-        android:fontFamily="@font/inter"
         android:text="@string/no_added_tags"
+        style="@style/TextView_Light"
         android:textSize="14sp"
-        android:textFontWeight="300"
         android:visibility="gone" />
 
     <View
@@ -39,10 +38,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
             android:text="@string/mature_tags"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/form_mature_tags"
             android:layout_width="match_parent"
@@ -55,10 +53,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="6dp"
-        android:fontFamily="@font/inter"
         android:text="@string/form_no_tag_results"
+        style="@style/TextView_Light"
         android:textSize="14sp"
-        android:textFontWeight="300"
         android:visibility="gone" />
 
     <com.google.android.material.textfield.TextInputLayout
@@ -71,8 +68,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/search_for_more_tags"
-            android:fontFamily="@font/inter"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

@@ -31,20 +31,16 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
-            android:fontFamily="@font/inter"
-            android:textColor="@color/lightForeground"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            style="@style/TextView_Light"
+            android:textColor="@color/lightForeground" android:focusable="true"/>
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/reposted"
-            android:textColor="@color/lightForeground"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            android:textColor="@color/lightForeground" />
     </LinearLayout>
     <RelativeLayout
         android:layout_width="match_parent"
@@ -64,12 +60,11 @@
                     android:layout_centerInParent="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:textAllCaps="true"
                     android:textSize="24sp"
                     android:singleLine="true"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300" />
+                    android:textColor="@color/white" />
             </RelativeLayout>
             <ImageView
                 android:id="@+id/claim_thumbnail"
@@ -84,10 +79,8 @@
                 android:layout_alignParentEnd="true"
                 android:layout_marginEnd="4dp"
                 android:layout_marginBottom="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:textFontWeight="300"
                 android:padding="2dp"
                 android:visibility="gone" />
             <LinearLayout
@@ -116,10 +109,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="1dp"
-                    android:fontFamily="@font/inter"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:textColor="@android:color/black" />
             </LinearLayout>
             <RelativeLayout
                 android:layout_centerHorizontal="true"
@@ -200,11 +191,10 @@
                     android:id="@+id/claim_pending_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/pending"
                     android:textSize="11sp"
                     android:textStyle="italic"
-                    android:textFontWeight="300"
                     android:visibility="gone" />
 
                 <TextView
@@ -212,9 +202,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:textSize="11sp"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:textSize="11sp" />
             </RelativeLayout>
             <!-- download progress bar -->
             <ProgressBar
@@ -231,11 +220,10 @@
                 android:layout_marginTop="4dp"
                 android:layout_gravity="end"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:singleLine="true"
                 android:textColor="@color/lightGrey"
-                android:textSize="10sp"
-                android:textFontWeight="300" />
+                android:textSize="11sp" />
         </LinearLayout>
     </RelativeLayout>
 </LinearLayout>

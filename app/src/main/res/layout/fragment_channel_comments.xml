@@ -44,9 +44,8 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/channel_disabled_comments"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
                 android:visibility="gone" />
 
@@ -57,9 +56,8 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/no_comments"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
                 android:visibility="gone" />
 

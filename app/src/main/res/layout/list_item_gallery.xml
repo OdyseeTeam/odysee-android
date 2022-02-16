@@ -19,10 +19,9 @@
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
-        android:fontFamily="@font/inter"
+        style="@style/TextView_Light"
         android:textColor="@android:color/white"
-        android:textSize="10sp"
-        android:textFontWeight="300"
+        android:textSize="11sp"
         android:padding="2dp"
         android:visibility="gone" />
 </RelativeLayout>

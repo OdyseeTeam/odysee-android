@@ -26,11 +26,10 @@
                     android:layout_centerInParent="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:textAllCaps="true"
                     android:textSize="48sp"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300" />
+                    android:textColor="@color/white" />
             </RelativeLayout>
             <ImageView
                 android:id="@+id/yt_sync_item_thumbnail"
@@ -61,29 +60,26 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:singleLine="true"
                 android:ellipsize="middle"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/yt_sync_text_followers_uploads"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/yt_sync_text_transfer_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
         </androidx.appcompat.widget.LinearLayoutCompat>
     </RelativeLayout>
 

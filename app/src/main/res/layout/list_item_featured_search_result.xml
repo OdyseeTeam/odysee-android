@@ -30,19 +30,14 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
             android:clickable="true"
-            android:fontFamily="@font/inter"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            style="@style/TextView_Light" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
-            android:fontFamily="@font/inter"
             android:text="@string/reposted"
-            android:textSize="12sp"
-            android:textFontWeight="300"
-            />
+            style="@style/TextView_Light" />
     </LinearLayout>
     <RelativeLayout
         android:layout_width="match_parent"
@@ -62,12 +57,11 @@
                     android:layout_centerInParent="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:textAllCaps="true"
                     android:textSize="24sp"
                     android:singleLine="true"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300" />
+                    android:textColor="@color/white" />
             </RelativeLayout>
             <ImageView
                 android:id="@+id/claim_thumbnail"
@@ -82,10 +76,9 @@
                 android:layout_alignParentEnd="true"
                 android:layout_marginEnd="4dp"
                 android:layout_marginBottom="4dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textColor="@android:color/white"
-                android:textSize="10sp"
-                android:textFontWeight="300"
+                android:textSize="11sp"
                 android:padding="2dp"
                 android:visibility="gone" />
             <LinearLayout
@@ -113,10 +106,9 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="1dp"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    android:textSize="14sp" />
             </LinearLayout>
             <RelativeLayout
                 android:layout_centerHorizontal="true"
@@ -144,22 +136,20 @@
                 android:id="@+id/claim_vanity_url"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textFontWeight="600" />
+                style="@style/TextView_SemiBold"
+                android:textSize="18sp" />
             <TextView
                 android:id="@+id/claim_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_SemiBold"
                 android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textFontWeight="600" />
+                android:textSize="14sp" />
             <TextView
                 android:id="@+id/claim_publisher"
                 android:layout_width="wrap_content"
@@ -171,20 +161,18 @@
                 android:id="@+id/claim_publish_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textColor="@android:color/white"
-                android:textSize="11sp"
-                android:textFontWeight="300" />
+                android:textSize="11sp" />
             <TextView
                 android:id="@+id/claim_pending_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
                 android:text="@string/pending"
+                style="@style/TextView_Light"
                 android:textColor="@color/white"
                 android:textSize="11sp"
                 android:textStyle="italic"
-                android:textFontWeight="300"
                 android:visibility="gone" />
 
             <!-- download progress bar -->

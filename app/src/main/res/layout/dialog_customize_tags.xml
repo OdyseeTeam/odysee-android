@@ -40,10 +40,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="6dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/no_followed_tags"
             android:textSize="14sp"
-            android:textFontWeight="300"
             android:visibility="gone" />
 
         <View
@@ -69,10 +68,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="6dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/no_tag_results"
             android:textSize="14sp"
-            android:textFontWeight="300"
             android:visibility="gone" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -87,9 +85,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/search_for_more_tags"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton

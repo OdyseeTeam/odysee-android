@@ -14,10 +14,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/discover_channels"
-            android:textSize="20sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="20sp" />
         <ProgressBar
             android:id="@+id/discover_loading"
             android:layout_width="20dp"

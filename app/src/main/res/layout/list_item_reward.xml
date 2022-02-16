@@ -6,7 +6,7 @@
     android:foreground="?attr/selectableItemBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp">
+    android:layout_marginBottom="16dp" android:focusable="true">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -45,19 +45,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:singleLine="true"
                 android:textColor="@color/odyseePink"
-                android:textSize="16sp"
-                android:textFontWeight="300" />
+                android:textSize="16sp" />
             <TextView
                 android:id="@+id/reward_item_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
             <TextView
                 android:id="@+id/reward_item_tx_link"
                 android:background="?attr/selectableItemBackground"
@@ -65,23 +63,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textColor="@color/odyseePink"
-                android:textFontWeight="300"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                android:visibility="gone" android:focusable="true"/>
             <EditText
                 android:id="@+id/reward_item_custom_code_input"
                 android:background="@android:color/transparent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:letterSpacing="1.1"
                 android:hint="@string/reward_code_placeholder"
                 android:singleLine="true"
                 android:textSize="16sp"
-                android:textFontWeight="300"
                 android:visibility="gone" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/reward_item_custom_claim_button"
@@ -90,8 +85,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/claim"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:layout_gravity="end"
                 android:visibility="gone" />
         </LinearLayout>
@@ -108,9 +102,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:text="@string/up_to"
-                android:fontFamily="@font/inter"
-                android:textSize="10sp"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
+                android:textSize="11sp"
                 android:visibility="gone" />
             <com.odysee.app.views.CreditsBalanceView
                 android:id="@+id/reward_item_lbc_value"
