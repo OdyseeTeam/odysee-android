@@ -232,6 +232,7 @@ import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
+import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
@@ -355,7 +356,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // preference keys
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
-    public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
+    public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -804,6 +806,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     signUserButton.setText(getString(R.string.sign_up_log_in));
                 }
 
+                customView.findViewById(R.id.button_app_settings).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        openFragment(SettingsFragment.class, true, null);
+                    }
+                });
+
                 customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -987,14 +997,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public boolean isBackgroundPlaybackEnabled() {
-        return false; // TODO This is a workaround for audio keep playing after app is no longer on the foreground
-//        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-//        return sp.getBoolean(PREFERENCE_KEY_BACKGROUND_PLAYBACK, true);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
     }
 
     public boolean isMediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_MEDIA_AUTOPLAY, true);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
     }
 
     public boolean initialSubscriptionMergeDone() {
@@ -2135,7 +2144,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void initMediaSession() {
         ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(), MediaButtonReceiver.class);
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "LBRYMediaSession", mediaButtonReceiver, null);
+        mediaSession = new MediaSessionCompat(this, "LBRYMediaSession", mediaButtonReceiver, null);
         MediaSessionConnector connector = new MediaSessionConnector(mediaSession);
         connector.setPlayer(MainActivity.appPlayer);
         mediaSession.setActive(true);
@@ -4446,5 +4455,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    public void resetCurrentDisplayFragment() {
+        currentDisplayFragment = null;
     }
 }

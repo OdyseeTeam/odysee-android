@@ -20,6 +20,7 @@
     <string name="close">Close</string>
     <string name="invites">Invites</string>
     <string name="settings">Settings</string>
+    <string name="app_settings">App Settings</string>
     <string name="about">About</string>
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign out</string>
