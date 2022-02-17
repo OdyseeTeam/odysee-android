@@ -34,6 +34,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
 
+import lombok.Getter;
 import lombok.Setter;
 
 public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.ViewHolder> {
@@ -41,8 +42,9 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     private final Context context;
     @Setter
     private ClaimListAdapter.ClaimListItemListener listener;
+    @Getter
     @Setter
-    public Boolean collapsed = true;
+    private Boolean collapsed = true;
     @Setter
     private ReplyClickListener replyListener;
     @Setter
@@ -405,6 +407,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             }
         }
         notifyItemRangeChanged(firstChild, lastIndex - firstChild);
+    }
+
+    public boolean isCollapsed() {
+        return collapsed;
     }
 
     public interface ReplyClickListener {

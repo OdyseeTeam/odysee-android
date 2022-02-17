@@ -1320,8 +1320,10 @@ public class FileViewFragment extends BaseFragment implements
         expandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                switchCommentListVisibility(commentListAdapter.collapsed);
-                commentListAdapter.switchExpandedState();
+                if (commentListAdapter != null) {
+                    switchCommentListVisibility(commentListAdapter.isCollapsed());
+                    commentListAdapter.switchExpandedState();
+                }
             }
         });
 
