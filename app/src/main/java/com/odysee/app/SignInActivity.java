@@ -753,6 +753,7 @@ public class SignInActivity extends Activity {
 
             @Override
             public void onError(Exception error) {
+                // shouldn't happen, but if it does, finish anyway
                 finishSignInActivity();
             }
         }, Lbryio.AUTH_TOKEN);
