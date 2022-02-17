@@ -98,6 +98,8 @@ public class FollowingFragment extends BaseFragment implements
     private View noContentView;
     private boolean subscriptionsShown;
 
+    private View findFollowingContainer;
+
     private final List<Integer> queuedContentPages = new ArrayList<>();
     private final List<Integer> queuedSuggestedPages = new ArrayList<>();
 
@@ -130,6 +132,7 @@ public class FollowingFragment extends BaseFragment implements
         currentSortBy = ContentSortDialogFragment.ITEM_SORT_BY_NEW;
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
 
+        findFollowingContainer = root.findViewById(R.id.find_following_container);
         titleView = root.findViewById(R.id.find_following_page_title);
         infoView = root.findViewById(R.id.following_page_info);
         horizontalChannelList = root.findViewById(R.id.following_channel_list);
@@ -498,6 +501,7 @@ public class FollowingFragment extends BaseFragment implements
         Helper.setViewVisibility(contentList, View.GONE);
         Helper.setViewVisibility(infoView, View.VISIBLE);
         Helper.setViewVisibility(layoutSortContainer, View.GONE);
+        Helper.setViewVisibility(findFollowingContainer, View.VISIBLE);
         Helper.setViewVisibility(suggestedChannelGrid, View.VISIBLE);
         Helper.setViewVisibility(suggestedDoneButton, View.VISIBLE);
 
@@ -512,6 +516,7 @@ public class FollowingFragment extends BaseFragment implements
         Helper.setViewVisibility(infoView, View.GONE);
         Helper.setViewVisibility(layoutSortContainer, View.VISIBLE);
         Helper.setViewVisibility(filterLink, View.VISIBLE);
+        Helper.setViewVisibility(findFollowingContainer, View.GONE);
         Helper.setViewVisibility(suggestedChannelGrid, View.GONE);
         Helper.setViewVisibility(suggestedDoneButton, View.GONE);
     }
