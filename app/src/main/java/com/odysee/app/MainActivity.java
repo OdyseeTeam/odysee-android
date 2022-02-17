@@ -8,6 +8,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.content.BroadcastReceiver;
@@ -258,7 +260,7 @@ import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
-    private static final String CHANNEL_ID_PLAYBACK = "com.odysee.app.LBRY_PLAYBACK_CHANNEL";
+    private static final String PLAYER_NOTIFICATION_CHANNEL_ID = "com.odysee.app.PLAYER_NOTIFICATION_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
     private static final String SPECIAL_URL_PREFIX = "lbry://?";
     private static final int REMOTE_NOTIFICATION_REFRESH_TTL = 300000; // 5 minutes
@@ -512,6 +514,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // pass
         }
 
+        // create player notification channel
+        NotificationManager notificationManager =  (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    PLAYER_NOTIFICATION_CHANNEL_ID, "Odysee Player", NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("Odysee player notification channel");
+            channel.setShowBadge(false);
+            notificationManager.createNotificationChannel(channel);
+        }
+
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
 
@@ -546,7 +558,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         establishBillingClientConnection();
 
         playerNotificationManager = new PlayerNotificationManager.Builder(
-                this, PLAYBACK_NOTIFICATION_ID, "io.lbry.browser.DAEMON_NOTIFICATION_CHANNEL", new PlayerNotificationDescriptionAdapter()).build();
+                this, PLAYBACK_NOTIFICATION_ID, PLAYER_NOTIFICATION_CHANNEL_ID, new PlayerNotificationDescriptionAdapter()).build();
 
         // TODO: Check Google Play Services availability
         // castContext = CastContext.getSharedInstance(this);
