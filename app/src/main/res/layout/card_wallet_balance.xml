@@ -105,21 +105,7 @@
                 android:visibility="gone">
 
             </ListView>
-
-
-
         </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/wallet_buy_lbc_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/buy_lbc"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/wallet_hint_convert_credits"

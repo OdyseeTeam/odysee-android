@@ -258,7 +258,7 @@
 
     <!-- Wallet -->
     <string name="balance">बैलेंस</string>
-    <string name="convert_credits"> आप अपने क्रेडिटस को यूसडी में बदल सकते हैं और उन्हें एक्सचेंज की मदद से निकाल भी सकते हैं। &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits"> आप अपने क्रेडिटस को यूसडी में बदल सकते हैं और उन्हें एक्सचेंज की मदद से निकाल भी सकते हैं। &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt; क्रेडिटस को यूसडी में बदलें बिट्रिक्स पर&lt;/a&gt;</string>
 
     <string name="backup_synced">आपके वॉलेट का एक बैक आप लाइब्रेरी टीवी के साथ पूर्णतया सिंक है</string>

@@ -250,7 +250,7 @@
 
     <!-- Wallet -->
     <string name="balance">餘額</string>
-    <string name="convert_credits">你可以把信用額兌換為美元然後到交易所提取。&lt;a href=\"https://lbry.com/faq/exchanges\"&gt;了解更多&lt;/a&gt;。</string>
+    <string name="convert_credits">你可以把信用額兌換為美元然後到交易所提取。&lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;了解更多&lt;/a&gt;。</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;在Bittrex上轉換美元&lt;/a&gt;</string>
 
     <string name="backup_synced">你的錢包備份已與 lbry.tv 同步</string>
