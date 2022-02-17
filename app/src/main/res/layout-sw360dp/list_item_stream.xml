@@ -52,14 +52,12 @@
             android:id="@+id/claim_media_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
-
             <RelativeLayout
                 android:id="@+id/claim_no_thumbnail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_centerHorizontal="true"
                 android:background="@drawable/bg_thumbnail_icon">
-
                 <TextView
                     android:id="@+id/claim_thumbnail_alpha"
                     android:layout_width="wrap_content"
@@ -71,11 +69,12 @@
                     android:textColor="@color/white"
                     android:textSize="24sp" />
             </RelativeLayout>
+
             <ImageView
                 android:id="@+id/claim_thumbnail"
                 android:layout_width="match_parent"
                 android:layout_height="230dp"
-                android:scaleType="centerCrop"/>
+                android:scaleType="centerCrop" />
             <LinearLayout
                 android:id="@+id/claim_fee_container"
                 android:background="@drawable/bg_stream_cost"
@@ -126,19 +125,23 @@
                 android:layout_width="160dp"
                 android:layout_height="90dp"
                 android:visibility="gone" />
-            <TextView
-                android:id="@+id/claim_duration"
-                android:background="@android:color/black"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentEnd="true"
-                android:layout_marginEnd="4dp"
-                android:layout_marginBottom="4dp"
-                android:fontFamily="@font/inter"
-                android:padding="2dp"
-                android:visibility="gone"
-                style="@style/Claim_Duration" />
+                android:paddingEnd="4dp"
+                android:paddingBottom="4dp">
+                <TextView
+                    android:id="@+id/claim_duration"
+                    android:background="@android:color/black"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:padding="2dp"
+                    android:visibility="gone"
+                    style="@style/Claim_Duration" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
         </RelativeLayout>
 
         <RelativeLayout
