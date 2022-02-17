@@ -701,7 +701,12 @@ public class SignInFragment extends Fragment {
     private void addOdyseeAccountExplicitly(String currentEmail) {
         // Add account explicitly
         Account account = new Account("odysee", ARG_ACCOUNT_TYPE);
-        AccountManager accountManager = AccountManager.get(getContext());
+        Context context = getContext();
+        if (context == null) {
+            context = getActivity();
+        }
+
+        AccountManager accountManager = AccountManager.get(context);
         try {
             Bundle bundle = new Bundle();
             bundle.putString("email", currentEmail);

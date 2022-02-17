@@ -720,7 +720,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override
