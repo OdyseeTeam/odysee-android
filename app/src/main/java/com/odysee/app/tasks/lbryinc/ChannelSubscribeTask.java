@@ -45,22 +45,12 @@ public class ChannelSubscribeTask extends AsyncTask<Void, Void, Boolean> {
                 }
             }
 
-            // Save with Lbryio
-            Map<String, String> options = new HashMap<>();
-            options.put("claim_id", channelClaimId);
-            if (!isUnsubscribing) {
-                options.put("channel_name", subscription.getChannelName());
-                options.put("notifications_disabled", String.valueOf(subscription.isNotificationsDisabled()).toLowerCase());
-            }
-
-            String action = isUnsubscribing ? "delete" : "new";
-            Object response = Lbryio.parseResponse(Lbryio.call("subscription", action, options, context));
             if (!isUnsubscribing) {
                 Lbryio.addSubscription(subscription);
             } else {
                 Lbryio.removeSubscription(subscription);
             }
-        } catch (LbryioRequestException | LbryioResponseException | SQLiteException ex) {
+        } catch (SQLiteException ex) {
             error = ex;
             return false;
         }
