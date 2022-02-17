@@ -447,7 +447,9 @@ public class FileViewFragment extends BaseFragment implements
             if (params != null) {
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
-                    if (newClaim != null && !newClaim.equals(this.claim)) {
+                    if (newClaim != null) {
+                        // the fragment is recreated every time, so just set newClaim
+                        this.claim = newClaim;
                         updateRequired = true;
                     }
                 }
@@ -484,22 +486,14 @@ public class FileViewFragment extends BaseFragment implements
 
             boolean invalidRepost = false;
             if (updateRequired) {
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).clearNowPlayingClaim();
-                }
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.setPlayWhenReady(false);
-                }
-
                 resetViewCount();
                 resetFee();
                 checkNewClaimAndUrl(newClaim, newUrl);
 
-                claim = null;
-
                 if (newClaim != null) {
                     claim = newClaim;
                 }
+
                 if (claim == null && !Helper.isNullOrEmpty(newUrl)) {
                     // check if the claim is already cached
                     currentUrl = newUrl;
@@ -593,8 +587,10 @@ public class FileViewFragment extends BaseFragment implements
         if (!shouldResetNowPlaying &&
                 newUrl != null &&
                 MainActivity.nowPlayingClaim != null &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaimUrl) &&
                 !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getShortUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl())) {
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl()) &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getCanonicalUrl())) {
             shouldResetNowPlaying = true;
         }
 
@@ -692,10 +688,6 @@ public class FileViewFragment extends BaseFragment implements
             ((RecyclerView) root.findViewById(R.id.file_view_related_content_list)).setAdapter(null);
             ((RecyclerView) root.findViewById(R.id.file_view_comments_list)).setAdapter(null);
         }
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.setPlayWhenReady(false);
-        }
-        resetPlayer();
     }
 
     private String getStreamingUrl() {
@@ -821,6 +813,7 @@ public class FileViewFragment extends BaseFragment implements
             updatePlaybackSpeedView(root);
             loadAndScheduleDurations();
         }
+
         checkOwnClaim();
         fetchChannels();
         applyFilterForBlockedChannels(Lbryio.blockedChannels);
@@ -1842,6 +1835,17 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId()) &&
                     !newPlayerCreated) {
                 // if the claim is already playing, we don't need to reload the media source
+                if (MainActivity.appPlayer != null) {
+                    MainActivity.appPlayer.setPlayWhenReady(true);
+                    playbackStarted = true;
+
+                    // reconnect the app player
+                    if (fileViewPlayerListener != null) {
+                        MainActivity.appPlayer.addListener(fileViewPlayerListener);
+                    }
+                    setPlayerForPlayerView();
+                    loadAndScheduleDurations();
+                }
                 return;
             }
 
