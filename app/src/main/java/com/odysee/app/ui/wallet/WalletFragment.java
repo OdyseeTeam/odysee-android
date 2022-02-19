@@ -193,7 +193,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         AccountManager am = AccountManager.get(getContext());
         Account[] accounts = am.getAccounts();
 
-        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(accounts[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(Helper.getOdyseeAccount(accounts), "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 hasFetchedRecentTransactions = true;
