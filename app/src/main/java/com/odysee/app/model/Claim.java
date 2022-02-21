@@ -97,6 +97,8 @@ public class Claim {
     private boolean isLive;
     private String livestreamUrl;
 
+    private boolean highlightLive;
+
     // Collections
     private List<String> claimIds;
 
@@ -194,6 +196,22 @@ public class Claim {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns highlightLive field value
+     * @return Current highlightLive field value
+     */
+    public boolean isHighlightLive() {
+        return highlightLive;
+    }
+
+    /**
+     * Sets the highlightLive field value for this Claim object
+     * @param highlightLive - true if you want claim list item to show "LIVE"/"SOON" instead of duration
+     */
+    public void setHighlightLive(boolean highlightLive) {
+        this.highlightLive = highlightLive;
     }
 
     public String getThumbnailUrl() {
