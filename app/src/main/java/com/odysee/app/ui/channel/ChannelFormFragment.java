@@ -511,6 +511,7 @@ public class ChannelFormFragment extends BaseFragment implements
     @Override
     public void onPause() {
         clearInputFocus();
+        MainActivity.resumeGlobalPlayer(getContext());
         super.onPause();
     }
 
@@ -542,6 +543,8 @@ public class ChannelFormFragment extends BaseFragment implements
             if (editMode) {
                 activity.setActionBarTitle(R.string.edit_channel);
             }
+
+            MainActivity.suspendGlobalPlayer(context);
         }
         String filterText = Helper.getValue(inputTagFilter.getText());
         updateSuggestedTags(filterText, SUGGESTED_LIMIT, true);

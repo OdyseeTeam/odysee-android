@@ -135,6 +135,7 @@ public class SearchFragment extends BaseFragment implements
                 MainActivity activity = (MainActivity) context;
                 LbryAnalytics.setCurrentScreen(activity, "Search", "Search");
                 activity.addDownloadActionListener(this);
+                activity.updateCurrentDisplayFragment(this);
             }
         }
         if (!Helper.isNullOrEmpty(currentQuery)) {
@@ -152,7 +153,8 @@ public class SearchFragment extends BaseFragment implements
     public void onPause() {
         Context context = getContext();
         if (context != null) {
-            ((MainActivity) context).removeDownloadActionListener(this);
+            MainActivity activity = (MainActivity) context;
+            activity.removeDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
         super.onPause();
@@ -162,6 +164,7 @@ public class SearchFragment extends BaseFragment implements
     public void onStop() {
         MainActivity activity = (MainActivity) getContext();
         if (activity != null) {
+            activity.resetCurrentDisplayFragment();
             activity.showBottomNavigation();
         }
 

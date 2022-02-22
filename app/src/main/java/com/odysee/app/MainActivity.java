@@ -673,7 +673,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         break;
                 }
 
-                currentDisplayFragment = selectedFragment;
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -732,7 +731,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     String query = queryText.getText().toString();
-                    ((SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH")).search(query, 0);
+
+                    SearchFragment fragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+                    currentDisplayFragment = fragment;
+                    fragment.search(query, 0);
                 }
             }
         });
@@ -1302,6 +1304,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     };
 
+    public void showAppBar() {
+        findViewById(R.id.appbar).setVisibility(View.VISIBLE);
+    }
+
     private void renderPictureInPictureMode() {
         findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -1338,15 +1344,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         }
 
-        findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
-        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-        findViewById(R.id.appbar).setVisibility(View.VISIBLE);
-        showBottomNavigation();
-
-        findViewById(R.id.content_main).setVisibility(View.GONE);
         Fragment fragment = getCurrentFragment();
-        if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
+        boolean inMainView = currentDisplayFragment == null;
+        boolean inFileView = fragment instanceof FileViewFragment;
+        boolean inChannelView = fragment instanceof ChannelFragment;
+        boolean inSearchView = fragment instanceof SearchFragment;
+
+        findViewById(R.id.main_activity_other_fragment).setVisibility(!inMainView ? View.VISIBLE : View.GONE);
+        findViewById(R.id.content_main).setVisibility(View.VISIBLE);
+
+        findViewById(R.id.fragment_container_main_activity).setVisibility(inMainView ? View.VISIBLE : View.GONE);
+        if (inMainView) {
+            showBottomNavigation();
+        }
+        findViewById(R.id.appbar).setVisibility(inMainView || inSearchView ? View.VISIBLE : View.GONE);
+        if (!inFileView && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
+            setPlayerForMiniPlayerView();
         }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
@@ -1354,6 +1368,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         pipPlayer.setPlayer(null);
         pipPlayerContainer.setVisibility(View.GONE);
         playerReassigned = true;
+    }
+
+    private void setPlayerForMiniPlayerView() {
+        PlayerView view = findViewById(R.id.global_now_playing_player_view);
+        if (view != null) {
+            view.setVisibility(View.VISIBLE);
+            view.setPlayer(null);
+            view.setPlayer(MainActivity.appPlayer);
+        }
     }
 
     @Override
@@ -3640,8 +3663,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 appPlayer != null &&
                 !startingFilePickerActivity &&
-                !startingSignInFlowActivity &&
-                !isSearchUIActive()) {
+                !startingSignInFlowActivity) {
             enteringPIPMode = true;
             PictureInPictureParams params = new PictureInPictureParams.Builder().build();
 
@@ -4467,6 +4489,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    public void updateCurrentDisplayFragment(Fragment fragment) {
+        this.currentDisplayFragment = fragment;
     }
 
     public void resetCurrentDisplayFragment() {
