@@ -96,6 +96,9 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Rewards", "Rewards");
+            activity.updateMiniPlayerMargins(false);
+            activity.updateCurrentDisplayFragment(this);
+
         }
     }
 
@@ -108,10 +111,20 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         }
     }
 
+    public void onPause() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.updateMiniPlayerMargins(true);
+        }
+        super.onPause();
+    }
+
     public void onStop() {
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.resetCurrentDisplayFragment();
         }
         super.onStop();
     }

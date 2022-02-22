@@ -531,7 +531,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        updateMiniPlayerMargins();
+        updateMiniPlayerMargins(true);
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled by default */) {
             @Override
             public void handleOnBackPressed() {
@@ -992,15 +992,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }
-    private void updateMiniPlayerMargins() {
-        // mini-player bottom margin setting
-        /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        int miniPlayerBottomMargin = Helper.parseInt(
-                sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
-        */
+    public void updateMiniPlayerMargins(boolean withBottomNavigation) {
         RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
-        int scaledMiniPlayerBottomMargin = bottomNavigationHeight + getScaledValue(2);
+        int scaledMiniPlayerBottomMargin = (withBottomNavigation ? bottomNavigationHeight : 0) + getScaledValue(2);
+        android.util.Log.d("#HELP", "updateMiniPlayerMargin=" + withBottomNavigation + "; bottom=" + scaledMiniPlayerBottomMargin);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -1529,7 +1525,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkPurchases();
         checkWebSocketClient();
         checkBottomNavigationHeight();
-        updateMiniPlayerMargins();
+        updateMiniPlayerMargins(findViewById(R.id.bottom_navigation).getVisibility() == View.VISIBLE);
         enteringPIPMode = false;
 
         checkNowPlaying();
@@ -1562,7 +1558,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         if (viewHeight != 0) {
                             bottomNavigationHeight = viewHeight;
                             bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                            updateMiniPlayerMargins();
+                            updateMiniPlayerMargins(true);
                         }
                     }
                 });
@@ -2210,9 +2206,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN.equalsIgnoreCase(key)) {
-            updateMiniPlayerMargins();
-        }
+
     }
 
     @Override
@@ -3012,7 +3006,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+
         hideBottomNavigation();
+        updateMiniPlayerMargins(false);
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.colorAccent));
         if (isSignedIn()) {
             if (remoteNotifcationsLastLoaded == null ||
@@ -3038,6 +3034,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!isInPictureInPictureMode() && hideSingleContentView) {
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
             showBottomNavigation();
+            updateMiniPlayerMargins(true);
         }
     }
 

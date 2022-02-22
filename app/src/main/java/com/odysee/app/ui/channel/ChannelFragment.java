@@ -405,6 +405,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             MainActivity activity = (MainActivity) context;
             activity.updateCurrentDisplayFragment(this);
             activity.addFetchChannelsListener(this);
+            activity.updateMiniPlayerMargins(false);
             LbryAnalytics.setCurrentScreen(activity, "Channel", "Channel");
         }
 
@@ -417,6 +418,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.updateMiniPlayerMargins(true);
             activity.removeFetchChannelsListener(this);
         }
         super.onPause();
