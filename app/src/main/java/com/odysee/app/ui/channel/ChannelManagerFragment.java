@@ -100,11 +100,17 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Channel Manager", "ChannelManager");
+            MainActivity.suspendGlobalPlayer(context);
         }
         if (adapter != null && channelList != null) {
             channelList.setAdapter(adapter);
         }
         fetchChannels();
+    }
+
+    public void onPause() {
+        MainActivity.resumeGlobalPlayer(getContext());
+        super.onPause();
     }
 
     public View getLoading() {

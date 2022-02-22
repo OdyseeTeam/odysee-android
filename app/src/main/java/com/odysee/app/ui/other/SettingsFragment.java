@@ -47,6 +47,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         if (context instanceof MainActivity) {
             PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
             MainActivity activity = (MainActivity) context;
+            MainActivity.suspendGlobalPlayer(context);
             LbryAnalytics.setCurrentScreen(activity, "Settings", "Settings");
         }
     }
@@ -54,6 +55,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     public void onPause() {
         Context context = getContext();
         if (context != null) {
+            MainActivity.resumeGlobalPlayer(context);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
         super.onPause();
