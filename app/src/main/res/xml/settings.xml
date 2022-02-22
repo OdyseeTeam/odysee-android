@@ -9,15 +9,25 @@
             app:key="com.odysee.app.preference.userinterface.BackgroundPlayback"
             app:defaultValue="true"
             app:title="@string/enable_background_playback"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode"
+            app:defaultValue="false"
+            app:dependency="com.odysee.app.preference.userinterface.BackgroundPlayback"
+            app:title="@string/enable_background_playback_pip_mode"
+            app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.MediaAutoplay"
             app:defaultValue="true"
             app:title="@string/enable_autoplay"
+            app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.DarkMode"
             app:title="@string/enable_dark_mode"
+            app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
         <!--SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.ShowMatureContent"

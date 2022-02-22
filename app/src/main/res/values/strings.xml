@@ -282,6 +282,7 @@
     <string name="user_interface">Content &amp; User interface</string>
     <string name="other">Other</string>
     <string name="enable_background_playback">Enable background playback</string>
+    <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
     <string name="enable_dark_mode">Enable dark theme</string>
     <string name="show_mature_content">Show mature content</string>

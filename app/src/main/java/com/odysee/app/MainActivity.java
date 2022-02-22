@@ -359,6 +359,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     // preference keys
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
+    public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
     public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
@@ -1013,6 +1014,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean isBackgroundPlaybackEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
+    }
+
+    public boolean isContinueBackgroundPlaybackPIPModeEnabled() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE, false);
     }
 
     public boolean isMediaAutoplayEnabled() {
@@ -3758,7 +3764,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     protected void onStop() {
-        if (appPlayer != null && inPictureInPictureMode && !isBackgroundPlaybackEnabled()) {
+        if (appPlayer != null && inPictureInPictureMode &&
+                (isBackgroundPlaybackEnabled() && !isContinueBackgroundPlaybackPIPModeEnabled())) {
             appPlayer.setPlayWhenReady(false);
         }
         if (inPictureInPictureMode) {
