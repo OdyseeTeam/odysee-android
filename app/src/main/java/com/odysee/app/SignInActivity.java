@@ -684,7 +684,7 @@ public class SignInActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Account act = accountManager.getAccounts()[0];
+        Account act = Helper.getOdyseeAccount(accountManager.getAccounts());
         accountManager.setAuthToken(act, ARG_AUTH_TYPE, Lbryio.AUTH_TOKEN);
     }
 
