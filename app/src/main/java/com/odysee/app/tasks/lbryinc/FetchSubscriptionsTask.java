@@ -50,37 +50,38 @@ public class FetchSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
                     subscriptions = new ArrayList<>(DatabaseHelper.getSubscriptions(db));
                 }
 
-                if (subscriptions.size() == 0) {
-                    // if there are no subs in the local store, check the wallet shared object
-                    JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", "shared"), authToken);
-                    JSONObject shared = result.getJSONObject("shared");
-                    if (shared.has("type")
-                            && "object".equalsIgnoreCase(shared.getString("type"))
-                            && shared.has("value")) {
-                        JSONObject value = shared.getJSONObject("value");
+                // obtain subscriptions from the wallet shared object and merge
+                JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", "shared"), authToken);
+                JSONObject shared = result.getJSONObject("shared");
+                if (shared.has("type")
+                        && "object".equalsIgnoreCase(shared.getString("type"))
+                        && shared.has("value")) {
+                    JSONObject value = shared.getJSONObject("value");
 
-                        JSONArray subscriptionUrls =
-                                value.has("subscriptions") && !value.isNull("subscriptions") ? value.getJSONArray("subscriptions") : null;
-                        JSONArray following =
-                                value.has("following") && !value.isNull("following") ? value.getJSONArray("following") : null;
+                    JSONArray subscriptionUrls =
+                            value.has("subscriptions") && !value.isNull("subscriptions") ? value.getJSONArray("subscriptions") : null;
+                    JSONArray following =
+                            value.has("following") && !value.isNull("following") ? value.getJSONArray("following") : null;
 
-                        if (subscriptionUrls != null) {
-                            subscriptions = new ArrayList<>();
-                            for (int i = 0; i < subscriptionUrls.length(); i++) {
-                                String url = subscriptionUrls.getString(i);
-                                try {
-                                    LbryUri uri = LbryUri.parse(LbryUri.normalize(url));
-                                    Subscription subscription = new Subscription();
-                                    subscription.setChannelName(uri.getChannelName());
-                                    subscription.setUrl(uri.toString());
-                                    subscription.setNotificationsDisabled(LoadSharedUserStateTask.isNotificationsDisabledForSubUrl(uri.toString(), following));
+                    if (subscriptionUrls != null) {
+                        subscriptions = new ArrayList<>();
+                        for (int i = 0; i < subscriptionUrls.length(); i++) {
+                            String url = subscriptionUrls.getString(i);
+                            try {
+                                LbryUri uri = LbryUri.parse(LbryUri.normalize(url));
+                                Subscription subscription = new Subscription();
+                                subscription.setChannelName(uri.getChannelName());
+                                subscription.setUrl(uri.toString());
+                                subscription.setNotificationsDisabled(LoadSharedUserStateTask.isNotificationsDisabledForSubUrl(uri.toString(), following));
+                                if (!subscriptions.contains(subscription)) {
                                     subscriptions.add(subscription);
-                                    if (db != null) {
-                                        DatabaseHelper.createOrUpdateSubscription(subscription, db);
-                                    }
-                                } catch (LbryUriException | SQLiteException | IllegalStateException ex) {
-                                    // pass
                                 }
+
+                                if (db != null) {
+                                    DatabaseHelper.createOrUpdateSubscription(subscription, db);
+                                }
+                            } catch (LbryUriException | SQLiteException | IllegalStateException ex) {
+                                // pass
                             }
                         }
                     }
