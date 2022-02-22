@@ -18,10 +18,22 @@
             android:visibility="gone" />
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/channel_comments_loading_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center">
+        <ProgressBar
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:visibility="visible" />
+    </LinearLayout>
+
     <androidx.core.widget.NestedScrollView
         android:id="@+id/channel_comments_area"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="gone">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -44,9 +56,8 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/channel_disabled_comments"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
                 android:visibility="gone" />
 
@@ -57,9 +68,8 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/no_comments"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
                 android:visibility="gone" />
 

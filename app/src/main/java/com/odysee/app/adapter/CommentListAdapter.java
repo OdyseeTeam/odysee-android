@@ -49,8 +49,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
     @Setter
     private ClaimListAdapter.ClaimListItemListener listener;
+    @Getter
     @Setter
-    public Boolean collapsed = true;
+    private Boolean collapsed = true;
+
     private List<String> childsToBeShown;
 
     private final Claim claim;
@@ -558,6 +560,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             }
         }
         notifyItemRangeChanged(firstChild, lastIndex - firstChild);
+    }
+
+    public boolean isCollapsed() {
+        return collapsed;
     }
 
     public interface CommentListListener {

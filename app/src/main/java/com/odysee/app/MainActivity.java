@@ -8,6 +8,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.content.BroadcastReceiver;
@@ -232,6 +234,7 @@ import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
+import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
@@ -257,7 +260,7 @@ import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
-    private static final String CHANNEL_ID_PLAYBACK = "com.odysee.app.LBRY_PLAYBACK_CHANNEL";
+    private static final String PLAYER_NOTIFICATION_CHANNEL_ID = "com.odysee.app.PLAYER_NOTIFICATION_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
     private static final String SPECIAL_URL_PREFIX = "lbry://?";
     private static final int REMOTE_NOTIFICATION_REFRESH_TTL = 300000; // 5 minutes
@@ -355,7 +358,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // preference keys
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
-    public static final String PREFERENCE_KEY_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
+    public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
+    public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -374,6 +379,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_REWARDS_NOT_INTERESTED = "com.odysee.app.preference.internal.RewardsNotInterested";
     public static final String PREFERENCE_KEY_INTERNAL_NEW_ANDROID_REWARD_CLAIMED = "com.odysee.app.preference.internal.NewAndroidRewardClaimed";
     public static final String PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE = "com.odysee.app.preference.internal.InitialSubscriptionMergeDone";
+    public static final String PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED = "com.odysee.app.preference.internal.InitialBlockedListLoaded";
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
@@ -509,13 +515,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // pass
         }
 
+        // create player notification channel
+        NotificationManager notificationManager =  (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    PLAYER_NOTIFICATION_CHANNEL_ID, "Odysee Player", NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("Odysee player notification channel");
+            channel.setShowBadge(false);
+            notificationManager.createNotificationChannel(channel);
+        }
+
         dbHelper = new DatabaseHelper(this);
         checkNotificationOpenIntent(getIntent());
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        updateMiniPlayerMargins();
+        updateMiniPlayerMargins(true);
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled by default */) {
             @Override
             public void handleOnBackPressed() {
@@ -543,7 +559,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         establishBillingClientConnection();
 
         playerNotificationManager = new PlayerNotificationManager.Builder(
-                this, PLAYBACK_NOTIFICATION_ID, "io.lbry.browser.DAEMON_NOTIFICATION_CHANNEL", new PlayerNotificationDescriptionAdapter()).build();
+                this, PLAYBACK_NOTIFICATION_ID, PLAYER_NOTIFICATION_CHANNEL_ID, new PlayerNotificationDescriptionAdapter()).build();
 
         // TODO: Check Google Play Services availability
         // castContext = CastContext.getSharedInstance(this);
@@ -658,7 +674,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         break;
                 }
 
-                currentDisplayFragment = selectedFragment;
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container_main_activity, selectedFragment, fragmentTag).commit();
 
@@ -717,7 +732,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     String query = queryText.getText().toString();
-                    ((SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH")).search(query, 0);
+
+                    SearchFragment fragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+                    currentDisplayFragment = fragment;
+                    fragment.search(query, 0);
                 }
             }
         });
@@ -802,6 +820,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     signUserButton.setVisibility(View.VISIBLE);
                     signUserButton.setText(getString(R.string.sign_up_log_in));
                 }
+
+                customView.findViewById(R.id.button_app_settings).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        openFragment(SettingsFragment.class, true, null);
+                    }
+                });
 
                 customView.findViewById(R.id.button_community_guidelines).setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -966,15 +992,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }
-    private void updateMiniPlayerMargins() {
-        // mini-player bottom margin setting
-        /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        int miniPlayerBottomMargin = Helper.parseInt(
-                sp.getString(PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN, String.valueOf(DEFAULT_MINI_PLAYER_MARGIN)), DEFAULT_MINI_PLAYER_MARGIN);
-        */
+    public void updateMiniPlayerMargins(boolean withBottomNavigation) {
         RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
-        int scaledMiniPlayerBottomMargin = bottomNavigationHeight + getScaledValue(2);
+        int scaledMiniPlayerBottomMargin = (withBottomNavigation ? bottomNavigationHeight : 0) + getScaledValue(2);
+        android.util.Log.d("#HELP", "updateMiniPlayerMargin=" + withBottomNavigation + "; bottom=" + scaledMiniPlayerBottomMargin);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -986,19 +1008,28 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public boolean isBackgroundPlaybackEnabled() {
-        return false; // TODO This is a workaround for audio keep playing after app is no longer on the foreground
-//        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-//        return sp.getBoolean(PREFERENCE_KEY_BACKGROUND_PLAYBACK, true);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
+    }
+
+    public boolean isContinueBackgroundPlaybackPIPModeEnabled() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE, false);
     }
 
     public boolean isMediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_MEDIA_AUTOPLAY, true);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
     }
 
     public boolean initialSubscriptionMergeDone() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE, false);
+    }
+
+    public boolean initialBlockedListLoaded() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, false);
     }
 
     private void initSpecialRouteMap() {
@@ -1275,6 +1306,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     };
 
+    public void showAppBar() {
+        findViewById(R.id.appbar).setVisibility(View.VISIBLE);
+    }
+
     private void renderPictureInPictureMode() {
         findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
@@ -1311,15 +1346,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         }
 
-        findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
-        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-        findViewById(R.id.appbar).setVisibility(View.VISIBLE);
-        showBottomNavigation();
-
-        findViewById(R.id.content_main).setVisibility(View.GONE);
         Fragment fragment = getCurrentFragment();
-        if (!(fragment instanceof FileViewFragment) && !inFullscreenMode && nowPlayingClaim != null) {
+        boolean inMainView = currentDisplayFragment == null;
+        boolean inFileView = fragment instanceof FileViewFragment;
+        boolean inChannelView = fragment instanceof ChannelFragment;
+        boolean inSearchView = fragment instanceof SearchFragment;
+
+        findViewById(R.id.main_activity_other_fragment).setVisibility(!inMainView ? View.VISIBLE : View.GONE);
+        findViewById(R.id.content_main).setVisibility(View.VISIBLE);
+
+        findViewById(R.id.fragment_container_main_activity).setVisibility(inMainView ? View.VISIBLE : View.GONE);
+        if (inMainView) {
+            showBottomNavigation();
+        }
+        findViewById(R.id.appbar).setVisibility(inMainView || inSearchView ? View.VISIBLE : View.GONE);
+        if (!inFileView && !inFullscreenMode && nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
+            setPlayerForMiniPlayerView();
         }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
@@ -1327,6 +1370,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         pipPlayer.setPlayer(null);
         pipPlayerContainer.setVisibility(View.GONE);
         playerReassigned = true;
+    }
+
+    private void setPlayerForMiniPlayerView() {
+        PlayerView view = findViewById(R.id.global_now_playing_player_view);
+        if (view != null) {
+            view.setVisibility(View.VISIBLE);
+            view.setPlayer(null);
+            view.setPlayer(MainActivity.appPlayer);
+        }
     }
 
     @Override
@@ -1473,7 +1525,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkPurchases();
         checkWebSocketClient();
         checkBottomNavigationHeight();
-        updateMiniPlayerMargins();
+        updateMiniPlayerMargins(findViewById(R.id.bottom_navigation).getVisibility() == View.VISIBLE);
         enteringPIPMode = false;
 
         checkNowPlaying();
@@ -1506,7 +1558,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         if (viewHeight != 0) {
                             bottomNavigationHeight = viewHeight;
                             bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                            updateMiniPlayerMargins();
+                            updateMiniPlayerMargins(true);
                         }
                     }
                 });
@@ -2129,7 +2181,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void initMediaSession() {
         ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(), MediaButtonReceiver.class);
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "LBRYMediaSession", mediaButtonReceiver, null);
+        mediaSession = new MediaSessionCompat(this, "LBRYMediaSession", mediaButtonReceiver, null);
         MediaSessionConnector connector = new MediaSessionConnector(mediaSession);
         connector.setPlayer(MainActivity.appPlayer);
         mediaSession.setActive(true);
@@ -2154,9 +2206,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN.equalsIgnoreCase(key)) {
-            updateMiniPlayerMargins();
-        }
+
     }
 
     @Override
@@ -2524,7 +2574,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!userSyncEnabled()) {
             return;
         }
-        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
+        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, this, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
             @Override
             public void onSuccess() {
                 // push wallet sync changes
@@ -2563,7 +2613,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             Lbryio.cacheResolvedSubscriptions.clear();
 
                             FollowingFragment f = (FollowingFragment) getSupportFragmentManager().findFragmentByTag("FOLLOWING");
-
                             if (f != null) {
                                 f.fetchLoadedSubscriptions(true);
                             }
@@ -2582,8 +2631,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Lbry.followedTags = new ArrayList<>(followedTags);
 
                     AllContentFragment f = (AllContentFragment) getSupportFragmentManager().findFragmentByTag("HOME");
-
-                    if (f!= null) {
+                    if (f != null) {
                         if (!f.isSingleTagView() &&
                                 f.getCurrentContentScope() == ContentScopeDialogFragment.ITEM_TAGS &&
                                 !previousTags.equals(followedTags)) {
@@ -2593,14 +2641,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
 
                 if (blockedChannels != null && blockedChannels.size() > 0) {
-                    // TODO: Find out the most recently updated blocked channels and merge / update?
-                    List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
-                    for (LbryUri uri : blockedChannels) {
-                        if (!newBlockedChannels.contains(uri)) {
-                            newBlockedChannels.add(uri);
+                    if (!initialBlockedListLoaded()) {
+                        // first time the blocked list is loaded, so we attempt to merge the entries
+                        List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+                        for (LbryUri uri : blockedChannels) {
+                            if (!newBlockedChannels.contains(uri)) {
+                                newBlockedChannels.add(uri);
+                            }
                         }
+
+                        Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                        sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, true).apply();
+                    } else {
+                        // replace the blocked channels list entirely
+                        Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
                     }
-                    Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
                 }
             }
 
@@ -2950,7 +3006,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+
         hideBottomNavigation();
+        updateMiniPlayerMargins(false);
         ((ImageView) findViewById(R.id.notifications_toggle_icon)).setColorFilter(ContextCompat.getColor(this, R.color.colorAccent));
         if (isSignedIn()) {
             if (remoteNotifcationsLastLoaded == null ||
@@ -2976,6 +3034,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!isInPictureInPictureMode() && hideSingleContentView) {
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
             showBottomNavigation();
+            updateMiniPlayerMargins(true);
         }
     }
 
@@ -3403,42 +3462,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Lbryio.newInstall(context);
                     startupStages.set(STARTUP_STAGE_NEW_INSTALL_DONE - 1, new StartupStage(STARTUP_STAGE_NEW_INSTALL_DONE, true));
 
-                    // (light) fetch subscriptions
-                    if (Lbryio.subscriptions.size() == 0) {
-                        List<Subscription> subscriptions = new ArrayList<>();
-                        List<String> subUrls = new ArrayList<>();
-                        JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("subscription", "list", context));
-                        if (array != null) {
-                            for (int i = 0; i < array.length(); i++) {
-                                JSONObject item = array.getJSONObject(i);
-                                String claimId = item.getString("claim_id");
-                                String channelName = item.getString("channel_name");
-                                boolean isNotificationsDisabled = item.getBoolean("is_notifications_disabled");
-
-                                LbryUri url = new LbryUri();
-                                url.setChannelName(channelName);
-                                url.setClaimId(claimId);
-                                subscriptions.add(new Subscription(channelName, url.toString(), isNotificationsDisabled));
-                                subUrls.add(url.toString());
-                            }
-                            Lbryio.subscriptions = subscriptions;
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-
-                            // resolve subscriptions
-                            if (subUrls.size() > 0 && Lbryio.cacheResolvedSubscriptions.size() != Lbryio.subscriptions.size()) {
-                                Lbryio.cacheResolvedSubscriptions = Lbry.resolve(subUrls, Lbry.API_CONNECTION_STRING);
-                            }
-                            // if no exceptions occurred here, subscriptions have been loaded and resolved
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                        } else {
-                            // user has not subscribed to anything
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-                            startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                        }
-                    } else {
-                        startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
-                        startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
-                    }
+                    startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_LOADED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_LOADED, true));
+                    startupStages.set(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED - 1, new StartupStage(STARTUP_STAGE_SUBSCRIPTIONS_RESOLVED, true));
 
                     JSONObject blockedObject = (JSONObject) Lbryio.parseResponse(Lbryio.call("file", "list_blocked", context));
                     JSONArray blockedArray = blockedObject.getJSONArray("outpoints");
@@ -3641,8 +3666,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 appPlayer != null &&
                 !startingFilePickerActivity &&
-                !startingSignInFlowActivity &&
-                !isSearchUIActive()) {
+                !startingSignInFlowActivity) {
             enteringPIPMode = true;
             PictureInPictureParams params = new PictureInPictureParams.Builder().build();
 
@@ -3737,7 +3761,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     protected void onStop() {
-        if (appPlayer != null && inPictureInPictureMode && !isBackgroundPlaybackEnabled()) {
+        if (appPlayer != null && inPictureInPictureMode &&
+                (isBackgroundPlaybackEnabled() && !isContinueBackgroundPlaybackPIPModeEnabled())) {
             appPlayer.setPlayWhenReady(false);
         }
         if (inPictureInPictureMode) {
@@ -4468,5 +4493,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    public void updateCurrentDisplayFragment(Fragment fragment) {
+        this.currentDisplayFragment = fragment;
+    }
+
+    public void resetCurrentDisplayFragment() {
+        currentDisplayFragment = null;
     }
 }

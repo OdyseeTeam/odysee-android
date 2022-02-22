@@ -258,7 +258,7 @@
 
     <!-- Wallet -->
     <string name="balance">Balanç</string>
-    <string name="convert_credits">Pots convertir els teus crèdits a USD i retirar la quantitat convertida emprant un intercanvi. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Aprèn-ne més&lt;/a&gt;.</string>
+    <string name="convert_credits">Pots convertir els teus crèdits a USD i retirar la quantitat convertida emprant un intercanvi. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Aprèn-ne més&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converteix crèdits a USD a Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Una còpia de seguretat de la teva cartera està sincronitzada amb lbry.tv.</string>

@@ -22,10 +22,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textSize="48sp"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                android:textColor="@color/white" />
         </RelativeLayout>
         <RelativeLayout
             android:id="@+id/channel_filter_all_container"
@@ -37,9 +36,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textAllCaps="true"
-                android:textFontWeight="300"
                 android:text="@string/all" />
         </RelativeLayout>
         <ImageView

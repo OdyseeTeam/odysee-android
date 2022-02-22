@@ -403,7 +403,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         Helper.setWunderbarValue(url, context);
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.updateCurrentDisplayFragment(this);
             activity.addFetchChannelsListener(this);
+            activity.updateMiniPlayerMargins(false);
             LbryAnalytics.setCurrentScreen(activity, "Channel", "Channel");
         }
 
@@ -415,9 +417,20 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     public void onPause() {
         Context context = getContext();
         if (context instanceof MainActivity) {
-            ((MainActivity) context).removeFetchChannelsListener(this);
+            MainActivity activity = (MainActivity) context;
+            activity.updateMiniPlayerMargins(true);
+            activity.removeFetchChannelsListener(this);
         }
         super.onPause();
+    }
+
+    public void onStop() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.resetCurrentDisplayFragment();
+        }
+        super.onStop();
     }
 
     private void checkParams() {

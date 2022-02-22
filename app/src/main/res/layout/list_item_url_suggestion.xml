@@ -33,12 +33,10 @@
         <TextView
             android:id="@+id/url_suggestion_description"
             android:ellipsize="end"
-            android:fontFamily="@font/inter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:singleLine="true"
-            android:textSize="12sp"
-            android:textColor="@color/uriDescBlue"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textColor="@color/uriDescBlue" />
     </LinearLayout>
 </RelativeLayout>

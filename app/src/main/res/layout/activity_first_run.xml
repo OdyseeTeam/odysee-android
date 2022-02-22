@@ -26,6 +26,7 @@
                 android:layout_width="130dp"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:fontFamily="@font/inter"
                 android:text="@string/skip"
                 android:textColor="@color/colorPrimary" />
 
@@ -71,6 +72,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:singleLine="true"
+                android:fontFamily="@font/inter"
                 android:text="@string/continue_text"
                 android:textColor="@color/colorPrimary" />
             <ProgressBar

@@ -20,6 +20,7 @@
     <string name="close">Close</string>
     <string name="invites">Invites</string>
     <string name="settings">Settings</string>
+    <string name="app_settings">App Settings</string>
     <string name="about">About</string>
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign out</string>
@@ -293,6 +294,7 @@
     <string name="user_interface">Content &amp; User interface</string>
     <string name="other">Other</string>
     <string name="enable_background_playback">Enable background playback</string>
+    <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
     <string name="enable_dark_mode">Enable dark theme</string>
     <string name="show_mature_content">Show mature content</string>
@@ -322,7 +324,7 @@
     <string name="balance">Balance</string>
     <string name="your_total_balance">Your total balance.</string>
     <string name="all_of_this_is_yours">Your total balance. All of this is yours, but some credits are in use on channels and content right now.</string>
-    <string name="convert_credits">You can convert your credits to USD and withdraw the converted amount using an exchange. &lt;a href="https://lbry.com/faq/exchanges"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits">You can convert your credits to USD and withdraw the converted amount using an exchange. &lt;a href="https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href="https://bittrex.com/Account/Register?referralCode=4M1-P30-BON"&gt;Exchange your Credits&lt;/a&gt;</string>
     <string name="immediately_spendable">immediately spendable</string>
     <string name="boosting_content">boosting content</string>
@@ -564,7 +566,8 @@
     <string name="uploading">Uploading…</string>
     <string name="uploading_thumbnail">Uploading thumbnail…</string>
     <string name="please_enter_channel_name">Please enter a channel name.</string>
-    <string name="channel_name_invalid_characters">Your channel name contains invalid characters.</string>
+    <string name="first_run_youtube_sync_opt_in">Sync your YouTube channel instead (requires a minimum of 300 subscribers).</string>
+    <string name="channel_name_invalid_characters">Your channel name cannot contain spaces or reserved symbols (?$#@;:/\="&lt;&gt;%{}|^~[]`).</string>
     <string name="channel_name_already_created">You have already created a channel with the same name.</string>
     <string name="please_enter_valid_deposit">Please enter a valid deposit amount.</string>
     <string name="deposit_more_than_balance">Deposit cannot be higher than your balance.</string>

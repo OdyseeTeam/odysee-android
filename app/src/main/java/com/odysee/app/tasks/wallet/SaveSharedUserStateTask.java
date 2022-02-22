@@ -1,5 +1,8 @@
 package com.odysee.app.tasks.wallet;
 
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 
 import org.json.JSONArray;
@@ -11,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.odysee.app.MainActivity;
+import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.model.lbryinc.Subscription;
@@ -36,16 +41,35 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     private final SaveSharedUserStateHandler handler;
     private Exception error;
     private String authToken;
+    private Context context;
 
-    public SaveSharedUserStateTask(String authToken, SaveSharedUserStateHandler handler) {
+    public SaveSharedUserStateTask(String authToken, Context context, SaveSharedUserStateHandler handler) {
         this.authToken = authToken;
         this.handler = handler;
+        this.context = context;
     }
 
     protected Boolean doInBackground(Void... params) {
+        boolean loadedSubs = false;
+        boolean loadedBlocked = false;
+
+        SQLiteDatabase db = null;
+        if (context instanceof MainActivity) {
+            db = ((MainActivity) context).getDbHelper().getReadableDatabase();
+        }
+
         // data to save
         // current subscriptions
-        List<Subscription> subs = new ArrayList<>(Lbryio.subscriptions);
+        List<Subscription> subs = new ArrayList<>();
+        try {
+            if (db != null) {
+                subs = new ArrayList<>(DatabaseHelper.getSubscriptions(db));
+                loadedSubs = true;
+            }
+        } catch (SQLiteException ex) {
+            // pass
+        }
+
         List<String> subscriptionUrls = new ArrayList<>();
         try {
             for (Subscription subscription : subs) {
@@ -61,7 +85,16 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         List<String> followedTags = Helper.getTagsForTagObjects(Lbry.followedTags);
 
         // blocked channels
-        List<LbryUri> blockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+        List<LbryUri> blockedChannels = new ArrayList<>();
+        try {
+            if (db != null) {
+                blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                loadedBlocked = true;
+            }
+        } catch (SQLiteException ex) {
+            // pass
+        }
+
         List<String> blockedChannelUrls = new ArrayList<>();
         for (LbryUri uri : blockedChannels) {
             blockedChannelUrls.add(uri.toString());
@@ -79,10 +112,16 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         && shared.has("value")) {
                     isExistingValid = true;
                     JSONObject value = shared.getJSONObject("value");
-                    value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
+                    if (loadedSubs) {
+                        // make sure the subs were actually loaded from the local store before overwriting the data
+                        value.put("subscriptions", Helper.jsonArrayFromList(subscriptionUrls));
+                        value.put("following", buildUpdatedNotificationsDisabledStates(subs));
+                    }
                     value.put("tags", Helper.jsonArrayFromList(followedTags));
-                    value.put("following", buildUpdatedNotificationsDisabledStates(subs));
-                    value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
+                    if (loadedBlocked) {
+                        // make sure blocked list was actually loaded from the local store before overwriting
+                        value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
+                    }
                     sharedObject = shared;
                 }
             }

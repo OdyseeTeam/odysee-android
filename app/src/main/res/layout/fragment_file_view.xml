@@ -26,10 +26,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/loading_content"
-                android:textSize="16sp"
-                android:textFontWeight="300" />
+                android:textSize="16sp" />
         </LinearLayout>
 
         <include layout="@layout/container_nothing_at_location" />
@@ -103,9 +102,8 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:layout_marginStart="1dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:textColor="@android:color/black"
-                        android:textFontWeight="300"
                         android:textSize="14sp" />
                 </LinearLayout>
             </RelativeLayout>
@@ -180,10 +178,9 @@
                         android:id="@+id/file_view_unsupported_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/unsupported_content_desc"
                         android:textColor="@color/white"
-                        android:textFontWeight="300"
                         android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -262,18 +259,14 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginEnd="16dp"
-                                android:fontFamily="@font/inter"
-                                android:textFontWeight="300"
-                                android:textSize="12sp"
+                                style="@style/TextView_Light"
                                 android:visibility="gone" />
 
                             <TextView
                                 android:id="@+id/file_view_publish_time"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
-                                android:textFontWeight="300"
-                                android:textSize="12sp" />
+                                style="@style/TextView_Light" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -683,10 +676,9 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_centerInParent="true"
-                                    android:fontFamily="@font/inter"
+                                    style="@style/TextView_Light"
                                     android:textAllCaps="true"
                                     android:textColor="@color/white"
-                                    android:textFontWeight="300"
                                     android:textSize="24sp" />
                             </RelativeLayout>
 
@@ -708,8 +700,7 @@
                                 android:id="@+id/file_view_publisher_title"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/inter"
-                                android:textFontWeight="300"
+                                style="@style/TextView_Light"
                                 android:textSize="14sp"
                                 android:visibility="gone" />
 
@@ -808,10 +799,8 @@
                         android:layout_marginStart="16dp"
                         android:layout_marginEnd="16dp"
                         android:autoLink="all"
-                        android:fontFamily="@font/inter"
-                        android:textColorLink="@color/odyseePink"
-                        android:textFontWeight="300"
-                        android:textSize="12sp" />
+                        style="@style/TextView_Light"
+                        android:textColorLink="@color/odyseePink" />
 
                     <LinearLayout
                         android:id="@+id/file_view_tag_area"
@@ -827,9 +816,8 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="2"
-                            android:fontFamily="@font/inter"
                             android:text="@string/tags"
-                            android:textFontWeight="600"
+                            style="@style/TextView_SemiBold"
                             android:textSize="12sp" />
 
                         <androidx.recyclerview.widget.RecyclerView
@@ -846,6 +834,17 @@
                         android:layout_marginTop="12dp"
                         android:layout_marginBottom="12dp"
                         android:background="@color/divider" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/file_comments_loading"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center">
+                    <ProgressBar
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:visibility="visible" />
                 </LinearLayout>
 
                 <LinearLayout android:id="@+id/file_view_comments_area"
@@ -897,9 +896,8 @@
                         android:layout_marginStart="16dp"
                         android:layout_marginTop="8dp"
                         android:layout_marginEnd="16dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/creator_disabled_comments"
-                        android:textFontWeight="300"
                         android:textSize="14sp"
                         android:visibility="gone" />
 
@@ -910,9 +908,8 @@
                         android:layout_marginStart="16dp"
                         android:layout_marginTop="8dp"
                         android:layout_marginEnd="16dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/no_comments"
-                        android:textFontWeight="300"
                         android:textSize="14sp"
                         android:visibility="gone" />
 
@@ -970,9 +967,8 @@
                         android:layout_marginStart="16dp"
                         android:layout_marginTop="8dp"
                         android:layout_marginEnd="16dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/no_related_content"
-                        android:textFontWeight="300"
                         android:textSize="14sp"
                         android:visibility="gone" />
 

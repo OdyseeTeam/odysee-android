@@ -41,7 +41,7 @@ public class YouTubeSyncSetupFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_youtube_sync_setup, container, false);
 
         switchWantToSync = root.findViewById(R.id.youtube_sync_switch_want_to_sync);
-        //switchWantToSync.setMovementMethod(LinkMovementMethod.getInstance());
+        switchWantToSync.setMovementMethod(LinkMovementMethod.getInstance());
         switchWantToSync.setText(HtmlCompat.fromHtml(getString(R.string.i_want_to_sync), HtmlCompat.FROM_HTML_MODE_LEGACY));
 
         textHint = root.findViewById(R.id.youtube_sync_hint);

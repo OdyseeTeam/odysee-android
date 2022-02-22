@@ -107,11 +107,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     private View loadingRecentContainer;
     private View inlineBalanceContainer;
     private TextView textWalletInlineBalance;
-    private MaterialButton buttonBuyLBC;
     private RecyclerView recentTransactionsList;
     private View linkViewAll;
     private TextView textConvertCredits;
-    private TextView textConvertCreditsBittrex;
     private TextView textWhatSyncMeans;
     private TextView textWalletReceiveAddress;
     private TextView textWalletHintSyncStatus;
@@ -150,7 +148,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         recentTransactionsList = root.findViewById(R.id.wallet_recent_transactions_list);
         linkViewAll = root.findViewById(R.id.wallet_link_view_all);
         textNoRecentTransactions = root.findViewById(R.id.wallet_no_recent_transactions);
-        buttonBuyLBC = root.findViewById(R.id.wallet_buy_lbc_button);
         textConvertCredits = root.findViewById(R.id.wallet_hint_convert_credits);
         textWhatSyncMeans = root.findViewById(R.id.wallet_hint_what_sync_means);
         textWalletReceiveAddress = root.findViewById(R.id.wallet_receive_address);
@@ -196,7 +193,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         AccountManager am = AccountManager.get(getContext());
         Account[] accounts = am.getAccounts();
 
-        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(accounts[0], "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(Helper.getOdyseeAccount(accounts), "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
             @Override
             public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
                 hasFetchedRecentTransactions = true;
@@ -336,13 +333,6 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                 if (validateSend()) {
                     sendCredits();
                 }
-            }
-        });
-
-        buttonBuyLBC.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                launchMoonpayFlow();
             }
         });
 

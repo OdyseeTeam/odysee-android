@@ -49,9 +49,9 @@ import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
-import com.odysee.app.tasks.lbryinc.FetchSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.listener.ChannelItemSelectionListener;
+import com.odysee.app.tasks.lbryinc.FetchSubscriptionsTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.Helper;
@@ -98,6 +98,8 @@ public class FollowingFragment extends BaseFragment implements
     private View noContentView;
     private boolean subscriptionsShown;
 
+    private View findFollowingContainer;
+
     private final List<Integer> queuedContentPages = new ArrayList<>();
     private final List<Integer> queuedSuggestedPages = new ArrayList<>();
 
@@ -130,6 +132,7 @@ public class FollowingFragment extends BaseFragment implements
         currentSortBy = ContentSortDialogFragment.ITEM_SORT_BY_NEW;
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
 
+        findFollowingContainer = root.findViewById(R.id.find_following_container);
         titleView = root.findViewById(R.id.find_following_page_title);
         infoView = root.findViewById(R.id.following_page_info);
         horizontalChannelList = root.findViewById(R.id.following_channel_list);
@@ -418,7 +421,7 @@ public class FollowingFragment extends BaseFragment implements
     }
 
     private void fetchSubscriptions() {
-        FetchSubscriptionsTask task = new FetchSubscriptionsTask(getContext(), channelListLoading, this);
+        FetchSubscriptionsTask task = new FetchSubscriptionsTask(getContext(), channelListLoading, Lbryio.AUTH_TOKEN, this);
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -437,7 +440,6 @@ public class FollowingFragment extends BaseFragment implements
                 break;
             }
         }
-
 
         return Lbry.buildClaimSearchOptions(
                 Claim.TYPE_CHANNEL,
@@ -499,6 +501,7 @@ public class FollowingFragment extends BaseFragment implements
         Helper.setViewVisibility(contentList, View.GONE);
         Helper.setViewVisibility(infoView, View.VISIBLE);
         Helper.setViewVisibility(layoutSortContainer, View.GONE);
+        Helper.setViewVisibility(findFollowingContainer, View.VISIBLE);
         Helper.setViewVisibility(suggestedChannelGrid, View.VISIBLE);
         Helper.setViewVisibility(suggestedDoneButton, View.VISIBLE);
 
@@ -513,6 +516,7 @@ public class FollowingFragment extends BaseFragment implements
         Helper.setViewVisibility(infoView, View.GONE);
         Helper.setViewVisibility(layoutSortContainer, View.VISIBLE);
         Helper.setViewVisibility(filterLink, View.VISIBLE);
+        Helper.setViewVisibility(findFollowingContainer, View.GONE);
         Helper.setViewVisibility(suggestedChannelGrid, View.GONE);
         Helper.setViewVisibility(suggestedDoneButton, View.GONE);
     }
@@ -641,7 +645,10 @@ public class FollowingFragment extends BaseFragment implements
                 cal.setTime(d);
 
                 // Remove claims with a release time in the future
-                claims.removeIf(e -> ((Claim.StreamMetadata) e.getValue()).getReleaseTime() > (cal.getTimeInMillis() / 1000L));
+                claims.removeIf(e -> {
+                    Claim.GenericMetadata metadata = e.getValue();
+                    return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
+                });
 
                 // Sort claims so those which are livestreaming now are shwon on the top of the list
                 Collections.sort(claims, new Comparator<Claim>() {

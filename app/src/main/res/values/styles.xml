@@ -97,4 +97,11 @@
         <item name="android:background">@android:color/transparent</item>
         <item name="android:padding">0dp</item>
     </style>
+    <style name="TextView_Light">
+        <item name="android:fontFamily">@font/inter_light</item>
+        <item name="textSize">12sp</item>
+    </style>
+    <style name="TextView_SemiBold">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+    </style>
 </resources>

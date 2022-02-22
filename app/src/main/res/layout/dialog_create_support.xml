@@ -28,9 +28,8 @@
             android:id="@+id/create_support_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:text="@string/send_tip_info_content"
-            android:textFontWeight="300"
             android:textSize="14sp" />
 
         <View
@@ -88,11 +87,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="30dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/lbc"
                 android:textAllCaps="true"
-                android:textSize="10sp"
-                android:textFontWeight="300" />
+                android:textSize="11sp" />
 
             <LinearLayout
                 android:id="@+id/create_support_inline_balance_container"
@@ -112,8 +110,7 @@
                     android:id="@+id/create_support_inline_balance_value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:layout_marginStart="2dp" />
             </LinearLayout>
         </RelativeLayout>
@@ -126,8 +123,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:text="@string/make_this_a_tip"
-            android:fontFamily="@font/inter"
-            android:textFontWeight="300"
+            style="@style/TextView_Light"
             android:textSize="14sp" />
 
         <RelativeLayout
@@ -140,9 +136,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:fontFamily="@font/inter"
                 android:text="@string/cancel"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="14sp" />
 
             <ProgressBar

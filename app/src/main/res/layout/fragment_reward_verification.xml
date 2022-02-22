@@ -34,10 +34,9 @@
             android:layout_marginEnd="36dp"
             android:layout_marginBottom="16dp"
             android:text="@string/reward_verification"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textColor="@color/title_text"
-            android:textSize="24sp"
-            android:textFontWeight="300" />
+            android:textSize="24sp" />
 
         <TextView
             android:id="@+id/first_run_reward_verification_desc"
@@ -45,10 +44,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="36dp"
             android:layout_marginEnd="36dp"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:textSize="16sp"
-            android:text="@string/not_reward_eligible"
-            android:textFontWeight="300" />
+            android:text="@string/not_reward_eligible" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/reward_verification_options_tabs"

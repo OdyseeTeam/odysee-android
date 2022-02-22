@@ -189,6 +189,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -222,8 +223,10 @@ public class FileViewFragment extends BaseFragment implements
     private Claim claim;
     private String currentUrl;
     private ClaimListAdapter relatedContentAdapter;
+    private CommentEnabledCheck commentEnabledCheck;
     private CommentListAdapter commentListAdapter;
     private Player.Listener fileViewPlayerListener;
+    private View commentLoadingArea;
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
@@ -290,6 +293,12 @@ public class FileViewFragment extends BaseFragment implements
     // if this is set, scroll to the specific comment on load
     private String commentHash;
 
+    @Override
+    public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        commentEnabledCheck = new CommentEnabledCheck();
+    }
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_file_view, container, false);
@@ -321,6 +330,7 @@ public class FileViewFragment extends BaseFragment implements
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
+        commentLoadingArea = root.findViewById(R.id.file_comments_loading);
 
         likeReactionAmount = root.findViewById(R.id.likes_amount);
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
@@ -436,6 +446,7 @@ public class FileViewFragment extends BaseFragment implements
             if (params != null) {
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
+                    // Only update fragment if new claim is different than currently being played
                     if (newClaim != null && !newClaim.equals(this.claim)) {
                         updateRequired = true;
                     }
@@ -473,22 +484,17 @@ public class FileViewFragment extends BaseFragment implements
 
             boolean invalidRepost = false;
             if (updateRequired) {
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).clearNowPlayingClaim();
-                }
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.setPlayWhenReady(false);
-                }
-
                 resetViewCount();
                 resetFee();
                 checkNewClaimAndUrl(newClaim, newUrl);
 
+                // This is required to recycle current fragment with new claim from related content
                 claim = null;
 
                 if (newClaim != null) {
                     claim = newClaim;
                 }
+
                 if (claim == null && !Helper.isNullOrEmpty(newUrl)) {
                     // check if the claim is already cached
                     currentUrl = newUrl;
@@ -582,8 +588,10 @@ public class FileViewFragment extends BaseFragment implements
         if (!shouldResetNowPlaying &&
                 newUrl != null &&
                 MainActivity.nowPlayingClaim != null &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaimUrl) &&
                 !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getShortUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl())) {
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl()) &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getCanonicalUrl())) {
             shouldResetNowPlaying = true;
         }
 
@@ -681,10 +689,6 @@ public class FileViewFragment extends BaseFragment implements
             ((RecyclerView) root.findViewById(R.id.file_view_related_content_list)).setAdapter(null);
             ((RecyclerView) root.findViewById(R.id.file_view_comments_list)).setAdapter(null);
         }
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.setPlayWhenReady(false);
-        }
-        resetPlayer();
     }
 
     private String getStreamingUrl() {
@@ -787,6 +791,7 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "File", "File");
+            activity.updateCurrentDisplayFragment(this);
             if (claim != null && claim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
@@ -810,6 +815,7 @@ public class FileViewFragment extends BaseFragment implements
             updatePlaybackSpeedView(root);
             loadAndScheduleDurations();
         }
+
         checkOwnClaim();
         fetchChannels();
         applyFilterForBlockedChannels(Lbryio.blockedChannels);
@@ -834,7 +840,10 @@ public class FileViewFragment extends BaseFragment implements
             activity.removeStoragePermissionListener(this);
             activity.removeWalletBalanceListener(this);
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            activity.showAppBar();
             activity.checkNowPlaying();
+
+            activity.resetCurrentDisplayFragment();
         }
 
         closeWebView();
@@ -1317,8 +1326,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 // Prevents crash for when comment list isn't loaded yet but user tries to expand.
-                if ( commentListAdapter != null ) {
-                    switchCommentListVisibility(commentListAdapter.collapsed);
+                if (commentListAdapter != null) {
+                    switchCommentListVisibility(commentListAdapter.isCollapsed());
                     commentListAdapter.switchExpandedState();
                 }
             }
@@ -1730,21 +1739,40 @@ public class FileViewFragment extends BaseFragment implements
     private void checkAndLoadComments(boolean forceReload) {
         View root = getView();
         if (root != null) {
+            View expandCommentArea = root.findViewById(R.id.expand_commentarea_button);
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
-            if (claim.getTags().contains("disable-comments") || claim.getSigningChannel().getTags().contains("disable-comments")) {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
-                Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentsList, View.GONE);
-            } else {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
-                Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
-                    loadComments();
+
+            commentLoadingArea.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                Activity activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isEnabled) {
+                            showComments(expandCommentArea, commentsDisabledText, commentsList);
+                            if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
+                                loadComments();
+                            }
+                        } else {
+                            hideComments(expandCommentArea, commentsDisabledText, commentsList);
+                        }
+                        commentLoadingArea.setVisibility(View.GONE);
+                    });
                 }
-            }
+            });
         }
+    }
+
+    private void showComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
+        Helper.setViewVisibility(commentsDisabledText, View.GONE);
+        Helper.setViewVisibility(commentsList, View.VISIBLE);
+    }
+
+    private void hideComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
+        Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
+        Helper.setViewVisibility(commentsList, View.GONE);
     }
 
     private void showUnsupportedView() {
@@ -1815,6 +1843,17 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId()) &&
                     !newPlayerCreated) {
                 // if the claim is already playing, we don't need to reload the media source
+                if (MainActivity.appPlayer != null) {
+                    MainActivity.appPlayer.setPlayWhenReady(true);
+                    playbackStarted = true;
+
+                    // reconnect the app player
+                    if (fileViewPlayerListener != null) {
+                        MainActivity.appPlayer.addListener(fileViewPlayerListener);
+                    }
+                    setPlayerForPlayerView();
+                    loadAndScheduleDurations();
+                }
                 return;
             }
 
@@ -2640,6 +2679,9 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             List<Claim> result = future.get();
 
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
                             MainActivity a = (MainActivity) getActivity();
 
                             if (a != null) {
@@ -2652,6 +2694,10 @@ public class FileViewFragment extends BaseFragment implements
                                 });
                             }
                         } catch (InterruptedException | ExecutionException e) {
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
+
                             e.printStackTrace();
                         }
                     }

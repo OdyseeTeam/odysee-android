@@ -274,7 +274,7 @@
 
     <!-- Wallet -->
     <string name="balance">מאזן</string>
-    <string name="convert_credits">ביכולתך להמיר את הקרדיט שלך ל-USD ולמשוך את הסכום המומר באמצעות חלפניה. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;למדו עוד&lt;/a&gt;.</string>
+    <string name="convert_credits">ביכולתך להמיר את הקרדיט שלך ל-USD ולמשוך את הסכום המומר באמצעות חלפניה. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;למדו עוד&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;המר קרדיט ל-USD באתר Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">גיבוי של הארנק שלך מסונכרן עם lbry.tv</string>

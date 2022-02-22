@@ -258,7 +258,7 @@
 
     <!-- Wallet -->
     <string name="balance">Saldo</string>
-    <string name="convert_credits">Você pode converter seus créditos em USD e retirar o valor convertido usando uma exchange. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Saiba mais&lt;/a&gt;.</string>
+    <string name="convert_credits">Você pode converter seus créditos em USD e retirar o valor convertido usando uma exchange. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Saiba mais&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converter creditos para USD no Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Um backup de sua carteira é sincronizado com lbry.tv</string>

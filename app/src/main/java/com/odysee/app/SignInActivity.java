@@ -31,23 +31,29 @@ import com.google.gson.reflect.TypeToken;
 import com.odysee.app.callable.UserExistsWithPassword;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.model.Tag;
 import com.odysee.app.model.WalletSync;
+import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.tasks.verification.CheckUserEmailVerifiedTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
+import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
+import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Utils;
 
 import org.json.JSONObject;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -678,7 +684,7 @@ public class SignInActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Account act = accountManager.getAccounts()[0];
+        Account act = Helper.getOdyseeAccount(accountManager.getAccounts());
         accountManager.setAuthToken(act, ARG_AUTH_TYPE, Lbryio.AUTH_TOKEN);
     }
 
@@ -714,7 +720,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override
@@ -733,6 +739,25 @@ public class SignInActivity extends Activity {
             }
         });
         applyTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void loadSharedUserStateAndFinish() {
+        // load the shared user state after wallet sync is done
+        LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(SignInActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
+            @Override
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+                Lbryio.subscriptions = new ArrayList<>(subscriptions);
+                Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
+                finishSignInActivity();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                // shouldn't happen, but if it does, finish anyway
+                finishSignInActivity();
+            }
+        }, Lbryio.AUTH_TOKEN);
+        loadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void processExistingWalletWithPassword(String password) {
@@ -758,7 +783,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override
@@ -803,7 +828,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override

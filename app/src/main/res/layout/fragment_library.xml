@@ -63,12 +63,10 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:layout_alignParentEnd="true"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/stats"
                 android:textColor="@color/odyseePink"
-                android:textFontWeight="300"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                android:visibility="gone" android:focusable="true"/>
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
     <androidx.cardview.widget.CardView
@@ -97,20 +95,18 @@
                         android:id="@+id/library_storage_stat_used"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/zero"
                         android:textColor="@color/odyseePink"
-                        android:textFontWeight="300"
                         android:textSize="30sp" />
                     <TextView
                         android:id="@+id/library_storage_stat_unit"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="3dp"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:text="@string/mb"
                         android:textColor="@color/odyseePink"
-                        android:textFontWeight="300"
                         android:textSize="20sp" />
                 </LinearLayout>
 
@@ -122,10 +118,9 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_marginTop="4dp"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/hide"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:focusable="true"/>
             </RelativeLayout>
 
             <LinearLayout
@@ -179,11 +174,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/video"
-                    android:layout_marginStart="4dp"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:layout_marginStart="4dp" />
 
                 <TextView
                     android:id="@+id/library_storage_stat_video_size"
@@ -192,10 +185,8 @@
                     android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/zero_mb"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    style="@style/TextView_Light"
+                    android:text="@string/zero_mb" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -215,11 +206,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/audio"
-                    android:layout_marginStart="4dp"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:layout_marginStart="4dp" />
 
                 <TextView
                     android:id="@+id/library_storage_stat_audio_size"
@@ -228,10 +217,8 @@
                     android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/zero_mb"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    style="@style/TextView_Light"
+                    android:text="@string/zero_mb" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -251,11 +238,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/images"
-                    android:layout_marginStart="4dp"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:layout_marginStart="4dp" />
 
                 <TextView
                     android:id="@+id/library_storage_stat_image_size"
@@ -264,10 +249,8 @@
                     android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/zero_mb"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    style="@style/TextView_Light"
+                    android:text="@string/zero_mb" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -287,11 +270,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:text="@string/other"
-                    android:layout_marginStart="4dp"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    android:layout_marginStart="4dp" />
 
                 <TextView
                     android:id="@+id/library_storage_stat_other_size"
@@ -300,10 +281,8 @@
                     android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
-                    android:fontFamily="@font/inter"
-                    android:text="@string/zero_mb"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
+                    style="@style/TextView_Light"
+                    android:text="@string/zero_mb" />
             </RelativeLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
@@ -338,11 +317,10 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/library_no_downloads"
                 android:textAlignment="center"
-                android:textSize="16sp"
-                android:textFontWeight="300" />
+                android:textSize="16sp" />
         </LinearLayout>
     </RelativeLayout>
 

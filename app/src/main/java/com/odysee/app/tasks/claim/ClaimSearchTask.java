@@ -36,7 +36,7 @@ public class ClaimSearchTask extends AsyncTask<Void, Void, List<Claim>> {
         }
     }
     protected void onPostExecute(List<Claim> claims) {
-        Helper.setViewVisibility(progressView, View.GONE);
+        Helper.setViewVisibility(progressView, View.INVISIBLE);
         if (handler != null) {
             if (claims != null) {
                 handler.onSuccess(Helper.filterInvalidReposts(claims), claims.size() < Helper.parseInt(options.get("page_size"), 0));
