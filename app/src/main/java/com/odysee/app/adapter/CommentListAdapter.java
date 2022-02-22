@@ -1,7 +1,5 @@
 package com.odysee.app.adapter;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -297,9 +295,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         holder.likesCount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AccountManager am = AccountManager.get(context);
-                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
+                if (comment.getClaimId() != null && reactListener != null) {
                     reactListener.onCommentReactClicked(comment, true);
                 }
             }
@@ -307,9 +303,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         holder.dislikesCount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AccountManager am = AccountManager.get(context);
-                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (odyseeAccount != null && comment.getClaimId() != null && reactListener != null) {
+                if (comment.getClaimId() != null && reactListener != null) {
                     reactListener.onCommentReactClicked(comment, false);
                 }
             }

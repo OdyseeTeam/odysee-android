@@ -181,6 +181,7 @@ import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.ui.controls.SolidIconView;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
@@ -202,7 +203,7 @@ public class FileViewFragment extends BaseFragment implements
         PIPModeListener,
         ScreenOrientationListener,
         StoragePermissionListener,
-        WalletBalanceListener {
+        ChannelCreateDialogFragment.ChannelCreateListener {
     private static final String TAG = "OdyseeFile";
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
@@ -277,18 +278,11 @@ public class FileViewFragment extends BaseFragment implements
     private TextInputEditText inputComment;
     private TextView textCommentLimit;
     private MaterialButton buttonPostComment;
+    private MaterialButton buttonCreateChannel;
     private ImageView commentPostAsThumbnail;
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
-
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
+    private MaterialButton buttonCommentSignedInUserRequired;
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
@@ -326,9 +320,11 @@ public class FileViewFragment extends BaseFragment implements
         inputComment = root.findViewById(R.id.comment_form_body);
         textCommentLimit = root.findViewById(R.id.comment_form_text_limit);
         buttonPostComment = root.findViewById(R.id.comment_form_post);
+        buttonCreateChannel = root.findViewById(R.id.create_channel_button);
         commentPostAsThumbnail = root.findViewById(R.id.comment_form_thumbnail);
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
+        buttonCommentSignedInUserRequired = root.findViewById(R.id.sign_in_user_button);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
         commentLoadingArea = root.findViewById(R.id.file_comments_loading);
 
@@ -336,15 +332,6 @@ public class FileViewFragment extends BaseFragment implements
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
         likeReactionIcon = root.findViewById(R.id.like_icon);
         dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
-
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
 
         initUi(root);
 
@@ -428,7 +415,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.addFetchClaimsListener(this);
             activity.addPIPModeListener(this);
             activity.addScreenOrientationListener(this);
-            activity.addWalletBalanceListener(this);
             if (!MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
                 activity.addStoragePermissionListener(this);
             }
@@ -796,6 +782,8 @@ public class FileViewFragment extends BaseFragment implements
                 enableFullScreenMode();
             }
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
+
+            activity.refreshChannelCreationRequired(getView());
         }
 
         if (MainActivity.appPlayer != null) {
@@ -838,7 +826,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
             activity.removeStoragePermissionListener(this);
-            activity.removeWalletBalanceListener(this);
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             activity.showAppBar();
             activity.checkNowPlaying();
@@ -889,6 +876,7 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener bellIconListener = new View.OnClickListener()  {
         @Override
         public void onClick(View view) {
+            // View is not displayed when user is not signed in, so no need to check for it
             if (claim != null && claim.getSigningChannel() != null) {
                 Claim publisher = claim.getSigningChannel();
                 boolean isNotificationsDisabled = Lbryio.isNotificationsDisabled(publisher);
@@ -925,24 +913,33 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener followUnfollowListener = new View.OnClickListener() {
         @Override
         public void onClick(final View view) {
-            if (claim != null && claim.getSigningChannel() != null) {
-                Claim publisher = claim.getSigningChannel();
-                boolean isFollowing = Lbryio.isFollowing(publisher);
-                if (isFollowing) {
-                    // show unfollow confirmation
-                    Context context = getContext();
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                            setTitle(R.string.confirm_unfollow).
-                            setMessage(R.string.confirm_unfollow_message)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    doFollowUnfollow(true, view);
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
-                } else {
-                    doFollowUnfollow(false, view);
+            // TODO Extract this code to MainActivity and update views state from there for any currently visible fragments
+            MainActivity activity = (MainActivity) getActivity();
+
+            if (activity != null && activity.isSignedIn()) {
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim publisher = claim.getSigningChannel();
+                    boolean isFollowing = Lbryio.isFollowing(publisher);
+                    if (isFollowing) {
+                        // show unfollow confirmation
+                        Context context = getContext();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                setTitle(R.string.confirm_unfollow).
+                                setMessage(R.string.confirm_unfollow_message)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        doFollowUnfollow(true, view);
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    } else {
+                        doFollowUnfollow(false, view);
+                    }
+                }
+            } else {
+                if (activity != null) {
+                    activity.simpleSignIn(0);
                 }
             }
         }
@@ -1123,17 +1120,25 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_tip).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
-                        double sentAmount = amount.doubleValue();
-                        String message = getResources().getQuantityString(
-                                isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
-                                new DecimalFormat("#,###.##").format(sentAmount));
-                        Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
-                    });
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null && activity.isSignedIn()) {
+                    if (claim != null) {
+                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
+                            double sentAmount = amount.doubleValue();
+                            String message = getResources().getQuantityString(
+                                    isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
+                                    new DecimalFormat("#,###.##").format(sentAmount));
+                            Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
+                        });
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                        }
+                    }
+                } else {
+                    if (activity != null) {
+                        activity.simpleSignIn(0);
                     }
                 }
             }
@@ -1339,19 +1344,6 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                commentChannelSpinner,
-                commentChannelSpinnerAdapter
-        );
-
         RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
         relatedContentList.setNestedScrollingEnabled(false);
@@ -1551,7 +1543,7 @@ public class FileViewFragment extends BaseFragment implements
 */
 
         loadViewCount();
-        loadReactions();
+        loadReactions(claim);
         checkIsFollowing();
 
         View root = getView();
@@ -2080,9 +2072,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void loadReactions() {
-        loadReactions(claim);
-    }
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(1);
@@ -3459,14 +3448,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    @Override
-    public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineChannelCreatorInlineBalanceValue != null) {
-            inlineChannelCreatorInlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
-        }
-        checkRewardsDriver();
-    }
-
     private void checkRewardsDriver() {
         Context ctx = getContext();
         if (ctx != null && claim != null && !claim.isFree() && claim.getFile() == null) {
@@ -3632,7 +3613,6 @@ public class FileViewFragment extends BaseFragment implements
     }
     private void disableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, true);
@@ -3640,18 +3620,41 @@ public class FileViewFragment extends BaseFragment implements
             Claim selectedClaim = (Claim) commentChannelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
-                } else {
-                    hideInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
+    private void showChannelCreator() {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
     }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (commentChannelSpinnerAdapter != null) {
+            commentChannelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
+        }
+        if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+            // Ensure adapter is set for the spinner
+            if (commentChannelSpinner.getAdapter() == null) {
+                commentChannelSpinner.setAdapter(commentChannelSpinnerAdapter);
+            }
+            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (commentChannelSpinner != null) {
+            View formRoot = (View) commentChannelSpinner.getParent().getParent();
+            formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        }
     }
 
     private void updateChannelList(List<Claim> channels) {
@@ -3681,6 +3684,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void initCommentForm(View root) {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.refreshChannelCreationRequired(root);
+        }
+
         textCommentLimit.setText(String.format("%d / %d", Helper.getValue(inputComment.getText()).length(), Comment.MAX_LENGTH));
 
         buttonClearReplyToComment.setOnClickListener(new View.OnClickListener() {
@@ -3694,6 +3703,26 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 validateAndCheckPostComment();
+            }
+        });
+
+        buttonCreateChannel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!fetchingChannels) {
+                    showChannelCreator();
+                }
+            }
+        });
+
+        buttonCommentSignedInUserRequired.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null) {
+                    activity.simpleSignIn(0);
+                }
             }
         });
 
@@ -3723,10 +3752,12 @@ public class FileViewFragment extends BaseFragment implements
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
+                            if (commentChannelSpinnerAdapter.getCount() > 1) {
+                                commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+                            }
                         }
                     } else {
-                        hideInlineChannelCreator();
                         updatePostAsChannel(claim);
                     }
                 }

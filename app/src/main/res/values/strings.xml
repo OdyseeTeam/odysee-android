@@ -526,6 +526,9 @@
     <string name="no_channel_created">You have not created a channel.\nStart now by creating a new channel!</string>
     <string name="create_a_channel">Create a channel</string>
     <string name="create_a_channel_item">Create a channel…</string>
+    <string name="channel_is_required_to_comment">You need a channel to be able to comment</string>
+    <string name="channel_is_required">A channel is required to perform some actions</string>
+    <string name="signed_in_required">You must be signed in to perform some actions</string>
     <string name="edit_channel">Edit channel</string>
     <string name="delete_selection">Delete selection?</string>
     <string name="delete_channel">Delete channel?</string>

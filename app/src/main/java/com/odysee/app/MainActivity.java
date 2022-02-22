@@ -109,7 +109,6 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -123,6 +122,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -227,10 +227,6 @@ import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.channel.ChannelCommentsFragment;
-import com.odysee.app.ui.channel.ChannelFormFragment;
-import com.odysee.app.ui.channel.ChannelFragment;
-import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
@@ -422,6 +418,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
 
+    ChannelCreateDialogFragment channelCreationBottomSheet;
+
     AccountManager accountManager;
 
     // startup stages (to be able to determine how far a user made it if startup fails)
@@ -442,8 +440,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
+
         if (Build.VERSION.SDK_INT < 31) {
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
@@ -3002,6 +3000,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
     }
 
+    public void showError(String message, @NotNull View root) {
+        Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+    }
     public void showNotifications() {
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
@@ -3848,6 +3849,47 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void refreshChannelCreationRequired(View root) {
+        if (isSignedIn()) {
+            fetchOwnChannels();
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.GONE);
+
+            if (Lbry.ownChannels.size() > 0) {
+                root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+                root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            } else {
+                root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+                root.findViewById(R.id.no_channels).setVisibility(View.VISIBLE);
+            }
+        } else {
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.VISIBLE);
+
+            root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+            root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * This shows the bottom sheet with the channel creator UI to quickly create a channel when one is required.
+     *
+     * There is no need for any method to hide it as it is either done by Android framework or programmatically
+     * by our BottomSheetDialog implementation.
+     * @param listener ChannelCreateDialogFragment.ChannelCreateListener implementation to run when a channel has been created
+     */
+    public void showChannelCreator(ChannelCreateDialogFragment.ChannelCreateListener listener) {
+        if (channelCreationBottomSheet == null) {
+            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(listener);
+        }
+
+        channelCreationBottomSheet.show(getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+    }
+
+    /**
+     * Call this to nullify the bottom sheet object so listener is always assigned from the calling class
+     */
+    public void destroyChannelCreator() {
+        channelCreationBottomSheet = null;
+    }
     public void fetchOwnChannels() {
         AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
