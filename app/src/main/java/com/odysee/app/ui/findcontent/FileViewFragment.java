@@ -789,6 +789,7 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "File", "File");
+            activity.updateCurrentDisplayFragment(this);
             if (claim != null && claim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
@@ -837,7 +838,10 @@ public class FileViewFragment extends BaseFragment implements
             activity.removeStoragePermissionListener(this);
             activity.removeWalletBalanceListener(this);
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            activity.showAppBar();
             activity.checkNowPlaying();
+
+            activity.resetCurrentDisplayFragment();
         }
 
         closeWebView();
