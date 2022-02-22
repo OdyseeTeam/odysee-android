@@ -446,9 +446,8 @@ public class FileViewFragment extends BaseFragment implements
             if (params != null) {
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
-                    if (newClaim != null) {
-                        // the fragment is recreated every time, so just set newClaim
-                        this.claim = newClaim;
+                    // Only update fragment if new claim is different than currently being played
+                    if (newClaim != null && !newClaim.equals(this.claim)) {
                         updateRequired = true;
                     }
                 }
@@ -488,6 +487,9 @@ public class FileViewFragment extends BaseFragment implements
                 resetViewCount();
                 resetFee();
                 checkNewClaimAndUrl(newClaim, newUrl);
+
+                // This is required to recycle current fragment with new claim from related content
+                claim = null;
 
                 if (newClaim != null) {
                     claim = newClaim;
@@ -2676,6 +2678,9 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             List<Claim> result = future.get();
 
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
                             MainActivity a = (MainActivity) getActivity();
 
                             if (a != null) {
@@ -2688,6 +2693,10 @@ public class FileViewFragment extends BaseFragment implements
                                 });
                             }
                         } catch (InterruptedException | ExecutionException e) {
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
+
                             e.printStackTrace();
                         }
                     }
