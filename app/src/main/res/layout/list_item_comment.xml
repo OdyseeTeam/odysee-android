@@ -60,20 +60,32 @@
                     android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
                     tools:text="\@TestChannel"
                     style="@style/Comment_Publisher"
                     android:fontFamily="@font/inter"
                     android:focusable="true" />
+
                 <TextView
                     android:id="@+id/comment_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerInParent="true"
+                    android:layout_toRightOf="@+id/comment_channel_name"
+                    android:layout_centerVertical="true"
                     android:fontFamily="@font/inter"
-                    tools:text="24 m ago"
                     android:textColor="@color/lightGrey"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:layout_marginLeft="4dp"
+                    tools:text="24 m ago" />
+
+                <ImageButton
+                    android:id="@+id/comment_more_options"
+                    style="?android:attr/actionOverflowButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:visibility="invisible"/>
             </RelativeLayout>
 
             <TextView

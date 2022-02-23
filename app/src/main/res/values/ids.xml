@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="action_pin" />
+    <item type="id" name="action_edit" />
+    <item type="id" name="action_add_as_moderator" />
+    <item type="id" name="action_remove" />
+    <item type="id" name="action_block" />
+    <item type="id" name="action_mute" />
+    <item type="id" name="action_copy_link" />
+</resources>

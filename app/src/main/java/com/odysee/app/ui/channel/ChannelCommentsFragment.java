@@ -10,6 +10,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -62,6 +63,7 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.checkers.CommentEnabledCheck;
 
+import lombok.Getter;
 import lombok.Setter;
 
 public class ChannelCommentsFragment extends Fragment implements WalletBalanceListener {
@@ -70,6 +72,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     private Claim claim;
     @Setter
     private String commentHash;
+
+    @Getter
     private CommentListAdapter commentListAdapter;
     private CommentEnabledCheck commentEnabledCheck;
 
@@ -240,34 +244,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
-                        commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim) {
-                                if (!Helper.isNullOrEmpty(claim.getName()) &&
-                                        claim.getName().startsWith("@") &&
-                                        ctx instanceof MainActivity) {
-                                    ((MainActivity) ctx).openChannelClaim(claim);
-                                }
-                            }
-                        });
-                        commentListAdapter.setReplyListener(new CommentListAdapter.ReplyClickListener() {
-                            @Override
-                            public void onReplyClicked(Comment comment) {
-                                setReplyToComment(comment);
-                            }
-                        });
-
-                        RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
-                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
-                        commentList.addItemDecoration(new CommentItemDecoration(marginInPx));
-                        commentList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
-                        commentListAdapter.setCollapsed(false);
-
-                        checkNoComments();
-                        resolveCommentPosters();
-                        scrollToCommentHash();
+                        ensureCommentListAdapterCreated(comments);
                     }
                 }
 
@@ -277,6 +254,51 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    private void ensureCommentListAdapterCreated(final List<Comment> comments) {
+        if ( commentListAdapter == null ) {
+            Context ctx = getContext();
+            View root = getView();
+
+            commentListAdapter = new CommentListAdapter(comments, ctx, claim, new CommentListAdapter.CommentListListener() {
+                @Override
+                public void onListChanged() {
+                    checkNoComments();
+                }
+
+                @Override
+                public void onCommentReactClicked(Comment c, boolean liked) {
+                    // Not used for now.
+                }
+
+                @Override
+                public void onReplyClicked(Comment comment) {
+                    setReplyToComment(comment);
+                }
+            });
+            commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim) {
+                    if (!Helper.isNullOrEmpty(claim.getName()) &&
+                            claim.getName().startsWith("@") &&
+                            ctx instanceof MainActivity) {
+                        ((MainActivity) ctx).openChannelClaim(claim);
+                    }
+                }
+            });
+
+            RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
+            int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+            commentList.addItemDecoration(new CommentItemDecoration(marginInPx));
+            commentList.setAdapter(commentListAdapter);
+            commentListAdapter.notifyItemRangeInserted(0, comments.size());
+            commentListAdapter.setCollapsed(false);
+
+            checkNoComments();
+            resolveCommentPosters();
+            scrollToCommentHash();
         }
     }
 
@@ -569,6 +591,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                 inputComment.setText(null);
                 clearReplyToComment();
 
+                ensureCommentListAdapterCreated(new ArrayList<Comment>());
+
                 if (commentListAdapter != null) {
                     createdComment.setPoster(comment.getPoster());
                     if (!Helper.isNullOrEmpty(createdComment.getParentId())) {
@@ -604,7 +628,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Context context = getContext();
         if (context instanceof MainActivity) {
             ((MainActivity) context).showError(message);
