@@ -111,6 +111,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -2818,6 +2819,7 @@ public class FileViewFragment extends BaseFragment implements
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                     if (!comments.isEmpty()) {
                         // Load and process comments reactions on a different thread so main thread is not blocked
+                        Helper.setViewVisibility(commentsLoading, View.VISIBLE);
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -2827,6 +2829,7 @@ public class FileViewFragment extends BaseFragment implements
                                     activity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
+                                            Helper.setViewVisibility(commentsLoading, View.GONE);
                                             processCommentReactions(comments, commentReactions);
                                         }
                                     });
@@ -2907,6 +2910,7 @@ public class FileViewFragment extends BaseFragment implements
                     singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_time).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_channel_name).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_more_options).setVisibility(View.GONE);
 
                     singleCommentRoot.setOnClickListener(new View.OnClickListener() {
                         @Override
