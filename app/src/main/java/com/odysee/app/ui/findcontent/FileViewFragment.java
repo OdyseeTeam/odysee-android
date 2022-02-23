@@ -826,6 +826,10 @@ public class FileViewFragment extends BaseFragment implements
         if (MainActivity.appPlayer != null) {
             MainActivity.nowPlayingSource = MainActivity.SOURCE_NOW_PLAYING_FILE;
         }
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).updateMiniPlayerMargins(true);
+        }
         super.onPause();
     }
 
