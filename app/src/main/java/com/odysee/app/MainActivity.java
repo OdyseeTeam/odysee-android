@@ -994,7 +994,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
         int scaledMiniPlayerBottomMargin = (withBottomNavigation ? bottomNavigationHeight : 0) + getScaledValue(2);
-        android.util.Log.d("#HELP", "updateMiniPlayerMargin=" + withBottomNavigation + "; bottom=" + scaledMiniPlayerBottomMargin);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -3190,6 +3189,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                if (db != null) {
+                    DatabaseHelper.clearLocalUserData(db);
+                }
+            }
+        });
     }
 
     public boolean isSignedIn() {

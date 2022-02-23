@@ -34,7 +34,7 @@ public class ReactToCommentSupplier implements Supplier<Boolean> {
                 options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
                 options.put("channel_name", Lbry.ownChannels.get(0).getName());
 
-                JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
+                JSONObject jsonChannelSign = Comments.channelSignName(options, options.getString("channel_id"), options.getString("channel_name"));
 
                 if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                     options.put("signature", jsonChannelSign.getString("signature"));

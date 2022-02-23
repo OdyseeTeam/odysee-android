@@ -2,6 +2,7 @@ package com.odysee.app.utils;
 
 import android.accounts.Account;
 import android.annotation.SuppressLint;
+import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -894,5 +895,9 @@ public final class Helper {
             }
         }
         return null;
+    }
+
+    public static int getDimenAsPixels(Context context, final int dimenId) {
+        return context.getResources().getDimensionPixelSize(dimenId);
     }
 }

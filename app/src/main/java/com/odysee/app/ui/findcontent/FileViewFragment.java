@@ -111,6 +111,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -813,6 +814,10 @@ public class FileViewFragment extends BaseFragment implements
         if (MainActivity.appPlayer != null) {
             MainActivity.nowPlayingSource = MainActivity.SOURCE_NOW_PLAYING_FILE;
         }
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).updateMiniPlayerMargins(true);
+        }
         super.onPause();
     }
 
@@ -1330,6 +1335,7 @@ public class FileViewFragment extends BaseFragment implements
         expandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Prevents crash for when comment list isn't loaded yet but user tries to expand.
                 if (commentListAdapter != null) {
                     switchCommentListVisibility(commentListAdapter.isCollapsed());
                     commentListAdapter.switchExpandedState();
@@ -2183,7 +2189,7 @@ public class FileViewFragment extends BaseFragment implements
                 jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
                 try {
-                    JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
+                    JSONObject jsonChannelSign = Comments.channelSignName(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
 
                     if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                         jsonParams.put("signature", jsonChannelSign.getString("signature"));
@@ -2806,6 +2812,7 @@ public class FileViewFragment extends BaseFragment implements
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                     if (!comments.isEmpty()) {
                         // Load and process comments reactions on a different thread so main thread is not blocked
+                        Helper.setViewVisibility(commentsLoading, View.VISIBLE);
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -2815,6 +2822,7 @@ public class FileViewFragment extends BaseFragment implements
                                     activity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
+                                            Helper.setViewVisibility(commentsLoading, View.GONE);
                                             processCommentReactions(comments, commentReactions);
                                         }
                                     });
@@ -2895,6 +2903,7 @@ public class FileViewFragment extends BaseFragment implements
                     singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_time).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_channel_name).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_more_options).setVisibility(View.GONE);
 
                     singleCommentRoot.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -2920,46 +2929,57 @@ public class FileViewFragment extends BaseFragment implements
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
-                        commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim) {
-                                if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
-                                        ctx instanceof MainActivity) {
-                                    removeNotificationAsSource();
-                                    ((MainActivity) ctx).openChannelClaim(claim);
-                                }
-                            }
-                        });
-                        commentListAdapter.setReplyListener(new CommentListAdapter.ReplyClickListener() {
-                            @Override
-                            public void onReplyClicked(Comment comment) {
-                                setReplyToComment(comment);
-                            }
-                        });
-
-                        commentListAdapter.setReactListener(new CommentListAdapter.ReactClickListener() {
-                            @Override
-                            public void onCommentReactClicked(Comment c, boolean liked) {
-                                react(c, liked);
-                            }
-                        });
-
-                        RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
-                        // Indent reply-type items
-                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
-                        commentsList.addItemDecoration(new CommentItemDecoration(marginInPx));
-                        commentsList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
-
-                        scrollToCommentHash();
-                        checkNoComments();
-                        resolveCommentPosters();
+                        ensureCommentListAdapterCreated(comments);
                     }
-
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    private void ensureCommentListAdapterCreated(final List<Comment> comments) {
+        if ( commentListAdapter == null ) {
+
+            final Context androidContext = getContext();
+            final View root = getView();
+
+            commentListAdapter = new CommentListAdapter(comments, getContext(), claim, new CommentListAdapter.CommentListListener() {
+                @Override
+                public void onListChanged() {
+                    checkNoComments();
+                }
+
+                @Override
+                public void onCommentReactClicked(Comment c, boolean liked) {
+                    react(c, liked);
+                }
+
+                @Override
+                public void onReplyClicked(Comment comment) {
+                    setReplyToComment(comment);
+                }
+            });
+            commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim) {
+                    if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
+                            androidContext instanceof MainActivity) {
+                        removeNotificationAsSource();
+                        ((MainActivity) androidContext).openChannelClaim(claim);
+                    }
+                }
+            });
+
+            RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
+            // Indent reply-type items
+            int marginInPx = Math.round(40 * ((float) androidContext.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+            commentsList.addItemDecoration(new CommentItemDecoration(marginInPx));
+            commentsList.setAdapter(commentListAdapter);
+            commentListAdapter.notifyItemRangeInserted(0, comments.size());
+
+            scrollToCommentHash();
+            checkNoComments();
+            resolveCommentPosters();
         }
     }
 
@@ -3902,6 +3922,10 @@ public class FileViewFragment extends BaseFragment implements
                 inputComment.setText(null);
                 clearReplyToComment();
 
+                final boolean thisIsFirstComment = commentListAdapter == null;
+
+                ensureCommentListAdapterCreated(new ArrayList<Comment>());
+
                 if (commentListAdapter != null) {
                     createdComment.setPoster(comment.getPoster());
                     if (!Helper.isNullOrEmpty(createdComment.getParentId())) {
@@ -3912,6 +3936,11 @@ public class FileViewFragment extends BaseFragment implements
                 }
                 afterPostComment();
                 checkNoComments();
+
+                if ( thisIsFirstComment ) {
+                    expandButton.performClick();
+                }
+
                 singleCommentRoot.setVisibility(View.GONE);
 
                 Bundle bundle = new Bundle();
@@ -3985,7 +4014,7 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
                             options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
+                            JSONObject jsonChannelSign = Comments.channelSignName(options, options.getString("channel_id"), options.getString("channel_name"));
 
                             if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                                 options.put("signature", jsonChannelSign.getString("signature"));
