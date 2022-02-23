@@ -4,6 +4,8 @@
    <img alt="license" src="https://img.shields.io/github/license/OdyseeTeam/odysee-android?style=for-the-badge">
 </a>
 
+
+## Build from Source
 To build the app, even as a debug APK, you will need to copy `app/twitter.properties.sample` file as `app/twitter.properties`
 
 ## Release
