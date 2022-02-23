@@ -3188,6 +3188,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                if (db != null) {
+                    DatabaseHelper.clearLocalUserData(db);
+                }
+            }
+        });
     }
 
     public boolean isSignedIn() {
