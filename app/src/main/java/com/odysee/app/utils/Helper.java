@@ -691,6 +691,17 @@ public final class Helper {
         textView.setText(HtmlCompat.fromHtml(textView.getText().toString(), HtmlCompat.FROM_HTML_MODE_LEGACY));
     }
 
+    public static List<Claim> filterInvalidClaims(List<Claim> claims) {
+        List<Claim> filtered = new ArrayList<>();
+        for (Claim claim : claims) {
+            if (Helper.isNullOrEmpty(claim.getClaimId())) {
+                continue;
+            }
+            filtered.add(claim);
+        }
+        return filtered;
+    }
+
     public static List<Claim> filterInvalidReposts(List<Claim> claims) {
         List<Claim> filtered = new ArrayList<>();
         for (Claim claim : claims) {
