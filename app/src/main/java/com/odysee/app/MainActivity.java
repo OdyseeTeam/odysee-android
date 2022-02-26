@@ -1539,7 +1539,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         initialiseUserInstall();
-        scheduleWalletSyncTask();
         // checkPendingOpens();
     }
 
@@ -2356,7 +2355,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
 
                     Lbry.INSTALLATION_ID = installId;
-                    android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
+                    //android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
 
                     try {
                         try {
@@ -2380,6 +2379,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
 
                     checkFirstRun();
+                    scheduleWalletSyncTask();
 
                     if (!initialBlockedChannelsLoaded) {
                         loadBlockedChannels();
@@ -2601,7 +2601,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         @Override
                         public void onSuccess(List<Subscription> subscriptions, List<Subscription> diff) {
                             Lbryio.subscriptions = new ArrayList<>(subscriptions);
-                            if (diff != null && diff.size() > 0) {
+                            if (diff.size() > 0) {
                                 saveSharedUserState();
                             }
 
@@ -2870,13 +2870,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onSyncGetSuccess(WalletSync walletSync) {
                 Lbryio.lastWalletSync = walletSync;
                 Lbryio.lastRemoteHash = walletSync.getHash();
+                loadSharedUserState();
             }
 
             @Override
             public void onSyncGetWalletNotFound() {
                 // pass. This actually shouldn't happen at this point.
                 // But if it does, send what we have
-                if (Lbryio.isSignedIn() && userSyncEnabled()) {
+                if (Lbryio.isSignedIn()) {
                     syncApplyAndSet();
                 }
             }

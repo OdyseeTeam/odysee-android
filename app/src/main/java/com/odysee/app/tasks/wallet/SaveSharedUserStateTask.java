@@ -69,7 +69,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         } catch (SQLiteException ex) {
             // pass
         }
-
+        
         List<String> subscriptionUrls = new ArrayList<>();
         try {
             for (Subscription subscription : subs) {

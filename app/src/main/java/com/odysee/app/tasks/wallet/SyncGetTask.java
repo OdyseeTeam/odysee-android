@@ -61,6 +61,7 @@ public class SyncGetTask extends AsyncTask<Void, Void, WalletSync> {
                         Helper.getJSONString("data", null, response),
                         Helper.getJSONBoolean("changed", false, response)
                 );
+
                 if (applySyncChanges && (!hash.equalsIgnoreCase(walletSync.getHash()) || walletSync.isChanged())) {
                     //Lbry.sync_apply({ password, data: response.data, blocking: true });
                     try {
