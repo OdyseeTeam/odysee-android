@@ -319,6 +319,19 @@
     <string name="search_no_results">No results found for \'%1$s\'. Please enter a different search term.</string>
     <string name="search_type_to_discover">Start typing to discover exciting content on Odysee</string>
     <string name="no_related_content">No related content to display at this time.</string>
+    <string name="search_filter_type_label">Type</string>
+    <string name="search_filter_publish_time_label">Publish time</string>
+    <string name="search_filter_type_file_label">File</string>
+    <string name="search_filter_type_channel_label">Channel</string>
+    <string name="search_filter_filetype_video">Video</string>
+    <string name="search_filter_filetype_audio">Audio</string>
+    <string-array name="publish_timeframe_filter">
+        <item>Anytime</item>
+        <item>Last 24 hours</item>
+        <item>This week</item>
+        <item>This month</item>
+        <item>This year</item>
+    </string-array>
 
     <!-- Wallet -->
     <string name="balance">Balance</string>
