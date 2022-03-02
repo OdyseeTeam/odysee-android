@@ -2459,7 +2459,8 @@ public class FileViewFragment extends BaseFragment implements
 
                 // reorder the claims based on the order in the list, TODO: find a more efficient way to do this
                 Map<String, Claim> playlistClaimMap = new LinkedHashMap<>();
-                for (String id : claim.getClaimIds()) {
+                List<String> claimIds = claim.getClaimIds();
+                for (String id : claimIds) {
                     for (Claim claim : claims) {
                         if (id.equalsIgnoreCase(claim.getClaimId())) {
                             playlistClaimMap.put(id, claim);
