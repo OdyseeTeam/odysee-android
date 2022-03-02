@@ -541,7 +541,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                 long duration = item.getDuration();
                 vh.durationView.setVisibility((duration > 0 || item.isLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
-                if (item.isLive()) {
+                if (item.isLive() && !Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
                     vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
                     vh.durationView.setText(context.getResources().getString(R.string.live).toUpperCase());
                 } else {
@@ -550,7 +550,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         vh.durationView.setText(Helper.formatDuration(duration));
                         vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
                     } else {
-                        vh.durationView.setText(String.valueOf(item.getClaimIds().size()));
+                        List<String> claimIds = item.getClaimIds() == null ? new ArrayList<>() : item.getClaimIds();
+                        vh.durationView.setText(String.valueOf(claimIds.size()));
                         vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
                         vh.durationView.setCompoundDrawablePadding(8);
                     }
