@@ -29,15 +29,15 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/past_24_hours"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            android:layout_marginTop="8dp"
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_from_past_24_hours_item_selected"
             android:layout_width="wrap_content"
@@ -55,15 +55,14 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/past_week"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_from_past_week_item_selected"
             android:layout_width="wrap_content"
@@ -81,15 +80,14 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/past_month"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_from_past_month_item_selected"
             android:layout_width="wrap_content"
@@ -107,15 +105,14 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/past_year"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_from_past_year_item_selected"
             android:layout_width="wrap_content"
@@ -133,15 +130,14 @@
         android:clickable="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp" android:focusable="true">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
             android:text="@string/all_time"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <ImageView
             android:id="@+id/content_from_all_time_item_selected"
             android:layout_width="wrap_content"

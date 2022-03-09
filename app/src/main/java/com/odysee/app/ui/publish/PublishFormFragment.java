@@ -50,10 +50,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
@@ -80,6 +77,7 @@ import com.odysee.app.tasks.claim.ClaimResultHandler;
 import com.odysee.app.tasks.claim.PublishClaimTask;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -89,7 +87,7 @@ import lombok.Data;
 import lombok.Getter;
 
 public class PublishFormFragment extends BaseFragment implements
-        FilePickerListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener {
+        FilePickerListener, StoragePermissionListener, TagListAdapter.TagClickListener, WalletBalanceListener, ChannelCreateDialogFragment.ChannelCreateListener {
 
     private static final String H264_CODEC = "h264";
     private static final int MAX_VIDEO_DIMENSION = 1920;
@@ -150,15 +148,6 @@ public class PublishFormFragment extends BaseFragment implements
 
     private View linkPublishCancel;
     private MaterialButton buttonPublish;
-
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
 
     private boolean uploading;
     private String lastSelectedThumbnailFile;
@@ -254,15 +243,6 @@ public class PublishFormFragment extends BaseFragment implements
         matureTagsAdapter.setCustomizeMode(TagListAdapter.CUSTOMIZE_MODE_ADD);
         matureTagsAdapter.setClickListener(this);
         matureTagsList.setAdapter(matureTagsAdapter);
-
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
 
         initUi();
 
@@ -370,10 +350,8 @@ public class PublishFormFragment extends BaseFragment implements
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder() && !claim.isPlaceholderAnonymous()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
                         }
-                    } else {
-                        hideInlineChannelCreator();
                     }
                 }
             }
@@ -470,18 +448,6 @@ public class PublishFormFragment extends BaseFragment implements
 
         channelSpinnerAdapter = new InlineChannelSpinnerAdapter(getContext(), R.layout.spinner_item_channel, new ArrayList<>());
         channelSpinnerAdapter.addPlaceholder(false);
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                channelSpinner,
-                channelSpinnerAdapter
-        );
     }
 
     @Override
@@ -924,7 +890,6 @@ public class PublishFormFragment extends BaseFragment implements
     }
     private void disableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, true);
@@ -932,18 +897,17 @@ public class PublishFormFragment extends BaseFragment implements
             Claim selectedClaim = (Claim) channelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
-                } else {
-                    hideInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
-    }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+    private void showChannelCreator() {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
     }
 
     private void updateChannelList(List<Claim> channels) {
@@ -1320,6 +1284,30 @@ public class PublishFormFragment extends BaseFragment implements
             String rewardsDriverText = String.format("%s\n%s",
                     getString(R.string.publishing_requires_credits), getString(R.string.tap_here_to_get_some));
             checkRewardsDriverCard(rewardsDriverText, Helper.MIN_DEPOSIT);
+        }
+    }
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (channelSpinnerAdapter != null) {
+            channelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
+        }
+        if (channelSpinner != null && channelSpinnerAdapter != null) {
+            // Ensure adapter is set for the spinner
+            if (channelSpinner.getAdapter() == null) {
+                channelSpinner.setAdapter(channelSpinnerAdapter);
+            }
+            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (channelSpinner != null) {
+            View formRoot = (View) channelSpinner.getParent().getParent();
+            formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
         }
     }
 

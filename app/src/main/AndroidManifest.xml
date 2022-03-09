@@ -141,7 +141,12 @@
             android:name=".FirstRunActivity"
             android:launchMode="singleTask"
             android:parentActivityName=".MainActivity"
-            android:theme="@style/AppTheme.NoActionBarTranslucent" />
+            android:theme="@style/FirstRunTheme" />
+        <activity
+            android:name=".YouTubeSyncActivity"
+            android:launchMode="singleTask"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/FirstRunTheme" />
         <activity
             android:name=".VerificationActivity"
             android:launchMode="singleTask"
@@ -150,7 +155,7 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SignInActivity"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTop"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarTranslucent"
             android:windowSoftInputMode="adjustResize" />

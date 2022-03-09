@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY 是一個由社群主導的內容平台，你能夠找到和發佈影片、音樂、書籍及更多內容。</string>
     <string name="welcome_tos">在繼續的同時，我已同意 &lt;a href=\"https://lbry.com/termsofservice\"&gt;服務條款&lt;/a&gt; 並確保自己已年滿十三歲或以上。</string>
     <string name="welcome_please_wait">在準備就緒前請稍候片刻……</string>
-    <string name="use_lbry">使用 LBRY »</string>
+    <string name="use_odysee">使用 LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">搜尋影片、音樂以及更多</string>
@@ -250,7 +250,7 @@
 
     <!-- Wallet -->
     <string name="balance">餘額</string>
-    <string name="convert_credits">你可以把信用額兌換為美元然後到交易所提取。&lt;a href=\"https://lbry.com/faq/exchanges\"&gt;了解更多&lt;/a&gt;。</string>
+    <string name="convert_credits">你可以把信用額兌換為美元然後到交易所提取。&lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;了解更多&lt;/a&gt;。</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;在Bittrex上轉換美元&lt;/a&gt;</string>
 
     <string name="backup_synced">你的錢包備份已與 lbry.tv 同步</string>

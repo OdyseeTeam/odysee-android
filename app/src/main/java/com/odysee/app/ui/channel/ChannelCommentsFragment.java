@@ -2,6 +2,7 @@ package com.odysee.app.ui.channel;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -18,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
@@ -27,11 +30,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.odysee.app.BuildConfig;
@@ -41,34 +44,33 @@ import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
-import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.Comment;
-import com.odysee.app.model.WalletBalance;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
 import com.odysee.app.tasks.CommentListTask;
-import com.odysee.app.tasks.claim.ChannelCreateUpdateTask;
-import com.odysee.app.tasks.claim.ClaimListResultHandler;
-import com.odysee.app.tasks.claim.ClaimListTask;
-import com.odysee.app.tasks.claim.ClaimResultHandler;
-import com.odysee.app.tasks.claim.ResolveTask;
+import com.odysee.app.tasks.claim.*;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
+import lombok.Getter;
 import lombok.Setter;
 
-public class ChannelCommentsFragment extends Fragment implements WalletBalanceListener {
+public class ChannelCommentsFragment extends Fragment implements ChannelCreateDialogFragment.ChannelCreateListener {
 
     @Setter
     private Claim claim;
     @Setter
     private String commentHash;
+
+    @Getter
     private CommentListAdapter commentListAdapter;
+    private CommentEnabledCheck commentEnabledCheck;
 
     private Comment replyToComment;
     private View containerReplyToComment;
@@ -85,18 +87,20 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     private TextInputEditText inputComment;
     private TextView textCommentLimit;
     private MaterialButton buttonPostComment;
+    private MaterialButton buttonCreateChannel;
     private ImageView commentPostAsThumbnail;
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
+    private MaterialButton buttonUserSignedInRequired;
+    private View loadingCommentView;
+    private View commentsNestedLayout;
 
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        commentEnabledCheck = new CommentEnabledCheck();
+    }
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -113,46 +117,31 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         inputComment = root.findViewById(R.id.comment_form_body);
         textCommentLimit = root.findViewById(R.id.comment_form_text_limit);
         buttonPostComment = root.findViewById(R.id.comment_form_post);
+        buttonCreateChannel = root.findViewById(R.id.create_channel_button);
         commentPostAsThumbnail = root.findViewById(R.id.comment_form_thumbnail);
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
+        buttonUserSignedInRequired = root.findViewById(R.id.sign_in_user_button);
 
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
+        loadingCommentView = root.findViewById(R.id.channel_comments_loading_spinner);
+        commentsNestedLayout = root.findViewById(R.id.channel_comments_area);
 
         RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
         commentList.setLayoutManager(new LinearLayoutManager(getContext()));
 
         initCommentForm(root);
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                commentChannelSpinner,
-                commentChannelSpinnerAdapter
-        );
 
         return root;
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        commentsNestedLayout.setVisibility(View.GONE);
+    }
+
     public void onResume() {
         super.onResume();
-        Context context = getContext();
-
-        if (context instanceof MainActivity) {
-            ((MainActivity) context).addWalletBalanceListener(this);
-        }
 
         fetchChannels();
         checkAndLoadComments();
@@ -161,11 +150,6 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
 
     public void onStop() {
         super.onStop();
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.removeWalletBalanceListener(this);
-        }
     }
 
     private void checkAndLoadComments() {
@@ -175,59 +159,53 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
             View commentForm = root.findViewById(R.id.container_comment_form);
             RecyclerView commentsList = root.findViewById(R.id.channel_comments_list);
 
-            if (claim.getTags().contains("disable-comments")) {
-                Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentForm, View.GONE);
-                Helper.setViewVisibility(commentsList, View.GONE);
-            } else {
-                Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentForm, View.VISIBLE);
-                Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
-                    loadComments();
+            loadingCommentView.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                Activity activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isEnabled) {
+                            showComments(commentsDisabledText, commentForm, commentsList);
+                            Helper.setViewVisibility(commentsDisabledText, View.GONE);
+                            Helper.setViewVisibility(commentForm, View.VISIBLE);
+                            Helper.setViewVisibility(commentsList, View.VISIBLE);
+                            if (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0) {
+                                loadComments();
+                            }
+                        } else {
+                            hideComments(commentsDisabledText, commentForm, commentsList);
+                        }
+                        loadingCommentView.setVisibility(View.GONE);
+                        commentsNestedLayout.setVisibility(View.VISIBLE);
+                    });
                 }
-            }
+            });
         }
+    }
+
+    private void hideComments(View commentsDisabledText, View commentForm, View commentsList) {
+        Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
+        Helper.setViewVisibility(commentForm, View.GONE);
+        Helper.setViewVisibility(commentsList, View.GONE);
+    }
+
+    private void showComments(View commentsDisabledText, View commentForm, View commentsList) {
+        Helper.setViewVisibility(commentsDisabledText, View.GONE);
+        Helper.setViewVisibility(commentForm, View.VISIBLE);
+        Helper.setViewVisibility(commentsList, View.VISIBLE);
     }
 
     private void loadComments() {
         View root = getView();
-        ProgressBar relatedLoading = root.findViewById(R.id.channel_comments_progress);
         if (claim != null && root != null) {
+            ProgressBar relatedLoading = root.findViewById(R.id.channel_comments_progress);
             CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), relatedLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
-                        commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim) {
-                                if (!Helper.isNullOrEmpty(claim.getName()) &&
-                                        claim.getName().startsWith("@") &&
-                                        ctx instanceof MainActivity) {
-                                    ((MainActivity) ctx).openChannelClaim(claim);
-                                }
-                            }
-                        });
-                        commentListAdapter.setReplyListener(new CommentListAdapter.ReplyClickListener() {
-                            @Override
-                            public void onReplyClicked(Comment comment) {
-                                setReplyToComment(comment);
-                            }
-                        });
-
-                        RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
-                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
-                        commentList.addItemDecoration(new CommentItemDecoration(marginInPx));
-                        commentList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
-                        commentListAdapter.setCollapsed(false);
-
-                        checkNoComments();
-                        resolveCommentPosters();
-                        scrollToCommentHash();
+                        ensureCommentListAdapterCreated(comments);
                     }
                 }
 
@@ -237,6 +215,51 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    private void ensureCommentListAdapterCreated(final List<Comment> comments) {
+        if ( commentListAdapter == null ) {
+            Context ctx = getContext();
+            View root = getView();
+
+            commentListAdapter = new CommentListAdapter(comments, ctx, claim, new CommentListAdapter.CommentListListener() {
+                @Override
+                public void onListChanged() {
+                    checkNoComments();
+                }
+
+                @Override
+                public void onCommentReactClicked(Comment c, boolean liked) {
+                    // Not used for now.
+                }
+
+                @Override
+                public void onReplyClicked(Comment comment) {
+                    setReplyToComment(comment);
+                }
+            });
+            commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim) {
+                    if (!Helper.isNullOrEmpty(claim.getName()) &&
+                            claim.getName().startsWith("@") &&
+                            ctx instanceof MainActivity) {
+                        ((MainActivity) ctx).openChannelClaim(claim);
+                    }
+                }
+            });
+
+            RecyclerView commentList = root.findViewById(R.id.channel_comments_list);
+            int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+            commentList.addItemDecoration(new CommentItemDecoration(marginInPx));
+            commentList.setAdapter(commentListAdapter);
+            commentListAdapter.notifyItemRangeInserted(0, comments.size());
+            commentListAdapter.setCollapsed(false);
+
+            checkNoComments();
+            resolveCommentPosters();
+            scrollToCommentHash();
         }
     }
 
@@ -284,13 +307,6 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         }
     }
 
-    @Override
-    public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineChannelCreatorInlineBalanceValue != null) {
-            inlineChannelCreatorInlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
-        }
-    }
-
     private void fetchChannels() {
         if (Lbry.ownChannels != null && Lbry.ownChannels.size() > 0) {
             updateChannelList(Lbry.ownChannels);
@@ -318,7 +334,6 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     }
     private void disableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, true);
@@ -326,18 +341,41 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
             Claim selectedClaim = (Claim) commentChannelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
-                } else {
-                    hideInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
+    private void showChannelCreator() {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
     }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (commentChannelSpinnerAdapter != null) {
+            commentChannelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
+        }
+        if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+            // Ensure adapter is set for the spinner
+            if (commentChannelSpinner.getAdapter() == null) {
+                commentChannelSpinner.setAdapter(commentChannelSpinnerAdapter);
+            }
+            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (commentChannelSpinner != null) {
+            View formRoot = (View) commentChannelSpinner.getParent().getParent();
+            formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        }
     }
 
     private void updateChannelList(List<Claim> channels) {
@@ -367,7 +405,24 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
     }
 
     private void initCommentForm(View root) {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.refreshChannelCreationRequired(root);
+        }
+
         textCommentLimit.setText(String.format("%d / %d", Helper.getValue(inputComment.getText()).length(), Comment.MAX_LENGTH));
+
+        buttonUserSignedInRequired.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null) {
+                    activity.simpleSignIn(0);
+                }
+            }
+        });
 
         buttonClearReplyToComment.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -380,6 +435,15 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
             @Override
             public void onClick(View view) {
                 validateAndCheckPostComment();
+            }
+        });
+
+        buttonCreateChannel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!fetchingChannels) {
+                    showChannelCreator();
+                }
             }
         });
 
@@ -409,10 +473,12 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
+                            if (commentChannelSpinnerAdapter.getCount() > 1) {
+                                commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+                            }
                         }
                     } else {
-                        hideInlineChannelCreator();
                         updatePostAsChannel(claim);
                     }
                 }
@@ -529,6 +595,8 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
                 inputComment.setText(null);
                 clearReplyToComment();
 
+                ensureCommentListAdapterCreated(new ArrayList<Comment>());
+
                 if (commentListAdapter != null) {
                     createdComment.setPoster(comment.getPoster());
                     if (!Helper.isNullOrEmpty(createdComment.getParentId())) {
@@ -564,7 +632,7 @@ public class ChannelCommentsFragment extends Fragment implements WalletBalanceLi
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Context context = getContext();
         if (context instanceof MainActivity) {
             ((MainActivity) context).showError(message);

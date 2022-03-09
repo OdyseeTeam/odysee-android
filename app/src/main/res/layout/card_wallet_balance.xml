@@ -27,9 +27,8 @@
                 android:id="@+id/wallet_balance_usd_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:textSize="16sp"
-                android:textFontWeight="300"
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
@@ -38,8 +37,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
+                style="@style/TextView_Light"
                 android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
             <LinearLayout
@@ -59,10 +57,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="bottom"
-                    android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/immediately_spendable"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
             </LinearLayout>
 
@@ -82,10 +79,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
                     android:paddingStart="8dp"
                     android:text="@string/boosting_content"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="@dimen/wallet_detail_balance_desc_font_size" />
 
                 <TextView
@@ -94,10 +90,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="18dp"
                     android:drawableEnd="@drawable/ic_arrow_dropdown"
-                    android:drawableTint="@color/joinodysee_text"
+                    android:drawableTint="@color/title_text"
                     android:gravity="end"
                     android:text="@string/view_more"
-                    android:textSize="@dimen/wallet_detail_balance_font_size" />
+                    android:textSize="@dimen/wallet_detail_balance_font_size"
+                    tools:ignore="UseCompatTextViewDrawableXml"/>
             </LinearLayout>
 
             <ListView
@@ -108,21 +105,7 @@
                 android:visibility="gone">
 
             </ListView>
-
-
-
         </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/wallet_buy_lbc_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/buy_lbc"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/wallet_hint_convert_credits"
@@ -135,17 +118,6 @@
             android:text="@string/convert_credits"
             android:textColorLink="@color/odyseePink"
             android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/wallet_hint_convert_credits_bittrex"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="16dp"
-            android:fontFamily="@font/inter"
-            android:text="@string/convert_credits_bittrex"
-            android:textColorLink="@color/odyseePink"
-            android:textSize="16sp" />
 
         <View
             android:layout_width="match_parent"

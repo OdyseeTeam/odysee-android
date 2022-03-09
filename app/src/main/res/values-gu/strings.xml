@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">LBRY માં આપનું સ્વાગત છે.</string>
     <string name="welcome_paragraph">LBRY એ સમુદાય-નિયંત્રિત સામગ્રી પ્લેટફોર્મ છે જ્યાં તમે વિડિઓઝ, સંગીત, પુસ્તકો અને વધુ શોધી અને પ્રકાશિત કરી શકો છો.</string>
     <string name="welcome_tos">ચાલુ રાખીને, હું &lt; ને સંમત છું. a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; અને પુષ્ટિ કરો કે હું 13 વર્ષથી વધુ વયની છું.</string>
-    <string name="use_lbry">LBRY વાપરો »</string>
+    <string name="use_odysee">LBRY વાપરો »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">વિડિઓઝ, સંગીત અને વધુ શોધો</string>
@@ -247,7 +247,7 @@
 
     <!-- Wallet -->
     <string name="balance">બેલેન્સ</string>
-    <string name="convert_credits">તમે તમારા ક્રેડિટને USD માં કન્વર્ટ કરી શકો છો અને એક્સચેંજનો ઉપયોગ કરીને રૂપાંતરિત રકમ પાછા ખેંચી શકો છો. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits">તમે તમારા ક્રેડિટને USD માં કન્વર્ટ કરી શકો છો અને એક્સચેંજનો ઉપયોગ કરીને રૂપાંતરિત રકમ પાછા ખેંચી શકો છો. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">તમારા વૉલેટનો બેકઅપ lbry.tv સાથે સમન્વયિત થાય છે</string>

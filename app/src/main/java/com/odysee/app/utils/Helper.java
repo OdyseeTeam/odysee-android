@@ -2,6 +2,7 @@ package com.odysee.app.utils;
 
 import android.accounts.Account;
 import android.annotation.SuppressLint;
+import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -690,6 +691,17 @@ public final class Helper {
         textView.setText(HtmlCompat.fromHtml(textView.getText().toString(), HtmlCompat.FROM_HTML_MODE_LEGACY));
     }
 
+    public static List<Claim> filterInvalidClaims(List<Claim> claims) {
+        List<Claim> filtered = new ArrayList<>();
+        for (Claim claim : claims) {
+            if (Helper.isNullOrEmpty(claim.getClaimId())) {
+                continue;
+            }
+            filtered.add(claim);
+        }
+        return filtered;
+    }
+
     public static List<Claim> filterInvalidReposts(List<Claim> claims) {
         List<Claim> filtered = new ArrayList<>();
         for (Claim claim : claims) {
@@ -894,5 +906,9 @@ public final class Helper {
             }
         }
         return null;
+    }
+
+    public static int getDimenAsPixels(Context context, final int dimenId) {
+        return context.getResources().getDimensionPixelSize(dimenId);
     }
 }

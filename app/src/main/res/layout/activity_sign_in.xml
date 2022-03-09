@@ -46,10 +46,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:text="@string/join_odysee"
-            android:fontFamily="@font/inter"
-            android:textColor="@color/joinodysee_text"
-            android:textSize="24sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textColor="@color/title_text"
+            android:textSize="24sp" />
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -118,10 +117,25 @@
             android:visibility="invisible"
             tools:visibility="visible" />
         <TextView
+            android:id="@+id/use_magic_link_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/use_magic_link"
+            android:layout_gravity="center_horizontal"
+            android:textColor="@color/colorPrimary"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?selectableItemBackground"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/agree_to_terms_note"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/joinodysee_text"
+            android:textColor="@color/title_text"
             android:text="@string/agree_to_terms" />
     </LinearLayout>
     <LinearLayout android:id="@+id/verification_email_verify_container"
@@ -136,19 +150,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:fontFamily="@font/inter"
             android:text="@string/sign_in"
             android:textColor="@color/signin_text"
-            android:textFontWeight="300"
+            style="@style/TextView_Light"
             android:textSize="28sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
             android:text="@string/email_sent_to"
-            android:textColor="@color/joinodysee_text"
-            android:textFontWeight="300"
+            android:textColor="@color/title_text"
+            style="@style/TextView_Light"
             android:textSize="16sp" />
 
         <TextView
@@ -157,21 +169,19 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:ellipsize="middle"
-            android:fontFamily="@font/inter"
             android:singleLine="true"
             android:textAlignment="center"
-            android:textColor="@color/joinodysee_text"
-            android:textFontWeight="300"
+            android:textColor="@color/title_text"
+            style="@style/TextView_Light"
             android:textSize="20sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:fontFamily="@font/inter"
             android:text="@string/please_click_link"
-            android:textColor="@color/joinodysee_text"
-            android:textFontWeight="300"
+            android:textColor="@color/title_text"
+            style="@style/TextView_Light"
             android:textSize="16sp" />
 
         <LinearLayout
@@ -201,11 +211,10 @@
                 android:layout_weight="3"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
-                android:fontFamily="@font/inter"
-                android:gravity="right"
+                style="@style/TextView_Light"
+                android:gravity="end"
                 android:text="@string/edit"
-                android:textColor="@color/joinodysee_text"
-                android:textFontWeight="300" />
+                android:textColor="@color/title_text" android:focusable="true"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -228,13 +237,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
                 <TextView
-                    android:textSize="24sp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
+                    android:textSize="24sp"
                     android:layout_centerVertical="true"
-                    android:text="@string/wallet_sync"
-                    android:textFontWeight="300" />
+                    android:text="@string/wallet_sync" />
                 <ProgressBar
                     android:id="@+id/verification_wallet_loading_progress"
                     android:visibility="gone"
@@ -249,13 +257,12 @@
             <TextView
                 android:id="@+id/verification_wallet_loading_text"
                 android:visibility="gone"
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
                 android:layout_marginTop="8dp"
-                android:text="@string/retrieving_account_information"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="16sp"
+                android:text="@string/retrieving_account_information" />
         </LinearLayout>
 
         <LinearLayout
@@ -267,12 +274,11 @@
             android:visibility="gone">
             <TextView
                 android:id="@+id/verification_wallet_sync_paragraph"
-                android:textSize="16sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
                 android:text="@string/please_enter_your_password"
-                android:textFontWeight="300"/>
+                style="@style/TextView_Light"
+                android:textSize="16sp" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
@@ -284,23 +290,20 @@
                     android:id="@+id/verification_wallet_password_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
                     android:gravity="center"
                     android:inputType="textPassword"
                     android:singleLine="true"
+                    style="@style/TextView_Light"
                     android:textSize="20sp"
-                    android:textAlignment="center"
-                    android:textFontWeight="300" />
+                    android:textAlignment="center" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
-                android:textSize="12sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
                 android:layout_marginTop="16dp"
                 android:text="@string/wallet_security_purposes"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/verification_wallet_done_button"

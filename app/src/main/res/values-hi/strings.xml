@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">लाइब्रेरी एक सामुदायिक नियंत्रित सामग्री मंच है।यहां आप ना केवल वीडियोस संगीत किताबें और अन्य सामग्री का आनंद ले सकते हैं बल्कि खुद भी उन्हें बनाकर प्रदर्शित कर सकते हैं।</string>
     <string name="welcome_tos">आगे बढ़ने से पहले मैं इनसे सहमत हूं &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt;  और मैं पुष्टि करता हूं कि मैं 13 साल की उम्र से अधिक हूं।</string>
     <string name="welcome_please_wait">कृपया प्रतीक्षा करें जबकि हम कुछ चीजें तैयार करते हैं ...</string>
-    <string name="use_lbry">लाइब्रेरी का उपयोग करें</string>
+    <string name="use_odysee">लाइब्रेरी का उपयोग करें</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">वीडियोस संगीत और अन्य चीजों को खोजें</string>
@@ -258,7 +258,7 @@
 
     <!-- Wallet -->
     <string name="balance">बैलेंस</string>
-    <string name="convert_credits"> आप अपने क्रेडिटस को यूसडी में बदल सकते हैं और उन्हें एक्सचेंज की मदद से निकाल भी सकते हैं। &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits"> आप अपने क्रेडिटस को यूसडी में बदल सकते हैं और उन्हें एक्सचेंज की मदद से निकाल भी सकते हैं। &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt; क्रेडिटस को यूसडी में बदलें बिट्रिक्स पर&lt;/a&gt;</string>
 
     <string name="backup_synced">आपके वॉलेट का एक बैक आप लाइब्रेरी टीवी के साथ पूर्णतया सिंक है</string>

@@ -3,6 +3,7 @@ package com.odysee.app.data;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.math.BigDecimal;
@@ -175,6 +176,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_REMOVE_BLOCKED_CHANNEL = "DELETE FROM blocked_channels WHERE claim_id = ?";
     private static final String SQL_REMOVE_ALL_BLOCKED_CHANNELS = "DELETE FROM blocked_channels";
     private static final String SQL_GET_BLOCKED_CHANNELS = "SELECT claim_id, name FROM blocked_channels";
+
+    private static final String SQL_REMOVE_ALL_SUBSCRIPTIONS = "DELETE FROM subscriptions";
+    private static final String SQL_REMOVE_ALL_URL_HISTORY = "DELETE FROM url_history";
+    private static final String SQL_REMOVE_ALL_VIEW_HISTORY = "DELETE FROM view_history";
+    private static final String SQL_REMOVE_ALL_TAGS = "DELETE FROM tags";
+    private static final String SQL_REMOVE_ALL_NOTIFICATIONS = "DELETE FROM notifications";
 
     public DatabaseHelper(Context context) {
         super(context, String.format("%s/%s", context.getFilesDir().getAbsolutePath(), DATABASE_NAME), null, DATABASE_VERSION);
@@ -530,5 +537,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Helper.closeCursor(cursor);
         }
         return blockedChannels;
+    }
+
+    public static void clearLocalUserData(SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL(SQL_REMOVE_ALL_SUBSCRIPTIONS);
+            db.execSQL(SQL_REMOVE_ALL_URL_HISTORY);
+            db.execSQL(SQL_REMOVE_ALL_VIEW_HISTORY);
+            db.execSQL(SQL_REMOVE_ALL_TAGS);
+            db.execSQL(SQL_REMOVE_ALL_NOTIFICATIONS);
+            db.execSQL(SQL_REMOVE_ALL_BLOCKED_CHANNELS);
+            db.setTransactionSuccessful();
+        } catch (SQLiteException ex) {
+            // pass
+        } finally {
+            db.endTransaction();
+        }
     }
 }

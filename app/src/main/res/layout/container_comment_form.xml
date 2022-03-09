@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="16dp">
-    <LinearLayout
+    <LinearLayout android:id="@+id/has_channels"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -20,9 +20,8 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:text="@string/comment_as"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
             <ProgressBar
                 android:id="@+id/comment_form_channels_loading"
                 android:layout_alignParentEnd="true"
@@ -37,8 +36,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
-
-        <include layout="@layout/container_inline_channel_form" />
 
         <LinearLayout
             android:id="@+id/comment_form_reply_to_container"
@@ -82,9 +79,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:fontFamily="@font/inter"
                         android:lineSpacingMultiplier="1.05"
-                        android:textFontWeight="300"
+                        style="@style/TextView_Light"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -126,11 +122,10 @@
                         android:layout_centerInParent="true"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
                         android:textAllCaps="true"
+                        style="@style/TextView_Light"
                         android:textSize="24sp"
-                        android:textColor="@color/white"
-                        android:textFontWeight="300" />
+                        android:textColor="@color/white" />
                 </RelativeLayout>
                 <ImageView
                     android:layout_centerInParent="true"
@@ -149,8 +144,7 @@
                     android:hint="@string/comment"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:inputType="textMultiLine"
                     android:maxLength="2000"
                     android:singleLine="false"
@@ -163,12 +157,10 @@
             android:id="@+id/comment_form_text_limit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
+            android:layout_gravity="end"
             android:layout_marginTop="2dp"
-            android:fontFamily="@font/inter"
-            android:textColor="@color/lightGrey"
-            android:textFontWeight="300"
-            android:textSize="12sp" />
+            style="@style/TextView_Light"
+            android:textColor="@color/lightGrey" />
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -191,5 +183,41 @@
                 android:layout_marginStart="24dp"
                 android:visibility="gone" />
         </RelativeLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/no_channels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:textSize="14sp"
+            android:text="@string/channel_is_required_to_comment" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/create_channel_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/create_a_channel" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/user_not_signed_in"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter"
+            android:textSize="14sp"
+            android:text="@string/signed_in_required" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/sign_in_user_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sign_in" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

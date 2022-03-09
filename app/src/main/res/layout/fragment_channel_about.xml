@@ -22,10 +22,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:fontFamily="@font/inter"
             android:textAlignment="center"
             android:text="@string/no_channel_info"
-            android:textFontWeight="300"
+            style="@style/TextView_Light"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -56,9 +55,8 @@
                     android:id="@+id/channel_about_website"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -78,9 +76,8 @@
                     android:id="@+id/channel_about_email"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/inter"
-                    android:textSize="14sp"
-                    android:textFontWeight="300" />
+                    style="@style/TextView_Light"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <TextView
@@ -88,9 +85,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:autoLink="web"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

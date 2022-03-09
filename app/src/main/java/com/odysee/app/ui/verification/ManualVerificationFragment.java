@@ -22,7 +22,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.VerificationActivity;
-import com.odysee.app.listener.SignInListener;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.TwitterOauth;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.tasks.GenericTaskHandler;
@@ -30,14 +30,13 @@ import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.TwitterOauthHandler;
 import com.odysee.app.tasks.lbryinc.TwitterVerifyTask;
 import com.odysee.app.tasks.verification.TwitterAccessTokenTask;
-import com.odysee.app.tasks.verification.TwitterRequestTokenTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbryio;
 import lombok.Setter;
 
 public class ManualVerificationFragment extends Fragment {
     @Setter
-    private SignInListener listener;
+    private VerificationListener listener;
     private PopupWindow popup;
     private View mainView;
     private View loadingView;

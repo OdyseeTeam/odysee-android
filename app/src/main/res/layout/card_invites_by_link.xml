@@ -31,18 +31,16 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
             android:text="@string/share_this_link"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:fontFamily="@font/inter"
             android:text="@string/your_invite_link"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -86,16 +84,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:fontFamily="@font/inter"
             android:text="@string/customize_invite_link"
-            android:textSize="14sp"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="14sp" />
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/invites_channel_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
 
-        <include layout="@layout/container_inline_channel_form" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

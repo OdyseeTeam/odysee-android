@@ -23,6 +23,7 @@
         android:paddingTop="16dp">
 
         <RelativeLayout
+            android:id="@+id/find_following_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
@@ -42,20 +43,12 @@
                 android:visibility="gone"
                 android:layout_centerVertical="true"
                 android:layout_alignParentEnd="true" />
-            <ProgressBar
-                android:id="@+id/following_content_progress"
-                android:visibility="gone"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true" />
         </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/following_filter_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
             android:layout_marginBottom="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
@@ -74,8 +67,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/filter_by_channel" />
                 <ImageView
@@ -101,8 +93,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/new_text" />
                 <ImageView
@@ -131,8 +122,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:fontFamily="@font/inter"
-                    android:textFontWeight="300"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
                     android:text="@string/past_week" />
                 <ImageView
@@ -146,17 +136,24 @@
 
             <TextView
                 android:id="@+id/following_discover_link"
-                android:background="?attr/selectableItemBackground"
+                style="@style/TextView_Light"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
+                android:layout_toStartOf="@id/following_content_progress"
                 android:layout_centerVertical="true"
+                android:layout_marginEnd="4dp"
+                android:background="?attr/selectableItemBackground"
                 android:clickable="true"
-                android:fontFamily="@font/inter"
-                android:textFontWeight="300"
-                android:textSize="14sp"
+                android:focusable="true"
                 android:text="@string/discover"
-                android:focusable="true" />
+                android:textSize="14sp" />
+            <ProgressBar
+                android:id="@+id/following_content_progress"
+                android:visibility="invisible"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true" />
         </RelativeLayout>
 
         <TextView
@@ -165,8 +162,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:fontFamily="@font/inter"
-            android:textFontWeight="300"
+            style="@style/TextView_Light"
             android:text="@string/lbry_works_better"
             android:textSize="14sp"
             android:layout_marginTop="4dp"
@@ -198,10 +194,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
-                android:fontFamily="@font/inter"
                 android:text="@string/no_claim_search_content"
+                style="@style/TextView_Light"
                 android:textSize="14sp"
-                android:textFontWeight="300"
                 android:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView

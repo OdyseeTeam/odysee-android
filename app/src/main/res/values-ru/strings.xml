@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY - платформа для размещения контента, контролируемая сообществом, в которой Вы можете найти и разместить видео, музыку, книги и прочее.</string>
     <string name="welcome_tos">Продолжая, я соглашаюсь с &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; и подтверждаю, что я старше 13 лет.</string>
     <string name="welcome_please_wait">Пожалуйста, подождите, пока мы всё подготовим...</string>
-    <string name="use_lbry">Использовать LBRY</string>
+    <string name="use_odysee">Использовать LBRY</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Ищите видео, музыку и многое другое</string>
@@ -274,7 +274,7 @@
 
     <!-- Wallet -->
     <string name="balance">Баланс</string>
-    <string name="convert_credits">Вы можете поменять кредиты на доллары США и снять сумму, используя обменник. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits">Вы можете поменять кредиты на доллары США и снять сумму, используя обменник. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Ваш кошелек синхронизирован с lbry.tv</string>

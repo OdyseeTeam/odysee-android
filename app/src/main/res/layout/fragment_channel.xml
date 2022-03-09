@@ -25,10 +25,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:text="@string/loading_content"
-                android:textSize="16sp"
-                android:textFontWeight="300" />
+                android:textSize="16sp" />
         </LinearLayout>
 
         <include layout="@layout/container_nothing_at_location" />
@@ -111,10 +110,9 @@
                     android:paddingEnd="4dp"
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp"
-                    android:fontFamily="@font/inter"
+                    style="@style/TextView_Light"
                     android:textSize="14sp"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300"/>
+                    android:textColor="@color/white" />
             </LinearLayout>
 
             <com.google.android.material.tabs.TabLayout
@@ -143,11 +141,10 @@
                         android:layout_centerInParent="true"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter"
+                        style="@style/TextView_Light"
                         android:textAllCaps="true"
                         android:textSize="48sp"
-                        android:textColor="@color/white"
-                        android:textFontWeight="300" />
+                        android:textColor="@color/white" />
                 </RelativeLayout>
                 <ImageView
                     android:id="@+id/channel_view_thumbnail"

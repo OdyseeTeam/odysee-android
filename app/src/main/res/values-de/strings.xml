@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Willkommen zu LBRY.</string>
     <string name="welcome_paragraph">LBRY ist eine von der Community kontrollierte Plattform, bei welcher Sie Videos, Musik, Bücher und weiteres finden und veröffentlichen kannst.</string>
     <string name="welcome_tos">Indem ich fortfahre, stimme ich den &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; zu und bestätige, dass ich über 13 Jahre alt bin.</string>
-    <string name="use_lbry">Verwende LBRY »</string>
+    <string name="use_odysee">Verwende LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Suche nach Videos, Musik, und vielem mehr</string>
@@ -249,7 +249,7 @@ Bitte versuche es später erneut.</string>
 
     <!-- Wallet -->
     <string name="balance">Kontostand</string>
-    <string name="convert_credits">Sie können Ihr Guthaben in USD umrechnen und den umgerechneten Betrag über einen Umtausch abheben. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits">Sie können Ihr Guthaben in USD umrechnen und den umgerechneten Betrag über einen Umtausch abheben. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Convert credits to USD on Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Ein Backup Ihrer Portemonnaie wird mit lbry.tv synchronisiert</string>

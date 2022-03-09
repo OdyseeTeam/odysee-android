@@ -31,23 +31,29 @@ import com.google.gson.reflect.TypeToken;
 import com.odysee.app.callable.UserExistsWithPassword;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
+import com.odysee.app.model.Tag;
 import com.odysee.app.model.WalletSync;
+import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.tasks.verification.CheckUserEmailVerifiedTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
+import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
+import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Utils;
 
 import org.json.JSONObject;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -84,6 +90,8 @@ public class SignInActivity extends Activity {
     private View layoutVerify;
     private TextView textTitle;
     private TextView textAddedEmail;
+    private TextView textAgreeToTerms;
+    private TextView textUseMagicLink;
 
     private String currentEmail;
     private ScheduledExecutorService emailVerifyCheckScheduler;
@@ -120,6 +128,8 @@ public class SignInActivity extends Activity {
         walletSyncDoneButton = findViewById(R.id.verification_wallet_done_button);
         textWalletSyncLoading = findViewById(R.id.verification_wallet_loading_text);
         inputWalletSyncPassword = findViewById(R.id.verification_wallet_password_input);
+        textAgreeToTerms = findViewById(R.id.agree_to_terms_note);
+        textUseMagicLink = findViewById(R.id.use_magic_link_text);
 
         buttonPrimary = findViewById(R.id.button_primary);
         buttonSecondary = findViewById(R.id.button_secondary);
@@ -129,10 +139,24 @@ public class SignInActivity extends Activity {
             public void onClick(View v) {
                 signInMode = !signInMode;
                 textTitle.setText(signInMode ? R.string.log_in_odysee : R.string.join_odysee);
+                textAgreeToTerms.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 buttonPrimary.setText(signInMode ? R.string.continue_text : R.string.sign_up);
                 buttonSecondary.setText(signInMode ? R.string.sign_up : R.string.sign_in);
                 layoutPassword.setVisibility(signInMode ? View.GONE : View.VISIBLE);
                 inputPassword.setText("");
+            }
+        });
+
+        textUseMagicLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentEmail == null) {
+                    showError(getString(R.string.no_current_email));
+                    return;
+                }
+
+                beforeSignInTransition();
+                handleUserSignInWithoutPassword(currentEmail);
             }
         });
 
@@ -153,8 +177,7 @@ public class SignInActivity extends Activity {
             }
         });
 
-        TextView agreeToTerms = findViewById(R.id.agree_to_terms_note);
-        agreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
+        textAgreeToTerms.setMovementMethod(LinkMovementMethod.getInstance());
 
         buttonPrimary.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -213,22 +236,25 @@ public class SignInActivity extends Activity {
         return false;
     }
 
-    private void performSignIn(final String email, final String password) {
-        if (requestInProgress) {
-            return;
-        }
-
+    private void beforeSignInTransition() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 //TransitionManager.beginDelayedTransition(findViewById(R.id.signin_buttons));
                 findViewById(R.id.signin_buttons).setVisibility(View.INVISIBLE);
+                activityProgress.setVisibility(View.VISIBLE);
             }
         });
+    }
 
-        activityProgress.setVisibility(View.VISIBLE);
+    private void performSignIn(final String email, final String password) {
+        if (requestInProgress) {
+            return;
+        }
+
         if (!emailSignInChecked) {
             requestInProgress = true;
+            beforeSignInTransition();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -252,6 +278,7 @@ public class SignInActivity extends Activity {
                             setCurrentEmail(email);
                             emailSignInChecked = true;
                             displaySignInControls();
+                            displayMagicLink();
                         }
                     } catch (LbryioRequestException | LbryioResponseException ex) {
                         if (ex instanceof LbryioResponseException) {
@@ -286,6 +313,8 @@ public class SignInActivity extends Activity {
             return;
         }
 
+        beforeSignInTransition();
+        requestInProgress = true;
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -378,6 +407,15 @@ public class SignInActivity extends Activity {
                 restoreControls(true);
                 layoutPassword.setVisibility(View.VISIBLE);
                 buttonPrimary.setText(R.string.sign_in);
+            }
+        });
+    }
+
+    private void displayMagicLink() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                textUseMagicLink.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -646,7 +684,7 @@ public class SignInActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Account act = accountManager.getAccounts()[0];
+        Account act = Helper.getOdyseeAccount(accountManager.getAccounts());
         accountManager.setAuthToken(act, ARG_AUTH_TYPE, Lbryio.AUTH_TOKEN);
     }
 
@@ -682,7 +720,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override
@@ -701,6 +739,25 @@ public class SignInActivity extends Activity {
             }
         });
         applyTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void loadSharedUserStateAndFinish() {
+        // load the shared user state after wallet sync is done
+        LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(SignInActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
+            @Override
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+                Lbryio.subscriptions = new ArrayList<>(subscriptions);
+                Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
+                finishSignInActivity();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                // shouldn't happen, but if it does, finish anyway
+                finishSignInActivity();
+            }
+        }, Lbryio.AUTH_TOKEN);
+        loadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void processExistingWalletWithPassword(String password) {
@@ -726,7 +783,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override
@@ -771,7 +828,7 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
-                finishSignInActivity();
+                loadSharedUserStateAndFinish();
             }
 
             @Override

@@ -27,7 +27,7 @@
     <string name="welcome_to_lbry">Tere tulemast LBRY -sse.</string>
     <string name="welcome_paragraph">LBRY on kasutajate kontrolli all olev avaldamisplatvorm, kust võib leida ja kus saab ise avaldada videoid, muusikat, raamatuid ja palju muud.</string>
     <string name="welcome_tos">Jätkates nõustute &lt;a href=\"https://lbry.com/termsofservice\"&gt;kasutustingimustega&lt;/a&gt; ja kinnitate, et olete vanem kui 13.</string>
-    <string name="use_lbry">LBRYt kasutama</string>
+    <string name="use_odysee">LBRYt kasutama</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Otsi filme, muusikat ja muud</string>
@@ -217,7 +217,7 @@
 
     <!-- Wallet -->
     <string name="balance">Saldo</string>
-    <string name="convert_credits">Valuutavahetustes saad vahetada oma LBC raha USD vastu ja selle välja võtta. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Loe lisa&lt;/a&gt;.</string>
+    <string name="convert_credits">Valuutavahetustes saad vahetada oma LBC raha USD vastu ja selle välja võtta. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Loe lisa&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Valuutavahetus Bittrex LBC > USD&lt;/a&gt;</string>
 
     <string name="backup_synced">Rahakoti varukoopia on sünkroniseeritud lbry.tv saidiga.</string>

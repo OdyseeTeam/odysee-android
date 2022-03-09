@@ -1,4 +1,4 @@
-package com.odysee.app.ui.verification;
+package com.odysee.app.ui.rewards;
 
 import android.app.Activity;
 import android.content.Context;
@@ -22,15 +22,15 @@ import com.google.android.material.snackbar.Snackbar;
 import com.hbb20.CountryCodePicker;
 
 import com.odysee.app.R;
-import com.odysee.app.listener.SignInListener;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.verification.PhoneNewVerifyTask;
 import com.odysee.app.utils.Helper;
 import lombok.Setter;
 
-public class PhoneVerificationFragment extends Fragment {
+public class RewardVerificationPhoneFragment extends Fragment {
     @Setter
-    private SignInListener listener;
+    private VerificationListener listener;
 
     private View layoutCollect;
     private View layoutVerify;

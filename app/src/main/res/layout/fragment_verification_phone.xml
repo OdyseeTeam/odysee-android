@@ -10,26 +10,16 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_margin="36dp">
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp">
 
         <TextView
-            android:textSize="28sp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/phone_number"
-            android:layout_marginBottom="16dp"
-            android:textColor="@color/white"
-            android:textFontWeight="300" />
-        <TextView
+            style="@style/TextView_Light"
             android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/enter_phone_number"
-            android:textColor="@color/white"
-            android:textFontWeight="300" />
+            android:text="@string/enter_phone_number" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -53,10 +43,9 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:background="@android:color/transparent"
-                android:fontFamily="@font/inter"
+                style="@style/TextView_Light"
                 android:singleLine="true"
-                android:textSize="20sp"
-                android:textFontWeight="300" />
+                android:textSize="20sp" />
         </LinearLayout>
 
         <RelativeLayout
@@ -83,28 +72,25 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_margin="36dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
         android:visibility="gone">
 
         <TextView
-            android:textSize="28sp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
+            android:textSize="28sp"
             android:text="@string/verify_phone_number"
-            android:layout_marginBottom="16dp"
-            android:textColor="@color/white"
-            android:textFontWeight="300" />
+            android:layout_marginBottom="16dp" />
         <TextView
             android:id="@+id/verification_phone_verify_paragraph"
-            android:textSize="16sp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:text="@string/enter_phone_verify_code"
-            android:textColor="@color/white"
-            android:textFontWeight="300" />
+            style="@style/TextView_Light"
+            android:textSize="16sp"
+            android:text="@string/enter_phone_verify_code" />
 
         <EditText
             android:id="@+id/verification_phone_code_input"
@@ -112,14 +98,13 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:background="@android:color/transparent"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:singleLine="true"
             android:hint="@string/code_placeholder"
-            android:inputType="number"
+            android:inputType="phone"
             android:letterSpacing="1.25"
             android:textAlignment="center"
-            android:textSize="48sp"
-            android:textFontWeight="300" />
+            android:textSize="48sp" />
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -145,15 +130,13 @@
                 android:id="@+id/verification_phone_edit_button"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
-                android:gravity="right"
+                android:gravity="end"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_alignParentEnd="true"
-                android:fontFamily="@font/inter"
-                android:text="@string/edit"
-                android:textColor="@color/white"
-                android:textFontWeight="300" />
+                style="@style/TextView_Light"
+                android:text="@string/edit" android:focusable="true"/>
         </RelativeLayout>
     </LinearLayout>
 </RelativeLayout>

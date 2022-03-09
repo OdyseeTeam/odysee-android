@@ -29,10 +29,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_toEndOf="@id/reward_driver_icon"
-            android:fontFamily="@font/inter"
+            style="@style/TextView_Light"
             android:lineSpacingMultiplier="1.2"
             android:textColor="@color/white"
-            android:textFontWeight="300"
             android:textSize="14sp" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

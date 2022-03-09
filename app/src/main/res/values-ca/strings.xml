@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY és una plataforma de contingut controlada per la comunitat on pots trobar i publicar vídeos, música, llibres i més.</string>
     <string name="welcome_tos">En continuar, accepto les &lt;a href=\"https://lbry.com/termsofservice\"&gt;Condicions de Servei&lt;/a&gt; i confirmo que tinc més de 13 anys.</string>
     <string name="welcome_please_wait">Sisplau, espera mentre preparem algunes coses...</string>
-    <string name="use_lbry">Empra LBRY »</string>
+    <string name="use_odysee">Empra LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Cerca vídeos, música i més</string>
@@ -258,7 +258,7 @@
 
     <!-- Wallet -->
     <string name="balance">Balanç</string>
-    <string name="convert_credits">Pots convertir els teus crèdits a USD i retirar la quantitat convertida emprant un intercanvi. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Aprèn-ne més&lt;/a&gt;.</string>
+    <string name="convert_credits">Pots convertir els teus crèdits a USD i retirar la quantitat convertida emprant un intercanvi. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Aprèn-ne més&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Converteix crèdits a USD a Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Una còpia de seguretat de la teva cartera està sincronitzada amb lbry.tv.</string>

@@ -13,6 +13,9 @@
         <item name="android:windowBackground">@drawable/launch_screen</item>
         <item name="android:windowFullscreen">true</item>
     </style>
+    <style name="FirstRunTheme" parent="AppTheme.NoActionBar">
+        <!--item name="android:windowTranslucentStatus">true</item-->
+    </style>
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
@@ -93,5 +96,24 @@
     <style name="OdyseeMiniPlayer" parent="@style/Widget.MaterialComponents.BottomSheet">
         <item name="android:background">@android:color/transparent</item>
         <item name="android:padding">0dp</item>
+    </style>
+
+    <style name="TextView_Light">
+        <item name="android:fontFamily">@font/inter_light</item>
+        <item name="textSize">12sp</item>
+    </style>
+    <style name="TextView_SemiBold">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+    </style>
+    <style name="Odysee_BottomSheetLayout">
+        <item name="paddingStart">8dp</item>
+        <item name="paddingEnd">8dp</item>
+        <item name="textSize">12sp</item>
+    </style>
+    <style name="BottomSheet_Title">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">20sp</item>
+        <item name="singleLine">true</item>
+        <item name="android:ellipsize">end</item>
     </style>
 </resources>

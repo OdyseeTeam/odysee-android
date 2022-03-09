@@ -78,11 +78,10 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.Loader;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
@@ -137,6 +136,8 @@ import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.callable.LighthouseSearch;
+import com.odysee.app.callable.BuildCommentReactOptions;
+import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
@@ -149,7 +150,6 @@ import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
 import com.odysee.app.listener.StoragePermissionListener;
-import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
@@ -158,10 +158,8 @@ import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Reactions;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
-import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
-import com.odysee.app.supplier.ReactToCommentSupplier;
 import com.odysee.app.tasks.BufferEventTask;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
@@ -182,6 +180,7 @@ import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.ui.controls.SolidIconView;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
@@ -190,6 +189,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
+import com.odysee.app.checkers.CommentEnabledCheck;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -202,7 +202,7 @@ public class FileViewFragment extends BaseFragment implements
         PIPModeListener,
         ScreenOrientationListener,
         StoragePermissionListener,
-        WalletBalanceListener {
+        ChannelCreateDialogFragment.ChannelCreateListener {
     private static final String TAG = "OdyseeFile";
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
@@ -223,8 +223,10 @@ public class FileViewFragment extends BaseFragment implements
     private Claim claim;
     private String currentUrl;
     private ClaimListAdapter relatedContentAdapter;
+    private CommentEnabledCheck commentEnabledCheck;
     private CommentListAdapter commentListAdapter;
     private Player.Listener fileViewPlayerListener;
+    private View commentLoadingArea;
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
@@ -275,21 +277,20 @@ public class FileViewFragment extends BaseFragment implements
     private TextInputEditText inputComment;
     private TextView textCommentLimit;
     private MaterialButton buttonPostComment;
+    private MaterialButton buttonCreateChannel;
     private ImageView commentPostAsThumbnail;
     private View commentPostAsNoThumbnail;
     private TextView commentPostAsAlpha;
-
-    private View inlineChannelCreator;
-    private TextInputEditText inlineChannelCreatorInputName;
-    private TextInputEditText inlineChannelCreatorInputDeposit;
-    private View inlineChannelCreatorInlineBalance;
-    private TextView inlineChannelCreatorInlineBalanceValue;
-    private View inlineChannelCreatorCancelLink;
-    private View inlineChannelCreatorProgress;
-    private MaterialButton inlineChannelCreatorCreateButton;
+    private MaterialButton buttonCommentSignedInUserRequired;
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
+
+    @Override
+    public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        commentEnabledCheck = new CommentEnabledCheck();
+    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -318,24 +319,18 @@ public class FileViewFragment extends BaseFragment implements
         inputComment = root.findViewById(R.id.comment_form_body);
         textCommentLimit = root.findViewById(R.id.comment_form_text_limit);
         buttonPostComment = root.findViewById(R.id.comment_form_post);
+        buttonCreateChannel = root.findViewById(R.id.create_channel_button);
         commentPostAsThumbnail = root.findViewById(R.id.comment_form_thumbnail);
         commentPostAsNoThumbnail = root.findViewById(R.id.comment_form_no_thumbnail);
         commentPostAsAlpha = root.findViewById(R.id.comment_form_thumbnail_alpha);
+        buttonCommentSignedInUserRequired = root.findViewById(R.id.sign_in_user_button);
         textNothingAtLocation = root.findViewById(R.id.nothing_at_location_text);
+        commentLoadingArea = root.findViewById(R.id.file_comments_loading);
 
         likeReactionAmount = root.findViewById(R.id.likes_amount);
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
         likeReactionIcon = root.findViewById(R.id.like_icon);
         dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
-
-        inlineChannelCreator = root.findViewById(R.id.container_inline_channel_form_create);
-        inlineChannelCreatorInputName = root.findViewById(R.id.inline_channel_form_input_name);
-        inlineChannelCreatorInputDeposit = root.findViewById(R.id.inline_channel_form_input_deposit);
-        inlineChannelCreatorInlineBalance = root.findViewById(R.id.inline_channel_form_inline_balance_container);
-        inlineChannelCreatorInlineBalanceValue = root.findViewById(R.id.inline_channel_form_inline_balance_value);
-        inlineChannelCreatorProgress = root.findViewById(R.id.inline_channel_form_create_progress);
-        inlineChannelCreatorCancelLink = root.findViewById(R.id.inline_channel_form_cancel_link);
-        inlineChannelCreatorCreateButton = root.findViewById(R.id.inline_channel_form_create_button);
 
         initUi(root);
 
@@ -419,7 +414,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.addFetchClaimsListener(this);
             activity.addPIPModeListener(this);
             activity.addScreenOrientationListener(this);
-            activity.addWalletBalanceListener(this);
             if (!MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
                 activity.addStoragePermissionListener(this);
             }
@@ -437,6 +431,7 @@ public class FileViewFragment extends BaseFragment implements
             if (params != null) {
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
+                    // Only update fragment if new claim is different than currently being played
                     if (newClaim != null && !newClaim.equals(this.claim)) {
                         updateRequired = true;
                     }
@@ -474,22 +469,17 @@ public class FileViewFragment extends BaseFragment implements
 
             boolean invalidRepost = false;
             if (updateRequired) {
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).clearNowPlayingClaim();
-                }
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.setPlayWhenReady(false);
-                }
-
                 resetViewCount();
                 resetFee();
                 checkNewClaimAndUrl(newClaim, newUrl);
 
+                // This is required to recycle current fragment with new claim from related content
                 claim = null;
 
                 if (newClaim != null) {
                     claim = newClaim;
                 }
+
                 if (claim == null && !Helper.isNullOrEmpty(newUrl)) {
                     // check if the claim is already cached
                     currentUrl = newUrl;
@@ -583,8 +573,10 @@ public class FileViewFragment extends BaseFragment implements
         if (!shouldResetNowPlaying &&
                 newUrl != null &&
                 MainActivity.nowPlayingClaim != null &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaimUrl) &&
                 !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getShortUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl())) {
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl()) &&
+                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getCanonicalUrl())) {
             shouldResetNowPlaying = true;
         }
 
@@ -682,10 +674,6 @@ public class FileViewFragment extends BaseFragment implements
             ((RecyclerView) root.findViewById(R.id.file_view_related_content_list)).setAdapter(null);
             ((RecyclerView) root.findViewById(R.id.file_view_comments_list)).setAdapter(null);
         }
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.setPlayWhenReady(false);
-        }
-        resetPlayer();
     }
 
     private String getStreamingUrl() {
@@ -788,10 +776,13 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "File", "File");
+            activity.updateCurrentDisplayFragment(this);
             if (claim != null && claim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
+
+            activity.refreshChannelCreationRequired(getView());
         }
 
         if (MainActivity.appPlayer != null) {
@@ -811,6 +802,7 @@ public class FileViewFragment extends BaseFragment implements
             updatePlaybackSpeedView(root);
             loadAndScheduleDurations();
         }
+
         checkOwnClaim();
         fetchChannels();
         applyFilterForBlockedChannels(Lbryio.blockedChannels);
@@ -819,6 +811,10 @@ public class FileViewFragment extends BaseFragment implements
     public void onPause() {
         if (MainActivity.appPlayer != null) {
             MainActivity.nowPlayingSource = MainActivity.SOURCE_NOW_PLAYING_FILE;
+        }
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).updateMiniPlayerMargins(true);
         }
         super.onPause();
     }
@@ -833,9 +829,11 @@ public class FileViewFragment extends BaseFragment implements
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
             activity.removeStoragePermissionListener(this);
-            activity.removeWalletBalanceListener(this);
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            activity.showAppBar();
             activity.checkNowPlaying();
+
+            activity.resetCurrentDisplayFragment();
         }
 
         closeWebView();
@@ -881,6 +879,7 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener bellIconListener = new View.OnClickListener()  {
         @Override
         public void onClick(View view) {
+            // View is not displayed when user is not signed in, so no need to check for it
             if (claim != null && claim.getSigningChannel() != null) {
                 Claim publisher = claim.getSigningChannel();
                 boolean isNotificationsDisabled = Lbryio.isNotificationsDisabled(publisher);
@@ -917,24 +916,33 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener followUnfollowListener = new View.OnClickListener() {
         @Override
         public void onClick(final View view) {
-            if (claim != null && claim.getSigningChannel() != null) {
-                Claim publisher = claim.getSigningChannel();
-                boolean isFollowing = Lbryio.isFollowing(publisher);
-                if (isFollowing) {
-                    // show unfollow confirmation
-                    Context context = getContext();
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                            setTitle(R.string.confirm_unfollow).
-                            setMessage(R.string.confirm_unfollow_message)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    doFollowUnfollow(true, view);
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
-                } else {
-                    doFollowUnfollow(false, view);
+            // TODO Extract this code to MainActivity and update views state from there for any currently visible fragments
+            MainActivity activity = (MainActivity) getActivity();
+
+            if (activity != null && activity.isSignedIn()) {
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim publisher = claim.getSigningChannel();
+                    boolean isFollowing = Lbryio.isFollowing(publisher);
+                    if (isFollowing) {
+                        // show unfollow confirmation
+                        Context context = getContext();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                setTitle(R.string.confirm_unfollow).
+                                setMessage(R.string.confirm_unfollow_message)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        doFollowUnfollow(true, view);
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    } else {
+                        doFollowUnfollow(false, view);
+                    }
+                }
+            } else {
+                if (activity != null) {
+                    activity.simpleSignIn(0);
                 }
             }
         }
@@ -1115,17 +1123,25 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_tip).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
-                        double sentAmount = amount.doubleValue();
-                        String message = getResources().getQuantityString(
-                                isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
-                                new DecimalFormat("#,###.##").format(sentAmount));
-                        Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
-                    });
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null && activity.isSignedIn()) {
+                    if (claim != null) {
+                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
+                            double sentAmount = amount.doubleValue();
+                            String message = getResources().getQuantityString(
+                                    isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
+                                    new DecimalFormat("#,###.##").format(sentAmount));
+                            Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
+                        });
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            dialog.show(((MainActivity) context).getSupportFragmentManager(), CreateSupportDialogFragment.TAG);
+                        }
+                    }
+                } else {
+                    if (activity != null) {
+                        activity.simpleSignIn(0);
                     }
                 }
             }
@@ -1317,8 +1333,11 @@ public class FileViewFragment extends BaseFragment implements
         expandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                switchCommentListVisibility(commentListAdapter.collapsed);
-                commentListAdapter.switchExpandedState();
+                // Prevents crash for when comment list isn't loaded yet but user tries to expand.
+                if (commentListAdapter != null) {
+                    switchCommentListVisibility(commentListAdapter.isCollapsed());
+                    commentListAdapter.switchExpandedState();
+                }
             }
         });
 
@@ -1328,19 +1347,6 @@ public class FileViewFragment extends BaseFragment implements
                 expandButton.performClick();
             }
         });
-
-        setupInlineChannelCreator(
-                inlineChannelCreator,
-                inlineChannelCreatorInputName,
-                inlineChannelCreatorInputDeposit,
-                inlineChannelCreatorInlineBalance,
-                inlineChannelCreatorInlineBalanceValue,
-                inlineChannelCreatorCancelLink,
-                inlineChannelCreatorCreateButton,
-                inlineChannelCreatorProgress,
-                commentChannelSpinner,
-                commentChannelSpinnerAdapter
-        );
 
         RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
@@ -1541,7 +1547,7 @@ public class FileViewFragment extends BaseFragment implements
 */
 
         loadViewCount();
-        loadReactions();
+        loadReactions(claim);
         checkIsFollowing();
 
         View root = getView();
@@ -1728,21 +1734,40 @@ public class FileViewFragment extends BaseFragment implements
     private void checkAndLoadComments(boolean forceReload) {
         View root = getView();
         if (root != null) {
+            View expandCommentArea = root.findViewById(R.id.expand_commentarea_button);
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
-            if (claim.getTags().contains("disable-comments") || claim.getSigningChannel().getTags().contains("disable-comments")) {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
-                Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
-                Helper.setViewVisibility(commentsList, View.GONE);
-            } else {
-                root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
-                Helper.setViewVisibility(commentsDisabledText, View.GONE);
-                Helper.setViewVisibility(commentsList, View.VISIBLE);
-                if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
-                    loadComments();
+
+            commentLoadingArea.setVisibility(View.VISIBLE);
+            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                Activity activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isEnabled) {
+                            showComments(expandCommentArea, commentsDisabledText, commentsList);
+                            if ((commentsList != null && forceReload) || (commentsList == null || commentsList.getAdapter() == null || commentsList.getAdapter().getItemCount() == 0)) {
+                                loadComments();
+                            }
+                        } else {
+                            hideComments(expandCommentArea, commentsDisabledText, commentsList);
+                        }
+                        commentLoadingArea.setVisibility(View.GONE);
+                    });
                 }
-            }
+            });
         }
+    }
+
+    private void showComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.VISIBLE);
+        Helper.setViewVisibility(commentsDisabledText, View.GONE);
+        Helper.setViewVisibility(commentsList, View.VISIBLE);
+    }
+
+    private void hideComments(View root, View commentsDisabledText, View commentsList) {
+        root.findViewById(R.id.expand_commentarea_button).setVisibility(View.GONE);
+        Helper.setViewVisibility(commentsDisabledText, View.VISIBLE);
+        Helper.setViewVisibility(commentsList, View.GONE);
     }
 
     private void showUnsupportedView() {
@@ -1813,6 +1838,17 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId()) &&
                     !newPlayerCreated) {
                 // if the claim is already playing, we don't need to reload the media source
+                if (MainActivity.appPlayer != null) {
+                    MainActivity.appPlayer.setPlayWhenReady(true);
+                    playbackStarted = true;
+
+                    // reconnect the app player
+                    if (fileViewPlayerListener != null) {
+                        MainActivity.appPlayer.addListener(fileViewPlayerListener);
+                    }
+                    setPlayerForPlayerView();
+                    loadAndScheduleDurations();
+                }
                 return;
             }
 
@@ -1826,27 +1862,33 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
-                String userAgent = Util.getUserAgent(context, getString(R.string.app_name));
 
                 String mediaSourceUrl;
-                DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("Odysee");
+                DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+                if (context != null) {
+                    dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+                }
                 MediaSource mediaSource = null;
                 if (claim.hasSource()) {
                     mediaSourceUrl = getStreamingUrl();
+
+                    CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
+                    cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
+                    cacheDataSourceFactory.setCache(MainActivity.playerCache);
+
                     mediaSource = new ProgressiveMediaSource.Factory(
-                            new CacheDataSourceFactory(MainActivity.playerCache, new DefaultDataSourceFactory(context, userAgent)),
-                            new DefaultExtractorsFactory()
-                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(Uri.parse(mediaSourceUrl));
+                            cacheDataSourceFactory, new DefaultExtractorsFactory()
+                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                 } else {
                     mediaSourceUrl = getLivestreamUrl();
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
-                            defaultRequestProperties.put("Referer", "https://odysee.com");
+                            defaultRequestProperties.put("Referer", "https://bitwave.tv");
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
-                            if (claim.getThumbnailUrl() != null) {
+                            if (claim.getThumbnailUrl() != null && context != null) {
                                 ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
                                 Glide.with(context.getApplicationContext()).
                                         asBitmap().
@@ -2034,9 +2076,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void loadReactions() {
-        loadReactions(claim);
-    }
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(1);
@@ -2148,7 +2187,7 @@ public class FileViewFragment extends BaseFragment implements
                 jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
                 try {
-                    JSONObject jsonChannelSign = Comments.channelSign(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
+                    JSONObject jsonChannelSign = Comments.channelSignName(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
 
                     if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
                         jsonParams.put("signature", jsonChannelSign.getString("signature"));
@@ -2632,6 +2671,9 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             List<Claim> result = future.get();
 
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
                             MainActivity a = (MainActivity) getActivity();
 
                             if (a != null) {
@@ -2644,6 +2686,10 @@ public class FileViewFragment extends BaseFragment implements
                                 });
                             }
                         } catch (InterruptedException | ExecutionException e) {
+                            if (executor != null && !executor.isShutdown()) {
+                                executor.shutdown();
+                            }
+
                             e.printStackTrace();
                         }
                     }
@@ -2764,6 +2810,7 @@ public class FileViewFragment extends BaseFragment implements
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                     if (!comments.isEmpty()) {
                         // Load and process comments reactions on a different thread so main thread is not blocked
+                        Helper.setViewVisibility(commentsLoading, View.VISIBLE);
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -2773,6 +2820,7 @@ public class FileViewFragment extends BaseFragment implements
                                     activity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
+                                            Helper.setViewVisibility(commentsLoading, View.GONE);
                                             processCommentReactions(comments, commentReactions);
                                         }
                                     });
@@ -2853,6 +2901,7 @@ public class FileViewFragment extends BaseFragment implements
                     singleCommentRoot.findViewById(R.id.comment_actions_area).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_time).setVisibility(View.GONE);
                     singleCommentRoot.findViewById(R.id.comment_channel_name).setVisibility(View.GONE);
+                    singleCommentRoot.findViewById(R.id.comment_more_options).setVisibility(View.GONE);
 
                     singleCommentRoot.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -2878,46 +2927,57 @@ public class FileViewFragment extends BaseFragment implements
                     Context ctx = getContext();
                     View root = getView();
                     if (ctx != null && root != null) {
-                        commentListAdapter = new CommentListAdapter(comments, ctx);
-                        commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim) {
-                                if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
-                                        ctx instanceof MainActivity) {
-                                    removeNotificationAsSource();
-                                    ((MainActivity) ctx).openChannelClaim(claim);
-                                }
-                            }
-                        });
-                        commentListAdapter.setReplyListener(new CommentListAdapter.ReplyClickListener() {
-                            @Override
-                            public void onReplyClicked(Comment comment) {
-                                setReplyToComment(comment);
-                            }
-                        });
-
-                        commentListAdapter.setReactListener(new CommentListAdapter.ReactClickListener() {
-                            @Override
-                            public void onCommentReactClicked(Comment c, boolean liked) {
-                                react(c, liked);
-                            }
-                        });
-
-                        RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
-                        // Indent reply-type items
-                        int marginInPx = Math.round(40 * ((float) ctx.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
-                        commentsList.addItemDecoration(new CommentItemDecoration(marginInPx));
-                        commentsList.setAdapter(commentListAdapter);
-                        commentListAdapter.notifyItemRangeInserted(0, comments.size());
-
-                        scrollToCommentHash();
-                        checkNoComments();
-                        resolveCommentPosters();
+                        ensureCommentListAdapterCreated(comments);
                     }
-
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    private void ensureCommentListAdapterCreated(final List<Comment> comments) {
+        if ( commentListAdapter == null ) {
+
+            final Context androidContext = getContext();
+            final View root = getView();
+
+            commentListAdapter = new CommentListAdapter(comments, getContext(), claim, new CommentListAdapter.CommentListListener() {
+                @Override
+                public void onListChanged() {
+                    checkNoComments();
+                }
+
+                @Override
+                public void onCommentReactClicked(Comment c, boolean liked) {
+                    react(c, liked);
+                }
+
+                @Override
+                public void onReplyClicked(Comment comment) {
+                    setReplyToComment(comment);
+                }
+            });
+            commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim) {
+                    if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
+                            androidContext instanceof MainActivity) {
+                        removeNotificationAsSource();
+                        ((MainActivity) androidContext).openChannelClaim(claim);
+                    }
+                }
+            });
+
+            RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
+            // Indent reply-type items
+            int marginInPx = Math.round(40 * ((float) androidContext.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+            commentsList.addItemDecoration(new CommentItemDecoration(marginInPx));
+            commentsList.setAdapter(commentListAdapter);
+            commentListAdapter.notifyItemRangeInserted(0, comments.size());
+
+            scrollToCommentHash();
+            checkNoComments();
+            resolveCommentPosters();
         }
     }
 
@@ -3406,14 +3466,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    @Override
-    public void onWalletBalanceUpdated(WalletBalance walletBalance) {
-        if (walletBalance != null && inlineChannelCreatorInlineBalanceValue != null) {
-            inlineChannelCreatorInlineBalanceValue.setText(Helper.shortCurrencyFormat(walletBalance.getAvailable().doubleValue()));
-        }
-        checkRewardsDriver();
-    }
-
     private void checkRewardsDriver() {
         Context ctx = getContext();
         if (ctx != null && claim != null && !claim.isFree() && claim.getFile() == null) {
@@ -3579,7 +3631,6 @@ public class FileViewFragment extends BaseFragment implements
     }
     private void disableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, false);
-        hideInlineChannelCreator();
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(commentChannelSpinner, true);
@@ -3587,18 +3638,41 @@ public class FileViewFragment extends BaseFragment implements
             Claim selectedClaim = (Claim) commentChannelSpinner.getSelectedItem();
             if (selectedClaim != null) {
                 if (selectedClaim.isPlaceholder()) {
-                    showInlineChannelCreator();
-                } else {
-                    hideInlineChannelCreator();
+                    showChannelCreator();
                 }
             }
         }
     }
-    private void showInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.VISIBLE);
+    private void showChannelCreator() {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.showChannelCreator(this);
+        }
     }
-    private void hideInlineChannelCreator() {
-        Helper.setViewVisibility(inlineChannelCreator, View.GONE);
+
+    @Override
+    public void onChannelCreated(Claim claimResult) {
+        // add the claim to the channel list and set it as the selected item
+        if (commentChannelSpinnerAdapter != null) {
+            commentChannelSpinnerAdapter.add(claimResult);
+        } else {
+            updateChannelList(Collections.singletonList(claimResult));
+        }
+        if (commentChannelSpinner != null && commentChannelSpinnerAdapter != null) {
+            // Ensure adapter is set for the spinner
+            if (commentChannelSpinner.getAdapter() == null) {
+                commentChannelSpinner.setAdapter(commentChannelSpinnerAdapter);
+            }
+            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+        }
+
+        if (commentChannelSpinner != null) {
+            View formRoot = (View) commentChannelSpinner.getParent().getParent();
+            formRoot.setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        }
     }
 
     private void updateChannelList(List<Claim> channels) {
@@ -3628,6 +3702,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void initCommentForm(View root) {
+        MainActivity activity = (MainActivity) getActivity();
+
+        if (activity != null) {
+            activity.refreshChannelCreationRequired(root);
+        }
+
         textCommentLimit.setText(String.format("%d / %d", Helper.getValue(inputComment.getText()).length(), Comment.MAX_LENGTH));
 
         buttonClearReplyToComment.setOnClickListener(new View.OnClickListener() {
@@ -3641,6 +3721,26 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 validateAndCheckPostComment();
+            }
+        });
+
+        buttonCreateChannel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!fetchingChannels) {
+                    showChannelCreator();
+                }
+            }
+        });
+
+        buttonCommentSignedInUserRequired.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null) {
+                    activity.simpleSignIn(0);
+                }
             }
         });
 
@@ -3670,10 +3770,12 @@ public class FileViewFragment extends BaseFragment implements
                     Claim claim = (Claim) item;
                     if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
-                            showInlineChannelCreator();
+                            showChannelCreator();
+                            if (commentChannelSpinnerAdapter.getCount() > 1) {
+                                commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+                            }
                         }
                     } else {
-                        hideInlineChannelCreator();
                         updatePostAsChannel(claim);
                     }
                 }
@@ -3818,6 +3920,10 @@ public class FileViewFragment extends BaseFragment implements
                 inputComment.setText(null);
                 clearReplyToComment();
 
+                final boolean thisIsFirstComment = commentListAdapter == null;
+
+                ensureCommentListAdapterCreated(new ArrayList<Comment>());
+
                 if (commentListAdapter != null) {
                     createdComment.setPoster(comment.getPoster());
                     if (!Helper.isNullOrEmpty(createdComment.getParentId())) {
@@ -3828,6 +3934,11 @@ public class FileViewFragment extends BaseFragment implements
                 }
                 afterPostComment();
                 checkNoComments();
+
+                if ( thisIsFirstComment ) {
+                    expandButton.performClick();
+                }
+
                 singleCommentRoot.setVisibility(View.GONE);
 
                 Bundle bundle = new Bundle();
@@ -3861,8 +3972,19 @@ public class FileViewFragment extends BaseFragment implements
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
 
-            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
+            /**
+             * This covers the case of a fresh comment being made and added to the list, and then liked by
+             * the commenter themself, but the {@link Reactions} field is not instantiated in this case. It
+             * would perhaps be better to fix this upstream and make this situation impossible, but even then
+             * this last line of defense doesn't hurt.
+             */
+            if (comment.getReactions() == null) {
+                comment.setReactions(Reactions.newInstanceWithNoLikesOrDislikes());
+            }
+
+            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked())) {
                 options.put("remove", true);
+            }
 
             AccountManager am = AccountManager.get(getContext());
             Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
@@ -3873,76 +3995,37 @@ public class FileViewFragment extends BaseFragment implements
             e.printStackTrace();
         }
 
-        AccountManager am = AccountManager.get(getContext());
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(result -> {
-                if (result) {
-                    refreshCommentAfterReacting(comment);
-                }
-            });
-        } else {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // This makes a network connection, so it needs to be executed on a different thread than main.
-                    if (Lbry.ownChannels.size() > 0) {
-                        try {
-                            options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                            options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSign(options, options.getString("channel_id"), options.getString("channel_name"));
-
-                            if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                                options.put("signature", jsonChannelSign.getString("signature"));
-                                options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
-                            }
-                        } catch (JSONException | ApiCallException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Callable<Boolean> callable = new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() {
-                            JSONObject data = null;
-                            if (am.getAccounts().length > 0) {
-                                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                                try {
-                                    if (odyseeAccount != null) {
-                                        okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-                                        String responseString = response.body().string();
-                                        JSONObject jsonResponse = new JSONObject(responseString);
-                                        if (jsonResponse.has("result")) {
-                                            data = jsonResponse.getJSONObject("result");
-                                        } else {
-                                            Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
-                                        }
-                                        response.close();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            return data != null && !data.has("error");
-                        }
-                    };
-                    Future<Boolean> futureReactions = executor.submit(callable);
-                    Boolean result;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // This makes a network connection, so it needs to be executed on a different thread than main.
+                if (Lbry.ownChannels.size() > 0) {
                     try {
-                        // This runs on a different thread, so it will not block main thread
-                        result = futureReactions.get();
-                        if (result) {
-                            refreshCommentAfterReacting(comment);
+                        // This makes a network connection, so it needs to be executed on a different thread than main.
+                        Callable<JSONObject> optionsCallable = new BuildCommentReactOptions(options);
+                        Future<JSONObject> optionsFuture = executor.submit(optionsCallable);
+
+                        JSONObject opt = optionsFuture.get();
+
+                        Future<?> futureReactions = executor.submit(new ReactToComment(opt));
+                        futureReactions.get();
+
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
                         }
-                    } catch (InterruptedException | ExecutionException e) {
+                        refreshCommentAfterReacting(comment);
+                    } catch (Exception e) {
                         e.printStackTrace();
+                    } finally {
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
+                        }
                     }
                 }
-            });
-
-            thread.start();
-        }
+            }
+        });
+        thread.start();
     }
 
     private void refreshCommentAfterReacting(Comment comment) {

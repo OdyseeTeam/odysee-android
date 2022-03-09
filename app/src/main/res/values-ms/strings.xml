@@ -28,7 +28,7 @@
     <string name="welcome_paragraph">LBRY adalah platform yang kandungannya dikendalikan oleh komuniti di mana anda boleh mencari dan menerbitkan video, muzik, buku, dan banyak lagi.</string>
     <string name="welcome_tos">Dengan meneruskan, saya bersetuju dengan &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; dan mengesahkan saya berusia di atas 13 tahun.</string>
     <string name="welcome_please_wait">Sila tunggu sementara kami menyiapkan beberapa perkara...</string>
-    <string name="use_lbry">Gunakan LBRY »</string>
+    <string name="use_odysee">Gunakan LBRY »</string>
 
     <!-- URI bar -->
     <string name="uri_placeholder">Cari video, muzik, dan banyak lagi</string>
@@ -251,7 +251,7 @@ Sila kembali sebentar lagi.</string>
 
     <!-- Wallet -->
     <string name="balance">Baki</string>
-    <string name="convert_credits">Anda boleh menukar kredit anda ke USD dan keluarkan jumlah tersebut menerusi sebuah bursa. &lt;a href=\"https://lbry.com/faq/exchanges\"&gt;Learn more&lt;/a&gt;.</string>
+    <string name="convert_credits">Anda boleh menukar kredit anda ke USD dan keluarkan jumlah tersebut menerusi sebuah bursa. &lt;a href=\"https://odysee.com/@OdyseeHelp:b/BuyingSellingLBRYCredits:b\"&gt;Learn more&lt;/a&gt;.</string>
     <string name="convert_credits_bittrex">&lt;a href=\"https://bittrex.com/Account/Register?referralCode=4M1-P30-BON\"&gt;Tukar kredit ke USD dengan Bittrex&lt;/a&gt;</string>
 
     <string name="backup_synced">Sandaran dompet anda diselaraskan dengan lbry.tv</string>

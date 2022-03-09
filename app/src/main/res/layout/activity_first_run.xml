@@ -3,100 +3,87 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/odyseePink"
-    android:fitsSystemWindows="true">
+    android:layout_height="match_parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <RelativeLayout
+        android:id="@+id/first_run_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <RelativeLayout
-            android:id="@+id/welcome_wait_container"
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/first_run_pager"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="24dp"
-            android:visibility="gone">
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true">
-                <ProgressBar
-                    android:id="@+id/welcome_progress_bar"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="8dp"
-                    android:layout_gravity="center_vertical"/>
-                <TextView
-                    android:id="@+id/welcome_wait_text"
-                    android:fontFamily="@font/inter"
-                    android:layout_gravity="center_vertical"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/welcome_please_wait"
-                    android:lineSpacingMultiplier="1.2"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300" />
-            </LinearLayout>
-        </RelativeLayout>
-
+            android:layout_above="@id/first_run_controls" />
         <RelativeLayout
-            android:id="@+id/welcome_link_use_lbry"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:padding="16dp"
+            android:id="@+id/first_run_controls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent">
-            <TextView
-                android:textColor="@color/white"
-                android:fontFamily="@font/inter"
-                android:layout_alignParentEnd="true"
-                android:layout_centerInParent="true"
-                android:layout_width="wrap_content"
+            android:layout_alignParentBottom="true">
+            <com.google.android.material.button.MaterialButton
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:id="@+id/first_run_skip_button"
+                android:layout_width="130dp"
                 android:layout_height="wrap_content"
-                android:text="@string/use_lbry" />
-        </RelativeLayout>
+                android:singleLine="true"
+                android:fontFamily="@font/inter"
+                android:text="@string/skip"
+                android:textColor="@color/colorPrimary" />
 
-        <RelativeLayout
-            android:id="@+id/welcome_display"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
-            <LinearLayout
-                android:orientation="vertical"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:padding="24dp">
-                <TextView
-                    android:fontFamily="@font/inter"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/first_run_continue_button"
+                android:layout_toEndOf="@id/first_run_skip_button"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/welcome_to_lbry"
-                    android:textColor="@color/white"
-                    android:textSize="32sp" />
-                <TextView
-                    android:fontFamily="@font/inter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/welcome_paragraph"
-                    android:textColor="@color/white"
-                    android:layout_marginTop="16dp"
-                    android:textFontWeight="300"
-                    android:textSize="16sp" />
-                <TextView
-                    android:id="@+id/welcome_text_view_tos"
-                    android:fontFamily="@font/inter"
-                    android:layout_marginTop="48dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:linksClickable="true"
-                    android:text="@string/welcome_tos"
-                    android:textColor="@color/white"
-                    android:textFontWeight="300"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                    android:layout_gravity="center_horizontal">
+
+                    <ImageView
+                        android:id="@+id/pager_indicator_1"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/selected_page_dot" />
+
+                    <ImageView
+                        android:id="@+id/pager_indicator_2"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/page_dot" />
+
+                    <ImageView
+                        android:id="@+id/pager_indicator_3"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/page_dot" />
+                </androidx.appcompat.widget.LinearLayoutCompat>
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.google.android.material.button.MaterialButton
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:id="@+id/first_run_continue_button"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:singleLine="true"
+                android:fontFamily="@font/inter"
+                android:text="@string/continue_text"
+                android:textColor="@color/colorPrimary" />
+            <ProgressBar
+                android:id="@+id/first_run_progress"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminate="true"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="16dp"
+                android:visibility="gone" />
         </RelativeLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </RelativeLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
