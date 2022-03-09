@@ -719,6 +719,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
                         currentDisplayFragment = searchFragment;
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                        findViewById(R.id.search_query_text).requestFocus();
+                        InputMethodManager imm =(InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.showSoftInput(findViewById(R.id.search_query_text), InputMethodManager.SHOW_FORCED);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
                     }
@@ -752,6 +755,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.search_close_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                EditText queryText = findViewById(R.id.search_query_text);
+                InputMethodManager inputMethodManager = (InputMethodManager) queryText.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
                 getSupportFragmentManager().beginTransaction()
                         .remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
                 ((EditText)findViewById(R.id.search_query_text)).setText("");
