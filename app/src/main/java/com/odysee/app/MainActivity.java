@@ -422,6 +422,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     ScheduledExecutorService searchWorker;
     ScheduledFuture<?> scheduledSearchFuture;
+    private boolean autoSearchEnabled = false;
 
     ChannelCreateDialogFragment channelCreationBottomSheet;
 
@@ -751,14 +752,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         ((EditText)findViewById(R.id.search_query_text)).addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                if (searchWorker == null) {
-                    searchWorker = Executors.newSingleThreadScheduledExecutor();
+                Context context = getApplicationContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    autoSearchEnabled = sp.getBoolean("com.odysee.app.preference.userinterface.Autosearch", false);
                 }
+                if (autoSearchEnabled) {
+                    if (searchWorker == null) {
+                        searchWorker = Executors.newSingleThreadScheduledExecutor();
+                    }
 
-                // Cancel any previously scheduled search as soon as possible if not yet running.
-                // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
-                if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
-                    scheduledSearchFuture.cancel(false);
+                    // Cancel any previously scheduled search as soon as possible if not yet running.
+                    // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
+                    if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+                        scheduledSearchFuture.cancel(false);
+                    }
                 }
             }
 
@@ -769,32 +777,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (!s.toString().equals("")) {
-                    Runnable runnable = new Runnable() {
-                        public void run() {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    EditText queryText = findViewById(R.id.search_query_text);
+                if (autoSearchEnabled) {
+                    if (!s.toString().equals("")) {
+                        Runnable runnable = new Runnable() {
+                            public void run() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        EditText queryText = findViewById(R.id.search_query_text);
 
-                                    findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
-                                    String query = queryText.getText().toString();
+                                        findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                                        String query = queryText.getText().toString();
 
-                                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+                                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
 
-                                    if (searchFragment != null) {
-                                        searchFragment.search(query, 0);
+                                        if (searchFragment != null) {
+                                            searchFragment.search(query, 0);
+                                        }
                                     }
-                                }
-                            });
-                        }
-                    };
-                    scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
-                } else {
-                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+                                });
+                            }
+                        };
+                        scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
+                    } else {
+                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
 
-                    if (searchFragment != null) {
-                        searchFragment.search("", 0);
+                        if (searchFragment != null) {
+                            searchFragment.search("", 0);
+                        }
                     }
                 }
             }
@@ -1060,6 +1070,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void cancelScheduledSearchFuture() {
         if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
             scheduledSearchFuture.cancel(true);
+        }
+        if (searchWorker != null && !searchWorker.isShutdown()) {
+            searchWorker.shutdown();
         }
     }
     public void hideToolbar() {
