@@ -130,8 +130,10 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -2720,36 +2722,44 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         Runnable runnable = () -> {
-            Map<String, String> options = new HashMap<>();
-            options.put("claim_ids", c.getClaimId());
+            MainActivity activity = (MainActivity) getActivity();
+            if ((activity != null && !activity.isBatterySaverMode()) || reactions.getLastUpdateTimestamp() == 0) {
+                Map<String, String> options = new HashMap<>();
+                options.put("claim_ids", c.getClaimId());
 
-            JSONObject data;
-            try {
-                data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
+                JSONObject data;
+                try {
+                    data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
 
-                if (data != null && data.has("others_reactions")) {
-                    JSONObject othersReactions = (JSONObject) data.get("others_reactions");
-                    if (othersReactions.has(c.getClaimId())) {
-                        int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                        int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        reactions.setOthersLikes(likesFromOthers);
-                        reactions.setOthersDislikes(dislikesFromOthers);
+                    if (data != null && data.has("others_reactions")) {
+                        JSONObject othersReactions = (JSONObject) data.get("others_reactions");
+                        if (othersReactions.has(c.getClaimId())) {
+                            int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                            int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                            reactions.setOthersLikes(likesFromOthers);
+                            reactions.setOthersDislikes(dislikesFromOthers);
+                        }
                     }
-                }
-                if (data != null && data.has("my_reactions")) {
-                    JSONObject othersReactions = (JSONObject) data.get("my_reactions");
-                    if (othersReactions.has(c.getClaimId())) {
-                        int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                        reactions.setLiked(likes > 0);
-                        c.setLiked(likes > 0);
-                        int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                        reactions.setDisliked(dislikes > 0);
-                        c.setDisliked(dislikes > 0);
+                    if (data != null && data.has("my_reactions")) {
+                        JSONObject othersReactions = (JSONObject) data.get("my_reactions");
+                        if (othersReactions.has(c.getClaimId())) {
+                            int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                            reactions.setLiked(likes > 0);
+                            c.setLiked(likes > 0);
+                            int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                            reactions.setDisliked(dislikes > 0);
+                            c.setDisliked(dislikes > 0);
+                        }
+
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(new Date());
+                        reactions.setLastUpdateTimestamp(cal.getTimeInMillis());
+
+                        updateContentReactions();
                     }
+                } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
+                    e.printStackTrace();
                 }
-                updateContentReactions();
-            } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
-                e.printStackTrace();
             }
         };
 
@@ -2899,13 +2909,9 @@ public class FileViewFragment extends BaseFragment implements
         try {
             return new Reactions(value.getInt("like"), value.getInt("dislike"));
         } catch (JSONException e) {
-            Log.e(TAG, "getReactionsForValue: ".concat(e.getLocalizedMessage()));
             return null;
         }
     }
-
-
-
 
     private void onMainActionButtonClicked() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;

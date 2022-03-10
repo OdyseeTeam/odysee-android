@@ -29,11 +29,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.*;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Editable;
@@ -1141,6 +1137,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
+    }
+
+    public boolean isBatterySaverMode() {
+        Context ctx = getBaseContext();
+        if (ctx != null) {
+            PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+
+            return (pm != null && pm.isPowerSaveMode());
+        }
+        return false;
     }
 
     public boolean isBackgroundPlaybackEnabled() {
