@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:title="@string/user_interface"
+        app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.BackgroundPlayback"
+            app:defaultValue="true"
+            app:title="@string/enable_background_playback"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode"
+            app:defaultValue="false"
+            app:dependency="com.odysee.app.preference.userinterface.BackgroundPlayback"
+            app:title="@string/enable_background_playback_pip_mode"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.MediaAutoplay"
+            app:defaultValue="true"
+            app:title="@string/enable_autoplay"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:defaultValue="notnight"
+            android:entries="@array/darkmode_setting_labels"
+            android:entryValues="@array/darkmode_setting_values"
+            android:key="com.odysee.app.preference.userinterface.DarkModeSetting"
+            android:title="@string/darkmode_setting"
+            app:iconSpaceReserved="false" />
+        <!--SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.ShowMatureContent"
+            app:title="@string/show_mature_content"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.UrlSuggestions"
+            app:title="@string/show_url_suggestions"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false" />
+        <EditTextPreference
+            android:inputType="numberDecimal|numberSigned"
+            app:key="com.odysee.app.preference.userinterface.MiniPlayerBottomMargin"
+            app:title="@string/mini_player_bottom_spacing"
+            app:defaultValue="4"
+            app:iconSpaceReserved="false" /-->
+    </PreferenceCategory>
+
+    <!--PreferenceCategory
+        android:title="@string/notifications"
+        app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.notifications.Comments"
+            app:title="@string/comments"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.notifications.Subscriptions"
+            app:title="@string/subscriptions"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.notifications.Rewards"
+            app:title="@string/rewards"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.notifications.ContentInterests"
+            app:title="@string/content_interests"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory-->
+</PreferenceScreen>

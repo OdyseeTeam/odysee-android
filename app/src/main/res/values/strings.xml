@@ -252,6 +252,18 @@
     <string name="greek">Greek</string>
     <string name="catalan">Catalan</string>
 
+    <string-array name="darkmode_setting_labels">
+        <item>Light</item>
+        <item>Night</item>
+        <item>System default</item>
+    </string-array>
+
+    <string-array name="darkmode_setting_values">
+        <item>notnight</item>
+        <item>night</item>
+        <item>system</item>
+    </string-array>
+
     <string name="none">None</string>
     <string name="public_domain">Public Domain</string>
     <string name="copyrighted">Copyrighted</string>
@@ -297,6 +309,7 @@
     <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
     <string name="enable_dark_mode">Enable dark theme</string>
+    <string name="darkmode_setting">Dark mode setting</string>
     <string name="show_mature_content">Show mature content</string>
     <string name="show_url_suggestions">Show URL suggestions</string>
     <string name="notifications">Notifications</string>

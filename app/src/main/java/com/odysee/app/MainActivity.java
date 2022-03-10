@@ -40,15 +40,7 @@ import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.Menu;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
+import android.view.*;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -251,9 +243,6 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 
-import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
-import static android.os.Build.VERSION_CODES.M;
-
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
     private static final String PLAYER_NOTIFICATION_CHANNEL_ID = "com.odysee.app.PLAYER_NOTIFICATION_CHANNEL";
@@ -358,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
     public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
+    public static final String PREFERENCE_KEY_DARK_MODE_SETTING = "com.odysee.app.preference.userinterface.DarkModeSetting";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
     public static final String PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN = "com.odysee.app.preference.userinterface.MiniPlayerBottomMargin";
@@ -469,13 +459,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } catch (Exception ex) {
             // pass (don't fail initialization on some _weird_ device implementations)
         }
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+
+        // Set app theme depending on Night mode
+        if (getDarkModeAppSetting().equals("night")) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else if (getDarkModeAppSetting().equals("notnight")){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        }
 
         initKeyStore();
         loadAuthToken();
 
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        // Change status bar text color depending on Night mode when app is running
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (!getDarkModeAppSetting().equals("night") && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (getDarkModeAppSetting().equals("notnight") || (getDarkModeAppSetting().equals("system") && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                } else {
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            }
         }
 
         activityResultLauncher = registerForActivityResult(
@@ -580,16 +590,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // register receivers
         registerRequestsReceiver();
         registerUAReceiver();
-
-        View decorView = getWindow().getDecorView();
-        decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override
-            public void onSystemUiVisibilityChange(int visibility) {
-                if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                    // not fullscreen
-                }
-            }
-        });
 
         // setup uri bar
 //        setupUriBar();
@@ -1006,9 +1006,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    public boolean isDarkMode() {
+    /**
+     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
+     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
+     */
+    public String getDarkModeAppSetting() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            return sp.getString(PREFERENCE_KEY_DARK_MODE_SETTING, "notnight");
+        } else {
+            boolean darkMode = sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+            if (darkMode) {
+                return "night";
+            } else {
+                return "notnight";
+            }
+        }
     }
 
     public boolean isBackgroundPlaybackEnabled() {
@@ -2084,10 +2097,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void exitFullScreenMode() {
         View appBarMainContainer = findViewById(R.id.appbar);
         View decorView = getWindow().getDecorView();
-        int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
+        int flags = getDarkModeAppSetting().equals("night") ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
                 (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
 
-        if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1)
+        if (!getDarkModeAppSetting().equals("night") && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1)
             flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
 
         appBarMainContainer.setFitsSystemWindows(false);
@@ -2215,7 +2228,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         this.actionMode = mode;
-        if (isDarkMode()) {
+        if (getDarkModeAppSetting().equals("night")) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
 
@@ -2258,7 +2271,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             notificationListAdapter.setInSelectionMode(false);
             notificationListAdapter.notifyDataSetChanged();
         }
-        if (Build.VERSION.SDK_INT >= M && isDarkMode()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && getDarkModeAppSetting().equals("night")) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         this.actionMode = null;
@@ -3067,7 +3080,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > M) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                     ExecutorService executorService = Executors.newSingleThreadExecutor();
                     Supplier<Boolean> task = new NotificationUpdateSupplier(options);
                     CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, executorService);
@@ -4256,7 +4269,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > M) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                     Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
                     CompletableFuture.supplyAsync(supplier);
                 } else {
