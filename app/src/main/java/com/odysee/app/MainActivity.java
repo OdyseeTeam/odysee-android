@@ -124,7 +124,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.ui.channel.*;
-import org.bitcoinj.wallet.Wallet;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -1468,6 +1467,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         });
                     } catch (ExecutionException | InterruptedException e) {
                         e.printStackTrace();
+                    } finally {
+                        if (!executorService.isShutdown()) {
+                            executorService.shutdown();
+                        }
                     }
                 }
             });
