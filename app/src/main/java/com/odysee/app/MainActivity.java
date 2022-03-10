@@ -122,7 +122,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.ui.channel.*;
+import org.bitcoinj.wallet.Wallet;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -225,7 +227,6 @@ import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
-import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
@@ -1441,27 +1442,36 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void updateWalletBalance() {
         if (isSignedIn()) {
-            WalletBalanceTask task = new WalletBalanceTask(getAuthToken(), new WalletBalanceTask.WalletBalanceHandler() {
+            Activity a = this;
+            Thread t = new Thread(new Runnable() {
                 @Override
-                public void onSuccess(WalletBalance walletBalance) {
-                    Lbry.walletBalance = walletBalance;
-                    for (WalletBalanceListener listener : walletBalanceListeners) {
-                        if (listener != null) {
-                            listener.onWalletBalanceUpdated(walletBalance);
-                        }
-                    }
-                    sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-                    ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                            Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
-                }
+                public void run() {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Callable<WalletBalance> c = new WalletBalanceFetch(getAuthToken());
+                    Future<WalletBalance> f = executorService.submit(c);
+                    try {
+                        WalletBalance balance = f.get();
 
-                @Override
-                public void onError(Exception error) {
-                    error.printStackTrace();
-                    // pass
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Lbry.walletBalance = balance;
+                                for (WalletBalanceListener listener : walletBalanceListeners) {
+                                    if (listener != null) {
+                                        listener.onWalletBalanceUpdated(balance);
+                                    }
+                                }
+                                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+                                ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
+                                        Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
+                            }
+                        });
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            t.start();
         } else {
             Lbry.walletBalance = new WalletBalance();
 
