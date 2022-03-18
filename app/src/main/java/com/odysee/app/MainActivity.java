@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
@@ -2473,6 +2474,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // Animate?
             View launchSplash = findViewById(R.id.launch_splash);
             if (launchSplash.getVisibility() == View.VISIBLE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 int width = launchSplash.getWidth();
                 ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
                 valueAnimator.setInterpolator(new DecelerateInterpolator());
