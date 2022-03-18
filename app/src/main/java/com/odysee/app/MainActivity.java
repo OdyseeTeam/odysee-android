@@ -1267,18 +1267,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void openSpecialUrl(String url, String source) {
-        String specialPath = url.substring(8).toLowerCase();
-        if (specialRouteFragmentClassMap.containsKey(specialPath)) {
-            Class fragmentClass = specialRouteFragmentClassMap.get(specialPath);
-            if (fragmentClassNavIdMap.containsKey(fragmentClass)) {
-                Map<String, Object> params = null;
-                if (!Helper.isNullOrEmpty(source)) {
-                    params = new HashMap<>();
-                    params.put("source",  source);
-                }
-
-//                openFragment(specialRouteFragmentClassMap.get(specialPath), true, fragmentClassNavIdMap.get(fragmentClass), params);
+        if (url.equalsIgnoreCase("lbry://?rewards")) {
+            if (source.equalsIgnoreCase("notification")) {
+                hideNotifications();
             }
+            openRewards();
         }
     }
 
@@ -4246,7 +4239,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Map<String, String> options = new HashMap<>();
                 options.put("notification_ids", String.valueOf(notification.getRemoteId()));
                 options.put("is_seen", "true");
-                options.put("is_read", "true");
+                // Odysee Android is not yet able to display a list with user's subscriptions,
+                // so let's not mark the notification as read
+                if (!notification.getTargetUrl().equalsIgnoreCase("lbry://?subscriptions")) {
+                    options.put("is_read", "true");
+                } else {
+                    options.put("is_read", "false");
+                }
 
                 AccountManager am = AccountManager.get(getApplicationContext());
 
@@ -4272,7 +4271,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     });
                     t.start();
                 }
-                markNotificationReadAndSeen(notification.getId());
+                if (!notification.getTargetUrl().equalsIgnoreCase("lbry://?subscriptions")) {
+                    markNotificationReadAndSeen(notification.getId());
+                }
 
                 String targetUrl = notification.getTargetUrl();
                 if (targetUrl.startsWith(SPECIAL_URL_PREFIX)) {
