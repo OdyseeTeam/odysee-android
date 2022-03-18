@@ -798,7 +798,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
-
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
@@ -830,6 +829,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         openFragment(SettingsFragment.class, true, null);
                     }
                 });
@@ -838,6 +838,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -853,6 +854,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -884,6 +886,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
                     }
                 });
@@ -892,6 +895,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         popupWindow.dismiss();
+                        hideNotifications();
                         simpleSignIn(R.id.action_home_menu);
                     }
                 });
@@ -900,6 +904,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         if (isSignedIn) {
                             signOutUser();
                         }
