@@ -40,15 +40,7 @@ import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.Menu;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
+import android.view.*;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -2050,10 +2042,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
     }
 
-    public void unsetFitsSystemWindows(View view) {
-        view.setFitsSystemWindows(false);
-    }
-
     public void enterFullScreenMode() {
         inFullscreenMode = true;
         ActionBar actionBar = getSupportActionBar();
@@ -2063,35 +2051,46 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.appbar).setFitsSystemWindows(false);
 
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-                View.SYSTEM_UI_FLAG_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-
-    public int getStatusBarHeight() {
-        int height = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            height = getResources().getDimensionPixelSize(resourceId);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController windowInsetsController = decorView.getWindowInsetsController();
+            windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            windowInsetsController.hide(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
         }
-        return height;
     }
 
     public void exitFullScreenMode() {
         View appBarMainContainer = findViewById(R.id.appbar);
-        View decorView = getWindow().getDecorView();
-        int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
-                (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
-
-        if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1)
-            flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
 
         appBarMainContainer.setFitsSystemWindows(false);
-        decorView.setSystemUiVisibility(flags);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(true);
+
+            WindowInsetsController windowInsetsController = getWindow().getInsetsController();
+            if (!isDarkMode()) {
+                windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            }
+            windowInsetsController.show(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
+
+            if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1) {
+                //noinspection deprecation
+                flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+
+            View decorView = getWindow().getDecorView();
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
+        }
         inFullscreenMode = false;
     }
 
