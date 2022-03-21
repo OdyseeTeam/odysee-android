@@ -3312,6 +3312,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
         } else {
+            // removeAccount() was deprecated on API Level 22. Any device running that version will take the other branch
+            // on this conditional
+            //noinspection deprecation
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
 
