@@ -64,7 +64,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultControlDispatcher;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -1252,14 +1251,6 @@ public class FileViewFragment extends BaseFragment implements
         TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
         textPlaybackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
 
-        playerView.setControlDispatcher(new DefaultControlDispatcher() {
-            @Override
-            public boolean dispatchSetPlayWhenReady(Player player, boolean playWhenReady) {
-                isPlaying = playWhenReady;
-                return super.dispatchSetPlayWhenReady(player, playWhenReady);
-            }
-        });
-
         playbackSpeedContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
@@ -1829,6 +1820,13 @@ public class FileViewFragment extends BaseFragment implements
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
             view.setPlayer(MainActivity.appPlayer);
+            view.getPlayer().addListener(new Player.Listener() {
+                @Override
+                public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+                    isPlaying = playWhenReady;
+                    Player.Listener.super.onPlayWhenReadyChanged(playWhenReady, reason);
+                }
+            });
             view.setUseController(true);
             if (context instanceof MainActivity) {
                 ((MainActivity) context).getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -3568,15 +3566,6 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     public static class StreamLoadErrorPolicy extends DefaultLoadErrorHandlingPolicy {
-        @Override
-        public long getRetryDelayMsFor(int dataType, long loadDurationMs, IOException exception, int errorCount) {
-            return exception instanceof ParserException
-                    || exception instanceof FileNotFoundException
-                    || exception instanceof Loader.UnexpectedLoaderException
-                    ? C.TIME_UNSET
-                    : Math.min((errorCount - 1) * 1000, 5000);
-        }
-
         @Override
         public int getMinimumLoadableRetryCount(int dataType) {
             return Integer.MAX_VALUE;
