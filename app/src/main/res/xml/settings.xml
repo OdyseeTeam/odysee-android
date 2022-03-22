@@ -24,6 +24,24 @@
             app:title="@string/enable_autoplay"
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
+        <DropDownPreference
+            app:key="com.odysee.app.preference.userinterface.WifiDefaultQuality"
+            app:entries="@array/available_qualities"
+            app:entryValues="@array/available_qualities_values"
+            app:defaultValue="@string/auto_quality"
+            app:title="@string/wifi_default_quality"
+            app:singleLineTitle="false"
+            app:summary="%s"
+            app:iconSpaceReserved="false" />
+        <DropDownPreference
+            app:key="com.odysee.app.preference.userinterface.MobileDefaultQuality"
+            app:entries="@array/available_qualities"
+            app:entryValues="@array/available_qualities_values"
+            app:defaultValue="@string/auto_quality"
+            app:title="@string/mobile_default_quality"
+            app:singleLineTitle="false"
+            app:summary="%s"
+            app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.DarkMode"
             app:title="@string/enable_dark_mode"

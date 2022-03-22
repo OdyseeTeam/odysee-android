@@ -13,6 +13,8 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -367,6 +369,7 @@ public class FileViewFragment extends BaseFragment implements
                     hideBuffering();
 
                     if (loadingNewClaim) {
+                        setPlayerQualityToDefault();
                         MainActivity.appPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
                     }
@@ -2130,6 +2133,90 @@ public class FileViewFragment extends BaseFragment implements
         currentPlayer.setPlayWhenReady(true);
     }
 
+    private void setPlayerQualityToDefault() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            boolean isOnMobileNetwork = isMeteredNetwork(context);
+            int quality = isOnMobileNetwork ?
+                    ((MainActivity) context).mobileDefaultQuality() :
+                    ((MainActivity) context).wifiDefaultQuality();
+            setPlayerQuality(MainActivity.appPlayer, quality);
+        }
+    }
+
+    // Taken from NewPipe: https://github.com/TeamNewPipe/NewPipe/blob/5459a55406ae72783584f84c1a8410e10903ba8a/app/src/main/java/org/schabi/newpipe/util/ListHelper.java#L552-L566
+    private boolean isMeteredNetwork(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
+            return false;
+        }
+        return connectivityManager.isActiveNetworkMetered();
+    }
+
+    private void setPlayerQuality(Player player, int quality) {
+        TracksInfo tracksInfo = player.getCurrentTracksInfo();
+        int selectedQuality = 0;
+
+        for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
+            if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
+            TrackGroup group = groupInfo.getTrackGroup();
+
+            TrackSelectionOverrides overrides;
+            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
+                overrides = new TrackSelectionOverrides.Builder()
+                        .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                        .build();
+                // Force it to AUTO_QUALITY_ID to override the default quality setting on non-transcoded videos
+                selectedQuality = AUTO_QUALITY_ID;
+            } else {
+                ArrayList<Integer> availableQualities = new ArrayList<>();
+                for (int i = 0; i < group.length; i++) {
+                    availableQualities.add(group.getFormat(i).height);
+                }
+                int selectedQualityIndex;
+                // Check if the chosen quality is lower than the lowest available quality
+                int lowestQuality = Collections.min(availableQualities);
+                if (quality <= lowestQuality) { // <= short path for when the quality matches the lowest
+                    selectedQuality = lowestQuality;
+                    selectedQualityIndex = availableQualities.indexOf(lowestQuality);
+                } else {
+                    // Otherwise find the highest available quality that is less than the chosen quality
+                    for (int i = 0; i < availableQualities.size(); i++) {
+                        int q = availableQualities.get(i);
+                        if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
+                            selectedQuality = q;
+                        }
+                    }
+                    selectedQualityIndex = availableQualities.indexOf(selectedQuality);
+                }
+
+                if (selectedQualityIndex != -1) {
+                    TrackSelectionOverride override = new TrackSelectionOverride(
+                            group, Collections.singletonList(selectedQualityIndex));
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .addOverride(override)
+                            .build();
+                } else { // If quality can't be found use Auto quality
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                            .build();
+                }
+            }
+            player.setTrackSelectionParameters(
+                    player
+                            .getTrackSelectionParameters()
+                            .buildUpon()
+                            .setTrackSelectionOverrides(overrides)
+                            .build()
+            );
+
+            MainActivity.videoQuality = selectedQuality;
+            updateQualityView(getView());
+
+            break;
+        }
+    }
+
     private void resetViewCount() {
         View root = getView();
         if (root != null) {
@@ -3646,7 +3733,6 @@ public class FileViewFragment extends BaseFragment implements
             } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
                 loadingQualityChanged = true;
                 int quality = item.getItemId();
-                MainActivity.videoQuality = quality;
 
                 TextView playerQualityLabel = playerView.findViewById(R.id.player_quality_label);
                 if (quality == AUTO_QUALITY_ID) {
@@ -3658,38 +3744,8 @@ public class FileViewFragment extends BaseFragment implements
 
                 if (MainActivity.appPlayer != null) {
                     Player player = MainActivity.appPlayer;
-                    TracksInfo tracksInfo = player.getCurrentTracksInfo();
-
-                    for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
-                        if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
-
-                        TrackGroup group = groupInfo.getTrackGroup();
-                        int trackIndex;
-                        for (trackIndex = 0; trackIndex < group.length; trackIndex++) {
-                            if (group.getFormat(trackIndex).height == quality) break;
-                        }
-
-                        TrackSelectionOverrides overrides;
-                        if (quality == AUTO_QUALITY_ID) {
-                            overrides = new TrackSelectionOverrides.Builder()
-                                    .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                                    .build();
-                        } else {
-                            TrackSelectionOverride override = new TrackSelectionOverride(group, Collections.singletonList(trackIndex));
-                            overrides = new TrackSelectionOverrides.Builder()
-                                    .addOverride(override)
-                                    .build();
-                        }
-                        player.setTrackSelectionParameters(
-                                player
-                                        .getTrackSelectionParameters()
-                                        .buildUpon()
-                                        .setTrackSelectionOverrides(overrides)
-                                        .build()
-                        );
-
-                        return true;
-                    }
+                    setPlayerQuality(player, quality);
+                    return true;
                 }
             }
         }
