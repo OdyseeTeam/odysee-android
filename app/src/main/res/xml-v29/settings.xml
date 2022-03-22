@@ -24,12 +24,13 @@
             app:title="@string/enable_autoplay"
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
-        <ListPreference
-            android:defaultValue="notnight"
-            android:entries="@array/darkmode_setting_labels"
-            android:entryValues="@array/darkmode_setting_values"
-            android:key="com.odysee.app.preference.userinterface.DarkModeSetting"
-            android:title="@string/darkmode_setting"
+        <DropDownPreference
+            app:key="com.odysee.app.preference.userinterface.DarkModeSetting"
+            app:defaultValue="notnight"
+            app:entries="@array/darkmode_setting_labels"
+            app:entryValues="@array/darkmode_setting_values"
+            app:summary="%s"
+            app:title="@string/darkmode_setting"
             app:iconSpaceReserved="false" />
         <!--SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.ShowMatureContent"
