@@ -388,6 +388,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
 
+    public static final String APP_SETTING_DARK_MODE_NIGHT = "night";
+    public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
+    public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
+
     private static final String TAG = "OdyseeMain";
 
     private UrlSuggestionListAdapter urlSuggestionListAdapter;
@@ -1121,9 +1125,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             boolean darkMode = sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
             if (darkMode) {
-                return "night";
+                return APP_SETTING_DARK_MODE_NIGHT;
             } else {
-                return "notnight";
+                return APP_SETTING_DARK_MODE_NOTNIGHT;
             }
         }
     }
@@ -2212,15 +2216,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             getWindow().setDecorFitsSystemWindows(true);
 
             WindowInsetsController windowInsetsController = getWindow().getInsetsController();
-            if (!getDarkModeAppSetting().equals("night")) {
-                windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+                int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+                if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)
+                     || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM)
+                          && (nightModeFlags == Configuration.UI_MODE_NIGHT_NO || nightModeFlags == Configuration.UI_MODE_NIGHT_UNDEFINED))) {
+                    windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                }
             }
             windowInsetsController.show(WindowInsets.Type.systemBars());
         } else {
             //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
 
-            if (!getDarkModeAppSetting().equals("night") && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 //noinspection deprecation
                 flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             }
