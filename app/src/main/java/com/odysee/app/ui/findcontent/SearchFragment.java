@@ -168,6 +168,7 @@ public class SearchFragment extends BaseFragment implements
         if (activity != null) {
             activity.resetCurrentDisplayFragment();
             activity.showBottomNavigation();
+            activity.cancelScheduledSearchFuture();
         }
 
         super.onStop();

@@ -297,6 +297,7 @@
     <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
     <string name="enable_dark_mode">Enable dark theme</string>
+    <string name="enable_autosearch">Perform search while typing</string>
     <string name="show_mature_content">Show mature content</string>
     <string name="show_url_suggestions">Show URL suggestions</string>
     <string name="notifications">Notifications</string>
