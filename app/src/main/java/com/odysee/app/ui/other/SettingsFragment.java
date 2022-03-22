@@ -79,13 +79,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             AppCompatDelegate.setDefaultNightMode(darkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
         }
         if (key.equalsIgnoreCase("com.odysee.app.preference.userinterface.DarkModeSetting")) {
-            String darkModeValue = sp.getString("com.odysee.app.preference.userinterface.DarkModeSetting", "notnight");
-            if (darkModeValue.equals("night")) {
+            String darkModeValue = sp.getString("com.odysee.app.preference.userinterface.DarkModeSetting", MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
+            if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT)) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            } else if (darkModeValue.equals("notnight")){
+            } else if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT)){
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
             } else {
-                int nightMode = AppCompatDelegate.getDefaultNightMode();
                 AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
             }
         }
