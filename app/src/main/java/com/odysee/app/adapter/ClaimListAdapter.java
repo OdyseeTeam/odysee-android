@@ -688,7 +688,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 isAudio = mediaType.startsWith(Claim.STREAM_TYPE_AUDIO);
             }
         }
-        return (Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !filterByChannel) || (((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo) || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio)) && (filterByFile || !filterByChannel));
+        return (Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !filterByChannel)
+                || (!filterByFile && !filterByChannel)
+                || (((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo) || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio))
+                     && filterByFile);
     }
 
     private void toggleSelectedClaim(Claim claim) {
