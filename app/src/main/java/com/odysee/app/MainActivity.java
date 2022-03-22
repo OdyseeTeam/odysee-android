@@ -291,6 +291,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
     public static String nowPlayingClaimUrl;
+    public static boolean videoIsTranscoded;
+    public static int videoQuality;
     public static boolean startingFilePickerActivity = false;
     public static boolean startingShareActivity = false;
     public static boolean startingPermissionRequest = false;
