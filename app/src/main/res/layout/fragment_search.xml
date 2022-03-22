@@ -17,28 +17,125 @@
         android:visibility="gone"
         tools:visibility="visible"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/search_result_list"
-        android:clipToPadding="false"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:visibility="gone"
-        tools:listitem="@layout/list_item_stream"/>
+        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="vertical">
+        <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/search_filter_layout"
+                                                           android:layout_width="match_parent"
+                                                           android:layout_height="wrap_content"
+                                                           android:layout_marginStart="16dp"
+                                                           android:layout_marginTop="16dp"
+                                                           android:layout_marginBottom="16dp">
+            <TextView android:id="@+id/search_filter_link"
+                      style="@style/TextView_Light"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      app:layout_constraintTop_toTopOf="parent"
+                      app:layout_constraintStart_toStartOf="parent"
+                      android:layout_gravity="center_vertical"
+                      android:drawableEnd="@drawable/ic_filter"
+                      android:drawablePadding="4dp"
+                      android:drawableTint="@color/foreground"
+                      android:gravity="center_vertical"
+                      android:text="@string/filter_by_channel"
+                      android:visibility="gone"
+                      tools:ignore="UseCompatTextViewDrawableXml"
+                      tools:visibility="visible"/>
+
+            <TextView android:id="@+id/file_type_label"
+                      android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:text="@string/search_filter_type_label"
+                      android:visibility="gone"
+                      app:layout_constraintBottom_toBottomOf="@id/chipgroupFilter"
+                      app:layout_constraintStart_toStartOf="@id/search_filter_link"
+                      app:layout_constraintTop_toTopOf="@id/chipgroupFilter"
+                      tools:visibility="visible"/>
+
+            <TextView android:id="@+id/publish_time_filter_label"
+                      android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:text="@string/search_filter_publish_time_label"
+                      android:visibility="gone"
+                      app:layout_constraintBottom_toBottomOf="@id/time_filter_spinner"
+                      app:layout_constraintStart_toStartOf="@id/search_filter_link"
+                      app:layout_constraintTop_toTopOf="@id/time_filter_spinner"
+                      tools:visibility="visible"/>
+
+            <com.google.android.material.chip.ChipGroup android:id="@+id/chipgroupFilter"
+                                                        android:layout_width="wrap_content"
+                                                        android:layout_height="wrap_content"
+                                                        android:layout_marginStart="24dp"
+                                                        android:visibility="gone"
+                                                        app:layout_constraintStart_toEndOf="@id/publish_time_filter_label"
+                                                        app:layout_constraintTop_toBottomOf="@id/search_filter_link"
+                                                        app:singleSelection="true"
+                                                        tools:layout_editor_absoluteY="24dp"
+                                                        tools:visibility="visible">
+                <com.google.android.material.chip.Chip android:id="@+id/chipSearchFile"
+                                                       android:layout_width="match_parent"
+                                                       android:layout_height="wrap_content"
+                                                       android:checkable="true"
+                                                       android:text="@string/search_filter_type_file_label"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chipSearchChannel"
+                                                       android:layout_width="match_parent"
+                                                       android:layout_height="wrap_content"
+                                                       android:checkable="true"
+                                                       android:text="@string/search_filter_type_channel_label"/>
+            </com.google.android.material.chip.ChipGroup>
+            <LinearLayout android:id="@+id/file_type_filters"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:orientation="horizontal"
+                          android:visibility="gone"
+                          app:layout_constraintStart_toStartOf="@id/chipgroupFilter"
+                          app:layout_constraintTop_toBottomOf="@id/chipgroupFilter"
+                          tools:visibility="visible">
+                <CheckBox android:id="@+id/video_filetype_checkbox"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:checked="true"
+                          android:text="@string/search_filter_filetype_video"/>
+                <CheckBox android:id="@+id/audio_filetype_checkbox"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:checked="true"
+                          android:text="@string/search_filter_filetype_audio"/>
+            </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatSpinner android:id="@+id/time_filter_spinner"
+                                                        android:layout_width="wrap_content"
+                                                        android:layout_height="48dp"
+                                                        android:entries="@array/publish_timeframe_filter"
+                                                        android:visibility="gone"
+                                                        app:layout_constraintStart_toStartOf="@id/file_type_filters"
+                                                        app:layout_constraintTop_toBottomOf="@id/file_type_filters"
+                                                        tools:visibility="visible"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/search_result_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            tools:listitem="@layout/list_item_stream"
+            tools:visibility="visible"/>
+    </LinearLayout>
 
     <ImageView android:id="@+id/lasso_spaceman"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/search_explainer"
-        android:paddingStart="32dp"
-        android:paddingEnd="32dp"
-        android:visibility="gone"
-        tools:visibility="visible"
-        android:src="@drawable/spaceman_happy"
-        android:contentDescription="Lasso spaceman" />
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               app:layout_constraintBottom_toBottomOf="parent"
+               app:layout_constraintEnd_toEndOf="parent"
+               app:layout_constraintStart_toStartOf="parent"
+               app:layout_constraintTop_toTopOf="parent"
+               app:layout_constraintBottom_toTopOf="@id/search_explainer"
+               android:paddingStart="32dp"
+               android:paddingEnd="32dp"
+               android:visibility="gone"
+               tools:visibility="visible"
+               android:src="@drawable/spaceman_happy"
+               android:contentDescription="Lasso spaceman" />
     <TextView
         android:id="@+id/search_explainer"
         android:layout_width="wrap_content"

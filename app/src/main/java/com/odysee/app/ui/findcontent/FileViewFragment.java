@@ -3088,21 +3088,22 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
         if (context instanceof MainActivity) {
             View root = getView();
-            ConstraintLayout globalLayout = root.findViewById(R.id.file_view_global_layout);
-            View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
-            ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
-            globalLayout.addView(exoplayerContainer);
+            if (root != null) {
+                ConstraintLayout globalLayout = root.findViewById(R.id.file_view_global_layout);
+                View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
+                ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
+                globalLayout.addView(exoplayerContainer);
 
-            View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen_exit);
+                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
+                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen_exit);
 
-            MainActivity activity = (MainActivity) context;
-            activity.enterFullScreenMode();
+                MainActivity activity = (MainActivity) context;
+                activity.enterFullScreenMode();
 
-            int statusBarHeight = activity.getStatusBarHeight();
-            exoplayerContainer.setPadding(0, 0, 0, 0);
+                exoplayerContainer.setPadding(0, 0, 0, 0);
 
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            }
         }
     }
 
@@ -3112,17 +3113,19 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             View root = getView();
-            RelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
-            View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
-            ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
-            mediaContainer.addView(exoplayerContainer);
+            if (root != null) {
+                RelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
+                View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
+                ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
+                mediaContainer.addView(exoplayerContainer);
 
-            View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen);
-            exoplayerContainer.setPadding(0, 0, 0, 0);
+                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
+                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen);
+                exoplayerContainer.setPadding(0, 0, 0, 0);
 
-            activity.exitFullScreenMode();
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                activity.exitFullScreenMode();
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            }
         }
     }
 
