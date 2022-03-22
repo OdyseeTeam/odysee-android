@@ -681,6 +681,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
         bottomNavigation.setSelectedItemId(R.id.action_home_menu);
 
+        findViewById(R.id.brand).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bottomNavigation.setSelectedItemId(R.id.action_home_menu);
+            }
+        });
+
         findViewById(R.id.wallet_balance_container).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
