@@ -52,6 +52,7 @@
             android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
             android:theme="@style/SplashTheme"
+            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
