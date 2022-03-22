@@ -32,6 +32,12 @@
             app:summary="%s"
             app:title="@string/darkmode_setting"
             app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.Autosearch"
+            app:title="@string/enable_autosearch"
+            app:defaultValue="false"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
         <!--SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.ShowMatureContent"
             app:title="@string/show_mature_content"
