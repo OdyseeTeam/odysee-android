@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/pageBackground">
@@ -11,6 +13,8 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         android:visibility="gone">
         <RelativeLayout
             android:layout_width="match_parent"
@@ -25,7 +29,7 @@
                 android:layout_centerVertical="true"
                 android:fontFamily="@font/inter"
                 android:text="@string/downloads"
-                android:textStyle="bold" />
+                android:textStyle="bold" android:focusable="true"/>
             <TextView
                 android:id="@+id/library_filter_link_purchases"
                 android:background="?attr/selectableItemBackground"
@@ -36,7 +40,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_toEndOf="@id/library_filter_link_downloads"
                 android:fontFamily="@font/inter"
-                android:text="@string/purchases" />
+                android:text="@string/purchases" android:focusable="true"/>
             <TextView
                 android:id="@+id/library_filter_link_history"
                 android:background="?attr/selectableItemBackground"
@@ -48,7 +52,7 @@
                 android:layout_toEndOf="@id/library_filter_link_purchases"
                 android:fontFamily="@font/inter"
                 android:text="@string/history"
-                android:textSize="14sp" />
+                android:textSize="14sp" android:focusable="true"/>
             <ProgressBar
                 android:id="@+id/library_list_loading"
                 android:layout_width="20dp"
@@ -69,11 +73,24 @@
                 android:visibility="gone" android:focusable="true"/>
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/library_clear_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/library_filter_card"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="@string/clear_all"
+        android:visibility="gone"
+        tools:visibility="visible" />
     <androidx.cardview.widget.CardView
         android:id="@+id/library_storage_stats_card"
-        android:layout_below="@id/library_filter_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/library_filter_card"
+        app:layout_constraintStart_toStartOf="@id/library_filter_card"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
@@ -289,39 +306,38 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/library_list"
         android:clipToPadding="false"
-        android:layout_below="@id/library_storage_stats_card"
+        app:layout_constraintTop_toBottomOf="@id/library_clear_all"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content" />
 
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/library_empty_container"
-        android:background="@color/pageBackground"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone">
-        <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_centerInParent="true"
+        android:background="@color/pageBackground"
+        android:padding="36dp"
+        android:visibility="gone"
+        tools:visibility="gone">
+        <ImageView
+            android:layout_gravity="center_horizontal"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:adjustViewBounds="true"
+            android:src="@drawable/spaceman_happy" />
+        <TextView
+            android:id="@+id/library_list_empty_text"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:padding="36dp">
-            <ImageView
-                android:layout_gravity="center_horizontal"
-                android:layout_width="240dp"
-                android:layout_height="240dp"
-                android:adjustViewBounds="true"
-                android:src="@drawable/spaceman_happy" />
-            <TextView
-                android:id="@+id/library_list_empty_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
-                style="@style/TextView_Light"
-                android:text="@string/library_no_downloads"
-                android:textAlignment="center"
-                android:textSize="16sp" />
-        </LinearLayout>
-    </RelativeLayout>
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            style="@style/TextView_Light"
+            android:text="@string/library_no_downloads"
+            android:textAlignment="center"
+            android:textSize="16sp" />
+    </LinearLayout>
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
