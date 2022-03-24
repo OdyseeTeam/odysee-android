@@ -54,26 +54,39 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
                 <TextView
                     android:id="@+id/comment_channel_name"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
+                    style="@style/Comment_Publisher"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="\@TestChannel"
-                    style="@style/Comment_Publisher"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:fontFamily="@font/inter"
-                    android:focusable="true" />
+                    tools:text="\@TestChannel" />
+
                 <TextView
                     android:id="@+id/comment_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerInParent="true"
+                    android:layout_toEndOf="@+id/comment_channel_name"
+                    android:layout_centerVertical="true"
                     android:fontFamily="@font/inter"
-                    tools:text="24 m ago"
                     android:textColor="@color/lightGrey"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:layout_marginStart="4dp"
+                    tools:text="24 m ago" />
+
+                <ImageButton
+                    android:id="@+id/comment_more_options"
+                    style="?android:attr/actionOverflowButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:visibility="gone"/>
             </RelativeLayout>
 
             <TextView
@@ -117,11 +130,11 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter"
-                        android:text="0"
+                        android:text="@string/zero"
                         style="@style/AppTheme.Small_Drawable"
                         app:drawableTint="@color/foreground"
                         android:drawablePadding="8dp"
-                        android:drawableStart="@drawable/ic_fire_bw"/>
+                        app:drawableStartCompat="@drawable/ic_fire_bw"/>
 
                     <TextView
                         android:id="@+id/comment_dislikes_count"
@@ -129,11 +142,11 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="@font/inter"
-                        android:text="0"
+                        android:text="@string/zero"
                         style="@style/AppTheme.Small_Drawable"
                         app:drawableTint="@color/foreground"
                         android:drawablePadding="8dp"
-                        android:drawableStart="@drawable/ic_slime_bw"/>
+                        app:drawableStartCompat="@drawable/ic_slime_bw"/>
 
                     <RelativeLayout
                         android:id="@+id/comment_block_channel"
@@ -156,16 +169,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
-                android:text="View replies"
+                android:text="@string/comment_view_replies"
                 android:fontFamily="@font/inter"
                 android:textColor="@color/colorPrimary"
                 android:textSize="16sp"
                 android:clickable="true"
                 android:focusable="true"
-                android:drawableStart="@drawable/ic_expand"
-                android:drawableTint="@color/colorPrimary"
                 android:drawablePadding="4dp"
                 android:visibility="gone"
+                app:drawableStartCompat="@drawable/ic_expand"
+                app:drawableTint="@color/colorPrimary"
                 tools:visibility="visible"/>
         </LinearLayout>
     </RelativeLayout>

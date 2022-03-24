@@ -9,25 +9,23 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+import android.widget.*;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.odysee.app.callable.LighthouseSearch;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.*;
+import java.util.concurrent.*;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -38,8 +36,6 @@ import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.LbryFile;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
-import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
-import com.odysee.app.tasks.LighthouseSearchTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
@@ -60,6 +56,8 @@ public class SearchFragment extends BaseFragment implements
     private RecyclerView resultList;
     private TextView explainerView;
     private View lassoSpacemanView;
+    private View filterLink;
+    private ChipGroup filterGroup;
 
     @Setter
     private String currentQuery;
@@ -75,6 +73,8 @@ public class SearchFragment extends BaseFragment implements
         explainerView = root.findViewById(R.id.search_explainer);
         lassoSpacemanView = root.findViewById(R.id.lasso_spaceman);
 
+        filterLink = root.findViewById(R.id.search_filter_link);
+        filterGroup = root.findViewById(R.id.chipgroupFilter);
         resultList = root.findViewById(R.id.search_result_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         resultList.setLayoutManager(llm);
@@ -102,6 +102,108 @@ public class SearchFragment extends BaseFragment implements
             }
         });
 
+        filterLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int visibility = root.findViewById(R.id.chipgroupFilter).getVisibility();
+
+                if (visibility == View.GONE) {
+                    root.findViewById(R.id.chipgroupFilter).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.file_type_label).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.publish_time_filter_label).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.time_filter_spinner).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                } else {
+                    root.findViewById(R.id.chipgroupFilter).setVisibility(View.GONE);
+                    root.findViewById(R.id.file_type_label).setVisibility(View.GONE);
+                    root.findViewById(R.id.publish_time_filter_label).setVisibility(View.GONE);
+                    root.findViewById(R.id.time_filter_spinner).setVisibility(View.GONE);
+                    root.findViewById(R.id.file_type_filters).setVisibility(View.GONE);
+                }
+            }
+        });
+
+        Context context = getContext();
+        if (context != null) {
+            ((Chip) root.findViewById(R.id.chipSearchFile)).setChipBackgroundColor(ContextCompat.getColorStateList(getContext(), R.color.chip_background));
+            ((Chip) root.findViewById(R.id.chipSearchChannel)).setChipBackgroundColor(ContextCompat.getColorStateList(getContext(), R.color.chip_background));
+        }
+
+        ((ChipGroup)root.findViewById(R.id.chipgroupFilter)).setOnCheckedChangeListener(new ChipGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(ChipGroup group, int checkedId) {
+                checkNothingToBeShown();
+                if (checkedId == View.NO_ID) {
+                    if (resultListAdapter != null) {
+                        resultListAdapter.clearSearchFilters();
+                    }
+                } else if (checkedId == R.id.chipSearchFile) {
+                    if (resultListAdapter != null) {
+                        resultListAdapter.setFilterByFile(true);
+                    }
+                } else if (checkedId == R.id.chipSearchChannel) {
+                    if (resultListAdapter != null) {
+                        resultListAdapter.setFilterByChannel(true);
+                    }
+                }
+
+                if (checkedId == R.id.chipSearchFile) {
+                    root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                } else {
+                    root.findViewById(R.id.file_type_filters).setVisibility(View.GONE);
+                }
+            }
+        });
+
+        ((CheckBox) root.findViewById(R.id.video_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(isChecked, null);
+                }
+            }
+        });
+        ((CheckBox) root.findViewById(R.id.audio_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(null, isChecked);
+                }
+            }
+        });
+
+        ((AppCompatSpinner) root.findViewById(R.id.time_filter_spinner)).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (resultListAdapter != null) {
+                    Calendar cal = Calendar.getInstance();
+                    if (position == 0) {
+                        resultListAdapter.clearTimeframeFilter();
+                    } else {
+                        switch (position) {
+                            case 1: // Last 24 hours
+                                cal.add(Calendar.HOUR_OF_DAY, -24);
+                                break;
+                            case 2: // This week
+                                cal.add(Calendar.DAY_OF_YEAR, -7);
+                                break;
+                            case 3: // This month
+                                cal.add(Calendar.MONTH, -1);
+                                break;
+                            case 4: // This year
+                                cal.add(Calendar.YEAR, -1);
+                                break;
+                        }
+                        resultListAdapter.setFilterTimeframeFrom(cal.getTimeInMillis());
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
         return root;
     }
 
@@ -168,6 +270,7 @@ public class SearchFragment extends BaseFragment implements
         if (activity != null) {
             activity.resetCurrentDisplayFragment();
             activity.showBottomNavigation();
+            activity.cancelScheduledSearchFuture();
         }
 
         super.onStop();
@@ -259,9 +362,8 @@ public class SearchFragment extends BaseFragment implements
                 unresolved.setRepostedClaim(resolved.getRepostedClaim());
                 unresolved.setUnresolved(false);
                 unresolved.setConfirmations(resolved.getConfirmations());
+                resultListAdapter.notifyDataSetChanged();
             }
-
-            resultListAdapter.notifyDataSetChanged();
         }
     }
 
@@ -297,128 +399,139 @@ public class SearchFragment extends BaseFragment implements
         // modify the request so it returns channels on top
         if (currentQuery != null) {
             final String[] split = currentQuery.split(" ");
-            if (split.length == 1) {
+            if (split.length == 1 && !currentQuery.startsWith("@")) {
                 currentQuery = "@".concat(query);
             }
         }
 
-        LighthouseSearchTask task = new LighthouseSearchTask(
-                currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null, loadingView, new ClaimSearchResultHandler() {
+        Activity a = getActivity();
+
+        if (a != null) {
+            a.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    loadingView.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Callable<List<Claim>> c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
+
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                Activity activity = getActivity();
-                List<Claim> sanitizedClaims = new ArrayList<>(claims.size());
+            public void run() {
+                Future<List<Claim>> future = executor.submit(c);
 
-                for (Claim item : claims) {
-                    if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                        sanitizedClaims.add(item);
-                    }
-                }
+                try {
+                    List<Claim> results = future.get();
 
-                if (activity != null) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Context context = getContext();
-                            if (context != null) {
-                                if (resultListAdapter == null) {
-                                    resultListAdapter = new ClaimListAdapter(sanitizedClaims, context);
-                                    resultListAdapter.setContextGroupId(SEARCH_CONTEXT_GROUP_ID);
-                                    resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
-                                    resolveFeaturedItem(buildVanityUrl(query));
-                                    resultListAdapter.setListener(SearchFragment.this);
-                                    if (resultList != null) {
-                                        resultList.setAdapter(resultListAdapter);
-                                    }
-                                } else {
-                                    resultList.setVisibility(View.VISIBLE);
-                                    resultListAdapter.addItems(sanitizedClaims);
-                                }
+                    List<Claim> sanitizedClaims = new ArrayList<>(results.size());
 
-                                resultListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
-
-                                int itemCount = resultListAdapter.getItemCount();
-                                Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
-                                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                                Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                            }
+                    for (Claim item : results) {
+                        if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                            sanitizedClaims.add(item);
                         }
-                    });
-                }
-
-                // Lighthouse doesn't return "valueType" of the claim, so another request is needed
-                // to determine if an item is a playlist and get the items on the playlist.
-                List<String> claimIds = new ArrayList<>();
-
-                for (int i = 0; i < sanitizedClaims.size(); i++) {
-                    if (!sanitizedClaims.get(i).getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
-                        claimIds.add(sanitizedClaims.get(i).getClaimId());
                     }
-                }
 
-                Map<String, Object> claimSearchOptions = new HashMap<>(2);
-
-                claimSearchOptions.put("claim_ids", claimIds);
-                claimSearchOptions.put("page_size", claimIds.size());
-
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            List<Claim> totalResults = future.get();
-
-                            // For each claim returned from Lighthouse, replace it by the one using Search API
-                            for (int i = 0; i < sanitizedClaims.size(); i++) {
-                                if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
-                                    int finalI = i;
-                                    Claim found = totalResults.stream().filter(filteredClaim -> {
-                                        return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
-                                    }).findAny().orElse(null);
-
-                                    if (found != null) {
-                                        sanitizedClaims.set(i, found);
-
-                                        if (activity != null && resultListAdapter != null) {
-                                            activity.runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                                                        resultListAdapter.setItem(found.getClaimId(), found);
-                                                    } else {
-                                                        resultListAdapter.removeItem(found);
-                                                    }
-                                                }
-                                            });
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Context context = getContext();
+                                if (context != null) {
+                                    if (resultListAdapter == null) {
+                                        resultListAdapter = new ClaimListAdapter(sanitizedClaims, context);
+                                        resultListAdapter.setContextGroupId(SEARCH_CONTEXT_GROUP_ID);
+                                        resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
+                                        resolveFeaturedItem(buildVanityUrl(query));
+                                        resultListAdapter.setListener(SearchFragment.this);
+                                        if (resultList != null) {
+                                            resultList.setAdapter(resultListAdapter);
                                         }
+                                    } else {
+                                        resultList.setVisibility(View.VISIBLE);
+                                        resultListAdapter.addItems(sanitizedClaims);
                                     }
+
+                                    resultListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+                                    checkNothingToBeShown();
                                 }
                             }
-                        } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
-
-                        contentHasReachedEnd = hasReachedEnd;
-                        searchLoading = false;
+                        });
                     }
-                });
-                t.start();
-            }
 
-            @Override
-            public void onError(Exception error) {
-                Context context = getContext();
-                int itemCount = resultListAdapter == null ? 0 : resultListAdapter.getItemCount();
-                Helper.setViewVisibility(lassoSpacemanView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                Helper.setViewVisibility(explainerView, itemCount == 0 ? View.VISIBLE : View.GONE);
-                if (context != null) {
-                    Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
+                    // Lighthouse doesn't return "valueType" of the claim, so another request is needed
+                    // to determine if an item is a playlist and get the items on the playlist.
+                    List<String> claimIds = new ArrayList<>();
+
+                    for (Claim sanitizedClaim : sanitizedClaims) {
+                        if (!sanitizedClaim.getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
+                            claimIds.add(sanitizedClaim.getClaimId());
+                        }
+                    }
+
+                    Map<String, Object> claimSearchOptions = new HashMap<>(2);
+
+                    claimSearchOptions.put("claim_ids", claimIds);
+                    claimSearchOptions.put("page_size", claimIds.size());
+
+                    Future<List<Claim>> futureSearch = executor.submit(new Search(claimSearchOptions));
+                    List<Claim> totalResults = futureSearch.get();
+
+                    // For each claim returned from Lighthouse, replace it by the one using Search API
+                    for (int i = 0; i < sanitizedClaims.size(); i++) {
+                        if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
+                            int finalI = i;
+                            Claim found = totalResults.stream().filter(filteredClaim -> {
+                                return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
+                            }).findAny().orElse(null);
+
+                            if (found != null) {
+                                sanitizedClaims.set(i, found);
+
+                                if (a != null && resultListAdapter != null) {
+                                    a.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                                                resultListAdapter.setItem(found.getClaimId(), found);
+                                            } else {
+                                                resultListAdapter.removeItem(found);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    contentHasReachedEnd = results.size() < PAGE_SIZE;
+                    searchLoading = false;
+
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                loadingView.setVisibility(View.GONE);
+                                int itemCount = resultListAdapter == null ? 0 : resultListAdapter.getItemCount();
+
+                                if (itemCount == 0) {
+                                    filterLink.setVisibility(View.GONE);
+                                } else {
+                                    filterLink.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        });
+                    }
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (!executor.isShutdown()) {
+                        executor.shutdown();
+                    }
                 }
-                searchLoading = false;
             }
         });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     public void onClaimClicked(Claim claim) {
@@ -441,6 +554,22 @@ public class SearchFragment extends BaseFragment implements
                 // not a channel
                 activity.openFileClaim(claim);
             }
+        }
+    }
+
+    private void checkNothingToBeShown() {
+        List<Claim> adapterItems = resultListAdapter.getItems();
+        Claim firstStream = adapterItems.stream().filter(s -> Claim.TYPE_STREAM.equalsIgnoreCase(s.getValueType()))
+                                                 .findAny().orElse(null);
+        int checked = filterGroup.getCheckedChipId();
+        if (adapterItems.size() == 0
+            || (checked == R.id.chipSearchFile && firstStream == null)) {
+            lassoSpacemanView.setVisibility(View.VISIBLE);
+            Helper.setViewText(explainerView, getString(R.string.search_no_results, currentQuery));
+            explainerView.setVisibility(View.VISIBLE);
+        } else {
+            lassoSpacemanView.setVisibility(View.GONE);
+            explainerView.setVisibility(View.GONE);
         }
     }
 

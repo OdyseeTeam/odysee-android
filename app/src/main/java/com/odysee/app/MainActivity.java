@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
@@ -35,8 +36,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
@@ -48,6 +51,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -109,7 +114,6 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -123,6 +127,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.callable.WalletBalanceFetch;
+import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -225,12 +231,7 @@ import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
-import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
-import com.odysee.app.ui.channel.ChannelCommentsFragment;
-import com.odysee.app.ui.channel.ChannelFormFragment;
-import com.odysee.app.ui.channel.ChannelFragment;
-import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
@@ -422,6 +423,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
 
+    ScheduledExecutorService searchWorker;
+    ScheduledFuture<?> scheduledSearchFuture;
+    private boolean autoSearchEnabled = false;
+
+    ChannelCreateDialogFragment channelCreationBottomSheet;
+
     AccountManager accountManager;
 
     // startup stages (to be able to determine how far a user made it if startup fails)
@@ -442,8 +449,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
+
         if (Build.VERSION.SDK_INT < 31) {
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
@@ -682,6 +689,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
         bottomNavigation.setSelectedItemId(R.id.action_home_menu);
 
+        findViewById(R.id.brand).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bottomNavigation.setSelectedItemId(R.id.action_home_menu);
+            }
+        });
+
         findViewById(R.id.wallet_balance_container).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -721,6 +735,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
                         currentDisplayFragment = searchFragment;
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                        findViewById(R.id.search_query_text).requestFocus();
+                        InputMethodManager imm =(InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.showSoftInput(findViewById(R.id.search_query_text), InputMethodManager.SHOW_FORCED);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
                     }
@@ -733,9 +750,72 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     String query = queryText.getText().toString();
 
-                    SearchFragment fragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
-                    currentDisplayFragment = fragment;
-                    fragment.search(query, 0);
+                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                    if (searchFragment != null) {
+                        searchFragment.search(query, 0);
+                    }
+                }
+            }
+        });
+
+        ((EditText)findViewById(R.id.search_query_text)).addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                Context context = getApplicationContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    autoSearchEnabled = sp.getBoolean("com.odysee.app.preference.userinterface.Autosearch", false);
+                }
+                if (autoSearchEnabled) {
+                    if (searchWorker == null) {
+                        searchWorker = Executors.newSingleThreadScheduledExecutor();
+                    }
+
+                    // Cancel any previously scheduled search as soon as possible if not yet running.
+                    // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
+                    if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+                        scheduledSearchFuture.cancel(false);
+                    }
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (autoSearchEnabled) {
+                    if (!s.toString().equals("")) {
+                        Runnable runnable = new Runnable() {
+                            public void run() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        EditText queryText = findViewById(R.id.search_query_text);
+
+                                        findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                                        String query = queryText.getText().toString();
+
+                                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                                        if (searchFragment != null) {
+                                            searchFragment.search(query, 0);
+                                        }
+                                    }
+                                });
+                            }
+                        };
+                        scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
+                    } else {
+                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                        if (searchFragment != null) {
+                            searchFragment.search("", 0);
+                        }
+                    }
                 }
             }
         });
@@ -754,15 +834,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.search_close_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getSupportFragmentManager().beginTransaction()
-                        .remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                EditText queryText = findViewById(R.id.search_query_text);
+                InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
+                Fragment searchFragment = getSupportFragmentManager().findFragmentByTag("SEARCH");
+                if (searchFragment != null) {
+                    getSupportFragmentManager().beginTransaction().remove(searchFragment).commit();
+                }
+
                 ((EditText)findViewById(R.id.search_query_text)).setText("");
                 showBottomNavigation();
                 switchToolbarForSearch(false);
 
                 // On tablets, multiple fragments could be visible. Don't show Home Screen when File View is visible
-                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE)
+                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE) {
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+                }
 
                 showWalletBalance();
                 findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
@@ -792,7 +880,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
-
 
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
@@ -825,6 +912,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         openFragment(SettingsFragment.class, true, null);
                     }
                 });
@@ -833,6 +921,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -848,6 +937,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -879,6 +969,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
                     }
                 });
@@ -887,6 +978,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         popupWindow.dismiss();
+                        hideNotifications();
                         simpleSignIn(R.id.action_home_menu);
                     }
                 });
@@ -895,6 +987,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         if (isSignedIn) {
                             signOutUser();
                         }
@@ -989,6 +1082,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return super.onOptionsItemSelected(item);
     }
 
+    public void cancelScheduledSearchFuture() {
+        if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+            scheduledSearchFuture.cancel(true);
+        }
+        if (searchWorker != null && !searchWorker.isShutdown()) {
+            searchWorker.shutdown();
+        }
+    }
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }
@@ -996,7 +1097,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) findViewById(R.id.miniplayer).getLayoutParams();
         int scaledMiniPlayerMargin = getScaledValue(DEFAULT_MINI_PLAYER_MARGIN);
         int scaledMiniPlayerBottomMargin = (withBottomNavigation ? bottomNavigationHeight : 0) + getScaledValue(2);
-        android.util.Log.d("#HELP", "updateMiniPlayerMargin=" + withBottomNavigation + "; bottom=" + scaledMiniPlayerBottomMargin);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
         }
@@ -1437,27 +1537,40 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void updateWalletBalance() {
         if (isSignedIn()) {
-            WalletBalanceTask task = new WalletBalanceTask(getAuthToken(), new WalletBalanceTask.WalletBalanceHandler() {
+            Activity a = this;
+            Thread t = new Thread(new Runnable() {
                 @Override
-                public void onSuccess(WalletBalance walletBalance) {
-                    Lbry.walletBalance = walletBalance;
-                    for (WalletBalanceListener listener : walletBalanceListeners) {
-                        if (listener != null) {
-                            listener.onWalletBalanceUpdated(walletBalance);
+                public void run() {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Callable<WalletBalance> c = new WalletBalanceFetch(getAuthToken());
+                    Future<WalletBalance> f = executorService.submit(c);
+                    try {
+                        WalletBalance balance = f.get();
+
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Lbry.walletBalance = balance;
+                                for (WalletBalanceListener listener : walletBalanceListeners) {
+                                    if (listener != null) {
+                                        listener.onWalletBalanceUpdated(balance);
+                                    }
+                                }
+                                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+                                ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
+                                        Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
+                            }
+                        });
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (!executorService.isShutdown()) {
+                            executorService.shutdown();
                         }
                     }
-                    sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-                    ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                            Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
-                }
-
-                @Override
-                public void onError(Exception error) {
-                    error.printStackTrace();
-                    // pass
                 }
             });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            t.start();
         } else {
             Lbry.walletBalance = new WalletBalance();
 
@@ -1542,7 +1655,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         initialiseUserInstall();
-        scheduleWalletSyncTask();
         // checkPendingOpens();
     }
 
@@ -2047,10 +2159,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
     }
 
-    public void unsetFitsSystemWindows(View view) {
-        view.setFitsSystemWindows(false);
-    }
-
     public void enterFullScreenMode() {
         inFullscreenMode = true;
         ActionBar actionBar = getSupportActionBar();
@@ -2060,35 +2168,46 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.appbar).setFitsSystemWindows(false);
 
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-                View.SYSTEM_UI_FLAG_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-
-    public int getStatusBarHeight() {
-        int height = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            height = getResources().getDimensionPixelSize(resourceId);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController windowInsetsController = decorView.getWindowInsetsController();
+            windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            windowInsetsController.hide(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
         }
-        return height;
     }
 
     public void exitFullScreenMode() {
         View appBarMainContainer = findViewById(R.id.appbar);
-        View decorView = getWindow().getDecorView();
-        int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
-                (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
-
-        if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1)
-            flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
 
         appBarMainContainer.setFitsSystemWindows(false);
-        decorView.setSystemUiVisibility(flags);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(true);
+
+            WindowInsetsController windowInsetsController = getWindow().getInsetsController();
+            if (!isDarkMode()) {
+                windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            }
+            windowInsetsController.show(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
+
+            if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1) {
+                //noinspection deprecation
+                flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+
+            View decorView = getWindow().getDecorView();
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
+        }
         inFullscreenMode = false;
     }
 
@@ -2359,7 +2478,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
 
                     Lbry.INSTALLATION_ID = installId;
-                    android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
+                    //android.util.Log.d(TAG, String.format("InstallationID: %s", Lbry.INSTALLATION_ID));
 
                     try {
                         try {
@@ -2383,6 +2502,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
 
                     checkFirstRun();
+                    scheduleWalletSyncTask();
 
                     if (!initialBlockedChannelsLoaded) {
                         loadBlockedChannels();
@@ -2469,6 +2589,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // Animate?
             View launchSplash = findViewById(R.id.launch_splash);
             if (launchSplash.getVisibility() == View.VISIBLE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 int width = launchSplash.getWidth();
                 ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
                 valueAnimator.setInterpolator(new DecelerateInterpolator());
@@ -2604,7 +2725,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         @Override
                         public void onSuccess(List<Subscription> subscriptions, List<Subscription> diff) {
                             Lbryio.subscriptions = new ArrayList<>(subscriptions);
-                            if (diff != null && diff.size() > 0) {
+                            if (diff.size() > 0) {
                                 saveSharedUserState();
                             }
 
@@ -2873,13 +2994,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onSyncGetSuccess(WalletSync walletSync) {
                 Lbryio.lastWalletSync = walletSync;
                 Lbryio.lastRemoteHash = walletSync.getHash();
+                loadSharedUserState();
             }
 
             @Override
             public void onSyncGetWalletNotFound() {
                 // pass. This actually shouldn't happen at this point.
                 // But if it does, send what we have
-                if (Lbryio.isSignedIn() && userSyncEnabled()) {
+                if (Lbryio.isSignedIn()) {
                     syncApplyAndSet();
                 }
             }
@@ -3002,6 +3124,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
     }
 
+    public void showError(String message, @NotNull View root) {
+        Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+    }
     public void showNotifications() {
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);
@@ -3189,6 +3314,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } else {
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                if (db != null) {
+                    DatabaseHelper.clearLocalUserData(db);
+                }
+            }
+        });
     }
 
     public boolean isSignedIn() {
@@ -3848,6 +3984,47 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void refreshChannelCreationRequired(View root) {
+        if (isSignedIn()) {
+            fetchOwnChannels();
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.GONE);
+
+            if (Lbry.ownChannels.size() > 0) {
+                root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
+                root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+            } else {
+                root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+                root.findViewById(R.id.no_channels).setVisibility(View.VISIBLE);
+            }
+        } else {
+            root.findViewById(R.id.user_not_signed_in).setVisibility(View.VISIBLE);
+
+            root.findViewById(R.id.has_channels).setVisibility(View.GONE);
+            root.findViewById(R.id.no_channels).setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * This shows the bottom sheet with the channel creator UI to quickly create a channel when one is required.
+     *
+     * There is no need for any method to hide it as it is either done by Android framework or programmatically
+     * by our BottomSheetDialog implementation.
+     * @param listener ChannelCreateDialogFragment.ChannelCreateListener implementation to run when a channel has been created
+     */
+    public void showChannelCreator(ChannelCreateDialogFragment.ChannelCreateListener listener) {
+        if (channelCreationBottomSheet == null) {
+            channelCreationBottomSheet = ChannelCreateDialogFragment.newInstance(listener);
+        }
+
+        channelCreationBottomSheet.show(getSupportFragmentManager(), "ModalChannelCreateBottomSheet");
+    }
+
+    /**
+     * Call this to nullify the bottom sheet object so listener is always assigned from the calling class
+     */
+    public void destroyChannelCreator() {
+        channelCreationBottomSheet = null;
+    }
     public void fetchOwnChannels() {
         AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {

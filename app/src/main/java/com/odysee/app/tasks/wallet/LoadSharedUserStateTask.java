@@ -64,35 +64,17 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                 }
 
                 JSONObject shared = result.getJSONObject("shared");
-                if (shared.has("type")
-                        && "object".equalsIgnoreCase(shared.getString("type"))
-                        && shared.has("value")) {
+                if (shared.has("type") && "object".equalsIgnoreCase(shared.getString("type")) && shared.has("value")) {
                     JSONObject value = shared.getJSONObject("value");
+                    JSONArray tags =  value.has("tags") && !value.isNull("tags") ? value.getJSONArray("tags") : null;
+                    JSONArray blocked = value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
 
-                    JSONArray subscriptionUrls =
-                            value.has("subscriptions") && !value.isNull("subscriptions") ? value.getJSONArray("subscriptions") : null;
-                    JSONArray tags =
-                            value.has("tags") && !value.isNull("tags") ? value.getJSONArray("tags") : null;
-                    JSONArray following =
-                            value.has("following") && !value.isNull("following") ? value.getJSONArray("following") : null;
-                    JSONArray blocked =
-                            value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
-
-                    if (subscriptionUrls != null) {
-                        subscriptions = new ArrayList<>();
-                        for (int i = 0; i < subscriptionUrls.length(); i++) {
-                            String url = subscriptionUrls.getString(i);
+                    subscriptions = loadSubscriptionsFromSharedUserState(shared);
+                    if (db != null) {
+                        for (Subscription subscription : subscriptions) {
                             try {
-                                LbryUri uri = LbryUri.parse(LbryUri.normalize(url));
-                                Subscription subscription = new Subscription();
-                                subscription.setChannelName(uri.getChannelName());
-                                subscription.setUrl(uri.toString());
-                                subscription.setNotificationsDisabled(isNotificationsDisabledForSubUrl(uri.toString(), following));
-                                subscriptions.add(subscription);
-                                if (db != null) {
-                                    DatabaseHelper.createOrUpdateSubscription(subscription, db);
-                                }
-                            } catch (LbryUriException | SQLiteException | IllegalStateException ex) {
+                                DatabaseHelper.createOrUpdateSubscription(subscription, db);
+                            } catch (IllegalStateException ex) {
                                 // pass
                             }
                         }
@@ -167,6 +149,39 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
 
         // always default notifications disabled to true
         return true;
+    }
+
+    public static List<Subscription> loadSubscriptionsFromSharedUserState(JSONObject shared) {
+        List<Subscription> subscriptions = new ArrayList<>();
+
+        try {
+            JSONObject value = shared.getJSONObject("value");
+            JSONArray subscriptionUrls =
+                    value.has("subscriptions") && !value.isNull("subscriptions") ? value.getJSONArray("subscriptions") : null;
+            JSONArray following =
+                    value.has("following") && !value.isNull("following") ? value.getJSONArray("following") : null;
+
+            if (subscriptionUrls != null) {
+                subscriptions = new ArrayList<>();
+                for (int i = 0; i < subscriptionUrls.length(); i++) {
+                    String url = subscriptionUrls.getString(i);
+                    try {
+                        LbryUri uri = LbryUri.parse(LbryUri.normalize(url));
+                        Subscription subscription = new Subscription();
+                        subscription.setChannelName(uri.getChannelName());
+                        subscription.setUrl(uri.toString());
+                        subscription.setNotificationsDisabled(isNotificationsDisabledForSubUrl(uri.toString(), following));
+                        subscriptions.add(subscription);
+                    } catch (LbryUriException | SQLiteException ex) {
+                        // pass
+                    }
+                }
+            }
+        } catch (JSONException ex) {
+            // pass
+        }
+
+        return subscriptions;
     }
 
     protected void onPostExecute(Boolean result) {

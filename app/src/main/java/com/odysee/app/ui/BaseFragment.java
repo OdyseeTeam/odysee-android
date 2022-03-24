@@ -2,35 +2,19 @@ package com.odysee.app.ui;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.os.AsyncTask;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
-import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
-import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
-import com.odysee.app.model.Claim;
-import com.odysee.app.tasks.claim.ChannelCreateUpdateTask;
-import com.odysee.app.tasks.claim.ClaimResultHandler;
-import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
-import com.odysee.app.utils.LbryAnalytics;
-import com.odysee.app.utils.LbryUri;
-import com.odysee.app.utils.Lbryio;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -127,123 +111,4 @@ public class BaseFragment extends Fragment {
         }
     }
 
-    public void setupInlineChannelCreator(
-            View container,
-            TextInputEditText inputChannelName,
-            TextInputEditText inputDeposit,
-            View inlineBalanceView,
-            TextView inlineBalanceValue,
-            View linkCancel,
-            MaterialButton buttonCreate,
-            View progressView,
-            AppCompatSpinner channelSpinner,
-            InlineChannelSpinnerAdapter channelSpinnerAdapter) {
-        inputDeposit.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View view, boolean hasFocus) {
-                Helper.setViewVisibility(inlineBalanceView, hasFocus ? View.VISIBLE : View.INVISIBLE);
-            }
-        });
-
-        linkCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Helper.setViewText(inputChannelName, null);
-                Helper.setViewText(inputDeposit, null);
-                Helper.setViewVisibility(container, View.GONE);
-            }
-        });
-
-        buttonCreate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // validate deposit and channel name
-                String channelNameString = Helper.normalizeChannelName(Helper.getValue(inputChannelName.getText()));
-                Claim claimToSave = new Claim();
-                claimToSave.setName(channelNameString);
-                String channelName = claimToSave.getName().startsWith("@") ? claimToSave.getName().substring(1) : claimToSave.getName();
-                String depositString = Helper.getValue(inputDeposit.getText());
-                if ("@".equals(channelName) || Helper.isNullOrEmpty(channelName)) {
-                    showError(getString(R.string.please_enter_channel_name));
-                    return;
-                }
-                if (!LbryUri.isNameValid(channelName)) {
-                    showError(getString(R.string.channel_name_invalid_characters));
-                    return;
-                }
-                if (Helper.channelExists(channelName)) {
-                    showError(getString(R.string.channel_name_already_created));
-                    return;
-                }
-
-                double depositAmount = 0;
-                try {
-                    depositAmount = Double.parseDouble(depositString);
-                } catch (NumberFormatException ex) {
-                    // pass
-                    showError(getString(R.string.please_enter_valid_deposit));
-                    return;
-                }
-                if (depositAmount == 0) {
-                    String error = getResources().getQuantityString(R.plurals.min_deposit_required, depositAmount == 1 ? 1 : 2, String.valueOf(Helper.MIN_DEPOSIT));
-                    showError(error);
-                    return;
-                }
-                if (Lbry.walletBalance == null || Lbry.walletBalance.getAvailable().doubleValue() < depositAmount) {
-                    showError(getString(R.string.deposit_more_than_balance));
-                    return;
-                }
-
-                ChannelCreateUpdateTask task =  new ChannelCreateUpdateTask(
-                        claimToSave, new BigDecimal(depositString), false, progressView, Lbryio.AUTH_TOKEN, new ClaimResultHandler() {
-                    @Override
-                    public void beforeStart() {
-                        Helper.setViewEnabled(inputChannelName, false);
-                        Helper.setViewEnabled(inputDeposit, false);
-                        Helper.setViewEnabled(buttonCreate, false);
-                        Helper.setViewEnabled(linkCancel, false);
-                    }
-
-                    @Override
-                    public void onSuccess(Claim claimResult) {
-                        if (!BuildConfig.DEBUG) {
-                            LogPublishTask logPublishTask = new LogPublishTask(claimResult);
-                            logPublishTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                        }
-
-                        // channel created
-                        Bundle bundle = new Bundle();
-                        bundle.putString("claim_id", claimResult.getClaimId());
-                        bundle.putString("claim_name", claimResult.getName());
-                        LbryAnalytics.logEvent(LbryAnalytics.EVENT_CHANNEL_CREATE, bundle);
-
-                        // add the claim to the channel list and set it as the selected item
-                        if (channelSpinnerAdapter != null) {
-                            channelSpinnerAdapter.add(claimResult);
-                        }
-                        if (channelSpinner != null && channelSpinnerAdapter != null) {
-                            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
-                        }
-
-                        Helper.setViewEnabled(inputChannelName, true);
-                        Helper.setViewEnabled(inputDeposit, true);
-                        Helper.setViewEnabled(buttonCreate, true);
-                        Helper.setViewEnabled(linkCancel, true);
-                    }
-
-                    @Override
-                    public void onError(Exception error) {
-                        Helper.setViewEnabled(inputChannelName, true);
-                        Helper.setViewEnabled(inputDeposit, true);
-                        Helper.setViewEnabled(buttonCreate, true);
-                        Helper.setViewEnabled(linkCancel, true);
-                        showError(error.getMessage());
-                    }
-                });
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            }
-        });
-
-        Helper.setViewText(inlineBalanceValue, Helper.shortCurrencyFormat(Lbry.walletBalance.getAvailable().doubleValue()));
-    }
 }

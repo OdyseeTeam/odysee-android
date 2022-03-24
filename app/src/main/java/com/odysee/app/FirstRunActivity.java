@@ -2,6 +2,7 @@ package com.odysee.app;
 
 import static android.os.Build.VERSION_CODES.M;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,7 +25,6 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.loader.content.AsyncTaskLoader;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -43,8 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -57,8 +56,8 @@ import com.android.billingclient.api.SkuDetailsParams;
 import com.android.billingclient.api.SkuDetailsResponseListener;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.exceptions.ApiCallException;
-import com.odysee.app.exceptions.AuthTokenInvalidatedException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.VerificationListener;
@@ -69,7 +68,6 @@ import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
-import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.firstrun.CreateChannelFragment;
 import com.odysee.app.ui.firstrun.RewardVerificationFragment;
 import com.odysee.app.ui.firstrun.SignInFragment;
@@ -77,11 +75,8 @@ import com.odysee.app.utils.FirstRunStepHandler;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
-import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import lombok.SneakyThrows;
@@ -302,25 +297,40 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
     }
 
     private void checkWalletBalanceForChannelStep() {
-        WalletBalanceTask task = new WalletBalanceTask(Lbryio.AUTH_TOKEN, new WalletBalanceTask.WalletBalanceHandler() {
+        Activity a = this;
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onSuccess(WalletBalance walletBalance) {
-                if (walletBalance.getAvailable().doubleValue() < Helper.MIN_SPEND) {
-                    // proceed to rewards step
-                    viewPager.setVisibility(View.VISIBLE);
-                    progressIndicator.setVisibility(View.GONE);
-                    proceedToRewardsStep();
-                } else {
+            public void run() {
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                Callable<WalletBalance> c = new WalletBalanceFetch(Lbryio.AUTH_TOKEN);
+                Future<WalletBalance> f = executorService.submit(c);
+
+                try {
+                    WalletBalance wb = f.get();
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (wb.getAvailable().doubleValue() < Helper.MIN_SPEND) {
+                                // proceed to rewards step
+                                viewPager.setVisibility(View.VISIBLE);
+                                progressIndicator.setVisibility(View.GONE);
+                                proceedToRewardsStep();
+                            } else {
+                                emailRewardChecked();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
                     emailRewardChecked();
+                } finally {
+                    if (!executorService.isShutdown()) {
+                        executorService.shutdown();
+                    }
                 }
             }
-
-            @Override
-            public void onError(Exception error) {
-                emailRewardChecked();
-            }
         });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     private void handleCreateChannel() {
