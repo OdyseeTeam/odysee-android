@@ -559,6 +559,12 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                 return;
             }
 
+            // When device is in Battery Saver mode, the scheduled wallet update will no perform the job.
+            // In order to show user the update balance, let's request it explicitly when user opens the Wallet fragment
+            if (activity.isBatterySaverMode()) {
+                activity.updateWalletBalance();
+            }
+
             activity.syncWalletAndLoadPreferences();
             LbryAnalytics.setCurrentScreen(activity, "Wallet", "Wallet");
         }
