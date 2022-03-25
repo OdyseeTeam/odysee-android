@@ -4,12 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -26,6 +24,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -444,17 +443,34 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
+        List<String> channelIdsForCategory;
+
+        if (currentCategoryId == wildWestIndex) {
+            channelIdsForCategory = Collections.emptyList();
+        } else if (currentChannelIdList != null) {
+            channelIdsForCategory = Arrays.asList(currentChannelIdList);
+        } else {
+            channelIdsForCategory = Arrays.asList(dynamicCategories.get(0).getChannelIds());
+        }
+
+        int claimsPerChannel = 0;
+
+        if (currentCategoryId == moviesIndex) {
+            claimsPerChannel = 20;
+        } else if (currentCategoryId == wildWestIndex) {
+            claimsPerChannel = 3;
+        }
         return Lbry.buildClaimSearchOptions(
                 null,
                 (currentContentScope == ContentScopeDialogFragment.ITEM_EVERYONE) ? null : tags,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 null,
-                currentChannelIdList == null ? Arrays.asList(dynamicCategories.get(0).getChannelIds()) : Arrays.asList(currentChannelIdList),
+                channelIdsForCategory,
                 null,
                 getContentSortOrder(),
-                currentCategoryId == wildWestIndex ? Helper.buildReleaseTime(1) : contentReleaseTime,
+                currentCategoryId == wildWestIndex ? Helper.buildReleaseTime(ContentFromDialogFragment.ITEM_FROM_PAST_WEEK) : contentReleaseTime,
                 0,
-                currentCategoryId == moviesIndex ? 20 : 0,
+                claimsPerChannel,
                 currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,
                 Helper.CONTENT_PAGE_SIZE);
     }
