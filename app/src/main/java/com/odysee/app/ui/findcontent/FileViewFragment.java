@@ -13,10 +13,14 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -46,6 +50,7 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.browser.customtabs.CustomTabColorSchemeParams;
@@ -64,19 +69,23 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultControlDispatcher;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.TracksInfo;
+import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides;
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides.TrackSelectionOverride;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
@@ -137,6 +146,8 @@ import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.callable.LighthouseSearch;
 import com.odysee.app.callable.BuildCommentReactOptions;
+import com.odysee.app.exceptions.LbryRequestException;
+import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
@@ -207,11 +218,15 @@ public class FileViewFragment extends BaseFragment implements
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
+    @StringRes
+    private static final int AUTO_QUALITY_STRING = R.string.auto_quality;
+    private static final int AUTO_QUALITY_ID = 0;
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
 
 //    private PlayerControlView castControlView;
     private Player currentPlayer;
     private boolean loadingNewClaim;
+    private boolean loadingQualityChanged = false;
 //    private boolean startDownloadPending;
 //    private boolean fileGetPending;
     private boolean downloadInProgress;
@@ -354,37 +369,42 @@ public class FileViewFragment extends BaseFragment implements
                     hideBuffering();
 
                     if (loadingNewClaim) {
+                        setPlayerQualityToDefault();
                         MainActivity.appPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
                     }
                 } else if (playbackState == Player.STATE_BUFFERING) {
-                    Context ctx = getContext();
-                    boolean sendBufferingEvents = true;
+                    if (!loadingQualityChanged) {
+                        Context ctx = getContext();
+                        boolean sendBufferingEvents = true;
 
-                    if (ctx != null) {
-                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(ctx);
-                        sendBufferingEvents = sp.getBoolean(MainActivity.PREFERENCE_KEY_SEND_BUFFERING_EVENTS, true);
-                    }
+                        if (ctx != null) {
+                            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(ctx);
+                            sendBufferingEvents = sp.getBoolean(MainActivity.PREFERENCE_KEY_SEND_BUFFERING_EVENTS, true);
+                        }
 
-                    if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
-                        // we only want to log a buffer event after the media has already started playing
-                        String mediaSourceUrl = getStreamingUrl();
-                        long duration = MainActivity.appPlayer.getDuration();
-                        long position = MainActivity.appPlayer.getCurrentPosition();
-                        String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
-                        if (mediaSourceUrl.startsWith(CDN_PREFIX)) {
-                            BufferEventTask bufferEvent = new BufferEventTask(claim.getPermanentUrl(), duration, position, 1, userIdHash);
-                            bufferEvent.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
-                        } else {
-                            // sdk stream buffer events should be handled differently
-                            Bundle bundle = new Bundle();
-                            bundle.putString("url", claim.getPermanentUrl());
-                            bundle.putLong("stream_duration", duration);
-                            bundle.putLong("stream_position", position);
-                            bundle.putString("user_id_hash", userIdHash);
-                            LbryAnalytics.logEvent(LbryAnalytics.EVENT_BUFFER, bundle);
+                        if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
+                            // we only want to log a buffer event after the media has already started playing
+                            String mediaSourceUrl = getStreamingUrl();
+                            long duration = MainActivity.appPlayer.getDuration();
+                            long position = MainActivity.appPlayer.getCurrentPosition();
+                            String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
+                            if (mediaSourceUrl.startsWith(CDN_PREFIX)) {
+                                BufferEventTask bufferEvent = new BufferEventTask(claim.getPermanentUrl(), duration, position, 1, userIdHash);
+                                bufferEvent.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                            } else {
+                                // sdk stream buffer events should be handled differently
+                                Bundle bundle = new Bundle();
+                                bundle.putString("url", claim.getPermanentUrl());
+                                bundle.putLong("stream_duration", duration);
+                                bundle.putLong("stream_position", position);
+                                bundle.putString("user_id_hash", userIdHash);
+                                LbryAnalytics.logEvent(LbryAnalytics.EVENT_BUFFER, bundle);
+                            }
                         }
                     }
+
+                    loadingQualityChanged = false;
 
                     showBuffering();
                 } else {
@@ -800,6 +820,7 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             updatePlaybackSpeedView(root);
+            updateQualityView(root);
             loadAndScheduleDurations();
         }
 
@@ -1250,15 +1271,10 @@ public class FileViewFragment extends BaseFragment implements
         PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
         View playbackSpeedContainer = playerView.findViewById(R.id.player_playback_speed);
         TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
+        View qualityContainer = playerView.findViewById(R.id.player_quality);
+        TextView textQuality = playerView.findViewById(R.id.player_quality_label);
         textPlaybackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
-
-        playerView.setControlDispatcher(new DefaultControlDispatcher() {
-            @Override
-            public boolean dispatchSetPlayWhenReady(Player player, boolean playWhenReady) {
-                isPlaying = playWhenReady;
-                return super.dispatchSetPlayWhenReady(player, playWhenReady);
-            }
-        });
+        textQuality.setText(AUTO_QUALITY_STRING);
 
         playbackSpeedContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
@@ -1272,6 +1288,24 @@ public class FileViewFragment extends BaseFragment implements
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     ((MainActivity) context).openContextMenu(playbackSpeedContainer);
+                }
+            }
+        });
+
+        qualityContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+            @Override
+            public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+                if (MainActivity.appPlayer != null) {
+                    Helper.buildQualityMenu(contextMenu, MainActivity.appPlayer, MainActivity.videoIsTranscoded);
+                }
+            }
+        });
+        qualityContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openContextMenu(qualityContainer);
                 }
             }
         });
@@ -1382,6 +1416,18 @@ public class FileViewFragment extends BaseFragment implements
             textPlaybackSpeed.setText(MainActivity.appPlayer != null && MainActivity.appPlayer.getPlaybackParameters() != null ?
                     Helper.getDisplayValueForPlaybackSpeed((double) MainActivity.appPlayer.getPlaybackParameters().speed) :
                     DEFAULT_PLAYBACK_SPEED);
+        }
+    }
+
+    private void updateQualityView(View root) {
+        if (root != null) {
+            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            TextView textQuality = playerView.findViewById(R.id.player_quality_label);
+            if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
+                textQuality.setText(AUTO_QUALITY_STRING);
+            } else {
+                textQuality.setText(String.format("%sp", MainActivity.videoQuality));
+            }
         }
     }
 
@@ -1829,6 +1875,13 @@ public class FileViewFragment extends BaseFragment implements
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
             view.setPlayer(MainActivity.appPlayer);
+            view.getPlayer().addListener(new Player.Listener() {
+                @Override
+                public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+                    isPlaying = playWhenReady;
+                    Player.Listener.super.onPlayWhenReadyChanged(playWhenReady, reason);
+                }
+            });
             view.setUseController(true);
             if (context instanceof MainActivity) {
                 ((MainActivity) context).getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -1863,24 +1916,16 @@ public class FileViewFragment extends BaseFragment implements
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
 
-                String mediaSourceUrl;
-                DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
-                if (context != null) {
-                    dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
-                }
-                MediaSource mediaSource = null;
                 if (claim.hasSource()) {
-                    mediaSourceUrl = getStreamingUrl();
-
-                    CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
-                    cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
-                    cacheDataSourceFactory.setCache(MainActivity.playerCache);
-
-                    mediaSource = new ProgressiveMediaSource.Factory(
-                            cacheDataSourceFactory, new DefaultExtractorsFactory()
-                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
+                    getStreamingUrlAndInitializePlayer();
                 } else {
-                    mediaSourceUrl = getLivestreamUrl();
+                    String mediaSourceUrl = getLivestreamUrl();
+                    DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+                    if (context != null) {
+                        dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+                    }
+                    MediaSource mediaSource = null;
+
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
@@ -1903,14 +1948,71 @@ public class FileViewFragment extends BaseFragment implements
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
-                }
 
-                if (mediaSource != null) {
-                    MainActivity.appPlayer.setMediaSource(mediaSource, true);
-                    MainActivity.appPlayer.prepare();
+                    if (mediaSource != null) {
+                        MainActivity.appPlayer.setMediaSource(mediaSource, true);
+                        MainActivity.appPlayer.prepare();
+                    }
                 }
             }
         }
+    }
+
+    private void getStreamingUrlAndInitializePlayer() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get the streaming URL
+                Map<String, Object> params = new HashMap<>();
+                params.put("uri", claim.getPermanentUrl());
+                JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                String sourceUrl = (String) result.get("streaming_url");
+
+                // Get the stream type
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(sourceUrl)
+                        .head()
+                        .build();
+                try (Response response = client.newCall(request).execute()) {
+                    String contentType = response.header("Content-Type");
+                    MainActivity.videoIsTranscoded = contentType.equals("application/x-mpegurl"); // m3u8
+                }
+
+                new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
+            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+                // TODO: How does error handling work here
+                ex.printStackTrace();
+            }
+        });
+        executor.shutdown();
+    }
+    private void initializePlayer(String sourceUrl) {
+        Context context = getContext();
+        DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+        if (context != null) {
+            dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+        }
+
+        CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
+        cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
+        cacheDataSourceFactory.setCache(MainActivity.playerCache);
+
+        MediaSource mediaSource;
+        if (MainActivity.videoIsTranscoded) {
+            mediaSource = new HlsMediaSource.Factory(cacheDataSourceFactory)
+                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
+                    .createMediaSource(MediaItem.fromUri(sourceUrl));
+        } else {
+            mediaSource = new ProgressiveMediaSource.Factory(
+                    cacheDataSourceFactory, new DefaultExtractorsFactory()
+            )
+                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
+                    .createMediaSource(MediaItem.fromUri(sourceUrl));
+        }
+
+        MainActivity.appPlayer.setMediaSource(mediaSource, true);
+        MainActivity.appPlayer.prepare();
     }
 
     /**
@@ -2029,6 +2131,90 @@ public class FileViewFragment extends BaseFragment implements
         }*/
         currentPlayer.seekTo(playbackPositionMs);
         currentPlayer.setPlayWhenReady(true);
+    }
+
+    private void setPlayerQualityToDefault() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            boolean isOnMobileNetwork = isMeteredNetwork(context);
+            int quality = isOnMobileNetwork ?
+                    ((MainActivity) context).mobileDefaultQuality() :
+                    ((MainActivity) context).wifiDefaultQuality();
+            setPlayerQuality(MainActivity.appPlayer, quality);
+        }
+    }
+
+    // Taken from NewPipe: https://github.com/TeamNewPipe/NewPipe/blob/5459a55406ae72783584f84c1a8410e10903ba8a/app/src/main/java/org/schabi/newpipe/util/ListHelper.java#L552-L566
+    private boolean isMeteredNetwork(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
+            return false;
+        }
+        return connectivityManager.isActiveNetworkMetered();
+    }
+
+    private void setPlayerQuality(Player player, int quality) {
+        TracksInfo tracksInfo = player.getCurrentTracksInfo();
+        int selectedQuality = 0;
+
+        for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
+            if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
+            TrackGroup group = groupInfo.getTrackGroup();
+
+            TrackSelectionOverrides overrides;
+            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
+                overrides = new TrackSelectionOverrides.Builder()
+                        .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                        .build();
+                // Force it to AUTO_QUALITY_ID to override the default quality setting on non-transcoded videos
+                selectedQuality = AUTO_QUALITY_ID;
+            } else {
+                ArrayList<Integer> availableQualities = new ArrayList<>();
+                for (int i = 0; i < group.length; i++) {
+                    availableQualities.add(group.getFormat(i).height);
+                }
+                int selectedQualityIndex;
+                // Check if the chosen quality is lower than the lowest available quality
+                int lowestQuality = Collections.min(availableQualities);
+                if (quality <= lowestQuality) { // <= short path for when the quality matches the lowest
+                    selectedQuality = lowestQuality;
+                    selectedQualityIndex = availableQualities.indexOf(lowestQuality);
+                } else {
+                    // Otherwise find the highest available quality that is less than the chosen quality
+                    for (int i = 0; i < availableQualities.size(); i++) {
+                        int q = availableQualities.get(i);
+                        if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
+                            selectedQuality = q;
+                        }
+                    }
+                    selectedQualityIndex = availableQualities.indexOf(selectedQuality);
+                }
+
+                if (selectedQualityIndex != -1) {
+                    TrackSelectionOverride override = new TrackSelectionOverride(
+                            group, Collections.singletonList(selectedQualityIndex));
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .addOverride(override)
+                            .build();
+                } else { // If quality can't be found use Auto quality
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                            .build();
+                }
+            }
+            player.setTrackSelectionParameters(
+                    player
+                            .getTrackSelectionParameters()
+                            .buildUpon()
+                            .setTrackSelectionOverrides(overrides)
+                            .build()
+            );
+
+            MainActivity.videoQuality = selectedQuality;
+            updateQualityView(getView());
+
+            break;
+        }
     }
 
     private void resetViewCount() {
@@ -3532,17 +3718,38 @@ public class FileViewFragment extends BaseFragment implements
 
         View root = getView();
         if (root != null) {
-            float speed = item.getItemId() / 100.0f;
-            String speedString = String.format("%sx", new DecimalFormat("0.##").format(speed));
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((TextView) playerView.findViewById(R.id.player_playback_speed_label)).setText(speedString);
+            if (item.getGroupId() == Helper.PLAYBACK_SPEEDS_GROUP_ID) {
+                float speed = item.getItemId() / 100.0f;
+                String speedString = String.format("%sx", new DecimalFormat("0.##").format(speed));
+                ((TextView) playerView.findViewById(R.id.player_playback_speed_label)).setText(speedString);
 
-            if (MainActivity.appPlayer != null) {
-                PlaybackParameters params = new PlaybackParameters(speed);
-                MainActivity.appPlayer.setPlaybackParameters(params);
+                if (MainActivity.appPlayer != null) {
+                    PlaybackParameters params = new PlaybackParameters(speed);
+                    MainActivity.appPlayer.setPlaybackParameters(params);
+                }
+
+                return true;
+            } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
+                loadingQualityChanged = true;
+                int quality = item.getItemId();
+
+                TextView playerQualityLabel = playerView.findViewById(R.id.player_quality_label);
+                if (quality == AUTO_QUALITY_ID) {
+                    playerQualityLabel.setText(AUTO_QUALITY_STRING);
+                } else {
+                    String qualityString = String.format("%sp", quality);
+                    playerQualityLabel.setText(qualityString);
+                }
+
+                if (MainActivity.appPlayer != null) {
+                    Player player = MainActivity.appPlayer;
+                    setPlayerQuality(player, quality);
+                    return true;
+                }
             }
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -3568,15 +3775,6 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     public static class StreamLoadErrorPolicy extends DefaultLoadErrorHandlingPolicy {
-        @Override
-        public long getRetryDelayMsFor(int dataType, long loadDurationMs, IOException exception, int errorCount) {
-            return exception instanceof ParserException
-                    || exception instanceof FileNotFoundException
-                    || exception instanceof Loader.UnexpectedLoaderException
-                    ? C.TIME_UNSET
-                    : Math.min((errorCount - 1) * 1000, 5000);
-        }
-
         @Override
         public int getMinimumLoadableRetryCount(int dataType) {
             return Integer.MAX_VALUE;

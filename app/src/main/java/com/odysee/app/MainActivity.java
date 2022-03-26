@@ -291,6 +291,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
     public static String nowPlayingClaimUrl;
+    public static boolean videoIsTranscoded;
+    public static int videoQuality;
     public static boolean startingFilePickerActivity = false;
     public static boolean startingShareActivity = false;
     public static boolean startingPermissionRequest = false;
@@ -362,6 +364,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
     public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
+    public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -1120,6 +1124,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean isMediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
+    }
+
+    public int wifiDefaultQuality() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY, "0"));
+    }
+
+    public int mobileDefaultQuality() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY, "0"));
     }
 
     public boolean initialSubscriptionMergeDone() {
