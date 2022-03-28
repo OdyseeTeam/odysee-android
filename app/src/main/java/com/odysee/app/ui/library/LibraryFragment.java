@@ -3,7 +3,6 @@ package com.odysee.app.ui.library;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -16,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.view.ActionMode;
@@ -23,7 +23,6 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import com.odysee.app.runnable.DeleteViewHistoryItem;
@@ -69,7 +68,6 @@ public class LibraryFragment extends BaseFragment implements
     private static final int FILTER_HISTORY = 3;
     private static final int PAGE_SIZE = 50;
 
-    private MaterialButton clearAll;
     private ActionMode actionMode;
     private int currentFilter;
     private List<LbryFile> currentFiles;
@@ -124,8 +122,6 @@ public class LibraryFragment extends BaseFragment implements
         linkFilterDownloads = root.findViewById(R.id.library_filter_link_downloads);
         linkFilterPurchases = root.findViewById(R.id.library_filter_link_purchases);
         linkFilterHistory = root.findViewById(R.id.library_filter_link_history);
-
-        clearAll = root.findViewById(R.id.library_clear_all);
 
         layoutListEmpty = root.findViewById(R.id.library_empty_container);
         textListEmpty = root.findViewById(R.id.library_list_empty_text);
@@ -212,44 +208,6 @@ public class LibraryFragment extends BaseFragment implements
             }
         });
 
-        clearAll.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Context ctx = getContext();
-                if (ctx != null) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(ctx).
-                            setTitle(R.string.confirm_clear_view_history_title).
-                            setMessage(R.string.confirm_clear_view_history)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    Thread t = new Thread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            SQLiteDatabase db = DatabaseHelper.getInstance().getWritableDatabase();
-                                            DatabaseHelper.clearViewHistory(db);
-
-                                            Activity a = getActivity();
-
-                                            if (a != null) {
-                                                a.runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        contentListAdapter.removeItems(contentListAdapter.getItems());
-                                                        checkListEmpty();
-                                                    }
-                                                });
-                                            }
-                                        }
-                                    });
-                                    t.start();
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
-                }
-            }
-        });
-
         return root;
     }
 
@@ -312,7 +270,6 @@ public class LibraryFragment extends BaseFragment implements
                 fetchDownloads();
             }
         }
-        clearAll.setVisibility(View.GONE);
     }
 
     private void fetchOwnClaimsAndShowDownloads() {
@@ -354,8 +311,6 @@ public class LibraryFragment extends BaseFragment implements
             contentListAdapter.setCanEnterSelectionMode(false);
         }
         listReachedEnd = false;
-
-        clearAll.setVisibility(View.GONE);
 
         cardStats.setVisibility(View.GONE);
         checkStatsLink();
@@ -536,7 +491,12 @@ public class LibraryFragment extends BaseFragment implements
 
     private void checkListEmpty() {
         layoutListEmpty.setVisibility(contentListAdapter == null || contentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-        clearAll.setVisibility(contentListAdapter != null && contentListAdapter.getItemCount() > 0 ? View.VISIBLE : View.GONE);
+
+        MainActivity a = (MainActivity) getActivity();
+        if (a != null) {
+            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
+        }
+
         int stringResourceId;
         switch (currentFilter) {
             case FILTER_DOWNLOADS: default: stringResourceId = R.string.library_no_downloads; break;
@@ -544,6 +504,12 @@ public class LibraryFragment extends BaseFragment implements
             case FILTER_PURCHASES: stringResourceId = R.string.library_no_purchases; break;
         }
         textListEmpty.setText(stringResourceId);
+    }
+
+    @MainThread
+    public void onViewHistoryCleared() {
+        contentListAdapter.removeItems(contentListAdapter.getItems());
+        checkListEmpty();
     }
 
     private void addFiles(List<LbryFile> files) {

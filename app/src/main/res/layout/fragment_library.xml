@@ -73,18 +73,6 @@
                 android:visibility="gone" android:focusable="true"/>
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/library_clear_all"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/library_filter_card"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:text="@string/clear_all"
-        android:visibility="gone"
-        tools:visibility="visible" />
     <androidx.cardview.widget.CardView
         android:id="@+id/library_storage_stats_card"
         android:layout_width="match_parent"
@@ -306,7 +294,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/library_list"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/library_clear_all"
+        app:layout_constraintTop_toBottomOf="@id/library_filter_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
