@@ -1267,11 +1267,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void openSpecialUrl(String url, String source) {
-        if (url.equalsIgnoreCase("lbry://?rewards")) {
-            if (source.equalsIgnoreCase("notification")) {
-                hideNotifications();
+        String specialPath = url.substring(8).toLowerCase();
+        if (specialRouteFragmentClassMap.containsKey(specialPath)) {
+            Map<String, Object> params = null;
+            if (!Helper.isNullOrEmpty(source)) {
+                params = new HashMap<>();
+                params.put("source",  source);
             }
-            openRewards();
+
+            if (specialPath.equalsIgnoreCase("rewards")) {
+                openRewards(params);
+            }
         }
     }
 
@@ -1288,8 +1294,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         openFragment(FileViewFragment.class, true, params);
     }
 
+    /**
+     * @deprecated Use openRewards(null) instead
+     */
+    @Deprecated
     public void openRewards() {
-        openFragment(RewardsFragment.class, true, null);
+        openRewards(null);
+    }
+
+    public void openRewards(@Nullable Map<String, Object> params) {
+        if (params != null && params.containsKey("source") ) {
+            String sourceParam = (String) params.get("source");
+            if (sourceParam != null && sourceParam.equals("notification")) {
+                hideNotifications();
+            }
+        }
+        openFragment(RewardsFragment.class, true, params);
     }
 
     private final FragmentManager.OnBackStackChangedListener backStackChangedListener = new FragmentManager.OnBackStackChangedListener() {
