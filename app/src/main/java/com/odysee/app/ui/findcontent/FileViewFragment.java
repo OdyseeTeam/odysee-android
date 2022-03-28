@@ -369,6 +369,7 @@ public class FileViewFragment extends BaseFragment implements
                     hideBuffering();
 
                     if (loadingNewClaim) {
+                        setPlaybackSpeedToDefault();
                         setPlayerQualityToDefault();
                         MainActivity.appPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
@@ -2133,6 +2134,22 @@ public class FileViewFragment extends BaseFragment implements
         currentPlayer.setPlayWhenReady(true);
     }
 
+    private void setPlaybackSpeedToDefault() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            int speed = ((MainActivity) context).playbackDefaultSpeed();
+            setPlaybackSpeed(MainActivity.appPlayer, speed);
+        }
+    }
+
+    private void setPlaybackSpeed(Player player, int speedId) {
+        float speed = speedId / 100.0f;
+        PlaybackParameters params = new PlaybackParameters(speed);
+        player.setPlaybackParameters(params);
+
+        updatePlaybackSpeedView(getView());
+    }
+
     private void setPlayerQualityToDefault() {
         Context context = getContext();
         if (context instanceof MainActivity) {
@@ -3716,28 +3733,19 @@ public class FileViewFragment extends BaseFragment implements
             return true;
         }
 
-        View root = getView();
-        if (root != null) {
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            if (item.getGroupId() == Helper.PLAYBACK_SPEEDS_GROUP_ID) {
-                float speed = item.getItemId() / 100.0f;
-                String speedString = String.format("%sx", new DecimalFormat("0.##").format(speed));
-                ((TextView) playerView.findViewById(R.id.player_playback_speed_label)).setText(speedString);
-
-                if (MainActivity.appPlayer != null) {
-                    PlaybackParameters params = new PlaybackParameters(speed);
-                    MainActivity.appPlayer.setPlaybackParameters(params);
-                }
-
+        if (item.getGroupId() == Helper.PLAYBACK_SPEEDS_GROUP_ID) {
+            int speed = item.getItemId();
+            if (MainActivity.appPlayer != null) {
+                setPlaybackSpeed(MainActivity.appPlayer, speed);
                 return true;
-            } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
-                loadingQualityChanged = true;
-                int quality = item.getItemId();
+            }
+        } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
+            loadingQualityChanged = true;
+            int quality = item.getItemId();
 
-                if (MainActivity.appPlayer != null) {
-                    setPlayerQuality(MainActivity.appPlayer, quality);
-                    return true;
-                }
+            if (MainActivity.appPlayer != null) {
+                setPlayerQuality(MainActivity.appPlayer, quality);
+                return true;
             }
         }
         return false;

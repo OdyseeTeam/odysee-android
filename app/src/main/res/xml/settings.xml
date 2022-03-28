@@ -42,6 +42,15 @@
             app:singleLineTitle="false"
             app:summary="%s"
             app:iconSpaceReserved="false" />
+        <DropDownPreference
+            app:defaultValue="100"
+            app:entries="@array/available_speeds"
+            app:entryValues="@array/available_speeds_values"
+            app:iconSpaceReserved="false"
+            app:key="com.odysee.app.preference.userinterface.PlaybackDefaultSpeed"
+            app:singleLineTitle="false"
+            app:summary="%s"
+            app:title="@string/playback_default_speed" />
         <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.DarkMode"
             app:title="@string/enable_dark_mode"
