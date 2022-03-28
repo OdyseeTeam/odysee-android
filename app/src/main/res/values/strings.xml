@@ -684,6 +684,8 @@
     <string name="gb">GB</string>
     <string name="zero_mb">0MB</string>
     <string name="clear_all">Clear all</string>
+    <string name="confirm_clear_view_history_title">Clear view history</string>
+    <string name="confirm_clear_view_history">Are you sure you want to clear all items from your history?</string>
     <plurals name="confirm_delete_files">
         <item quantity="one">Are you sure you want to remove the selected file from your device?</item>
         <item quantity="other">Are you sure you want to remove the selected files from your device?</item>

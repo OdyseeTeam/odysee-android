@@ -215,26 +215,38 @@ public class LibraryFragment extends BaseFragment implements
         clearAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SQLiteDatabase db = DatabaseHelper.getInstance().getWritableDatabase();
-                        DatabaseHelper.clearViewHistory(db);
-
-                        Activity a = getActivity();
-
-                        if (a != null) {
-                            a.runOnUiThread(new Runnable() {
+                Context ctx = getContext();
+                if (ctx != null) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ctx).
+                            setTitle(R.string.confirm_clear_view_history_title).
+                            setMessage(R.string.confirm_clear_view_history)
+                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                                 @Override
-                                public void run() {
-                                    contentListAdapter.removeItems(contentListAdapter.getItems());
-                                    checkListEmpty();
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    Thread t = new Thread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            SQLiteDatabase db = DatabaseHelper.getInstance().getWritableDatabase();
+                                            DatabaseHelper.clearViewHistory(db);
+
+                                            Activity a = getActivity();
+
+                                            if (a != null) {
+                                                a.runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        contentListAdapter.removeItems(contentListAdapter.getItems());
+                                                        checkListEmpty();
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    });
+                                    t.start();
                                 }
-                            });
-                        }
-                    }
-                });
-                t.start();
+                            }).setNegativeButton(R.string.no, null);
+                    builder.show();
+                }
             }
         });
 
