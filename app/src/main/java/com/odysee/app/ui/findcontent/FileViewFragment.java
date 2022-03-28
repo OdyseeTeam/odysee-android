@@ -3734,17 +3734,8 @@ public class FileViewFragment extends BaseFragment implements
                 loadingQualityChanged = true;
                 int quality = item.getItemId();
 
-                TextView playerQualityLabel = playerView.findViewById(R.id.player_quality_label);
-                if (quality == AUTO_QUALITY_ID) {
-                    playerQualityLabel.setText(AUTO_QUALITY_STRING);
-                } else {
-                    String qualityString = String.format("%sp", quality);
-                    playerQualityLabel.setText(qualityString);
-                }
-
                 if (MainActivity.appPlayer != null) {
-                    Player player = MainActivity.appPlayer;
-                    setPlayerQuality(player, quality);
+                    setPlayerQuality(MainActivity.appPlayer, quality);
                     return true;
                 }
             }
