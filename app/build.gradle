@@ -95,12 +95,12 @@ dependencies {
     implementation 'com.android.billingclient:billing:3.0.2'
 
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'com.google.android.exoplayer:exoplayer-core:2.14.2'
-    implementation 'com.google.android.exoplayer:exoplayer-dash:2.14.2'
-    implementation 'com.google.android.exoplayer:exoplayer-ui:2.14.2'
-    implementation 'com.google.android.exoplayer:extension-cast:2.14.2'
-    implementation 'com.google.android.exoplayer:extension-mediasession:2.14.2'
-    implementation 'com.google.android.exoplayer:exoplayer-hls:2.14.2'
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.16.0'
+    implementation 'com.google.android.exoplayer:exoplayer-dash:2.16.0'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.16.0'
+    implementation 'com.google.android.exoplayer:extension-cast:2.16.0'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.16.0'
+    implementation 'com.google.android.exoplayer:exoplayer-hls:2.16.0'
 
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 

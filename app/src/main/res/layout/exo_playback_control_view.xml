@@ -101,7 +101,7 @@
         android:clickable="true"
         android:focusable="true"
         android:layout_alignParentBottom="true"
-        android:layout_width="56dp"
+        android:layout_width="40dp"
         android:layout_height="48dp"
         android:layout_toStartOf="@id/player_toggle_fullscreen">
         <TextView
@@ -110,7 +110,29 @@
             android:layout_centerVertical="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:fontFamily="@font/inter"
+            android:letterSpacing="0.05"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="11sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/player_quality"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_alignParentBottom="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_toStartOf="@id/player_playback_speed">
+
+        <TextView
+            android:id="@+id/player_quality_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
             android:fontFamily="@font/inter"
             android:letterSpacing="0.05"
             android:singleLine="true"
@@ -137,10 +159,11 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/player_duration_elapsed_container"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@id/player_playback_speed"
+        android:layout_toStartOf="@id/player_quality"
         android:paddingStart="16dp"
         android:paddingEnd="4dp">
         <TextView

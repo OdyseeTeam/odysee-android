@@ -122,6 +122,7 @@
     <string name="publish_something_here">Publish something here</string>
     <string name="cannot_view_claim">This content cannot be accessed at this time. Please try again later.</string>
     <string name="zero_duration">0:00</string>
+    <string name="auto_quality">Auto</string>
     <string name="claim_file_not_found">The file at "%1$s" does not exist.</string>
     <string name="confirm_purchase">Confirm Purchase</string>
     <string name="delete_file">Delete file</string>
@@ -308,6 +309,8 @@
     <string name="enable_background_playback">Enable background playback</string>
     <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
+    <string name="wifi_default_quality">Default quality</string>
+    <string name="mobile_default_quality">Default quality when using mobile data</string>
     <string name="enable_dark_mode">Enable dark theme</string>
     <string name="darkmode_setting">Dark mode setting</string>
     <string name="enable_autosearch">Perform search while typing</string>
@@ -320,6 +323,21 @@
 
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
     <string name="send_buffering_events">Send buffering events to LBRY servers</string>
+
+    <string-array name="available_qualities">
+        <item>@string/auto_quality</item>
+        <item>1080p</item>
+        <item>720p</item>
+        <item>360p</item>
+        <item>144p</item>
+    </string-array>
+    <string-array name="available_qualities_values">
+        <item>0</item> <!-- Auto Quality selection -->
+        <item>1080</item>
+        <item>720</item>
+        <item>360</item>
+        <item>144</item>
+    </string-array>
 
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Search</string>
