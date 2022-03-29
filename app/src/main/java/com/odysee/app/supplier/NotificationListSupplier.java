@@ -48,10 +48,11 @@ public class NotificationListSupplier implements Supplier<List<LbryNotification>
                             JSONObject dynamic = notificationParams.getJSONObject("dynamic");
                             if (dynamic.has("comment_author") || dynamic.has("channel_thumbnail")) {
                                 String url = null;
-                                if (dynamic.has("comment_author"))
+                                if (dynamic.has("comment_author")) {
                                     url = Helper.getJSONString("comment_author", null, dynamic);
-                                else if (dynamic.has("channel_thumbnail"))
+                                } else if (dynamic.has("channel_thumbnail")) {
                                     url = Helper.getJSONString("channel_thumbnail", null, dynamic);
+                                }
                                 notification.setAuthorThumbnailUrl(url);
                             }
                             if (dynamic.has("channelURI")) {
@@ -66,7 +67,7 @@ public class NotificationListSupplier implements Supplier<List<LbryNotification>
                                     notification.setClaimThumbnailUrl(claimThumbnailUrl);
                                 }
                             }
-                            if (dynamic.has("hash") && "comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))) {
+                            if (dynamic.has("hash") && isCommentNotification(item)) {
                                 notification.setTargetUrl(String.format("%s?comment_hash=%s", notification.getTargetUrl(), dynamic.getString("hash")));
                             }
                         }
@@ -95,5 +96,11 @@ public class NotificationListSupplier implements Supplier<List<LbryNotification>
         }
 
         return notifications;
+    }
+
+    private boolean isCommentNotification(JSONObject item) {
+        return "comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))
+                || "creator_comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))
+                || "comment-reply".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item));
     }
 }

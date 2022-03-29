@@ -161,7 +161,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
             RecyclerView commentsList = root.findViewById(R.id.channel_comments_list);
 
             loadingCommentView.setVisibility(View.VISIBLE);
-            commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+            commentEnabledCheck.checkCommentStatus(claim.getClaimId(), claim.getName(), isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {

@@ -20,6 +20,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -150,8 +151,10 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 commentsToRemove.add(comment);
             }
         }
-        items.removeAll(commentsToRemove);
-        notifyDataSetChanged();
+        if (!commentsToRemove.isEmpty()) {
+            items.removeAll(commentsToRemove);
+            notifyDataSetChanged();
+        }
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
@@ -274,7 +277,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                         final Comment parentComment = getCommentForId(parentId);
 
                         if ( parentComment != null ) {
-                            if ( parentComment.getId() == commentToRemove.getId() ) {
+                            if (parentComment.getId().equals(commentToRemove.getId())) {
                                 remove = true;
                                 break;
                             }
@@ -286,7 +289,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                     }
                 }
 
-                if ( remove == true ) {
+                if (remove) {
                     items.remove(i);
                     childsToBeShown.remove(commentToRemove.getId());
                 }
@@ -384,6 +387,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 countTextColor = context.getResources().getColor(R.color.foreground, null);
             } else {
+                //noinspection deprecation
                 countTextColor = context.getResources().getColor(R.color.foreground);
             }
 
@@ -396,6 +400,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                     fireActive = context.getResources().getColor(R.color.fireActive, null);
                 } else {
+                    //noinspection deprecation
                     fireActive = context.getResources().getColor(R.color.fireActive);
                 }
 
@@ -424,6 +429,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                     slimeActive = context.getResources().getColor(R.color.slimeActive, null);
                 } else {
+                    //noinspection deprecation
                     slimeActive = context.getResources().getColor(R.color.slimeActive);
                 }
 
@@ -482,7 +488,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 if (listener != null && comment.getPoster() != null) {
-                    listener.onClaimClicked(comment.getPoster(), position);
+                    listener.onClaimClicked(comment.getPoster(), holder.getBindingAdapterPosition());
                 }
             }
         });
@@ -496,8 +502,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             }
         });
 
-        if (position != (items.size() - 1)) {
-            String pId = items.get(position + 1).getParentId();
+        if (holder.getAbsoluteAdapterPosition() != (items.size() - 1)) {
+            String pId = items.get(holder.getAbsoluteAdapterPosition() + 1).getParentId();
             if (pId != null && pId.equalsIgnoreCase(comment.getId())) {
                 holder.viewReplies.setVisibility(View.VISIBLE);
                  holder.viewReplies.setOnClickListener(new View.OnClickListener() {
@@ -523,9 +529,19 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         }
     }
 
-    public void switchExpandedState() {
-        collapsed = !collapsed;
-        notifyItemRangeChanged(0, items.size());
+    public void switchExpandedStateUI() {
+        switchExpandedStateUI(!collapsed);
+    }
+
+    /**
+     * Switches from displaying a single comment into showing comment form a full list of level 0 comments
+     * @param toCollapsed Set to false if form and list of comments should be displayed, true to show only the single comment
+     */
+    public void switchExpandedStateUI(boolean toCollapsed) {
+        if (collapsed != toCollapsed) {
+            collapsed = toCollapsed;
+            notifyItemRangeChanged(0, items.size());
+        }
     }
 
     /**
@@ -604,6 +620,42 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
     private boolean containsLastChild(List<Comment> comments) {
         return comments.size() == 0;
+    }
+
+    /**
+     * Expands only the full path of parent comments to the comment with the specified hash
+     * @param commentHash Hash of comment of child which needs to be shown
+     */
+    public void collapseExceptHash(String commentHash) {
+        if (items != null) {
+            childsToBeShown = getParentIdsToExpand(items, commentHash);
+            notifyItemRangeChanged(0, items.size());
+        }
+    }
+
+    private List<String> getParentIdsToExpand(List<Comment> comments, String commentId) {
+        List<String> commentsToExpandList = new ArrayList<>();
+
+        if (comments != null) {
+            Optional<Comment> opt = comments.stream().filter(p -> p.getId().equalsIgnoreCase(commentId)).findFirst();
+            String cid;
+
+            if (opt.isPresent()) {
+                cid = opt.get().getParentId();
+
+                while (cid != null) {
+                    commentsToExpandList.add(cid);
+                    String finalCid = cid;
+                    Optional<Comment> optional = comments.stream().filter(p -> p.getId().equalsIgnoreCase(finalCid)).findFirst();
+                    if (optional.isPresent()) {
+                        Comment comment = optional.get();
+                        cid = comment.getParentId();
+                    }
+                }
+            }
+
+        }
+        return commentsToExpandList;
     }
 
     public interface CommentListListener {
