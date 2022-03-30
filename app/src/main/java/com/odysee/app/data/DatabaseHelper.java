@@ -166,6 +166,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_CLEAR_VIEW_HISTORY_BY_DEVICE = "DELETE FROM view_history WHERE device = ?";
     private static final String SQL_CLEAR_VIEW_HISTORY_BEFORE_TIME = "DELETE FROM view_history WHERE timestamp < ?";
     private static final String SQL_CLEAR_VIEW_HISTORY_BY_DEVICE_BEFORE_TIME = "DELETE FROM view_history WHERE device = ? AND timestamp < ?";
+    private static final String SQL_DELETE_VIEW_HISTORY = "DELETE FROM view_history WHERE url = ?";
 
     private static final String SQL_INSERT_TAG = "REPLACE INTO tags (name, is_followed) VALUES (?, ?)";
     private static final String SQL_GET_KNOWN_TAGS = "SELECT name, is_followed FROM tags";
@@ -339,6 +340,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return history;
     }
 
+    /**
+     * Removes a collection of items from the viewed claims history list
+     * @param db
+     * @param url URL from item to be removed
+     */
+    public static void removeViewHistoryItem(SQLiteDatabase db, String url) {
+        db.execSQL(SQL_DELETE_VIEW_HISTORY, new String[]{ url });
+    }
     public static void createOrUpdateTag(Tag tag, SQLiteDatabase db) {
         db.execSQL(SQL_INSERT_TAG, new Object[] { tag.getLowercaseName(), tag.isFollowed() ? 1 : 0 });
     }

@@ -874,6 +874,37 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
 
+        Context ctx = this;
+        findViewById(R.id.clear_all_library_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx).
+                        setTitle(R.string.confirm_clear_view_history_title).
+                        setMessage(R.string.confirm_clear_view_history)
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                Thread t = new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        SQLiteDatabase db = DatabaseHelper.getInstance().getWritableDatabase();
+                                        DatabaseHelper.clearViewHistory(db);
+
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                ((LibraryFragment) libraryFragment).onViewHistoryCleared();
+                                            }
+                                        });
+                                    }
+                                });
+                                t.start();
+                            }
+                        }).setNegativeButton(R.string.no, null);
+                builder.show();
+            }
+        });
+
         findViewById(R.id.profile_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -3351,6 +3382,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void switchClearViewHistoryButton(boolean makeItVisible) {
+        if (makeItVisible) {
+            findViewById(R.id.clear_all_library_button).setVisibility(View.VISIBLE);
+        } else {
+            findViewById(R.id.clear_all_library_button).setVisibility(View.GONE);
+        }
+    }
     private boolean isSearchUIActive() {
         return getSupportFragmentManager().findFragmentByTag("SEARCH") != null;
     }
@@ -3362,6 +3400,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
         } else {
+            // removeAccount() was deprecated on API Level 22. Any device running that version will take the other branch
+            // on this conditional
+            //noinspection deprecation
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
 
