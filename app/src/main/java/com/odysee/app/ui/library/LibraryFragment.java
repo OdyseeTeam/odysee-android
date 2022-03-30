@@ -235,6 +235,15 @@ public class LibraryFragment extends BaseFragment implements
         super.onPause();
     }
 
+    public void onDestroy() {
+        super.onDestroy();
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity a = (MainActivity) context;
+            a.switchClearViewHistoryButton(false);
+        }
+    }
+
     /**
      * Shows tab according to the filter which is selected
      */
