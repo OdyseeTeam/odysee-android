@@ -179,14 +179,6 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
     @Override
     public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
         this.actionMode = actionMode;
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-            }
-        }
-
         actionMode.getMenuInflater().inflate(R.menu.menu_claim_list, menu);
         return true;
     }
@@ -196,13 +188,6 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
             adapter.clearSelectedItems();
             adapter.setInSelectionMode(false);
             adapter.notifyDataSetChanged();
-        }
-        Context context = getContext();
-        if (context != null) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-            }
         }
         this.actionMode = null;
     }

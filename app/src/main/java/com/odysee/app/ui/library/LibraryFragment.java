@@ -588,14 +588,6 @@ public class LibraryFragment extends BaseFragment implements
     @Override
     public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
         this.actionMode = actionMode;
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-            }
-        }
-
         actionMode.getMenuInflater().inflate(R.menu.menu_claim_list, menu);
         return true;
     }
@@ -605,13 +597,6 @@ public class LibraryFragment extends BaseFragment implements
             contentListAdapter.clearSelectedItems();
             contentListAdapter.setInSelectionMode(false);
             contentListAdapter.notifyDataSetChanged();
-        }
-        Context context = getContext();
-        if (context != null) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-            }
         }
         this.actionMode = null;
     }
