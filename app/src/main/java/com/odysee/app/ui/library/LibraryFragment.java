@@ -693,43 +693,53 @@ public class LibraryFragment extends BaseFragment implements
         } else if (currentFilter == FILTER_HISTORY) {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             Activity a = getActivity();
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (Claim c : selectedClaims) {
-                        try {
-                            Future<?> f = executorService.submit(new DeleteViewHistoryItem(c.getPermanentUrl()));
-                            f.get();
-                            if (a != null) {
-                                a.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        contentListAdapter.removeItem(c);
-                                    }
-                                });
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
+            String message = getResources().getQuantityString(R.plurals.confirm_delete_files, selectedClaims.size());
+            AlertDialog.Builder builder;
+            if (a != null) {
+                builder = new AlertDialog.Builder(a);
+                builder.setTitle(R.string.delete_selection).setMessage(message)
+                       .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                           @Override
+                           public void onClick(DialogInterface dialogInterface, int i) {
+                               Thread t = new Thread(new Runnable() {
+                                   @Override
+                                   public void run() {
+                                       for (Claim c : selectedClaims) {
+                                           try {
+                                               Runnable r = new DeleteViewHistoryItem(c.getPermanentUrl());
+                                               Future<?> f = executorService.submit(r);
+                                               f.get();
+                                               a.runOnUiThread(new Runnable() {
+                                                   @Override
+                                                   public void run() {
+                                                       contentListAdapter.removeItem(c);
+                                                   }
+                                               });
+                                           } catch (Exception e) {
+                                               e.printStackTrace();
+                                           }
+                                       }
 
-                    if (a != null) {
-                        a.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (actionMode != null) {
-                                    actionMode.finish();
-                                }
+                                       a.runOnUiThread(new Runnable() {
+                                           @Override
+                                           public void run() {
+                                               if (actionMode != null) {
+                                                   actionMode.finish();
+                                               }
 
-                                if (executorService != null && !executorService.isShutdown()) {
-                                    executorService.shutdown();
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-            t.start();
+                                               if (executorService != null && !executorService.isShutdown()) {
+                                                   executorService.shutdown();
+                                               }
+                                           }
+                                       });
+                                   }
+                               });
+                               t.start();
+                           }
+                       })
+                       .setNegativeButton(R.string.no, null);
+                builder.show();
+            }
         }
     }
 
