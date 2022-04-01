@@ -226,6 +226,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
+import com.odysee.app.ui.golive.GoLiveFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
@@ -915,6 +916,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
+                View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
@@ -926,6 +928,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
 
+                buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -983,6 +986,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
+                buttonGoLive.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(GoLiveFragment.class, true, null);
+                    }
+                });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {

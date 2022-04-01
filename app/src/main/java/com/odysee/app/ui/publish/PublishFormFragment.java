@@ -1,6 +1,7 @@
 package com.odysee.app.ui.publish;
 
 import android.Manifest;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -1040,7 +1041,9 @@ public class PublishFormFragment extends BaseFragment implements
             finalFilePath = currentGalleryItem != null ? currentGalleryItem.getFilePath() : currentFilePath;
         }
         saveInProgress = true;
-        PublishClaimTask task = new PublishClaimTask(claim, finalFilePath, progressPublish, new ClaimResultHandler() {
+        AccountManager am = AccountManager.get(getContext());
+        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+        PublishClaimTask task = new PublishClaimTask(claim, finalFilePath, progressPublish, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();

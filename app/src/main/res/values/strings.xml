@@ -12,6 +12,7 @@
     <string name="editors_choice">Editor\'s Choice</string>
     <string name="your_tags">Your Tags</string>
     <string name="all_content">All Content</string>
+    <string name="go_live">Go Live</string>
     <string name="channels">Channels</string>
     <string name="library">Library</string>
     <string name="publishes">Publishes</string>
@@ -617,6 +618,15 @@
     <!-- Forms -->
     <string name="no_added_tags">You have not added any tags yet. Add tags to improve discovery.</string>
     <string name="form_no_tag_results">We could not find new tags that have not been added yet.</string>
+
+    <!-- Go Live -->
+    <string name="select_channel">Please select a channel</string>
+    <string name="specify_title">Please specify a title for your livestream</string>
+    <string name="please_select_thumbnail">Please select a thumbnail</string>
+    <string name="stream_key_not_generated">Your stream key could not be generated. Please try again later.</string>
+    <string name="start_streaming">Start streaming</string>
+    <string name="stop_streaming">Stop streaming</string>
+    <string name="switch_camera">Switch camera</string>
 
     <!-- Channels -->
     <string name="no_channel_created">You have not created a channel.\nStart now by creating a new channel!</string>
