@@ -31,8 +31,10 @@ import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -252,6 +254,7 @@ public class FileViewFragment extends BaseFragment implements
     private boolean playbackStarted;
     private long startTimeMillis;
     private GetFileTask getFileTask;
+    private Handler seekOverlayHandler;
 
     private boolean storagePermissionRefusedOnce;
     private View buttonPublishSomething;
@@ -1064,6 +1067,7 @@ public class FileViewFragment extends BaseFragment implements
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    @SuppressWarnings("ClickableViewAccessibility")
     private void initUi(View root) {
         buttonPublishSomething.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1394,6 +1398,59 @@ public class FileViewFragment extends BaseFragment implements
         LinearLayoutManager commentsListLLM = new LinearLayoutManager(getContext());
         relatedContentList.setLayoutManager(relatedContentListLLM);
         commentsList.setLayoutManager(commentsListLLM);
+
+        GestureDetector.SimpleOnGestureListener gestureListener = new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                ImageView seekOverlay = root.findViewById(R.id.seek_overlay);
+
+                int width = playerView.getWidth();
+                float eventX = e.getX();
+                if (eventX < width / 3.0) {
+                    if (MainActivity.appPlayer != null) {
+                        MainActivity.appPlayer.seekTo(Math.max(0, MainActivity.appPlayer.getCurrentPosition() - 10000));
+
+                        seekOverlay.setVisibility(View.VISIBLE);
+                        seekOverlay.setImageResource(R.drawable.ic_rewind);
+                    }
+                } else if (eventX > width * 2.0 / 3.0) {
+                    if (MainActivity.appPlayer != null) {
+                        MainActivity.appPlayer.seekTo(MainActivity.appPlayer.getCurrentPosition() + 10000);
+
+                        seekOverlay.setVisibility(View.VISIBLE);
+                        seekOverlay.setImageResource(R.drawable.ic_forward);
+                    }
+                } else {
+                    return true;
+                }
+
+                if (seekOverlayHandler == null) {
+                    seekOverlayHandler = new Handler();
+                } else {
+                    seekOverlayHandler.removeCallbacksAndMessages(null); // Clear pending messages
+                }
+                seekOverlayHandler.postDelayed(() -> {
+                    seekOverlay.setVisibility(View.GONE);
+                }, 500);
+
+                return true;
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                if (playerView.isControllerVisible()) {
+                    playerView.hideController();
+                } else {
+                    playerView.showController();
+                }
+                return true;
+            }
+        };
+        GestureDetector detector = new GestureDetector(getContext(), gestureListener);
+        playerView.setOnTouchListener((view, motionEvent) -> {
+            detector.onTouchEvent(motionEvent);
+            return true;
+        });
     }
 
     private void removeNotificationAsSource() {
@@ -3382,6 +3439,11 @@ public class FileViewFragment extends BaseFragment implements
         if (elapsedPlaybackScheduler != null) {
             elapsedPlaybackScheduler.shutdownNow();
             elapsedPlaybackScheduler = null;
+        }
+
+        if (seekOverlayHandler != null) {
+            seekOverlayHandler.removeCallbacksAndMessages(null);
+            seekOverlayHandler = null;
         }
 
         playbackStarted = false;
