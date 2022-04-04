@@ -624,6 +624,7 @@
     <string name="specify_title">Please specify a title for your livestream</string>
     <string name="please_select_thumbnail">Please select a thumbnail</string>
     <string name="stream_key_not_generated">Your stream key could not be generated. Please try again later.</string>
+    <string name="camera_permission_rationale_livestream">Odysee requires access to your camera to livestream.</string>
     <string name="start_streaming">Start streaming</string>
     <string name="stop_streaming">Stop streaming</string>
     <string name="switch_camera">Switch camera</string>

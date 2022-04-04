@@ -181,7 +181,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
 
     @Override
     public void onCameraPermissionRefused() {
-        showError(getString(R.string.camera_permission_rationale_record));
+        showError(getString(R.string.camera_permission_rationale_livestream));
     }
 
     @Override
@@ -204,7 +204,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
             MainActivity.requestPermission(
                     Manifest.permission.CAMERA,
                     MainActivity.REQUEST_CAMERA_PERMISSION,
-                    getString(R.string.camera_permission_rationale_record),
+                    getString(R.string.camera_permission_rationale_livestream),
                     context,
                     true);
         } else {
