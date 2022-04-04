@@ -1441,15 +1441,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private void openSpecialUrl(String url, String source) {
         String specialPath = url.substring(8).toLowerCase();
         if (specialRouteFragmentClassMap.containsKey(specialPath)) {
-            Class fragmentClass = specialRouteFragmentClassMap.get(specialPath);
-            if (fragmentClassNavIdMap.containsKey(fragmentClass)) {
-                Map<String, Object> params = null;
-                if (!Helper.isNullOrEmpty(source)) {
-                    params = new HashMap<>();
-                    params.put("source",  source);
-                }
+            Map<String, Object> params = null;
+            if (!Helper.isNullOrEmpty(source)) {
+                params = new HashMap<>();
+                params.put("source",  source);
+            }
 
-//                openFragment(specialRouteFragmentClassMap.get(specialPath), true, fragmentClassNavIdMap.get(fragmentClass), params);
+            if (specialPath.equalsIgnoreCase("rewards")) {
+                openRewards(params);
             }
         }
     }
@@ -1467,8 +1466,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         openFragment(FileViewFragment.class, true, params);
     }
 
+    /**
+     * @deprecated Use openRewards(null) instead
+     */
+    @Deprecated
     public void openRewards() {
-        openFragment(RewardsFragment.class, true, null);
+        openRewards(null);
+    }
+
+    public void openRewards(@Nullable Map<String, Object> params) {
+        if (params != null && params.containsKey("source") ) {
+            String sourceParam = (String) params.get("source");
+            if (sourceParam != null && sourceParam.equals("notification")) {
+                hideNotifications();
+            }
+        }
+        openFragment(RewardsFragment.class, true, params);
     }
 
     private final FragmentManager.OnBackStackChangedListener backStackChangedListener = new FragmentManager.OnBackStackChangedListener() {
@@ -4454,7 +4467,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Map<String, String> options = new HashMap<>();
                 options.put("notification_ids", String.valueOf(notification.getRemoteId()));
                 options.put("is_seen", "true");
-                options.put("is_read", "true");
+                // Odysee Android is not yet able to display a list with user's subscriptions,
+                // so let's not mark the notification as read
+                if (!notification.getTargetUrl().equalsIgnoreCase("lbry://?subscriptions")) {
+                    options.put("is_read", "true");
+                } else {
+                    options.put("is_read", "false");
+                }
 
                 AccountManager am = AccountManager.get(getApplicationContext());
 
@@ -4480,7 +4499,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     });
                     t.start();
                 }
-                markNotificationReadAndSeen(notification.getId());
+                if (!notification.getTargetUrl().equalsIgnoreCase("lbry://?subscriptions")) {
+                    markNotificationReadAndSeen(notification.getId());
+                }
 
                 String targetUrl = notification.getTargetUrl();
                 if (targetUrl.startsWith(SPECIAL_URL_PREFIX)) {
