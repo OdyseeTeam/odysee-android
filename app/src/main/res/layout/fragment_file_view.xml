@@ -126,7 +126,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/black"
-                android:fitsSystemWindows="true"
                 android:visibility="gone">
 
                 <com.google.android.exoplayer2.ui.PlayerView
