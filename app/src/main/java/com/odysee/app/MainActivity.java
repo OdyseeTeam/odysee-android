@@ -1602,6 +1602,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             playerCache.release();
             playerCache = null;
         }
+        videoIsTranscoded = false;
     }
 
     @Override
