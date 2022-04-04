@@ -96,7 +96,6 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                             // only replace the locally saved collections if there are items
                             DatabaseHelper.saveCollection(favoritesCollection, db);
                         }
-                        android.util.Log.d("#HELP", "LoadUserState: WalletTimestamp=" + watchLaterCollection.getUpdatedAtTimestamp() + "; LocalTimestamp=" + watchlaterPlaylist.getUpdatedAtTimestamp());
                         if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
                             DatabaseHelper.saveCollection(watchLaterCollection, db);
                         }
