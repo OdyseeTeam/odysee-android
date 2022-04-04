@@ -524,6 +524,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         dbHelper = new DatabaseHelper(this);
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                if (db != null) {
+                    DatabaseHelper.checkAndCreateBuiltinPlaylists(dbHelper.getWritableDatabase());
+                }
+            }
+        });
         checkNotificationOpenIntent(getIntent());
 
         Toolbar toolbar = findViewById(R.id.toolbar);
