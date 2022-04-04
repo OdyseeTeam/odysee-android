@@ -43,6 +43,7 @@ import com.odysee.app.tasks.claim.PublishClaimTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.LbryAnalytics;
 
 import org.apache.commons.codec.binary.Hex;
 import org.json.JSONException;
@@ -158,7 +159,19 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     @Override
     public void onResume() {
         super.onResume();
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            LbryAnalytics.setCurrentScreen(activity, "Go Live", "GoLive");
+            MainActivity.suspendGlobalPlayer(context);
+        }
         fetchChannels();
+    }
+
+    @Override
+    public void onPause() {
+        MainActivity.resumeGlobalPlayer(getContext());
+        super.onPause();
     }
 
     @Override
