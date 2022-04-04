@@ -10,13 +10,18 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -46,6 +51,7 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.browser.customtabs.CustomTabColorSchemeParams;
@@ -64,19 +70,23 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultControlDispatcher;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.TracksInfo;
+import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides;
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides.TrackSelectionOverride;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
@@ -137,6 +147,10 @@ import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.adapter.TagListAdapter;
 import com.odysee.app.callable.LighthouseSearch;
+import com.odysee.app.callable.BuildCommentReactOptions;
+import com.odysee.app.exceptions.LbryRequestException;
+import com.odysee.app.exceptions.LbryResponseException;
+import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
@@ -159,7 +173,6 @@ import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.lbryinc.Reward;
 import com.odysee.app.model.lbryinc.Subscription;
-import com.odysee.app.supplier.ReactToCommentSupplier;
 import com.odysee.app.tasks.BufferEventTask;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
@@ -209,11 +222,15 @@ public class FileViewFragment extends BaseFragment implements
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
     private static final String DEFAULT_PLAYBACK_SPEED = "1x";
+    @StringRes
+    private static final int AUTO_QUALITY_STRING = R.string.auto_quality;
+    private static final int AUTO_QUALITY_ID = 0;
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
 
 //    private PlayerControlView castControlView;
     private Player currentPlayer;
     private boolean loadingNewClaim;
+    private boolean loadingQualityChanged = false;
 //    private boolean startDownloadPending;
 //    private boolean fileGetPending;
     private boolean downloadInProgress;
@@ -360,37 +377,43 @@ public class FileViewFragment extends BaseFragment implements
                     hideBuffering();
 
                     if (loadingNewClaim) {
+                        setPlaybackSpeedToDefault();
+                        setPlayerQualityToDefault();
                         MainActivity.appPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
                     }
                 } else if (playbackState == Player.STATE_BUFFERING) {
-                    Context ctx = getContext();
-                    boolean sendBufferingEvents = true;
+                    if (!loadingQualityChanged) {
+                        Context ctx = getContext();
+                        boolean sendBufferingEvents = true;
 
-                    if (ctx != null) {
-                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(ctx);
-                        sendBufferingEvents = sp.getBoolean(MainActivity.PREFERENCE_KEY_SEND_BUFFERING_EVENTS, true);
-                    }
+                        if (ctx != null) {
+                            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(ctx);
+                            sendBufferingEvents = sp.getBoolean(MainActivity.PREFERENCE_KEY_SEND_BUFFERING_EVENTS, true);
+                        }
 
-                    if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
-                        // we only want to log a buffer event after the media has already started playing
-                        String mediaSourceUrl = getStreamingUrl();
-                        long duration = MainActivity.appPlayer.getDuration();
-                        long position = MainActivity.appPlayer.getCurrentPosition();
-                        String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
-                        if (mediaSourceUrl.startsWith(CDN_PREFIX)) {
-                            BufferEventTask bufferEvent = new BufferEventTask(claim.getPermanentUrl(), duration, position, 1, userIdHash);
-                            bufferEvent.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
-                        } else {
-                            // sdk stream buffer events should be handled differently
-                            Bundle bundle = new Bundle();
-                            bundle.putString("url", claim.getPermanentUrl());
-                            bundle.putLong("stream_duration", duration);
-                            bundle.putLong("stream_position", position);
-                            bundle.putString("user_id_hash", userIdHash);
-                            LbryAnalytics.logEvent(LbryAnalytics.EVENT_BUFFER, bundle);
+                        if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
+                            // we only want to log a buffer event after the media has already started playing
+                            String mediaSourceUrl = getStreamingUrl();
+                            long duration = MainActivity.appPlayer.getDuration();
+                            long position = MainActivity.appPlayer.getCurrentPosition();
+                            String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
+                            if (mediaSourceUrl.startsWith(CDN_PREFIX)) {
+                                BufferEventTask bufferEvent = new BufferEventTask(claim.getPermanentUrl(), duration, position, 1, userIdHash);
+                                bufferEvent.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                            } else {
+                                // sdk stream buffer events should be handled differently
+                                Bundle bundle = new Bundle();
+                                bundle.putString("url", claim.getPermanentUrl());
+                                bundle.putLong("stream_duration", duration);
+                                bundle.putLong("stream_position", position);
+                                bundle.putString("user_id_hash", userIdHash);
+                                LbryAnalytics.logEvent(LbryAnalytics.EVENT_BUFFER, bundle);
+                            }
                         }
                     }
+
+                    loadingQualityChanged = false;
 
                     showBuffering();
                 } else if (playbackState == Player.STATE_ENDED) {
@@ -657,8 +680,10 @@ public class FileViewFragment extends BaseFragment implements
     private void applyThemeToWebView() {
         Context context = getContext();
         if (context instanceof MainActivity && webView != null && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+
             MainActivity activity = (MainActivity) context;
-            WebSettingsCompat.setForceDark(webView.getSettings(), activity.isDarkMode() ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+            WebSettingsCompat.setForceDark(webView.getSettings(), (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) || (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_YES)) ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
     }
 
@@ -826,6 +851,7 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             updatePlaybackSpeedView(root);
+            updateQualityView(root);
             loadAndScheduleDurations();
         }
 
@@ -1281,15 +1307,10 @@ public class FileViewFragment extends BaseFragment implements
         PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
         View playbackSpeedContainer = playerView.findViewById(R.id.player_playback_speed);
         TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
+        View qualityContainer = playerView.findViewById(R.id.player_quality);
+        TextView textQuality = playerView.findViewById(R.id.player_quality_label);
         textPlaybackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
-
-        playerView.setControlDispatcher(new DefaultControlDispatcher() {
-            @Override
-            public boolean dispatchSetPlayWhenReady(Player player, boolean playWhenReady) {
-                isPlaying = playWhenReady;
-                return super.dispatchSetPlayWhenReady(player, playWhenReady);
-            }
-        });
+        textQuality.setText(AUTO_QUALITY_STRING);
 
         playbackSpeedContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
@@ -1303,6 +1324,24 @@ public class FileViewFragment extends BaseFragment implements
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     ((MainActivity) context).openContextMenu(playbackSpeedContainer);
+                }
+            }
+        });
+
+        qualityContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+            @Override
+            public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+                if (MainActivity.appPlayer != null) {
+                    Helper.buildQualityMenu(contextMenu, MainActivity.appPlayer, MainActivity.videoIsTranscoded);
+                }
+            }
+        });
+        qualityContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openContextMenu(qualityContainer);
                 }
             }
         });
@@ -1413,6 +1452,18 @@ public class FileViewFragment extends BaseFragment implements
             textPlaybackSpeed.setText(MainActivity.appPlayer != null && MainActivity.appPlayer.getPlaybackParameters() != null ?
                     Helper.getDisplayValueForPlaybackSpeed((double) MainActivity.appPlayer.getPlaybackParameters().speed) :
                     DEFAULT_PLAYBACK_SPEED);
+        }
+    }
+
+    private void updateQualityView(View root) {
+        if (root != null) {
+            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            TextView textQuality = playerView.findViewById(R.id.player_quality_label);
+            if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
+                textQuality.setText(AUTO_QUALITY_STRING);
+            } else {
+                textQuality.setText(String.format("%sp", MainActivity.videoQuality));
+            }
         }
     }
 
@@ -1871,6 +1922,13 @@ public class FileViewFragment extends BaseFragment implements
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
             view.setPlayer(MainActivity.appPlayer);
+            view.getPlayer().addListener(new Player.Listener() {
+                @Override
+                public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+                    isPlaying = playWhenReady;
+                    Player.Listener.super.onPlayWhenReadyChanged(playWhenReady, reason);
+                }
+            });
             view.setUseController(true);
             if (context instanceof MainActivity) {
                 ((MainActivity) context).getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -1905,24 +1963,16 @@ public class FileViewFragment extends BaseFragment implements
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
 
-                String mediaSourceUrl;
-                DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
-                if (context != null) {
-                    dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
-                }
-                MediaSource mediaSource = null;
                 if (claimToPlay.hasSource()) {
-                    mediaSourceUrl = getStreamingUrl();
-
-                    CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
-                    cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
-                    cacheDataSourceFactory.setCache(MainActivity.playerCache);
-
-                    mediaSource = new ProgressiveMediaSource.Factory(
-                            cacheDataSourceFactory, new DefaultExtractorsFactory()
-                    ).setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy()).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
+                    getStreamingUrlAndInitializePlayer(claimToPlay);
                 } else {
-                    mediaSourceUrl = getLivestreamUrl();
+                    String mediaSourceUrl = getLivestreamUrl();
+                    DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+                    if (context != null) {
+                        dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+                    }
+                    MediaSource mediaSource = null;
+
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
@@ -1945,14 +1995,71 @@ public class FileViewFragment extends BaseFragment implements
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
-                }
 
-                if (mediaSource != null) {
-                    MainActivity.appPlayer.setMediaSource(mediaSource, true);
-                    MainActivity.appPlayer.prepare();
+                    if (mediaSource != null) {
+                        MainActivity.appPlayer.setMediaSource(mediaSource, true);
+                        MainActivity.appPlayer.prepare();
+                    }
                 }
             }
         }
+    }
+
+    private void getStreamingUrlAndInitializePlayer(Claim theClaim) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get the streaming URL
+                Map<String, Object> params = new HashMap<>();
+                params.put("uri", theClaim.getPermanentUrl());
+                JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                String sourceUrl = (String) result.get("streaming_url");
+
+                // Get the stream type
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(sourceUrl)
+                        .head()
+                        .build();
+                try (Response response = client.newCall(request).execute()) {
+                    String contentType = response.header("Content-Type");
+                    MainActivity.videoIsTranscoded = contentType.equals("application/x-mpegurl"); // m3u8
+                }
+
+                new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
+            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+                // TODO: How does error handling work here
+                ex.printStackTrace();
+            }
+        });
+        executor.shutdown();
+    }
+    private void initializePlayer(String sourceUrl) {
+        Context context = getContext();
+        DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+        if (context != null) {
+            dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
+        }
+
+        CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
+        cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
+        cacheDataSourceFactory.setCache(MainActivity.playerCache);
+
+        MediaSource mediaSource;
+        if (MainActivity.videoIsTranscoded) {
+            mediaSource = new HlsMediaSource.Factory(cacheDataSourceFactory)
+                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
+                    .createMediaSource(MediaItem.fromUri(sourceUrl));
+        } else {
+            mediaSource = new ProgressiveMediaSource.Factory(
+                    cacheDataSourceFactory, new DefaultExtractorsFactory()
+            )
+                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
+                    .createMediaSource(MediaItem.fromUri(sourceUrl));
+        }
+
+        MainActivity.appPlayer.setMediaSource(mediaSource, true);
+        MainActivity.appPlayer.prepare();
     }
 
     /**
@@ -2071,6 +2178,106 @@ public class FileViewFragment extends BaseFragment implements
         }*/
         currentPlayer.seekTo(playbackPositionMs);
         currentPlayer.setPlayWhenReady(true);
+    }
+
+    private void setPlaybackSpeedToDefault() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            int speed = ((MainActivity) context).playbackDefaultSpeed();
+            setPlaybackSpeed(MainActivity.appPlayer, speed);
+        }
+    }
+
+    private void setPlaybackSpeed(Player player, int speedId) {
+        float speed = speedId / 100.0f;
+        PlaybackParameters params = new PlaybackParameters(speed);
+        player.setPlaybackParameters(params);
+
+        updatePlaybackSpeedView(getView());
+    }
+
+    private void setPlayerQualityToDefault() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            boolean isOnMobileNetwork = isMeteredNetwork(context);
+            int quality = isOnMobileNetwork ?
+                    ((MainActivity) context).mobileDefaultQuality() :
+                    ((MainActivity) context).wifiDefaultQuality();
+            setPlayerQuality(MainActivity.appPlayer, quality);
+        }
+    }
+
+    // Taken from NewPipe: https://github.com/TeamNewPipe/NewPipe/blob/5459a55406ae72783584f84c1a8410e10903ba8a/app/src/main/java/org/schabi/newpipe/util/ListHelper.java#L552-L566
+    private boolean isMeteredNetwork(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
+            return false;
+        }
+        return connectivityManager.isActiveNetworkMetered();
+    }
+
+    private void setPlayerQuality(Player player, int quality) {
+        TracksInfo tracksInfo = player.getCurrentTracksInfo();
+        int selectedQuality = 0;
+
+        for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
+            if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
+            TrackGroup group = groupInfo.getTrackGroup();
+
+            TrackSelectionOverrides overrides;
+            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
+                overrides = new TrackSelectionOverrides.Builder()
+                        .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                        .build();
+                // Force it to AUTO_QUALITY_ID to override the default quality setting on non-transcoded videos
+                selectedQuality = AUTO_QUALITY_ID;
+            } else {
+                ArrayList<Integer> availableQualities = new ArrayList<>();
+                for (int i = 0; i < group.length; i++) {
+                    availableQualities.add(group.getFormat(i).height);
+                }
+                int selectedQualityIndex;
+                // Check if the chosen quality is lower than the lowest available quality
+                int lowestQuality = Collections.min(availableQualities);
+                if (quality <= lowestQuality) { // <= short path for when the quality matches the lowest
+                    selectedQuality = lowestQuality;
+                    selectedQualityIndex = availableQualities.indexOf(lowestQuality);
+                } else {
+                    // Otherwise find the highest available quality that is less than the chosen quality
+                    for (int i = 0; i < availableQualities.size(); i++) {
+                        int q = availableQualities.get(i);
+                        if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
+                            selectedQuality = q;
+                        }
+                    }
+                    selectedQualityIndex = availableQualities.indexOf(selectedQuality);
+                }
+
+                if (selectedQualityIndex != -1) {
+                    TrackSelectionOverride override = new TrackSelectionOverride(
+                            group, Collections.singletonList(selectedQualityIndex));
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .addOverride(override)
+                            .build();
+                } else { // If quality can't be found use Auto quality
+                    overrides = new TrackSelectionOverrides.Builder()
+                            .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                            .build();
+                }
+            }
+            player.setTrackSelectionParameters(
+                    player
+                            .getTrackSelectionParameters()
+                            .buildUpon()
+                            .setTrackSelectionOverrides(overrides)
+                            .build()
+            );
+
+            MainActivity.videoQuality = selectedQuality;
+            updateQualityView(getView());
+
+            break;
+        }
     }
 
     private void resetViewCount() {
@@ -3176,21 +3383,22 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
         if (context instanceof MainActivity) {
             View root = getView();
-            ConstraintLayout globalLayout = root.findViewById(R.id.file_view_global_layout);
-            View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
-            ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
-            globalLayout.addView(exoplayerContainer);
+            if (root != null) {
+                ConstraintLayout globalLayout = root.findViewById(R.id.file_view_global_layout);
+                View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
+                ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
+                globalLayout.addView(exoplayerContainer);
 
-            View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen_exit);
+                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
+                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen_exit);
 
-            MainActivity activity = (MainActivity) context;
-            activity.enterFullScreenMode();
+                MainActivity activity = (MainActivity) context;
+                activity.enterFullScreenMode();
 
-            int statusBarHeight = activity.getStatusBarHeight();
-            exoplayerContainer.setPadding(0, 0, 0, 0);
+                exoplayerContainer.setPadding(0, 0, 0, 0);
 
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            }
         }
     }
 
@@ -3200,17 +3408,19 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             View root = getView();
-            RelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
-            View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
-            ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
-            mediaContainer.addView(exoplayerContainer);
+            if (root != null) {
+                RelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
+                View exoplayerContainer = root.findViewById(R.id.file_view_exoplayer_container);
+                ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
+                mediaContainer.addView(exoplayerContainer);
 
-            View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen);
-            exoplayerContainer.setPadding(0, 0, 0, 0);
+                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
+                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen);
+                exoplayerContainer.setPadding(0, 0, 0, 0);
 
-            activity.exitFullScreenMode();
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                activity.exitFullScreenMode();
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            }
         }
     }
 
@@ -3275,6 +3485,7 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity.appPlayer.removeListener(fileViewPlayerListener);
             PlaybackParameters params = new PlaybackParameters(1.0f);
             MainActivity.appPlayer.setPlaybackParameters(params);
+            MainActivity.videoIsTranscoded = false;
         }
     }
 
@@ -3619,19 +3830,22 @@ public class FileViewFragment extends BaseFragment implements
             return true;
         }
 
-        View root = getView();
-        if (root != null) {
-            float speed = item.getItemId() / 100.0f;
-            String speedString = String.format("%sx", new DecimalFormat("0.##").format(speed));
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            ((TextView) playerView.findViewById(R.id.player_playback_speed_label)).setText(speedString);
+        if (item.getGroupId() == Helper.PLAYBACK_SPEEDS_GROUP_ID) {
+            int speed = item.getItemId();
+            if (MainActivity.appPlayer != null) {
+                setPlaybackSpeed(MainActivity.appPlayer, speed);
+                return true;
+            }
+        } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
+            loadingQualityChanged = true;
+            int quality = item.getItemId();
 
             if (MainActivity.appPlayer != null) {
-                PlaybackParameters params = new PlaybackParameters(speed);
-                MainActivity.appPlayer.setPlaybackParameters(params);
+                setPlayerQuality(MainActivity.appPlayer, quality);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -3658,15 +3872,6 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     public static class StreamLoadErrorPolicy extends DefaultLoadErrorHandlingPolicy {
-        @Override
-        public long getRetryDelayMsFor(int dataType, long loadDurationMs, IOException exception, int errorCount) {
-            return exception instanceof ParserException
-                    || exception instanceof FileNotFoundException
-                    || exception instanceof Loader.UnexpectedLoaderException
-                    ? C.TIME_UNSET
-                    : Math.min((errorCount - 1) * 1000, 5000);
-        }
-
         @Override
         public int getMinimumLoadableRetryCount(int dataType) {
             return Integer.MAX_VALUE;
@@ -4071,12 +4276,13 @@ public class FileViewFragment extends BaseFragment implements
              * would perhaps be better to fix this upstream and make this situation impossible, but even then
              * this last line of defense doesn't hurt.
              */
-            if ( comment.getReactions() == null ) {
+            if (comment.getReactions() == null) {
                 comment.setReactions(Reactions.newInstanceWithNoLikesOrDislikes());
             }
 
-            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked()))
+            if ((like && comment.getReactions().isLiked()) || (!like && comment.getReactions().isDisliked())) {
                 options.put("remove", true);
+            }
 
             AccountManager am = AccountManager.get(getContext());
             Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
@@ -4087,76 +4293,37 @@ public class FileViewFragment extends BaseFragment implements
             e.printStackTrace();
         }
 
-        AccountManager am = AccountManager.get(getContext());
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<Boolean> task = new ReactToCommentSupplier(am, options);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(result -> {
-                if (result) {
-                    refreshCommentAfterReacting(comment);
-                }
-            });
-        } else {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // This makes a network connection, so it needs to be executed on a different thread than main.
-                    if (Lbry.ownChannels.size() > 0) {
-                        try {
-                            options.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                            options.put("channel_name", Lbry.ownChannels.get(0).getName());
-                            JSONObject jsonChannelSign = Comments.channelSignName(options, options.getString("channel_id"), options.getString("channel_name"));
-
-                            if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                                options.put("signature", jsonChannelSign.getString("signature"));
-                                options.put("signing_ts", jsonChannelSign.getString("signing_ts"));
-                            }
-                        } catch (JSONException | ApiCallException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Callable<Boolean> callable = new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() {
-                            JSONObject data = null;
-                            if (am.getAccounts().length > 0) {
-                                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                                try {
-                                    if (odyseeAccount != null) {
-                                        okhttp3.Response response = Comments.performRequest(options, "reaction.React");
-                                        String responseString = response.body().string();
-                                        JSONObject jsonResponse = new JSONObject(responseString);
-                                        if (jsonResponse.has("result")) {
-                                            data = jsonResponse.getJSONObject("result");
-                                        } else {
-                                            Log.e("ReactingToComment", jsonResponse.getJSONObject("error").getString("message"));
-                                        }
-                                        response.close();
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            return data != null && !data.has("error");
-                        }
-                    };
-                    Future<Boolean> futureReactions = executor.submit(callable);
-                    Boolean result;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // This makes a network connection, so it needs to be executed on a different thread than main.
+                if (Lbry.ownChannels.size() > 0) {
                     try {
-                        // This runs on a different thread, so it will not block main thread
-                        result = futureReactions.get();
-                        if (result) {
-                            refreshCommentAfterReacting(comment);
+                        // This makes a network connection, so it needs to be executed on a different thread than main.
+                        Callable<JSONObject> optionsCallable = new BuildCommentReactOptions(options);
+                        Future<JSONObject> optionsFuture = executor.submit(optionsCallable);
+
+                        JSONObject opt = optionsFuture.get();
+
+                        Future<?> futureReactions = executor.submit(new ReactToComment(opt));
+                        futureReactions.get();
+
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
                         }
-                    } catch (InterruptedException | ExecutionException e) {
+                        refreshCommentAfterReacting(comment);
+                    } catch (Exception e) {
                         e.printStackTrace();
+                    } finally {
+                        if (!executor.isShutdown()) {
+                            executor.shutdown();
+                        }
                     }
                 }
-            });
-
-            thread.start();
-        }
+            }
+        });
+        thread.start();
     }
 
     private void refreshCommentAfterReacting(Comment comment) {

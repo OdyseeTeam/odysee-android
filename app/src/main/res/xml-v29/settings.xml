@@ -51,10 +51,13 @@
             app:singleLineTitle="false"
             app:summary="%s"
             app:title="@string/playback_default_speed" />
-        <SwitchPreferenceCompat
-            app:key="com.odysee.app.preference.userinterface.DarkMode"
-            app:title="@string/enable_dark_mode"
-            app:singleLineTitle="false"
+        <DropDownPreference
+            app:key="com.odysee.app.preference.userinterface.DarkModeSetting"
+            app:defaultValue="notnight"
+            app:entries="@array/darkmode_setting_labels"
+            app:entryValues="@array/darkmode_setting_values"
+            app:summary="%s"
+            app:title="@string/darkmode_setting"
             app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat
             app:key="com.odysee.app.preference.userinterface.Autosearch"

@@ -133,6 +133,7 @@
                             android:layout_height="match_parent"
                             android:layout_gravity="center_vertical"
                             android:minWidth="256dp"
+                            tools:visibility="visible"
                             android:visibility="gone">
                             <com.google.android.material.textfield.TextInputEditText android:id="@+id/search_query_text"
                                 android:fontFamily="@font/inter"
@@ -141,6 +142,8 @@
                                 android:layout_height="match_parent"
                                 android:inputType="text"
                                 android:imeOptions="actionSearch"
+                                android:paddingTop="4dp"
+                                android:paddingBottom="4dp"
                                 android:hint="@string/search_hint"
                                 android:singleLine="true" />
 
@@ -177,6 +180,24 @@
                                 app:tint="@color/actionBarForeground" />
                         </RelativeLayout>
                     </LinearLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/clear_all_library_button"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_width="42dp"
+                        android:layout_height="match_parent"
+                        android:background="?attr/selectableItemBackground"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_centerInParent="true"
+                            android:src="@drawable/ic_clear_all"
+                            android:visibility="visible"
+                            app:tint="@color/actionBarForeground" />
+                    </RelativeLayout>
 
                     <RelativeLayout
                         android:id="@+id/profile_button"

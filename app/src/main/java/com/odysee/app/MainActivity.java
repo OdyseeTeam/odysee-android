@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
@@ -35,8 +36,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
 import android.util.Base64;
 import android.util.Log;
@@ -48,6 +51,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -122,6 +127,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -225,7 +231,6 @@ import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
-import com.odysee.app.tasks.wallet.WalletBalanceTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
@@ -250,9 +255,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
-
-import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
-import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
@@ -286,6 +288,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
     public static String nowPlayingClaimUrl;
+    public static boolean videoIsTranscoded;
+    public static int videoQuality;
     public static boolean startingFilePickerActivity = false;
     public static boolean startingShareActivity = false;
     public static boolean startingPermissionRequest = false;
@@ -357,7 +361,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
     public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
+    public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
+    public static final String PREFERENCE_KEY_INTERNAL_DEFAULT_PLAYBACK_SPEED = "com.odysee.app.preference.userinterface.DefaultPlaybackSpeed";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
+    public static final String PREFERENCE_KEY_DARK_MODE_SETTING = "com.odysee.app.preference.userinterface.DarkModeSetting";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
     public static final String PREFERENCE_KEY_MINI_PLAYER_BOTTOM_MARGIN = "com.odysee.app.preference.userinterface.MiniPlayerBottomMargin";
@@ -384,6 +392,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final String SECURE_VALUE_KEY_SAVED_PASSWORD = "com.odysee.app.PX";
     public static final String SECURE_VALUE_FIRST_RUN_PASSWORD = "firstRunPassword";
+
+    public static final String APP_SETTING_DARK_MODE_NIGHT = "night";
+    public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
+    public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
 
     private static final String TAG = "OdyseeMain";
 
@@ -417,6 +429,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
+
+    ScheduledExecutorService searchWorker;
+    ScheduledFuture<?> scheduledSearchFuture;
+    private boolean autoSearchEnabled = false;
 
     ChannelCreateDialogFragment channelCreationBottomSheet;
 
@@ -469,13 +485,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         } catch (Exception ex) {
             // pass (don't fail initialization on some _weird_ device implementations)
         }
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+
+        // Set app theme depending on Night mode
+        if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        }
 
         initKeyStore();
         loadAuthToken();
 
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        // Change status bar text color depending on Night mode when app is running
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                } else {
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            }
         }
 
         activityResultLauncher = registerForActivityResult(
@@ -590,16 +626,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         registerRequestsReceiver();
         registerUAReceiver();
 
-        View decorView = getWindow().getDecorView();
-        decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override
-            public void onSystemUiVisibilityChange(int visibility) {
-                if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                    // not fullscreen
-                }
-            }
-        });
-
         // setup uri bar
 //        setupUriBar();
         initNotificationsPage();
@@ -689,6 +715,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
         bottomNavigation.setSelectedItemId(R.id.action_home_menu);
 
+        findViewById(R.id.brand).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bottomNavigation.setSelectedItemId(R.id.action_home_menu);
+            }
+        });
+
         findViewById(R.id.wallet_balance_container).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -728,6 +761,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container_search, searchFragment, "SEARCH").commit();
                         currentDisplayFragment = searchFragment;
                         findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                        findViewById(R.id.search_query_text).requestFocus();
+                        InputMethodManager imm =(InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.showSoftInput(findViewById(R.id.search_query_text), InputMethodManager.SHOW_FORCED);
                     } catch (IllegalAccessException | InstantiationException e) {
                         e.printStackTrace();
                     }
@@ -740,9 +776,72 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
                     String query = queryText.getText().toString();
 
-                    SearchFragment fragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
-                    currentDisplayFragment = fragment;
-                    fragment.search(query, 0);
+                    SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                    if (searchFragment != null) {
+                        searchFragment.search(query, 0);
+                    }
+                }
+            }
+        });
+
+        ((EditText)findViewById(R.id.search_query_text)).addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                Context context = getApplicationContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    autoSearchEnabled = sp.getBoolean("com.odysee.app.preference.userinterface.Autosearch", false);
+                }
+                if (autoSearchEnabled) {
+                    if (searchWorker == null) {
+                        searchWorker = Executors.newSingleThreadScheduledExecutor();
+                    }
+
+                    // Cancel any previously scheduled search as soon as possible if not yet running.
+                    // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
+                    if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+                        scheduledSearchFuture.cancel(false);
+                    }
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (autoSearchEnabled) {
+                    if (!s.toString().equals("")) {
+                        Runnable runnable = new Runnable() {
+                            public void run() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        EditText queryText = findViewById(R.id.search_query_text);
+
+                                        findViewById(R.id.fragment_container_search).setVisibility(View.VISIBLE);
+                                        String query = queryText.getText().toString();
+
+                                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                                        if (searchFragment != null) {
+                                            searchFragment.search(query, 0);
+                                        }
+                                    }
+                                });
+                            }
+                        };
+                        scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
+                    } else {
+                        SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
+
+                        if (searchFragment != null) {
+                            searchFragment.search("", 0);
+                        }
+                    }
                 }
             }
         });
@@ -761,18 +860,57 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.search_close_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getSupportFragmentManager().beginTransaction()
-                        .remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                EditText queryText = findViewById(R.id.search_query_text);
+                InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(queryText.getWindowToken(), 0);
+
+                Fragment searchFragment = getSupportFragmentManager().findFragmentByTag("SEARCH");
+                if (searchFragment != null) {
+                    getSupportFragmentManager().beginTransaction().remove(searchFragment).commit();
+                }
+
                 ((EditText)findViewById(R.id.search_query_text)).setText("");
                 showBottomNavigation();
                 switchToolbarForSearch(false);
 
                 // On tablets, multiple fragments could be visible. Don't show Home Screen when File View is visible
-                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE)
+                if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE) {
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+                }
 
                 showWalletBalance();
                 findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
+            }
+        });
+
+        Context ctx = this;
+        findViewById(R.id.clear_all_library_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx).
+                        setTitle(R.string.confirm_clear_view_history_title).
+                        setMessage(R.string.confirm_clear_view_history)
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                Thread t = new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        SQLiteDatabase db = DatabaseHelper.getInstance().getWritableDatabase();
+                                        DatabaseHelper.clearViewHistory(db);
+
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                ((LibraryFragment) libraryFragment).onViewHistoryCleared();
+                                            }
+                                        });
+                                    }
+                                });
+                                t.start();
+                            }
+                        }).setNegativeButton(R.string.no, null);
+                builder.show();
             }
         });
 
@@ -799,7 +937,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
-
 
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
@@ -832,6 +969,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         openFragment(SettingsFragment.class, true, null);
                     }
                 });
@@ -840,6 +978,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -855,6 +994,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
 
                         CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                         ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
@@ -886,6 +1026,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         startActivity(new Intent(MainActivity.this, YouTubeSyncActivity.class));
                     }
                 });
@@ -894,6 +1035,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         // Close the popup window so its status gets updated when user opens it again
                         popupWindow.dismiss();
+                        hideNotifications();
                         simpleSignIn(R.id.action_home_menu);
                     }
                 });
@@ -902,6 +1044,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         popupWindow.dismiss();
+                        hideNotifications();
                         if (isSignedIn) {
                             signOutUser();
                         }
@@ -996,6 +1139,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return super.onOptionsItemSelected(item);
     }
 
+    public void cancelScheduledSearchFuture() {
+        if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
+            scheduledSearchFuture.cancel(true);
+        }
+        if (searchWorker != null && !searchWorker.isShutdown()) {
+            searchWorker.shutdown();
+        }
+    }
     public void hideToolbar() {
         findViewById(R.id.toolbar).setVisibility(View.GONE);
     }
@@ -1008,9 +1159,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    public boolean isDarkMode() {
+    /**
+     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
+     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
+     */
+    public String getDarkModeAppSetting() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            return sp.getString(PREFERENCE_KEY_DARK_MODE_SETTING, APP_SETTING_DARK_MODE_NOTNIGHT);
+        } else {
+            boolean darkMode = sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+            if (darkMode) {
+                return APP_SETTING_DARK_MODE_NIGHT;
+            } else {
+                return APP_SETTING_DARK_MODE_NOTNIGHT;
+            }
+        }
     }
 
     public boolean isBackgroundPlaybackEnabled() {
@@ -1026,6 +1190,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean isMediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
+    }
+
+    public int wifiDefaultQuality() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY, "0"));
+    }
+
+    public int mobileDefaultQuality() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY, "0"));
+    }
+
+    public int playbackDefaultSpeed() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_DEFAULT_PLAYBACK_SPEED, "100"));
     }
 
     public boolean initialSubscriptionMergeDone() {
@@ -1443,27 +1622,40 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void updateWalletBalance() {
         if (isSignedIn()) {
-            WalletBalanceTask task = new WalletBalanceTask(getAuthToken(), new WalletBalanceTask.WalletBalanceHandler() {
+            Activity a = this;
+            Thread t = new Thread(new Runnable() {
                 @Override
-                public void onSuccess(WalletBalance walletBalance) {
-                    Lbry.walletBalance = walletBalance;
-                    for (WalletBalanceListener listener : walletBalanceListeners) {
-                        if (listener != null) {
-                            listener.onWalletBalanceUpdated(walletBalance);
+                public void run() {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    Callable<WalletBalance> c = new WalletBalanceFetch(getAuthToken());
+                    Future<WalletBalance> f = executorService.submit(c);
+                    try {
+                        WalletBalance balance = f.get();
+
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Lbry.walletBalance = balance;
+                                for (WalletBalanceListener listener : walletBalanceListeners) {
+                                    if (listener != null) {
+                                        listener.onWalletBalanceUpdated(balance);
+                                    }
+                                }
+                                sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
+                                ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
+                                        Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
+                            }
+                        });
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (!executorService.isShutdown()) {
+                            executorService.shutdown();
                         }
                     }
-                    sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-                    ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                            Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
-                }
-
-                @Override
-                public void onError(Exception error) {
-                    error.printStackTrace();
-                    // pass
                 }
             });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            t.start();
         } else {
             Lbry.walletBalance = new WalletBalance();
 
@@ -2052,10 +2244,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
     }
 
-    public void unsetFitsSystemWindows(View view) {
-        view.setFitsSystemWindows(false);
-    }
-
     public void enterFullScreenMode() {
         inFullscreenMode = true;
         ActionBar actionBar = getSupportActionBar();
@@ -2065,35 +2253,51 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.appbar).setFitsSystemWindows(false);
 
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-                View.SYSTEM_UI_FLAG_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-
-    public int getStatusBarHeight() {
-        int height = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            height = getResources().getDimensionPixelSize(resourceId);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController windowInsetsController = decorView.getWindowInsetsController();
+            windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            windowInsetsController.hide(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
         }
-        return height;
     }
 
     public void exitFullScreenMode() {
         View appBarMainContainer = findViewById(R.id.appbar);
-        View decorView = getWindow().getDecorView();
-        int flags = isDarkMode() ? (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE) :
-                (View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
-
-        if (!isDarkMode() && Build.VERSION.SDK_INT > LOLLIPOP_MR1)
-            flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
 
         appBarMainContainer.setFitsSystemWindows(false);
-        decorView.setSystemUiVisibility(flags);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            getWindow().setDecorFitsSystemWindows(true);
+
+            WindowInsetsController windowInsetsController = getWindow().getInsetsController();
+            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+                int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+                if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)
+                     || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM)
+                          && (nightModeFlags == Configuration.UI_MODE_NIGHT_NO || nightModeFlags == Configuration.UI_MODE_NIGHT_UNDEFINED))) {
+                    windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                }
+            }
+            windowInsetsController.show(WindowInsets.Type.systemBars());
+        } else {
+            //noinspection deprecation
+            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
+
+            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                //noinspection deprecation
+                flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+
+            View decorView = getWindow().getDecorView();
+            //noinspection deprecation
+            decorView.setSystemUiVisibility(flags);
+        }
         inFullscreenMode = false;
     }
 
@@ -2217,7 +2421,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         this.actionMode = mode;
-        if (isDarkMode()) {
+        if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
 
@@ -2260,7 +2464,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             notificationListAdapter.setInSelectionMode(false);
             notificationListAdapter.notifyDataSetChanged();
         }
-        if (Build.VERSION.SDK_INT >= M && isDarkMode()) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         this.actionMode = null;
@@ -2475,6 +2679,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // Animate?
             View launchSplash = findViewById(R.id.launch_splash);
             if (launchSplash.getVisibility() == View.VISIBLE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 int width = launchSplash.getWidth();
                 ValueAnimator valueAnimator = ValueAnimator.ofInt(width, 0);
                 valueAnimator.setInterpolator(new DecelerateInterpolator());
@@ -3069,7 +3274,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > M) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                     ExecutorService executorService = Executors.newSingleThreadExecutor();
                     Supplier<Boolean> task = new NotificationUpdateSupplier(options);
                     CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, executorService);
@@ -3186,6 +3391,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public void switchClearViewHistoryButton(boolean makeItVisible) {
+        if (makeItVisible) {
+            findViewById(R.id.clear_all_library_button).setVisibility(View.VISIBLE);
+        } else {
+            findViewById(R.id.clear_all_library_button).setVisibility(View.GONE);
+        }
+    }
     private boolean isSearchUIActive() {
         return getSupportFragmentManager().findFragmentByTag("SEARCH") != null;
     }
@@ -3197,6 +3409,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
         } else {
+            // removeAccount() was deprecated on API Level 22. Any device running that version will take the other branch
+            // on this conditional
+            //noinspection deprecation
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
 
@@ -4258,7 +4473,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > M) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                     Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
                     CompletableFuture.supplyAsync(supplier);
                 } else {

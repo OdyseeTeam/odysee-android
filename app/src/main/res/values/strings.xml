@@ -122,6 +122,7 @@
     <string name="publish_something_here">Publish something here</string>
     <string name="cannot_view_claim">This content cannot be accessed at this time. Please try again later.</string>
     <string name="zero_duration">0:00</string>
+    <string name="auto_quality">Auto</string>
     <string name="claim_file_not_found">The file at "%1$s" does not exist.</string>
     <string name="confirm_purchase">Confirm Purchase</string>
     <string name="delete_file">Delete file</string>
@@ -252,6 +253,18 @@
     <string name="greek">Greek</string>
     <string name="catalan">Catalan</string>
 
+    <string-array name="darkmode_setting_labels">
+        <item>Light</item>
+        <item>Night</item>
+        <item>System default</item>
+    </string-array>
+
+    <string-array name="darkmode_setting_values">
+        <item>notnight</item>
+        <item>night</item>
+        <item>system</item>
+    </string-array>
+
     <string name="none">None</string>
     <string name="public_domain">Public Domain</string>
     <string name="copyrighted">Copyrighted</string>
@@ -296,7 +309,12 @@
     <string name="enable_background_playback">Enable background playback</string>
     <string name="enable_background_playback_pip_mode">Continue playing media in the background after closing picture-in-picture mode</string>
     <string name="enable_autoplay">Autoplay media files</string>
+    <string name="wifi_default_quality">Default quality</string>
+    <string name="mobile_default_quality">Default quality when using mobile data</string>
+    <string name="playback_default_speed">Default playback speed</string>
     <string name="enable_dark_mode">Enable dark theme</string>
+    <string name="darkmode_setting">Dark mode setting</string>
+    <string name="enable_autosearch">Perform search while typing</string>
     <string name="show_mature_content">Show mature content</string>
     <string name="show_url_suggestions">Show URL suggestions</string>
     <string name="notifications">Notifications</string>
@@ -306,6 +324,42 @@
 
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
     <string name="send_buffering_events">Send buffering events to LBRY servers</string>
+
+    <string-array name="available_qualities">
+        <item>@string/auto_quality</item>
+        <item>1080p</item>
+        <item>720p</item>
+        <item>360p</item>
+        <item>144p</item>
+    </string-array>
+    <string-array name="available_qualities_values">
+        <item>0</item> <!-- Auto Quality selection -->
+        <item>1080</item>
+        <item>720</item>
+        <item>360</item>
+        <item>144</item>
+    </string-array>
+
+    <string-array name="available_speeds">
+        <item>0.25x</item>
+        <item>0.5x</item>
+        <item>0.75x</item>
+        <item>1.0x</item>
+        <item>1.25x</item>
+        <item>1.5x</item>
+        <item>1.75x</item>
+        <item>2.0x</item>
+    </string-array>
+    <string-array name="available_speeds_values">
+        <item>25</item>
+        <item>50</item>
+        <item>75</item>
+        <item>100</item>
+        <item>125</item>
+        <item>150</item>
+        <item>175</item>
+        <item>200</item>
+    </string-array>
 
     <!-- URL suggestions -->
     <string name="search_url_title">%1$s - Search</string>
@@ -319,6 +373,19 @@
     <string name="search_no_results">No results found for \'%1$s\'. Please enter a different search term.</string>
     <string name="search_type_to_discover">Start typing to discover exciting content on Odysee</string>
     <string name="no_related_content">No related content to display at this time.</string>
+    <string name="search_filter_type_label">Type</string>
+    <string name="search_filter_publish_time_label">Publish time</string>
+    <string name="search_filter_type_file_label">File</string>
+    <string name="search_filter_type_channel_label">Channel</string>
+    <string name="search_filter_filetype_video">Video</string>
+    <string name="search_filter_filetype_audio">Audio</string>
+    <string-array name="publish_timeframe_filter">
+        <item>Anytime</item>
+        <item>Last 24 hours</item>
+        <item>This week</item>
+        <item>This month</item>
+        <item>This year</item>
+    </string-array>
 
     <!-- Wallet -->
     <string name="balance">Balance</string>
@@ -669,6 +736,9 @@
     <string name="kb">KB</string>
     <string name="gb">GB</string>
     <string name="zero_mb">0MB</string>
+    <string name="clear_all">Clear all</string>
+    <string name="confirm_clear_view_history_title">Clear view history</string>
+    <string name="confirm_clear_view_history">Are you sure you want to clear all items from your history?</string>
     <plurals name="confirm_delete_files">
         <item quantity="one">Are you sure you want to remove the selected file from your device?</item>
         <item quantity="other">Are you sure you want to remove the selected files from your device?</item>

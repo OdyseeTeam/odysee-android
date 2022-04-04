@@ -12,6 +12,8 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.utils.LbryAnalytics;
 
+import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+
 
 public class SettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener {
     @Override
@@ -75,6 +77,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_DARK_MODE)) {
             boolean darkMode = sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
             AppCompatDelegate.setDefaultNightMode(darkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+        }
+        if (key.equalsIgnoreCase("com.odysee.app.preference.userinterface.DarkModeSetting")) {
+            String darkModeValue = sp.getString("com.odysee.app.preference.userinterface.DarkModeSetting", MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
+            if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT)) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            } else if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT)){
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            } else {
+                AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
+            }
         }
     }
 }
