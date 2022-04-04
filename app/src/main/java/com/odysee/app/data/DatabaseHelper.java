@@ -196,12 +196,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_REMOVE_ALL_COLLECTION_ITEMS = "DELETE FROM collection_items";
 
     private static final String SQL_GET_BUILTIN_COLLECTION_COUNT = "SELECT COUNT(id) FROM collections WHERE id = 'favorites' OR id = 'watchlater'";
-    private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, last_updated) VALUES (?, ?, ?, ?)";
-    private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, last_updated) VALUES (?, ?, ?, ?)";
+    private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, updated_at) VALUES (?, ?, ?, ?)";
+    private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, updated_at) VALUES (?, ?, ?, ?)";
     private static final String SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION = "DELETE FROM collections WHERE collection_id = ?";
     private static final String SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION = "INSERT INTO collection_items (collection_id, url, item_order) VALUES  (?, ?, ?)";
-    private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, last_updated FROM collections WHERE id = ?";
-    private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, last_updated FROM collections";
+    private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, updated_at FROM collections WHERE id = ?";
+    private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, updated_at FROM collections";
     private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
 
     public DatabaseHelper(Context context) {
