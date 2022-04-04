@@ -128,6 +128,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -384,6 +385,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_NEW_ANDROID_REWARD_CLAIMED = "com.odysee.app.preference.internal.NewAndroidRewardClaimed";
     public static final String PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE = "com.odysee.app.preference.internal.InitialSubscriptionMergeDone";
     public static final String PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED = "com.odysee.app.preference.internal.InitialBlockedListLoaded";
+    public static final String PREFERENCE_KEY_INTERNAL_INITIAL_COLLECTIONS_LOADED = "com.odysee.app.preference.internal.InitialCollectionsLoaded";
 
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_RUN_COMPLETED = "com.odysee.app.preference.internal.FirstRunCompleted";
     public static final String PREFERENCE_KEY_INTERNAL_FIRST_AUTH_COMPLETED = "com.odysee.app.preference.internal.FirstAuthCompleted";
@@ -1215,6 +1217,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean initialBlockedListLoaded() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, false);
+    }
+
+    public boolean initialCollectionsLoaded() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_COLLECTIONS_LOADED, false);
     }
 
     private void initSpecialRouteMap() {
@@ -2870,6 +2877,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
                     }
                 }
+
+                if (!initialCollectionsLoaded()) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_COLLECTIONS_LOADED, true).apply();
+                }
             }
 
             @Override
@@ -3208,7 +3220,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Snackbar.make(findViewById(R.id.content_main), stringResourceId, Snackbar.LENGTH_LONG).show();
     }
     public void showMessage(String message) {
-        Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).show();
+        showMessage(message, null, null);
+    }
+    public void showMessage(String message, String actionText, View.OnClickListener actionListener) {
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+        if (!Helper.isNullOrEmpty(actionText) && actionListener != null) {
+            snackbar.setAction(actionText, actionListener);
+        }
+        snackbar.show();
     }
     public void showError(String message) {
         Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
@@ -4551,6 +4570,45 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
+    }
+
+    public void handleAddUrlToList(String url, String builtInId) {
+        if (!Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES,  OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(builtInId)) {
+            // add to custom list. show bottom sheet dialog with playlists
+            return;
+        }
+
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    DatabaseHelper.addCollectionItem(builtInId, url, db);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            showMessage(getString(R.string.added_to_list,
+                                    OdyseeCollection.BUILT_IN_ID_FAVORITES.equalsIgnoreCase(builtInId) ? getString(R.string.favorites) : getString(R.string.watch_later)),
+                                    getString(R.string.see_list),
+                                    new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            // open the playlist fragment with the id
+                                        }
+                                    });
+                        }
+                    });
+
+                    // initiate sync afterwards
+                    saveSharedUserState();
+                } catch (SQLiteException ex) {
+                    // failed
+                    showError(getString(R.string.could_not_add_to_list,
+                            OdyseeCollection.BUILT_IN_ID_FAVORITES.equalsIgnoreCase(builtInId) ? getString(R.string.favorites) : getString(R.string.watch_later)));
+                }
+            }
+        });
     }
 
     public void handleBlockChannel(final Claim channel) {

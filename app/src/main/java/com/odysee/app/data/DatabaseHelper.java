@@ -12,7 +12,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.odysee.app.model.OdyseeCollection;
@@ -66,7 +68,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     ", timestamp TEXT NOT NULL)",
             "CREATE TABLE shuffle_watched (id INTEGER PRIMARY KEY NOT NULL, claim_id TEXT NOT NULL)",
             "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)",
-            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL)",
+            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL, visibility INTEGER DEFAULT 1 NOT NULL)",
             "CREATE TABLE collection_items (collection_id TEXT NOT NULL, url TEXT NOT NULL, item_order INTEGER DEFAULT 1 NOT NULL, PRIMARY KEY(collection_id, url))"
     };
     private static final String[] SQL_CREATE_INDEXES = {
@@ -139,13 +141,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "CREATE INDEX idx_blocked_channel_name ON blocked_channels (name)"
     };
     private static final String[] SQL_V10_V11_UPGRADE = {
-            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL)",
+            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL, visibility INTEGER DEFAULT 1 NOT NULL)",
             "CREATE TABLE collection_items (collection_id TEXT NOT NULL, url TEXT NOT NULL, item_order INTEGER DEFAULT 1 NOT NULL, PRIMARY KEY(collection_id, url))"
     };
 
     private static final String SQL_INSERT_SUBSCRIPTION = "REPLACE INTO subscriptions (channel_name, url, is_notifications_disabled) VALUES (?, ?, ?)";
     private static final String SQL_UPDATE_SUBSCRIPTION_NOTIFICATION = "UPDATE subscriptions SET is_notification_disabled = ? WHERE url = ?";
-    private static final String SQL_CLEAR_SUBSCRIPTIONS = "DELETE FROM1 subscriptions";
+    private static final String SQL_CLEAR_SUBSCRIPTIONS = "DELETE FROM subscriptions";
     private static final String SQL_DELETE_SUBSCRIPTION = "DELETE FROM subscriptions WHERE url = ?";
     private static final String SQL_GET_SUBSCRIPTIONS = "SELECT channel_name, url, is_notifications_disabled FROM subscriptions";
 
@@ -196,12 +198,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_REMOVE_ALL_COLLECTION_ITEMS = "DELETE FROM collection_items";
 
     private static final String SQL_GET_BUILTIN_COLLECTION_COUNT = "SELECT COUNT(id) FROM collections WHERE id = 'favorites' OR id = 'watchlater'";
-    private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, updated_at) VALUES (?, ?, ?, ?)";
-    private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, updated_at) VALUES (?, ?, ?, ?)";
-    private static final String SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION = "DELETE FROM collections WHERE collection_id = ?";
+    private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
+    private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
+    private static final String SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION = "DELETE FROM collection_items WHERE collection_id = ?";
+    private static final String SQL_UPDATE_COLLECTION_UPDATED_AT = "UPDATE collections SET updated_at = ? WHERE id = ?";
     private static final String SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION = "INSERT INTO collection_items (collection_id, url, item_order) VALUES  (?, ?, ?)";
-    private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, updated_at FROM collections WHERE id = ?";
-    private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, updated_at FROM collections";
+    private static final String SQL_GET_EXISTING_COLLECTION_ITEM_COUNT = "SELECT COUNT(url) FROM collection_items WHERE collection_id = ? AND url = ?";
+    private static final String SQL_GET_MAX_ITEM_ORDER_FOR_COLLECTION = "SELECT MAX(item_order) FROM collection_items WHERE collection_id = ?";
+    private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, visibility, updated_at FROM collections WHERE id = ?";
+    private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, visibility, updated_at FROM collections";
     private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
 
     public DatabaseHelper(Context context) {
@@ -587,10 +592,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (count != 2) {
                 Date now = new Date();
                 db.execSQL(SQL_CREATE_BUILTIN_COLLECTION, new Object[]{
-                        OdyseeCollection.BUILT_IN_ID_FAVORITES, "Favorites", "playlist", new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
+                        OdyseeCollection.BUILT_IN_ID_FAVORITES,
+                        "Favorites",
+                        "playlist",
+                        OdyseeCollection.VISIBILITY_PRIVATE,
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
                 });
                 db.execSQL(SQL_CREATE_BUILTIN_COLLECTION, new Object[]{
-                        OdyseeCollection.BUILT_IN_ID_WATCHLATER, "Watch Later", "playlist", new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
+                        OdyseeCollection.BUILT_IN_ID_WATCHLATER,
+                        "Watch Later",
+                        "playlist",
+                        OdyseeCollection.VISIBILITY_PRIVATE,
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
                 });
             }
             db.setTransactionSuccessful();
@@ -611,10 +624,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     collection.getId(),
                     collection.getName(),
                     collection.getType(),
-                    new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(collection.getLastUpdated())
+                    collection.getVisibility(),
+                    new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(collection.getUpdatedAt())
             });
 
-            db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION);
+            db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION, new Object[] { collection.getId() });
 
             List<String> items = new ArrayList<>(collection.getItems());
             for (int i = 0; i < items.size(); i++)  {
@@ -643,10 +657,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 collection.setId(cursor.getString(columnIndex++));
                 collection.setName(cursor.getString(columnIndex++));
                 collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
                 try {
-                    collection.setLastUpdated(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
                 } catch (ParseException ex)  {
-                    collection.setLastUpdated(new Date());
+                    collection.setUpdatedAt(new Date());
                 }
                 collections.add(collection);
             }
@@ -657,8 +672,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return collections;
     }
 
-    public static List<OdyseeCollection> loadAllCollections(SQLiteDatabase db) {
-        List<OdyseeCollection> collections = new ArrayList<>();
+    public static Map<String, OdyseeCollection> loadAllCollections(SQLiteDatabase db) {
+        Map<String, OdyseeCollection> collections = new HashMap<>();
         Cursor cursor = null;
         try {
             cursor = db.rawQuery(SQL_GET_COLLECTIONS, null);
@@ -668,12 +683,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 collection.setId(cursor.getString(columnIndex++));
                 collection.setName(cursor.getString(columnIndex++));
                 collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
                 try {
-                    collection.setLastUpdated(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
                 } catch (ParseException ex)  {
-                    collection.setLastUpdated(new Date());
+                    collection.setUpdatedAt(new Date());
                 }
-                collections.add(collection);
+                collections.put(collection.getId(), collection);
             }
             Helper.closeCursor(cursor);
 
@@ -705,10 +721,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 collection.setId(cursor.getString(columnIndex++));
                 collection.setName(cursor.getString(columnIndex++));
                 collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
                 try {
-                    collection.setLastUpdated(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
                 } catch (ParseException ex)  {
-                    collection.setLastUpdated(new Date());
+                    collection.setUpdatedAt(new Date());
                 }
             }
             Helper.closeCursor(cursor);
@@ -726,6 +743,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return collection;
     }
 
+    @SuppressLint("SimpleDateFormat")
+    public static void addCollectionItem(String id, String url, SQLiteDatabase db) {
+        db.beginTransaction();
+        Cursor cursor = null;
+        try {
+            // check if the item exists first. If it does, we can skip everything else
+            boolean exists = false;
+            cursor = db.rawQuery(SQL_GET_EXISTING_COLLECTION_ITEM_COUNT, new String[] { id, url });
+            if (cursor.moveToNext()) {
+                exists = cursor.getInt(0) > 0;
+            }
+            Helper.closeCursor(cursor);
+
+            if (!exists) {
+                int nextItemOrder = 1;
+                cursor = db.rawQuery(SQL_GET_MAX_ITEM_ORDER_FOR_COLLECTION, new String[]{id});
+                if (cursor.moveToNext()) {
+                    nextItemOrder = cursor.getInt(0) + 1;
+                }
+
+                db.execSQL(SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION, new Object[]{
+                        id, url, nextItemOrder
+                });
+                db.execSQL(SQL_UPDATE_COLLECTION_UPDATED_AT, new Object[] {
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(new Date()), id
+                });
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            Helper.closeCursor(cursor);
+            db.endTransaction();
+        }
+    }
 
     public static void clearLocalUserData(SQLiteDatabase db) {
         db.beginTransaction();

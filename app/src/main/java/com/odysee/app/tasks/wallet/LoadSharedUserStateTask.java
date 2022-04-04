@@ -11,11 +11,13 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.utils.Helper;
@@ -59,8 +61,19 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             SQLiteDatabase db = null;
             JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
+                MainActivity activity =  null;
                 if (context instanceof MainActivity) {
-                    db = ((MainActivity) context).getDbHelper().getWritableDatabase();
+                    activity = (MainActivity) context;
+                    db = activity.getDbHelper().getWritableDatabase();
+                }
+
+                // get the built in collections
+                OdyseeCollection favoritesPlaylist = null;
+                OdyseeCollection watchlaterPlaylist = null;
+                if (db != null) {
+                    Map<String, OdyseeCollection> allCollections = DatabaseHelper.loadAllCollections(db);
+                    favoritesPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
                 }
 
                 JSONObject shared = result.getJSONObject("shared");
@@ -68,6 +81,26 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     JSONObject value = shared.getJSONObject("value");
                     JSONArray tags =  value.has("tags") && !value.isNull("tags") ? value.getJSONArray("tags") : null;
                     JSONArray blocked = value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
+
+                    JSONObject builtInCollections = Helper.getJSONObject("builtinCollections", value);
+                    OdyseeCollection favoritesCollection = OdyseeCollection.fromJSONObject(
+                            OdyseeCollection.BUILT_IN_ID_FAVORITES,
+                            OdyseeCollection.VISIBILITY_PRIVATE,
+                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_FAVORITES, builtInCollections));
+                    OdyseeCollection watchLaterCollection = OdyseeCollection.fromJSONObject(
+                            OdyseeCollection.BUILT_IN_ID_WATCHLATER,
+                            OdyseeCollection.VISIBILITY_PRIVATE,
+                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
+                    if (activity != null)  {
+                        if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
+                            // only replace the locally saved collections if there are items
+                            DatabaseHelper.saveCollection(favoritesCollection, db);
+                        }
+                        android.util.Log.d("#HELP", "LoadUserState: WalletTimestamp=" + watchLaterCollection.getUpdatedAtTimestamp() + "; LocalTimestamp=" + watchlaterPlaylist.getUpdatedAtTimestamp());
+                        if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
+                            DatabaseHelper.saveCollection(watchLaterCollection, db);
+                        }
+                    }
 
                     subscriptions = loadSubscriptionsFromSharedUserState(shared);
                     if (db != null) {

@@ -39,6 +39,7 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.TagListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
@@ -595,6 +596,26 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 }
             }
             return true;
+        }
+
+        if (item.getGroupId() ==  ALL_CONTENT_CONTEXT_GROUP_ID)  {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    }
+                }
+            }
         }
 
         return super.onContextItemSelected(item);
