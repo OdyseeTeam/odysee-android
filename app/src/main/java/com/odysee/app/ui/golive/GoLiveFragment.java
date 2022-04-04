@@ -200,7 +200,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     }
 
     private void signAndSetupStream() {
-        String hexData = toHexString(selectedChannel.getName());
+        String hexData = Helper.toHexString(selectedChannel.getName());
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(new Runnable() {
@@ -302,23 +302,10 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     }
 
     private String createStreamKey(String signature, String signingTs) {
-        String hexData = toHexString(selectedChannel.getName());
+        String hexData = Helper.toHexString(selectedChannel.getName());
         return selectedChannel.getClaimId()
                 + "?d=" + hexData
                 + "&s=" + signature
                 + "&t=" + signingTs;
-    }
-
-    private String toHexString(final String value) {
-        final byte[] commentBodyBytes = value.getBytes(StandardCharsets.UTF_8);
-
-        final String hexString;
-
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)
-            hexString = Hex.encodeHexString(commentBodyBytes, false);
-        else
-            hexString = new String(Hex.encodeHex(commentBodyBytes));
-
-        return hexString;
     }
 }
