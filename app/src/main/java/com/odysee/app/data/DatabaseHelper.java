@@ -693,15 +693,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
             Helper.closeCursor(cursor);
 
-            for (int i = 0; i < collections.size(); i++) {
-                OdyseeCollection collection  = collections.get(i);
+            for (Map.Entry<String, OdyseeCollection> entry : collections.entrySet()) {
+                OdyseeCollection collection = entry.getValue();
                 cursor = db.rawQuery(SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION, new String[] { collection.getId() });
                 while (cursor.moveToNext()) {
                     collection.addItem(cursor.getString(0), false);
                 }
                 Helper.closeCursor(cursor);
             }
-
         } finally {
             Helper.closeCursor(cursor);
         }
