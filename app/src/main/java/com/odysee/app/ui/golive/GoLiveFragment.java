@@ -62,6 +62,8 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
 
     private Spinner selectChannelSpinner;
     private TextInputEditText inputTitle;
+    private View publishLivestreamProgress;
+    private MaterialButton buttonToggleStreaming;
 
     private View livestreamOptionsView;
     private View livestreamControlsView;
@@ -112,6 +114,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
 
         selectChannelSpinner = root.findViewById(R.id.livestream_options_select_channel_spinner);
         inputTitle = root.findViewById(R.id.livestream_options_title_input);
+        publishLivestreamProgress = root.findViewById(R.id.publish_livestream_progress);
 
         livestreamOptionsView = root.findViewById(R.id.livestream_options);
         livestreamControlsView = root.findViewById(R.id.livestream_controls);
@@ -120,7 +123,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         livestreamControlsCameraView.attachStream(stream);
 
         MaterialButton buttonContinue = root.findViewById(R.id.livestream_options_continue_button);
-        MaterialButton buttonToggleStreaming = root.findViewById(R.id.livestream_controls_toggle_streaming_button);
+        buttonToggleStreaming = root.findViewById(R.id.livestream_controls_toggle_streaming_button);
         ImageButton buttonSwitchCamera = root.findViewById(R.id.livestream_controls_switch_camera_button);
 
         buttonContinue.setOnClickListener(new View.OnClickListener() {
@@ -268,15 +271,16 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         Claim claim = buildLivestreamClaim();
         AccountManager am = AccountManager.get(getContext());
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        PublishClaimTask task = new PublishClaimTask(claim, "", null, authToken, new ClaimResultHandler() {
+        PublishClaimTask task = new PublishClaimTask(claim, "", publishLivestreamProgress, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
-
+                buttonToggleStreaming.setEnabled(false);
             }
 
             @Override
             public void onSuccess(Claim claimResult) {
                 signAndSetupStream();
+                buttonToggleStreaming.setEnabled(true);
             }
 
             @Override
