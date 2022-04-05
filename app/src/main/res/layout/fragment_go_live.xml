@@ -48,9 +48,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/livestream_options"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="174dp"
-        tools:layout_editor_absoluteY="-250dp">
+        android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/livestream_options_select_channel_text"
