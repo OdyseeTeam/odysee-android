@@ -88,7 +88,6 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         stream = new RtmpStream(connection);
         stream.attachAudio(new AudioRecordSource());
         cameraSource = new Camera2Source(requireContext(), null, false);
-        checkCameraPermissionAndOpenCameraSource();
         stream.attachVideo(cameraSource);
         connection.addEventListener(Event.RTMP_STATUS, new IEventListener() {
             @Override
@@ -165,6 +164,7 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
             LbryAnalytics.setCurrentScreen(activity, "Go Live", "GoLive");
             MainActivity.suspendGlobalPlayer(context);
         }
+        checkCameraPermissionAndOpenCameraSource();
         fetchChannels();
     }
 
