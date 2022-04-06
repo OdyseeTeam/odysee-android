@@ -4,16 +4,17 @@ import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Spinner;
 
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,7 +22,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.haishinkit.event.Event;
 import com.haishinkit.event.IEventListener;
@@ -35,7 +38,10 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.CameraPermissionListener;
+import com.odysee.app.listener.FilePickerListener;
+import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.model.Claim;
+import com.odysee.app.tasks.UploadImageTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimResultHandler;
@@ -45,11 +51,9 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 
-import org.apache.commons.codec.binary.Hex;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,12 +61,17 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class GoLiveFragment extends BaseFragment implements CameraPermissionListener {
+public class GoLiveFragment extends BaseFragment implements
+        CameraPermissionListener,
+        StoragePermissionListener,
+        FilePickerListener {
     private final String RTMP_URL = "rtmp://stream.odysee.com/live";
 
     private Spinner selectChannelSpinner;
     private TextInputEditText inputTitle;
     private View publishLivestreamProgress;
+    private ImageView imageThumbnail;
+    private View thumbnailUploadProgress;
     private MaterialButton buttonToggleStreaming;
 
     private View livestreamOptionsView;
@@ -73,6 +82,11 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     private RtmpConnection connection;
     private RtmpStream stream;
     private Camera2Source cameraSource;
+
+    private boolean launchPickerPending;
+    private boolean uploading;
+    private String uploadedThumbnailUrl;
+    private String lastSelectedThumbnailFile;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -115,6 +129,8 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         selectChannelSpinner = root.findViewById(R.id.livestream_options_select_channel_spinner);
         inputTitle = root.findViewById(R.id.livestream_options_title_input);
         publishLivestreamProgress = root.findViewById(R.id.publish_livestream_progress);
+        imageThumbnail = root.findViewById(R.id.livestream_options_thumbnail_preview);
+        thumbnailUploadProgress = root.findViewById(R.id.livestream_options_thumbnail_upload_progress);
 
         livestreamOptionsView = root.findViewById(R.id.livestream_options);
         livestreamControlsView = root.findViewById(R.id.livestream_controls);
@@ -125,6 +141,13 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         MaterialButton buttonContinue = root.findViewById(R.id.livestream_options_continue_button);
         buttonToggleStreaming = root.findViewById(R.id.livestream_controls_toggle_streaming_button);
         ImageButton buttonSwitchCamera = root.findViewById(R.id.livestream_controls_switch_camera_button);
+
+        imageThumbnail.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkStoragePermissionAndLaunchFilePicker();
+            }
+        });
 
         buttonContinue.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -165,16 +188,46 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Go Live", "GoLive");
-            MainActivity.suspendGlobalPlayer(context);
+            activity.addCameraPermissionListener(this);
+            activity.addStoragePermissionListener(this);
+            activity.addFilePickerListener(this);
         }
         checkCameraPermissionAndOpenCameraSource();
         fetchChannels();
     }
 
     @Override
-    public void onPause() {
-        MainActivity.resumeGlobalPlayer(getContext());
-        super.onPause();
+    public void onStop() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.removeCameraPermissionListener(this);
+            activity.removeStoragePermissionListener(this);
+            if (!MainActivity.startingFilePickerActivity) {
+                activity.removeFilePickerListener(this);
+            }
+        }
+        super.onStop();
+    }
+
+    @Override
+    public void onFilePicked(String filePath) {
+        if (Helper.isNullOrEmpty(filePath)) {
+            showError(getString(R.string.undetermined_image_filepath));
+            return;
+        }
+
+        if (filePath.equalsIgnoreCase(lastSelectedThumbnailFile)) {
+            // previous selected thumbnail was uploaded successfully
+            return;
+        }
+
+        uploadThumbnail(filePath);
+    }
+
+    @Override
+    public void onFilePickerCancelled() {
+
     }
 
     @Override
@@ -188,6 +241,20 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     }
 
     @Override
+    public void onStoragePermissionGranted() {
+        if (launchPickerPending) {
+            launchPickerPending = false;
+            launchFilePicker();
+        }
+    }
+
+    @Override
+    public void onStoragePermissionRefused() {
+        showError(getString(R.string.storage_permission_rationale_images));
+        launchPickerPending = false;
+    }
+
+    @Override
     public void onRecordAudioPermissionGranted() {
 
     }
@@ -195,6 +262,74 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
     @Override
     public void onRecordAudioPermissionRefused() {
 
+    }
+
+    @Override
+    public boolean shouldSuspendGlobalPlayer() {
+        return true;
+    }
+
+    private void uploadThumbnail(String thumbnailPath) {
+        if (uploading) {
+            View view = getView();
+            if (view != null) {
+                Snackbar.make(view, R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
+            }
+            return;
+        }
+
+        Context context = getContext();
+        if (context != null) {
+            Glide.with(context.getApplicationContext()).load(thumbnailPath).centerCrop().into(imageThumbnail);
+        }
+
+        uploading = true;
+        uploadedThumbnailUrl = null;
+        UploadImageTask task = new UploadImageTask(thumbnailPath, thumbnailUploadProgress, new UploadImageTask.UploadThumbnailHandler() {
+            @Override
+            public void onSuccess(String url) {
+                lastSelectedThumbnailFile = thumbnailPath;
+                uploadedThumbnailUrl = url;
+                uploading = false;
+            }
+
+            @Override
+            public void onError(Exception error) {
+                showError(getString(R.string.image_upload_failed));
+                lastSelectedThumbnailFile = null;
+                imageThumbnail.setImageDrawable(null);
+                uploading = false;
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void launchFilePicker() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity.startingFilePickerActivity = true;
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.setType("image/*");
+            ((MainActivity) context).startActivityForResult(
+                    Intent.createChooser(intent, getString(R.string.select_thumbnail)),
+                    MainActivity.REQUEST_FILE_PICKER);
+        }
+    }
+
+    private void checkStoragePermissionAndLaunchFilePicker() {
+        Context context = getContext();
+        if (!MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
+            launchPickerPending = true;
+            MainActivity.requestPermission(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    MainActivity.REQUEST_STORAGE_PERMISSION,
+                    getString(R.string.storage_permission_rationale_images),
+                    context,
+                    true);
+        } else {
+            launchPickerPending = false;
+            launchFilePicker();
+        }
     }
 
     private void openCameraSource() {
@@ -259,6 +394,12 @@ public class GoLiveFragment extends BaseFragment implements CameraPermissionList
         if (selectedChannel != null && !selectedChannel.isPlaceholder() && !selectedChannel.isPlaceholderAnonymous()) {
             this.selectedChannel = selectedChannel;
             claim.setSigningChannel(selectedChannel);
+        }
+
+        if (!Helper.isNullOrEmpty(uploadedThumbnailUrl)) {
+            Claim.Resource thumbnail = new Claim.Resource();
+            thumbnail.setUrl(uploadedThumbnailUrl);
+            metadata.setThumbnail(thumbnail);
         }
 
         claim.setValueType(Claim.TYPE_STREAM);

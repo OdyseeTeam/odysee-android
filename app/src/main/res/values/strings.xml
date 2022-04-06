@@ -655,7 +655,7 @@
     <string name="deposit">Deposit</string>
     <string name="deposit_remains_yours">The credits remains yours. It is a deposit to reserve the name and can be undone at any time.</string>
     <string name="storage_permission_rationale_download">LBRY requires access to download content to your device.</string>
-    <string name="storage_permission_rationale_images">LBRY requires access to load images from your device storage.</string>
+    <string name="storage_permission_rationale_images">Odysee requires access to load images from your device storage.</string>
     <string name="select_thumbnail">Select thumbnail</string>
     <string name="select_cover">Select cover image</string>
     <string name="undetermined_image_filepath">The file path could not be determined for the selected image. Please select an image in a different location.</string>

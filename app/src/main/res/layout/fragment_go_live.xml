@@ -68,7 +68,7 @@
             android:paddingEnd="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/livestream_options_select_channel_text" />
+            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_text" />
 
         <TextView
             android:id="@+id/livestream_options_specify_title_text"
@@ -107,7 +107,55 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/livestream_options_title_input_layout" />
 
-        <!-- TODO -->
+        <ImageView
+            android:id="@+id/livestream_options_thumbnail_preview"
+            android:layout_width="0dp"
+            android:layout_height="240dp"
+            android:layout_marginTop="16dp"
+            android:foreground="?attr/selectableItemBackground"
+            android:background="@android:color/black"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_thumbnail_text" />
+        <LinearLayout
+            android:id="@+id/livestream_options_thumbnail_upload_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/channelCoverBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
+            app:layout_constraintTop_toTopOf="@+id/livestream_options_thumbnail_preview"
+            android:visibility="gone">
+            <ProgressBar
+                android:layout_width="16sp"
+                android:layout_height="16sp" />
+            <TextView
+                style="@style/TextView_Light"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="@string/uploading_thumbnail"
+                android:textColor="@color/white" />
+        </LinearLayout>
+        <RelativeLayout
+            android:background="@drawable/bg_small_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/livestream_options_thumbnail_preview"
+            app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
+            app:layout_constraintStart_toStartOf="@+id/livestream_options_thumbnail_preview">
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_centerInParent="true"
+                android:src="@drawable/ic_edit"
+                app:tint="@color/white" />
+        </RelativeLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/livestream_options_continue_button"
@@ -118,7 +166,7 @@
             android:text="@string/continue_text"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_thumbnail_text" />
+            app:layout_constraintTop_toBottomOf="@+id/livestream_options_thumbnail_preview" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ProgressBar
