@@ -738,8 +738,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             }
         }
 
-        int position = items.indexOf(claim);
-        notifyItemChanged(position);
+        notifyItemChanged(items.indexOf(claim));
     }
 
     public interface ClaimListItemListener {

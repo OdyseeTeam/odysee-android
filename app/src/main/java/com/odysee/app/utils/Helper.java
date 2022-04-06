@@ -52,7 +52,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.TracksInfo;
+import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
+import com.google.android.exoplayer2.source.TrackGroup;
 import com.odysee.app.MainActivity;
+import com.odysee.app.R;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
@@ -88,6 +94,8 @@ public final class Helper {
     public static final SimpleDateFormat FILESTAMP_FORMAT =  new SimpleDateFormat("yyyyMMdd_HHmmss");
     public static final String EXPLORER_TX_PREFIX = "https://explorer.lbry.com/tx";
 
+    public static final int PLAYBACK_SPEEDS_GROUP_ID = 0;
+    public static final int QUALITIES_GROUP_ID = 1;
     public static final List<Double> PLAYBACK_SPEEDS = Arrays.asList(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0);
 
     public static boolean isNull(String value) {
@@ -101,13 +109,35 @@ public final class Helper {
         int order = 0;
         DecimalFormat formatter = new DecimalFormat("0.##");
         for (Double speed : PLAYBACK_SPEEDS) {
-            menu.add(0, Double.valueOf(speed * 100).intValue(), ++order, String.format("%sx", formatter.format(speed)));
+            menu.add(PLAYBACK_SPEEDS_GROUP_ID, Double.valueOf(speed * 100).intValue(), ++order, String.format("%sx", formatter.format(speed)));
         }
     }
 
     public static String getDisplayValueForPlaybackSpeed(Double speed) {
         DecimalFormat formatter = new DecimalFormat("0.##");
         return String.format("%sx", formatter.format(speed));
+    }
+
+    public static void buildQualityMenu(ContextMenu menu, Player player, boolean isTranscoded) {
+        int order = 0;
+        menu.add(QUALITIES_GROUP_ID, 0, ++order, R.string.auto_quality);
+
+        if (isTranscoded) {
+            TracksInfo tracksInfo = player.getCurrentTracksInfo();
+            for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
+                if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
+                TrackGroup group = groupInfo.getTrackGroup();
+
+                for (int i = 0; i < group.length; i++) {
+                    if (groupInfo.isTrackSupported(i)) {
+                        int quality = group.getFormat(i).height;
+                        menu.add(QUALITIES_GROUP_ID, quality, ++order, String.format("%sp", quality));
+                    }
+                }
+
+                break;
+            }
+        }
     }
 
     public static String capitalize(String value) {

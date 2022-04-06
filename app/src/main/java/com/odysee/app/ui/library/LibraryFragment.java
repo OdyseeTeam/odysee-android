@@ -1,5 +1,6 @@
 package com.odysee.app.ui.library;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
@@ -14,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.view.ActionMode;
@@ -23,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import com.odysee.app.runnable.DeleteViewHistoryItem;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -30,6 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -229,6 +235,15 @@ public class LibraryFragment extends BaseFragment implements
         super.onPause();
     }
 
+    public void onDestroy() {
+        super.onDestroy();
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity a = (MainActivity) context;
+            a.switchClearViewHistoryButton(false);
+        }
+    }
+
     /**
      * Shows tab according to the filter which is selected
      */
@@ -326,7 +341,7 @@ public class LibraryFragment extends BaseFragment implements
         if (contentListAdapter != null) {
             contentListAdapter.setHideFee(false);
             contentListAdapter.clearItems();
-            contentListAdapter.setCanEnterSelectionMode(false);
+            contentListAdapter.setCanEnterSelectionMode(true);
         }
         listReachedEnd = false;
 
@@ -341,7 +356,8 @@ public class LibraryFragment extends BaseFragment implements
         Context context = getContext();
         if (context != null) {
             contentListAdapter = new ClaimListAdapter(claims, context);
-            contentListAdapter.setCanEnterSelectionMode(currentFilter == FILTER_DOWNLOADS);
+//            contentListAdapter.setCanEnterSelectionMode(currentFilter == FILTER_DOWNLOADS);
+            contentListAdapter.setCanEnterSelectionMode(true);
             contentListAdapter.setSelectionModeListener(this);
             contentListAdapter.setHideFee(currentFilter != FILTER_PURCHASES);
             contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
@@ -484,6 +500,12 @@ public class LibraryFragment extends BaseFragment implements
 
     private void checkListEmpty() {
         layoutListEmpty.setVisibility(contentListAdapter == null || contentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+
+        MainActivity a = (MainActivity) getActivity();
+        if (a != null) {
+            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
+        }
+
         int stringResourceId;
         switch (currentFilter) {
             case FILTER_DOWNLOADS: default: stringResourceId = R.string.library_no_downloads; break;
@@ -491,6 +513,12 @@ public class LibraryFragment extends BaseFragment implements
             case FILTER_PURCHASES: stringResourceId = R.string.library_no_purchases; break;
         }
         textListEmpty.setText(stringResourceId);
+    }
+
+    @MainThread
+    public void onViewHistoryCleared() {
+        contentListAdapter.removeItems(contentListAdapter.getItems());
+        checkListEmpty();
     }
 
     private void addFiles(List<LbryFile> files) {
@@ -588,14 +616,6 @@ public class LibraryFragment extends BaseFragment implements
     @Override
     public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
         this.actionMode = actionMode;
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-            }
-        }
-
         actionMode.getMenuInflater().inflate(R.menu.menu_claim_list, menu);
         return true;
     }
@@ -605,13 +625,6 @@ public class LibraryFragment extends BaseFragment implements
             contentListAdapter.clearSelectedItems();
             contentListAdapter.setInSelectionMode(false);
             contentListAdapter.notifyDataSetChanged();
-        }
-        Context context = getContext();
-        if (context != null) {
-            MainActivity activity = (MainActivity) context;
-            if (!activity.isDarkMode()) {
-                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-            }
         }
         this.actionMode = null;
     }
@@ -629,17 +642,21 @@ public class LibraryFragment extends BaseFragment implements
                 Context context = getContext();
                 if (context != null) {
                     final List<Claim> selectedClaims = new ArrayList<>(contentListAdapter.getSelectedItems());
-                    String message = getResources().getQuantityString(R.plurals.confirm_delete_files, selectedClaims.size());
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context).
-                            setTitle(R.string.delete_selection).
-                            setMessage(message)
-                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    handleDeleteSelectedClaims(selectedClaims);
-                                }
-                            }).setNegativeButton(R.string.no, null);
-                    builder.show();
+                    if (currentFilter == FILTER_DOWNLOADS) {
+                        String message = getResources().getQuantityString(R.plurals.confirm_delete_files, selectedClaims.size());
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context).
+                                setTitle(R.string.delete_selection).
+                                setMessage(message)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        handleDeleteSelectedClaims(selectedClaims);
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    } else if (currentFilter == FILTER_HISTORY) {
+                        handleDeleteSelectedClaims(selectedClaims);
+                    }
                 }
                 return true;
             }
@@ -654,18 +671,69 @@ public class LibraryFragment extends BaseFragment implements
             claimIds.add(claim.getClaimId());
         }
 
-        new BulkDeleteFilesTask(claimIds).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        Lbry.unsetFilesForCachedClaims(claimIds);
         if (currentFilter == FILTER_DOWNLOADS) {
+            new BulkDeleteFilesTask(claimIds).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            Lbry.unsetFilesForCachedClaims(claimIds);
             contentListAdapter.removeItems(selectedClaims);
-        }
-        if (actionMode != null) {
-            actionMode.finish();
-        }
-        View root = getView();
-        if (root != null) {
-            String message = getResources().getQuantityString(R.plurals.files_deleted, claimIds.size());
-            Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+
+            if (actionMode != null) {
+                actionMode.finish();
+            }
+            View root = getView();
+            if (root != null) {
+                String message = getResources().getQuantityString(R.plurals.files_deleted, claimIds.size());
+                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+            }
+        } else if (currentFilter == FILTER_HISTORY) {
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Activity a = getActivity();
+            String message = getResources().getQuantityString(R.plurals.confirm_delete_files, selectedClaims.size());
+            AlertDialog.Builder builder;
+            if (a != null) {
+                builder = new AlertDialog.Builder(a);
+                builder.setTitle(R.string.delete_selection).setMessage(message)
+                       .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                           @Override
+                           public void onClick(DialogInterface dialogInterface, int i) {
+                               Thread t = new Thread(new Runnable() {
+                                   @Override
+                                   public void run() {
+                                       for (Claim c : selectedClaims) {
+                                           try {
+                                               Runnable r = new DeleteViewHistoryItem(c.getPermanentUrl());
+                                               Future<?> f = executorService.submit(r);
+                                               f.get();
+                                               a.runOnUiThread(new Runnable() {
+                                                   @Override
+                                                   public void run() {
+                                                       contentListAdapter.removeItem(c);
+                                                   }
+                                               });
+                                           } catch (Exception e) {
+                                               e.printStackTrace();
+                                           }
+                                       }
+
+                                       a.runOnUiThread(new Runnable() {
+                                           @Override
+                                           public void run() {
+                                               if (actionMode != null) {
+                                                   actionMode.finish();
+                                               }
+
+                                               if (executorService != null && !executorService.isShutdown()) {
+                                                   executorService.shutdown();
+                                               }
+                                           }
+                                       });
+                                   }
+                               });
+                               t.start();
+                           }
+                       })
+                       .setNegativeButton(R.string.no, null);
+                builder.show();
+            }
         }
     }
 

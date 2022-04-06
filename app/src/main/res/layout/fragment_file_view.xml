@@ -126,7 +126,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/black"
-                android:fitsSystemWindows="true"
                 android:visibility="gone">
 
                 <com.google.android.exoplayer2.ui.PlayerView
@@ -141,6 +140,19 @@
                     android:layout_height="36dp"
                     android:layout_centerInParent="true"
                     android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/seek_overlay"
+                    android:layout_width="108dp"
+                    android:layout_height="108dp"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/bg_seek"
+                    android:alpha="0.5"
+                    android:tint="@color/white"
+                    android:src="@drawable/ic_rewind"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:ignore="UseAppTint" />
             </RelativeLayout>
 
             <RelativeLayout
