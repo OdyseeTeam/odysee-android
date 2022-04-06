@@ -3382,6 +3382,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             findViewById(R.id.wunderbar_notifications).setVisibility(View.GONE);
             findViewById(R.id.search_query_layout).setVisibility(View.VISIBLE);
             findViewById(R.id.search_close_button).setVisibility(View.VISIBLE);
+            switchClearViewHistoryButton(false);
         } else {
             EditText queryTextView = findViewById(R.id.search_query_text);
             queryTextView.setText("");
@@ -3392,6 +3393,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             findViewById(R.id.upload_button).setVisibility(View.VISIBLE);
             findViewById(R.id.profile_button).setVisibility(View.VISIBLE);
             findViewById(R.id.wunderbar_notifications).setVisibility(View.VISIBLE);
+
+            if (((BottomNavigationView) findViewById(R.id.bottom_navigation)).getSelectedItemId() == R.id.action_library_menu) {
+                switchClearViewHistoryButton(true);
+            } else {
+                switchClearViewHistoryButton(false);
+            }
         }
     }
 
