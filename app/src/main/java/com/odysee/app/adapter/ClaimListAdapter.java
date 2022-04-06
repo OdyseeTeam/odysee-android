@@ -79,8 +79,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public ClaimListAdapter(List<Claim> items, Context context) {
         this.context = context;
+        List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
-        for (Claim item : items) {
+        for (Claim item : sortedItems) {
             if (item != null) {
                 this.items.add(item);
             }
@@ -183,19 +184,33 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public void addItems(List<Claim> claims) {
-        final int initialCount = items.size();
-
         for (Claim claim : claims) {
             if (claim != null) {
-                boolean c = items.stream().anyMatch(p -> p.getClaimId() != null && p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+                if (claim.getLivestreamUrl() != null) {
+                    // Determine first claim which is not livetsreaming
+                    Claim c = items.stream().filter(v -> v != null && v.getLivestreamUrl() == null).findFirst().orElse(null);
 
-                if (!c) {
-                    items.add(claim);
+                    // Insert livestreaming one before first item which is not a livestream
+                    if (c != null) {
+                        int position = items.indexOf(c);
+                        int positionToInsert = position > 0 ? position - 1 : 0;
+                        items.add(positionToInsert, claim);
+                        notifyItemInserted(positionToInsert);
+                    } else if (items.size() > 0) {
+                        // There is no item on the list of items which is not a livestream
+                        items.add(claim);
+                        notifyItemInserted(items.size());
+                    }
+                } else {
+                    boolean c = items.stream().anyMatch(p -> p.getClaimId() != null && p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+
+                    if (!c) {
+                        items.add(claim);
+                        notifyItemInserted(items.size() - 1);
+                    }
                 }
             }
         }
-
-        notifyItemRangeInserted(initialCount, items.size() - initialCount);
 
         notFoundClaimUrlMap.clear();
         notFoundClaimIdMap.clear();

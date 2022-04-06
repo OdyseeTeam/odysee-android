@@ -54,6 +54,7 @@ import android.widget.TextView;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.browser.customtabs.CustomTabColorSchemeParams;
@@ -102,6 +103,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.odysee.app.callable.ChannelLiveStatus;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -304,6 +306,7 @@ public class FileViewFragment extends BaseFragment implements
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
+    private String claimLivestreamUrl;
 
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -485,6 +488,9 @@ public class FileViewFragment extends BaseFragment implements
                             updateRequired = true;
                         }
                     }
+                }
+                if (params.containsKey("livestreamUrl")) {
+                    claimLivestreamUrl = (String) params.get("livestreamUrl");
                 }
             } else if (currentUrl != null) {
                 updateRequired = true;
@@ -704,7 +710,11 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private String getStreamingUrl() {
-        return buildLbryTvStreamingUrl();
+        if (claimLivestreamUrl != null) {
+            return claimLivestreamUrl;
+        } else {
+            return buildLbryTvStreamingUrl();
+        }
     }
 
     private String buildLbryTvStreamingUrl() {
@@ -1980,12 +1990,19 @@ public class FileViewFragment extends BaseFragment implements
                 if (claim.hasSource()) {
                     getStreamingUrlAndInitializePlayer();
                 } else {
-                    String mediaSourceUrl = getLivestreamUrl();
                     DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
                     if (context != null) {
                         dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
                     }
+
                     MediaSource mediaSource = null;
+                    String mediaSourceUrl;
+
+                    if (!Helper.isNullOrEmpty(claimLivestreamUrl)) {
+                        mediaSourceUrl = claimLivestreamUrl;
+                    } else {
+                        mediaSourceUrl = getLivestreamUrl();
+                    }
 
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
@@ -2077,79 +2094,51 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     /**
-     * @return The URL to connect to get the video stream, usually a .M3U8
+     * Call this to get the livestreaming URL for the media. This is to be used when we directly arrive here
+     * from outside the app, like through a deep link
+     * @return The URL to connect to get the video stream, usually a link to an .M3U8 file
      */
-    @AnyThread
+    @WorkerThread
     private String getLivestreamUrl() {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<JSONObject> task = new Supplier<JSONObject>() {
-                @Override
-                public JSONObject get() {
-                    return getLivestreamData(claim);
-                }
-            };
-            CompletableFuture<JSONObject> completableFuture = CompletableFuture.supplyAsync(task);
-            CompletableFuture<String> cf = completableFuture.thenApply(jsonData -> getLivestreamUrl(jsonData));
-            try {
-                return cf.get();
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
-            }
-        } else {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            Callable<JSONObject> callable = () -> getLivestreamData(claim);
-            Future<JSONObject> future = executor.submit(callable);
+        // User could land on this fragment from a deep-link. That means the livestream would have not been resolved,
+        // so it needs to be done
+        String jsonDataUrl = null;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(claim.getSigningChannel().getClaimId()));
+            Future<Map<String, JSONObject>> future = executor.submit(callable);
 
-            for (;;) {
-                if (future.isDone()) {
-                    try {
-                        JSONObject jsonData = future.get();
-                        return getLivestreamUrl(jsonData);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
+            Map<String, JSONObject> jsonData = future.get();
+            jsonDataUrl = getLivestreamUrl(jsonData.get(claim.getSigningChannel().getClaimId()));
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            if (executor != null && !executor.isShutdown()) {
+                executor.shutdown();
             }
         }
-        return null;
+
+        return jsonDataUrl;
     }
 
+    @AnyThread
+    @Nullable
     private String getLivestreamUrl(JSONObject jsonData) {
-        if (jsonData != null && jsonData.has("live")) {
-            try {
+        try {
+            if (jsonData != null && jsonData.has("live")) {
                 if (jsonData.getBoolean("live") && jsonData.has("url")) {
                     return jsonData.getString("url");
                 } else {
                     return "notlive";
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-
-    private JSONObject getLivestreamData(Claim claim) {
-        String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
-
-        Request.Builder builder = new Request.Builder().url(urlLivestream);
-        Request request = builder.build();
-
-        OkHttpClient client = new OkHttpClient.Builder().build();
-
-        try {
-            Response resp = client.newCall(request).execute();
-            String responseString = resp.body().string();
-            resp.close();
-            JSONObject json = new JSONObject(responseString);
-            if (resp.code() >= 200 && resp.code() < 300) {
-                if (json.isNull("data") || (json.has("success") && !json.getBoolean("success"))) {
-                    return null;
+            } else if (jsonData != null && jsonData.has("Live")) {
+                if (jsonData.getBoolean("Live") && jsonData.has("VideoURL")) {
+                    return jsonData.getString("VideoURL");
+                } else {
+                    return "notlive";
                 }
-
-                return (JSONObject) json.get("data");
             }
-        } catch (IOException | JSONException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
         }
         return null;

@@ -1463,6 +1463,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Map<String, Object> params = new HashMap<>();
         params.put("claimId", claim.getClaimId());
         params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+
+        if (claim.getLivestreamUrl() != null) {
+            params.put("livestreamUrl", claim.getLivestreamUrl());
+        }
         openFragment(FileViewFragment.class, true, params);
     }
 
