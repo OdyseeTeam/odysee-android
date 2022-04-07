@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/playlist_item_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/inter"
+        android:singleLine="true"
+        android:ellipsize="end"
+        style="@style/TextView_Light" />
+</androidx.appcompat.widget.LinearLayoutCompat>

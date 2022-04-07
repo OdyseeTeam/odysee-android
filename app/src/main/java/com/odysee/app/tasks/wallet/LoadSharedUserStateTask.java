@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -68,10 +69,11 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                 }
 
                 // get the built in collections
+                Map<String, OdyseeCollection> allCollections = null;
                 OdyseeCollection favoritesPlaylist = null;
                 OdyseeCollection watchlaterPlaylist = null;
                 if (db != null) {
-                    Map<String, OdyseeCollection> allCollections = DatabaseHelper.loadAllCollections(db);
+                    allCollections = DatabaseHelper.loadAllCollections(db);
                     favoritesPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
                 }
@@ -98,6 +100,28 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         }
                         if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
                             DatabaseHelper.saveCollection(watchLaterCollection, db);
+                        }
+                    }
+
+                    JSONObject unpublishedCollections = Helper.getJSONObject("unpublishedCollections", value);
+                    Iterator<String> pcIdsIterator = unpublishedCollections.keys();
+                    while (pcIdsIterator.hasNext()) {
+                        String collectionId = pcIdsIterator.next();
+                        JSONObject jsonCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
+                        OdyseeCollection thisCollection = OdyseeCollection.fromJSONObject(
+                                collectionId,
+                                OdyseeCollection.VISIBILITY_PRIVATE,
+                                jsonCollection
+                        );
+                        boolean shouldSave = true;
+
+                        if (allCollections.containsKey(collectionId)) {
+                            OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
+                            shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
+                        }
+
+                        if (shouldSave) {
+                            DatabaseHelper.saveCollection(thisCollection, db);
                         }
                     }
 

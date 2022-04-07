@@ -20,6 +20,8 @@ public class OdyseeCollection {
     public static final int VISIBILITY_PUBLIC = 2; // published
     public static final int VISIBILITY_UNLISTED = 3; // How about unlisted visibility? Will this be used eventually?
 
+    public static final String TYPE_PLAYLIST = "playlist";
+
     private String id;
     private String name;
     private String type;
@@ -79,6 +81,14 @@ public class OdyseeCollection {
         collection.setUpdatedAt(new Date(Helper.getJSONLong("updatedAt", now, jsonObject) * 1000));
         collection.setVisibility(visibility);
 
+        return collection;
+    }
+
+    public static OdyseeCollection createPrivatePlaylist(String title) {
+        OdyseeCollection collection = new OdyseeCollection();
+        collection.setName(title);
+        collection.setType(TYPE_PLAYLIST);
+        collection.setVisibility(VISIBILITY_PRIVATE);
         return collection;
     }
 }

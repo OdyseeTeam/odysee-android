@@ -58,6 +58,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -91,6 +92,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.activity.OnBackPressedCallback;
@@ -128,6 +130,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
+import com.odysee.app.dialog.AddToListsDialogFragment;
+import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
@@ -4572,9 +4576,139 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    // create list dialog
+    public void handleAddUrlToCustomList(String url) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_create_playlist, null);
+        TextInputEditText titleInput = dialogView.findViewById(R.id.playlist_title);
+
+        builder.setTitle(R.string.new_list).
+                setCancelable(true).
+                setView(dialogView).
+                setPositiveButton(R.string.create, null).
+                setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+
+        final AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                button.setEnabled(false);
+
+                if (titleInput != null) {
+                    titleInput.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                            button.setEnabled(titleInput.getText().length() > 0);
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable editable) {
+
+                        }
+                    });
+                }
+
+                button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (titleInput != null) {
+                            String title = Helper.getValue(titleInput.getText());
+                            if (Helper.isNullOrEmpty(title)) {
+                                // show error
+                                showError(getString(R.string.enter_title));
+                                return;
+                            }
+
+                            OdyseeCollection collection = OdyseeCollection.createPrivatePlaylist(title);
+                            collection.setItems(Arrays.asList(url));
+                            handleAddUrlToList(url, collection, true);
+                            if (dialog != null) {
+                                dialog.dismiss();
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        dialog.show();
+    }
+
+    public void handleAddUrlToList(String url, OdyseeCollection collection, boolean showMessage) {
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    if (Helper.isNullOrEmpty(collection.getId())) {
+                        DatabaseHelper.saveCollection(collection, db);
+                    } else {
+                        DatabaseHelper.addCollectionItem(collection.getId(), url, db);
+                    }
+                    
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (showMessage) {
+                                showMessage(getString(R.string.added_to_list,
+                                        collection.getName()),
+                                        getString(R.string.see_list),
+                                        new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View view) {
+                                                // open the playlist fragment with the id
+                                            }
+                                        });
+                            }
+                        }
+                    });
+
+                    // initiate sync afterwards
+                    saveSharedUserState();
+                } catch (SQLiteException ex) {
+                    android.util.Log.e("#HELP", ex.getMessage(), ex);
+                    // failed
+                    if (showMessage) {
+                        showError(getString(R.string.could_not_add_to_list, collection.getName()));
+                    }
+                }
+            }
+        });
+    }
+
+    public void handleRemoveUrlFromList(String url, OdyseeCollection collection) {
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    // DatabaseHelper.removeCollectionItem(collection.getId(), url, db);
+
+                    // initiate sync afterwards
+                    saveSharedUserState();
+                } catch (SQLiteException ex) {
+                    // pass
+                }
+            }
+        });
+    }
+
     public void handleAddUrlToList(String url, String builtInId) {
         if (!Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES,  OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(builtInId)) {
-            // add to custom list. show bottom sheet dialog with playlists
+            // add to list. show bottom sheet dialog with playlists
+            AddToListsDialogFragment dialog = AddToListsDialogFragment.newInstance();
+            dialog.setUrl(url);
+            dialog.show(getSupportFragmentManager(), AddToListsDialogFragment.TAG);
             return;
         }
 

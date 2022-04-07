@@ -80,6 +80,9 @@
     <string name="added_to_list">Added to %1$s</string>
     <string name="could_not_add_to_list">Could not add content to %1$s. Please try again later.</string>
     <string name="see_list">See list</string>
+    <string name="create_a_list">Create a list</string>
+    <string name="new_list">New list</string>
+    <string name="enter_title">Please specify a title for the playlist.</string>
 
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>

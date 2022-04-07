@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,10 +101,11 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             blockedChannelUrls.add(uri.toString());
         }
 
+        Map<String, OdyseeCollection> allCollections = null;
         OdyseeCollection favoritesPlaylist = null;
         OdyseeCollection watchlaterPlaylist = null;
         if (db != null) {
-            Map<String, OdyseeCollection> allCollections = DatabaseHelper.loadAllCollections(db);
+            allCollections = DatabaseHelper.loadAllCollections(db);
             // get the built in collections
             favoritesPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_FAVORITES);
             watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
@@ -155,6 +157,32 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         }
                     }
 
+                    // handle unpublishedCollections
+                    JSONObject unpublishedCollections = Helper.getJSONObject("unpublishedCollections", value);
+                    if (unpublishedCollections != null && allCollections != null) {
+                        for (Map.Entry<String, OdyseeCollection> entry : allCollections.entrySet()) {
+                            String collectionId = entry.getKey();
+                            if (Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES, OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(collectionId)) {
+                                continue;
+                            }
+
+                            OdyseeCollection localCollection = entry.getValue();
+                            if (localCollection.getVisibility() != OdyseeCollection.VISIBILITY_PRIVATE) {
+                                continue;
+                            }
+
+                            JSONObject priorCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
+                            if (priorCollection != null) {
+                                long priorCollectionUpdatedAt = Helper.getJSONLong("updatedAt", 0, priorCollection);
+                                if (priorCollectionUpdatedAt < localCollection.getUpdatedAtTimestamp()) {
+                                    unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                                }
+                            } else {
+                                unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                            }
+                        }
+                    }
+
                     sharedObject = shared;
                 }
             }
@@ -175,6 +203,23 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     builtinCollections.put(watchlaterPlaylist.getId(), watchlaterPlaylist.toJSONObject());
                 }
                 value.put("builtinCollections", builtinCollections);
+
+                JSONObject unpublishedCollections = new JSONObject();
+                if (allCollections != null) {
+                    for (Map.Entry<String, OdyseeCollection> entry : allCollections.entrySet()) {
+                        String collectionId = entry.getKey();
+                        if (Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES, OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(collectionId)) {
+                            continue;
+                        }
+
+                        OdyseeCollection localCollection = entry.getValue();
+                        if (localCollection.getVisibility() != OdyseeCollection.VISIBILITY_PRIVATE) {
+                            continue;
+                        }
+                        unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                    }
+                }
+                value.put("unpublishedCollections", unpublishedCollections);
 
                 sharedObject = new JSONObject();
                 sharedObject.put("type", "object");
