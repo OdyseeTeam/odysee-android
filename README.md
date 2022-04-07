@@ -34,7 +34,7 @@ android {
 Then you will be able to build a signed APK file via Build/Generate Signed Bundle/APK... menu item on Android Studio
 
 ## Contributing
-We :heart: contributions from everyone and contributions to this project are encouraged, and compensated. We welcome [bug reports](https://github.com/OdyseeTeam/odysee-android/issues/), [bug fixes](https://github.com/OdyseeTeam/odysee-android/pulls) and feedback is always appreciated. For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).
+We :heart: contributions from everyone and contributions to this project are encouraged, and compensated. We welcome [bug reports](https://github.com/OdyseeTeam/odysee-android/issues/), [bug fixes](https://github.com/OdyseeTeam/odysee-android/pulls) and feedback is always appreciated.
 
 ## [![contributions welcome](https://img.shields.io/github/issues/OdyseeTeam/odysee-android?style=for-the-badge&color=informational)](https://github.com/OdyseeTeam/odysee-android/issues) [![GitHub contributors](https://img.shields.io/github/contributors/OdyseeTeam/odysee-android?style=for-the-badge)](https://gitHub.com/OdyseeTeam/odysee-android/graphs/contributors/)
 
