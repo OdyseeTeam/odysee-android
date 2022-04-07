@@ -535,7 +535,7 @@ public class SearchFragment extends BaseFragment implements
         t.start();
     }
 
-    public void onClaimClicked(Claim claim) {
+    public void onClaimClicked(Claim claim, int position) {
         if (Helper.isNullOrEmpty(claim.getName())) {
             // never should happen, but if it does, do nothing
             return;

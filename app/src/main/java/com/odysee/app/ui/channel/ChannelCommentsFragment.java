@@ -241,7 +241,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
             });
             commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                 @Override
-                public void onClaimClicked(Claim claim) {
+                public void onClaimClicked(Claim claim, int position) {
                     if (!Helper.isNullOrEmpty(claim.getName()) &&
                             claim.getName().startsWith("@") &&
                             ctx instanceof MainActivity) {

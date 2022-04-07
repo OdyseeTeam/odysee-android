@@ -1,12 +1,11 @@
 package com.odysee.app.adapter;
 
 import android.content.Context;
-import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.TextView;
+import android.widget.ImageView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -53,6 +52,17 @@ public class CollectionListAdapter extends RecyclerView.Adapter<CollectionListAd
     @Override
     public void onBindViewHolder(CollectionListAdapter.ViewHolder vh, int position) {
         final OdyseeCollection item = items.get(position);
+
+        if (OdyseeCollection.BUILT_IN_ID_WATCHLATER.equalsIgnoreCase(item.getId())) {
+            vh.iconView.setImageResource(R.drawable.ic_watch_later);
+        } else if (OdyseeCollection.BUILT_IN_ID_FAVORITES.equalsIgnoreCase(item.getId())) {
+            vh.iconView.setImageResource(R.drawable.ic_favorites);
+        } else if (item.getVisibility() == OdyseeCollection.VISIBILITY_PUBLIC) {
+            vh.iconView.setImageResource(R.drawable.ic_public);
+        } else {
+            vh.iconView.setImageResource(R.drawable.ic_private);
+        }
+
         vh.checkBox.setText(item.getName());
         vh.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -66,10 +76,12 @@ public class CollectionListAdapter extends RecyclerView.Adapter<CollectionListAd
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         protected final MaterialCheckBox checkBox;
+        protected final ImageView iconView;
 
         public ViewHolder(View v) {
             super(v);
             checkBox = v.findViewById(R.id.playlist_item_checkbox);
+            iconView = v.findViewById(R.id.playlist_item_icon);
         }
     }
 

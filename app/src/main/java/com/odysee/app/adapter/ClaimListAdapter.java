@@ -41,9 +41,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_STREAM = 1;
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
+
+    public static final int STYLE_BIG_LIST = 1;
+    public static final int STYLE_SMALL_LIST = 2;
+
+    private float scale;
+
     @Getter
     @Setter
     private int contextGroupId;
+    @Getter
+    @Setter
+    private int style;
 
     private final Map<String, Claim> quickClaimIdMap;
     private final Map<String, Claim> quickClaimUrlMap;
@@ -74,8 +83,14 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private long filterTimeframeFrom;
 
     public ClaimListAdapter(List<Claim> items, Context context) {
+        this(items, STYLE_BIG_LIST, context);
+    }
+
+    public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
+        this.scale = context.getResources().getDisplayMetrics().density;
         this.items = new ArrayList<>();
+        this.style = style;
         for (Claim item : items) {
             if (item != null) {
                 this.items.add(item);
@@ -428,7 +443,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         switch (viewType) {
             case VIEW_TYPE_FEATURED: viewResourceId = R.layout.list_item_featured_search_result; break;
             case VIEW_TYPE_CHANNEL: viewResourceId = R.layout.list_item_channel; break;
-            case VIEW_TYPE_STREAM: default: viewResourceId = R.layout.list_item_stream; break;
+            case VIEW_TYPE_STREAM: default: viewResourceId = style == STYLE_BIG_LIST ? R.layout.list_item_stream : R.layout.list_item_small_stream; break;
         }
 
         View v = LayoutInflater.from(context).inflate(viewResourceId, parent, false);
@@ -447,11 +462,14 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Override
     public void onBindViewHolder(ClaimListAdapter.ViewHolder vh, int position) {
         int type = getItemViewType(position);
-        /*int paddingTop = 0; //position == 0 ? 16 : 8;
-        int paddingBottom = 0; //position == getItemCount() - 1 ? 16 : 8;
-        int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
-        int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
-        vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);*/
+
+        if (style == STYLE_SMALL_LIST) {
+            int paddingTop = position == 0 ? 16 : 8;
+            int paddingBottom = position == getItemCount() - 1 ? 16 : 8;
+            int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
+            int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
+            vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
+        }
 
         Claim original = items.get(position);
         boolean isRepost = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType());
@@ -491,7 +509,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     toggleSelectedClaim(original);
                 } else {
                     if (listener != null) {
-                        listener.onClaimClicked(item);
+                        listener.onClaimClicked(item, position);
                     }
                 }
             }
@@ -526,7 +544,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null && signingChannel != null) {
-                    listener.onClaimClicked(signingChannel);
+                    listener.onClaimClicked(signingChannel, position);
                 }
             }
         });
@@ -539,7 +557,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null) {
-                    listener.onClaimClicked(original.getSigningChannel());
+                    listener.onClaimClicked(original.getSigningChannel(), position);
                 }
             }
         });
@@ -720,6 +738,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public interface ClaimListItemListener {
-        void onClaimClicked(Claim claim);
+        void onClaimClicked(Claim claim, int position);
     }
 }

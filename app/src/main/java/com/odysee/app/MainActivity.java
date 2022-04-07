@@ -131,7 +131,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
-import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
@@ -240,6 +239,7 @@ import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
+import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
@@ -1454,6 +1454,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         params.put("url", url);
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
+        }
+        openFragment(FileViewFragment.class, true, params);
+    }
+
+    public void openPrivatePlaylist(OdyseeCollection collection) {
+        openPrivatePlaylist(collection, null, -1);
+    }
+
+    public void openPrivatePlaylist(OdyseeCollection collection, Claim playlistItem, int playlistIndex) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("collection", collection);
+        if (playlistItem != null && playlistIndex > -1) {
+            params.put("item", playlistItem);
+            params.put("itemIndex", playlistIndex);
         }
         openFragment(FileViewFragment.class, true, params);
     }
@@ -3233,6 +3247,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
         snackbar.show();
     }
+    public Snackbar getSnackbar(String message) {
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+        return snackbar;
+    }
     public void showError(String message) {
         Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
                 setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
@@ -4655,28 +4673,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     } else {
                         DatabaseHelper.addCollectionItem(collection.getId(), url, db);
                     }
-                    
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (showMessage) {
-                                showMessage(getString(R.string.added_to_list,
-                                        collection.getName()),
-                                        getString(R.string.see_list),
-                                        new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View view) {
-                                                // open the playlist fragment with the id
-                                            }
-                                        });
-                            }
+                            onCollectionUpdated(collection, showMessage);
                         }
                     });
 
                     // initiate sync afterwards
                     saveSharedUserState();
                 } catch (SQLiteException ex) {
-                    android.util.Log.e("#HELP", ex.getMessage(), ex);
                     // failed
                     if (showMessage) {
                         showError(getString(R.string.could_not_add_to_list, collection.getName()));
@@ -4684,6 +4691,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
         });
+    }
+
+    private void onCollectionUpdated(OdyseeCollection collection, boolean showMessage) {
+        if (showMessage) {
+            showMessage(getString(R.string.added_to_list, collection.getName()),
+                getString(R.string.see_list),
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        // open the playlist fragment with the id
+                        Map<String, Object> params = new HashMap<>();
+                        params.put("collectionId", collection.getId());
+                        openFragment(PlaylistFragment.class, true, params);
+                    }
+                });
+        }
     }
 
     public void handleRemoveUrlFromList(String url, OdyseeCollection collection) {
@@ -4729,6 +4752,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                         @Override
                                         public void onClick(View view) {
                                             // open the playlist fragment with the id
+                                            Map<String, Object> params = new HashMap<>();
+                                            params.put("collectionId", builtInId);
+                                            openFragment(PlaylistFragment.class, true, params);
                                         }
                                     });
                         }

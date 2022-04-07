@@ -149,7 +149,7 @@ public class ChannelPlaylistsFragment extends Fragment implements SharedPreferen
                         playlistsListAdapter = new ClaimListAdapter(claims, context);
                         playlistsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
-                            public void onClaimClicked(Claim claim) {
+                            public void onClaimClicked(Claim claim, int position) {
                                 Context context = getContext();
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;

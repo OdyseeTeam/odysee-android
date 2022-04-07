@@ -513,7 +513,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                         contentListAdapter.setContextGroupId(ALL_CONTENT_CONTEXT_GROUP_ID);
                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
-                            public void onClaimClicked(Claim claim) {
+                            public void onClaimClicked(Claim claim, int position) {
                                 Context context = getContext();
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;

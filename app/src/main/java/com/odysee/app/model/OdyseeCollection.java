@@ -26,6 +26,7 @@ public class OdyseeCollection {
     private String name;
     private String type;
     private List<String> items;
+    private List<Claim> claims;
     private Date updatedAt;
     private int visibility;
 

@@ -1,7 +1,6 @@
 package com.odysee.app.ui.firstrun;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,12 +14,10 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.odysee.app.FirstRunActivity;
 import com.odysee.app.R;
-import com.odysee.app.adapter.VerificationPagerAdapter;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.tasks.lbryinc.FetchCurrentUserTask;

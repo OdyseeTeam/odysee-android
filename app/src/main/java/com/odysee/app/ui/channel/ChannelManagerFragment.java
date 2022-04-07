@@ -166,7 +166,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                                     adapter.setSelectionModeListener(ChannelManagerFragment.this);
                                     adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                                         @Override
-                                        public void onClaimClicked(Claim claim) {
+                                        public void onClaimClicked(Claim claim, int position) {
                                             if (context instanceof MainActivity) {
                                                 ((MainActivity) context).openChannelClaim(claim);
                                             }
@@ -206,7 +206,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                             adapter.setSelectionModeListener(ChannelManagerFragment.this);
                             adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                                 @Override
-                                public void onClaimClicked(Claim claim) {
+                                public void onClaimClicked(Claim claim, int position) {
                                     if (context instanceof MainActivity) {
                                         ((MainActivity) context).openChannelClaim(claim);
                                     }
