@@ -620,10 +620,19 @@
     <string name="form_no_tag_results">We could not find new tags that have not been added yet.</string>
 
     <!-- Go Live -->
+    <string name="precheck_please_wait">Please wait while we check a few things. If this is your first time, this may take a couple of minutes…</string>
+    <string name="precheck_need_channel">You need to create a channel before you can livestream.</string>
+    <string name="precheck_error_loading_channels">An error occurred loading your channels. Please try again later.</string>
     <string name="select_channel">Please select a channel</string>
+    <string name="channel_error_pending">Your channel is still pending. Please wait a couple of minutes and try again.</string>
+    <string name="channel_error_need_minimum_credits">You need to have at least %1$,.2f credits staked (directly or through supports) on %2$s to be able to livestream.</string>
+    <string name="error_publishing_livestream">An error occurred trying to set up your livestream. Please try again later.</string>
     <string name="specify_title">Please specify a title for your livestream</string>
     <string name="please_select_thumbnail">Please select a thumbnail</string>
+    <string name="need_valid_channel">Please select a valid channel to continue</string>
     <string name="stream_key_not_generated">Your stream key could not be generated. Please try again later.</string>
+    <string name="stream_connect_failed">Could not establish a connection to the streaming URL. Please try again.</string>
+    <string name="stream_connect_failed_retrying">Could not establish a connection to the streaming URL. Retrying…</string>
     <string name="camera_permission_rationale_livestream">Odysee requires access to your camera to livestream.</string>
     <string name="start_streaming">Start streaming</string>
     <string name="stop_streaming">Stop streaming</string>

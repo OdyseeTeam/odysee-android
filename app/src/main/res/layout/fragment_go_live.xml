@@ -47,7 +47,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/livestream_options"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        tools:visibility="visible">
 
         <TextView
             android:id="@+id/livestream_options_select_channel_text"
@@ -71,13 +73,25 @@
             app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_text" />
 
         <TextView
+            android:id="@+id/livestream_options_channel_error_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:paddingEnd="16dp"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_spinner"
+            tools:visibility="visible" />
+
+        <TextView
             android:id="@+id/livestream_options_specify_title_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
             android:text="@string/specify_title"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_spinner" />
+            app:layout_constraintTop_toBottomOf="@+id/livestream_options_channel_error_text" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/livestream_options_title_input_layout"
@@ -169,13 +183,47 @@
             app:layout_constraintTop_toBottomOf="@+id/livestream_options_thumbnail_preview" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/livestream_precheck"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="@+id/livestream_controls"
+        app:layout_constraintEnd_toEndOf="@+id/livestream_controls"
+        app:layout_constraintStart_toStartOf="@+id/livestream_controls"
+        app:layout_constraintTop_toTopOf="@+id/livestream_controls">
+
+        <ImageView
+            android:id="@+id/livestream_precheck_spaceman_image"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:src="@drawable/spaceman_happy"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/livestream_precheck_status_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="32dp"
+            android:gravity="center"
+            android:text="@string/precheck_please_wait"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/livestream_precheck_spaceman_image" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <ProgressBar
-        android:id="@+id/publish_livestream_progress"
+        android:id="@+id/livestream_progress"
         android:layout_width="36dp"
         android:layout_height="36dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:visibility="gone" />
+        android:visibility="gone"
+        tools:visibility="visible" />
 </androidx.constraintlayout.widget.ConstraintLayout>
