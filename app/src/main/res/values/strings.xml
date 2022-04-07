@@ -74,6 +74,17 @@
     <string name="channel_could_not_be_unblocked">An error occurred while trying to unblock the channel. Please try again later.</string>
     <string name="channel_blocked">You have blocked all content and comments from %1$s</string>
     <string name="channel_unblocked">You have unblocked all content and comments from %1$s</string>
+    <string name="watch_later">Watch Later</string>
+    <string name="favorites">Favorites</string>
+    <string name="add_to_lists">Add to Lists</string>
+    <string name="added_to_list">Added to %1$s</string>
+    <string name="could_not_add_to_list">Could not add content to %1$s. Please try again later.</string>
+    <string name="see_list">See list</string>
+    <string name="create_a_list">Create a list</string>
+    <string name="new_list">New list</string>
+    <string name="enter_title">Please specify a title for the playlist.</string>
+    <string name="could_not_load_playlist">The playlist could not be loaded at this time. Please try again later.</string>
+    <string name="playlist_position_tracker">%1$s • %2$s / %3$s</string>
 
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>
@@ -146,6 +157,10 @@
     <plurals name="view_count">
         <item quantity="one">%1$s view</item>
         <item quantity="other">%1$s views</item>
+    </plurals>
+    <plurals name="video_count">
+        <item quantity="one">%1$s video</item>
+        <item quantity="other">%1$s videos</item>
     </plurals>
     <plurals name="confirm_purchase_message">
         <item quantity="one">This will purchase "%1$s" for %2$s credit</item>

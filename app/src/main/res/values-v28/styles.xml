@@ -26,7 +26,7 @@
     </style>
     <style name="List_item_Layout">
         <item name="android:foreground">?attr/selectableItemBackground</item>
-        <item name="android:paddingBottom">8dp</item>
+        <!--item name="android:paddingBottom">8dp</item-->
     </style>
     <style name="TextView_Light">
         <item name="android:fontFamily">@font/inter</item>

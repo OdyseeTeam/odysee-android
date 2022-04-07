@@ -481,7 +481,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 if (listener != null && comment.getPoster() != null) {
-                    listener.onClaimClicked(comment.getPoster());
+                    listener.onClaimClicked(comment.getPoster(), position);
                 }
             }
         });

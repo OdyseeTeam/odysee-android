@@ -669,7 +669,7 @@ public class FollowingFragment extends BaseFragment implements
                         contentListAdapter = new ClaimListAdapter(claims, context);
                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
-                            public void onClaimClicked(Claim claim) {
+                            public void onClaimClicked(Claim claim, int position) {
                                 Context context = getContext();
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;
