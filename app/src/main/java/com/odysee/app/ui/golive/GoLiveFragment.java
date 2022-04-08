@@ -100,9 +100,9 @@ public class GoLiveFragment extends BaseFragment implements
     private boolean uploadingThumbnail;
     private String uploadedThumbnailUrl;
     private String lastSelectedThumbnailFile;
-    private boolean isStreaming = false;
-    private boolean startingStream = false;
-    private boolean screenTurnedOn = false;
+    private boolean isStreaming;
+    private boolean startingStream;
+    private boolean screenTurnedOn;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
