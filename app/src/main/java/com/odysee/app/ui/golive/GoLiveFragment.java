@@ -3,8 +3,10 @@ package com.odysee.app.ui.golive;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.AsyncTask;
@@ -92,6 +94,7 @@ public class GoLiveFragment extends BaseFragment implements
     private RtmpConnection connection;
     private RtmpStream stream;
     private Camera2Source cameraSource;
+    private BroadcastReceiver screenOnReceiver;
 
     private boolean launchPickerPending;
     private boolean uploadingThumbnail;
@@ -99,6 +102,7 @@ public class GoLiveFragment extends BaseFragment implements
     private String lastSelectedThumbnailFile;
     private boolean isStreaming = false;
     private boolean startingStream = false;
+    private boolean screenTurnedOn = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -225,8 +229,17 @@ public class GoLiveFragment extends BaseFragment implements
                 }
                 if (!isStreaming) {
                     Activity activity = getActivity();
-                    if (activity != null) {
+                    if (activity instanceof MainActivity) {
                         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+                        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+                        screenOnReceiver = new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                screenTurnedOn = true;
+                            }
+                        };
+                        activity.registerReceiver(screenOnReceiver, filter);
                     }
                     startingStream = true;
                     connection.connect(RTMP_URL);
@@ -257,6 +270,21 @@ public class GoLiveFragment extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
+
+        if (screenTurnedOn) {
+            Activity activity = getActivity();
+            if (activity instanceof MainActivity) {
+                activity.onBackPressed();
+
+                View view = activity.findViewById(R.id.content_main);
+                Snackbar snackbar = Snackbar.make(view, R.string.stream_stopped_went_to_home_reason, Snackbar.LENGTH_LONG);
+                TextView snackbarText = snackbar.getView().findViewById(R.id.snackbar_text);
+                snackbarText.setMaxLines(Integer.MAX_VALUE);
+                snackbar.show();
+            }
+            return;
+        }
+
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
@@ -271,6 +299,7 @@ public class GoLiveFragment extends BaseFragment implements
 
     @Override
     public void onStop() {
+        connection.close();
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
@@ -281,6 +310,16 @@ public class GoLiveFragment extends BaseFragment implements
             }
         }
         super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        connection.dispose();
+        Activity activity = getActivity();
+        if (activity != null && screenOnReceiver != null) {
+            activity.unregisterReceiver(screenOnReceiver);
+        }
     }
 
     @Override
