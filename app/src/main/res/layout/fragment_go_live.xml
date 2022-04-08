@@ -76,11 +76,12 @@
             android:id="@+id/livestream_options_channel_error_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_spinner"
+            tools:text="@string/channel_error_pending"
             tools:visibility="visible" />
 
         <TextView
