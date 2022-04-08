@@ -14,6 +14,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -223,10 +224,18 @@ public class GoLiveFragment extends BaseFragment implements
                     return;
                 }
                 if (!isStreaming) {
+                    Activity activity = getActivity();
+                    if (activity != null) {
+                        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    }
                     startingStream = true;
                     connection.connect(RTMP_URL);
                     buttonToggleStreaming.setText(R.string.stop_streaming);
                 } else {
+                    Activity activity = getActivity();
+                    if (activity != null) {
+                        activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    }
                     connection.close();
                     isStreaming = false;
                     startingStream = false;
