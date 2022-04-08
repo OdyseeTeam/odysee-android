@@ -3,8 +3,10 @@ package com.odysee.app.ui.golive;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -69,6 +71,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class GoLiveFragment extends BaseFragment implements
+        MainActivity.BackPressInterceptor,
         CameraPermissionListener,
         StoragePermissionListener,
         FilePickerListener {
@@ -103,6 +106,7 @@ public class GoLiveFragment extends BaseFragment implements
     private boolean isStreaming;
     private boolean startingStream;
     private boolean screenTurnedOn;
+    private boolean didShowCloseWarning;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -289,6 +293,7 @@ public class GoLiveFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Go Live", "GoLive");
+            activity.setBackPressInterceptor(this);
             activity.addCameraPermissionListener(this);
             activity.addStoragePermissionListener(this);
             activity.addFilePickerListener(this);
@@ -320,6 +325,35 @@ public class GoLiveFragment extends BaseFragment implements
         if (activity != null && screenOnReceiver != null) {
             activity.unregisterReceiver(screenOnReceiver);
         }
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        if (didShowCloseWarning) {
+            return false;
+        }
+
+        /*
+        FIXME: Toolbar back button gets hidden when pressed
+        Therefore answering "No" to the dialog leaves the toolbar without a back button
+        */
+        Activity activity = getActivity();
+        if (activity != null && isStreaming) {
+            new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.confirm_stop_title)
+                    .setMessage(R.string.confirm_stop_message)
+                    .setNegativeButton(R.string.no, null)
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            didShowCloseWarning = true;
+                            activity.onBackPressed();
+                        }
+                    }).show();
+            return true;
+        }
+
+        return false;
     }
 
     @Override

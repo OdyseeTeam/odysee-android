@@ -638,6 +638,8 @@
     <string name="stop_streaming">Stop streaming</string>
     <string name="switch_camera">Switch camera</string>
     <string name="stream_stopped_went_to_home_reason">Because livestreaming sometimes doesn\'t resume properly after sleeping the device, your stream was automatically stopped.</string>
+    <string name="confirm_stop_title">Stop streaming?</string>
+    <string name="confirm_stop_message">Do you want to stop streaming?</string>
 
     <!-- Channels -->
     <string name="no_channel_created">You have not created a channel.\nStart now by creating a new channel!</string>
