@@ -120,9 +120,9 @@ dependencies {
     implementation 'org.bitcoinj:bitcoinj-tools:0.14.7'
     implementation 'org.java-websocket:Java-WebSocket:1.5.1'
 
-    implementation 'com.github.ktprograms:HaishinKit~kt:b8192ad834'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
+    implementation 'com.github.ktprograms.HaishinKit~kt:haishinkit:7a38a664be'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
 
     //noinspection AnnotationProcessorOnCompilePath
     compileOnly 'org.projectlombok:lombok:1.18.22'
