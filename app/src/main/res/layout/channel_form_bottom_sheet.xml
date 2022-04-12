@@ -34,7 +34,7 @@
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_marginTop="16dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -42,6 +42,9 @@
             android:id="@+id/inline_channel_form_layout_deposit"
             android:layout_width="100dp"
             android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             android:hint="@string/deposit">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inline_channel_form_input_deposit"
@@ -56,11 +59,13 @@
 
         <TextView
             android:id="@+id/inline_channel_form_inline_currency"
-            android:layout_toEndOf="@id/inline_channel_form_layout_deposit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="30dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/inline_channel_form_layout_deposit"
             style="@style/TextView_Light"
             android:text="@string/lbc"
             android:textAllCaps="true"
@@ -68,15 +73,17 @@
 
         <com.odysee.app.views.CreditsBalanceView
             android:id="@+id/channel_form_balanceview"
-            android:layout_toEndOf="@id/inline_channel_form_inline_currency"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="28dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/inline_channel_form_inline_currency"
+            android:layout_marginStart="24dp"
             app:iconSize="12dp"
             android:visibility="invisible"
             tools:visibility="visible" />
-    </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:layout_width="wrap_content"
@@ -95,15 +102,18 @@
             android:id="@+id/inline_channel_form_cancel_link"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
             android:background="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true"
             android:fontFamily="@font/inter"
+            android:gravity="center_vertical"
             android:text="@string/cancel"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="12sp" />
 
         <ProgressBar
             android:id="@+id/inline_channel_form_create_progress"

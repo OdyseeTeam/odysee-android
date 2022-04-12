@@ -174,14 +174,17 @@
                             android:visibility="gone" />
                     </RelativeLayout>
 
-                    <RelativeLayout
-                        android:layout_marginTop="16dp"
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="16dp">
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/channel_form_input_layout_deposit"
                             android:layout_width="100dp"
                             android:layout_height="wrap_content"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
                             android:hint="@string/deposit">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/channel_form_input_deposit"
@@ -198,19 +201,26 @@
                             android:layout_toEndOf="@id/channel_form_input_layout_deposit"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/channel_form_input_layout_deposit"
                             android:layout_marginStart="8dp"
                             android:layout_marginTop="30dp"
                             style="@style/TextView_Light"
                             android:text="@string/lbc"
                             android:textAllCaps="true"
-                            android:textSize="11sp" />
-
-                        <com.odysee.app.views.CreditsBalanceView android:id="@+id/channel_form_balance"
+                            android:textSize="11sp"/>
+                        <com.odysee.app.views.CreditsBalanceView
+                            android:id="@+id/channel_form_balance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:layout_constraintStart_toEndOf="@id/channel_form_input_currency"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            android:layout_marginStart="24dp"
                             android:visibility="invisible"
                             tools:visibility="visible" />
-                    </RelativeLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -287,27 +297,34 @@
                         android:layout_marginTop="24dp">
                         <TextView
                             android:id="@+id/channel_form_cancel_link"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerVertical="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
                             android:fontFamily="@font/inter"
-                            android:textSize="14sp"
-                            android:text="@string/cancel" />
+                            android:gravity="center_vertical"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/cancel"
+                            android:textSize="14sp"/>
 
                         <TextView
                             android:id="@+id/channel_form_toggle_optional"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerVertical="true"
                             android:layout_marginEnd="24dp"
                             android:layout_toStartOf="@id/channel_form_save_button"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
                             android:fontFamily="@font/inter"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/show_optional_fields"
                             android:textSize="14sp"
-                            android:text="@string/show_optional_fields" />
+                            android:focusable="true"/>
                         <ProgressBar
                             android:id="@+id/channel_form_save_progress"
                             android:layout_width="20dp"
