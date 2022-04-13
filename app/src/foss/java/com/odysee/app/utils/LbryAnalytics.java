@@ -3,13 +3,8 @@ package com.odysee.app.utils;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-
-import com.google.firebase.analytics.FirebaseAnalytics;
 
 public class LbryAnalytics {
-
     public static final String EVENT_APP_ERROR = "app_error";
     public static final String EVENT_APP_LAUNCH = "app_launch";
     public static final String EVENT_COMMENT_CREATE = "comment_create";
@@ -32,49 +27,13 @@ public class LbryAnalytics {
     public static final String EVENT_SEARCH = "search";
     public static final String EVENT_SHUFFLE_SESSION = "shuffle_session";
 
-    private static FirebaseAnalytics analytics;
+    public static void init(Context context) { }
 
-    public static void init(Context context) {
-        analytics = FirebaseAnalytics.getInstance(context);
-    }
+    public static void setCurrentScreen(Activity activity, String name, String className) { }
 
-    public static void checkInitAnalytics(Context context) {
-        if (analytics == null && context != null) {
-            analytics = FirebaseAnalytics.getInstance(context);
-        }
-    }
+    public static void logEvent(String name) { }
 
-    public static void setCurrentScreen(Activity activity, String name, String className) {
-        checkInitAnalytics(activity);
-        if (analytics != null) {
-            analytics.setCurrentScreen(activity, name, className);
-        }
-    }
+    public static void logEvent(String name, Bundle bundle) { }
 
-    public static void logEvent(String name) {
-        logEvent(name, null);
-    }
-
-    public static void logEvent(String name, Bundle bundle) {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                if (analytics != null) {
-                    analytics.logEvent(name, bundle);
-                }
-            }
-        });
-    }
-
-    public static void logError(String message, String exceptionName) {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                Bundle bundle = new Bundle();
-                bundle.putString("message", message);
-                bundle.putString("name", exceptionName);
-                logEvent(EVENT_APP_ERROR, bundle);
-            }
-        });
-    }
+    public static void logError(String message, String exceptionName) { }
 }

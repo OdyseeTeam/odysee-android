@@ -19,7 +19,6 @@ import android.widget.ProgressBar;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.content.res.AppCompatResources;
@@ -38,22 +37,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.*;
 
-import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.BillingClientStateListener;
-import com.android.billingclient.api.BillingFlowParams;
-import com.android.billingclient.api.BillingResult;
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesUpdatedListener;
-import com.android.billingclient.api.SkuDetails;
-import com.android.billingclient.api.SkuDetailsParams;
-import com.android.billingclient.api.SkuDetailsResponseListener;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.odysee.app.callable.WalletBalanceFetch;
@@ -76,6 +65,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.VerificationSkipQueue;
 
 import org.json.JSONObject;
 
@@ -102,55 +92,8 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
     private MaterialButton buttonSkip;
     private MaterialButton buttonContinue;
     private ProgressBar progressIndicator;
-    private BillingClient billingClient;
 
-    private final PurchasesUpdatedListener purchasesUpdatedListener = new PurchasesUpdatedListener() {
-        @Override
-        public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
-            int responseCode = billingResult.getResponseCode();
-            if (responseCode == BillingClient.BillingResponseCode.OK && purchases != null)
-            {
-                for (Purchase purchase : purchases) {
-                    if (MainActivity.SKU_SKIP.equalsIgnoreCase(purchase.getSku())) {
-                        if (currentStep == FIRST_RUN_STEP_REWARDS) {
-                            onRequestInProgress(true);
-                        }
-
-                        MainActivity.handleBillingPurchase(
-                                purchase,
-                                billingClient,
-                                FirstRunActivity.this, null, new RewardVerifiedHandler() {
-                                    @Override
-                                    public void onSuccess(RewardVerified rewardVerified) {
-                                        if (Lbryio.currentUser != null) {
-                                            Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
-                                        }
-
-                                        if (!rewardVerified.isRewardApproved()) {
-                                            // show pending purchase message (possible slow card tx)
-                                            Snackbar.make(findViewById(R.id.first_run_pager), R.string.purchase_request_pending, Snackbar.LENGTH_LONG).show();
-                                        } else  {
-                                            Snackbar.make(findViewById(R.id.first_run_pager), R.string.reward_verification_successful, Snackbar.LENGTH_LONG).show();
-                                        }
-
-                                        if (currentStep == FIRST_RUN_STEP_REWARDS) {
-                                            onRequestCompleted(FIRST_RUN_STEP_REWARDS);
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onError(Exception error) {
-                                        showFetchUserError(getString(R.string.purchase_request_failed_error));
-                                        if (currentStep == FIRST_RUN_STEP_REWARDS) {
-                                            onRequestCompleted(FIRST_RUN_STEP_REWARDS);
-                                        }
-                                    }
-                                });
-                    }
-                }
-            }
-        }
-    };
+    private VerificationSkipQueue verificationSkipQueue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,11 +104,41 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
         }
         setContentView(R.layout.activity_first_run);
 
-        billingClient = BillingClient.newBuilder(this)
-                .setListener(purchasesUpdatedListener)
-                .enablePendingPurchases()
-                .build();
-        establishBillingClientConnection();
+        verificationSkipQueue = new VerificationSkipQueue(this, new VerificationSkipQueue.ShowInProgressListener() {
+            @Override
+            public void maybeShowRequestInProgress() {
+                if (currentStep == FIRST_RUN_STEP_REWARDS) {
+                    onRequestInProgress(true);
+                }
+            }
+        }, new RewardVerifiedHandler() {
+            @Override
+            public void onSuccess(RewardVerified rewardVerified) {
+                if (Lbryio.currentUser != null) {
+                    Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
+                }
+
+                if (!rewardVerified.isRewardApproved()) {
+                    // show pending purchase message (possible slow card tx)
+                    Snackbar.make(findViewById(R.id.first_run_pager), R.string.purchase_request_pending, Snackbar.LENGTH_LONG).show();
+                } else  {
+                    Snackbar.make(findViewById(R.id.first_run_pager), R.string.reward_verification_successful, Snackbar.LENGTH_LONG).show();
+                }
+
+                if (currentStep == FIRST_RUN_STEP_REWARDS) {
+                    onRequestCompleted(FIRST_RUN_STEP_REWARDS);
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                showFetchUserError(getString(R.string.purchase_request_failed_error));
+                if (currentStep == FIRST_RUN_STEP_REWARDS) {
+                    onRequestCompleted(FIRST_RUN_STEP_REWARDS);
+                }
+            }
+        });
+        verificationSkipQueue.createBillingClientAndEstablishConnection();
 
         viewPager = findViewById(R.id.first_run_pager);
         viewPager.setUserInputEnabled(false);
@@ -210,24 +183,6 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
-    }
-
-    private void establishBillingClientConnection() {
-        if (billingClient != null) {
-            billingClient.startConnection(new BillingClientStateListener() {
-                @Override
-                public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
-                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                        // no need to do anything here. purchases are always checked server-side
-                    }
-                }
-
-                @Override
-                public void onBillingServiceDisconnected() {
-                    establishBillingClientConnection();
-                }
-            });
-        }
     }
 
     private void checkEmailVerifiedRewardForChannelStep() {
@@ -717,28 +672,7 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
 
     @Override
     public void onSkipQueueAction() {
-        if (billingClient != null) {
-            List<String> skuList = new ArrayList<>();
-            skuList.add(MainActivity.SKU_SKIP);
-
-            SkuDetailsParams detailsParams = SkuDetailsParams.newBuilder().
-                    setType(BillingClient.SkuType.INAPP).
-                    setSkusList(skuList).build();
-            billingClient.querySkuDetailsAsync(detailsParams, new SkuDetailsResponseListener() {
-                @Override
-                public void onSkuDetailsResponse(@NonNull BillingResult billingResult, @Nullable List<SkuDetails> list) {
-                    if (list != null && list.size() > 0) {
-                        // we only queried one product, so it should be the first item in the list
-                        SkuDetails skuDetails = list.get(0);
-
-                        // launch the billing flow for skip queue
-                        BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder().
-                                setSkuDetails(skuDetails).build();
-                        billingClient.launchBillingFlow(FirstRunActivity.this, billingFlowParams);
-                    }
-                }
-            });
-        }
+        verificationSkipQueue.onSkipQueueAction(FirstRunActivity.this);
     }
 
     @Override

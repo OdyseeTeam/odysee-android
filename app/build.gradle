@@ -20,6 +20,14 @@ android {
 //        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    productFlavors {
+        create("full")
+
+        create("foss") {
+            applicationIdSuffix = ".foss"
+        }
+    }
+
      packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'lib/x86_64/darwin/libscrypt.dylib'
@@ -86,19 +94,20 @@ dependencies {
         exclude group: "com.android.support"
     }
     implementation 'com.squareup.okhttp3:okhttp:4.9.1'
-    implementation 'com.google.firebase:firebase-analytics:19.0.1'
-    implementation 'com.google.firebase:firebase-crashlytics:18.2.1'
-    implementation 'com.google.android.gms:play-services-base:17.6.0'
-    implementation 'com.google.firebase:firebase-messaging:22.0.0'
-    implementation 'com.google.oauth-client:google-oauth-client:1.30.4'
 
-    implementation 'com.android.billingclient:billing:3.0.2'
+    fullImplementation 'com.google.firebase:firebase-analytics:19.0.1'
+    fullImplementation 'com.google.firebase:firebase-crashlytics:18.2.1'
+    fullImplementation 'com.google.android.gms:play-services-base:17.6.0'
+    fullImplementation 'com.google.firebase:firebase-messaging:22.0.0'
+    fullImplementation 'com.google.oauth-client:google-oauth-client:1.30.4'
+
+    fullImplementation 'com.android.billingclient:billing:3.0.2'
 
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'com.google.android.exoplayer:exoplayer-core:2.16.0'
     implementation 'com.google.android.exoplayer:exoplayer-dash:2.16.0'
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.16.0'
-    implementation 'com.google.android.exoplayer:extension-cast:2.16.0'
+    fullImplementation 'com.google.android.exoplayer:extension-cast:2.16.0'
     implementation 'com.google.android.exoplayer:extension-mediasession:2.16.0'
     implementation 'com.google.android.exoplayer:exoplayer-hls:2.16.0'
 
@@ -130,3 +139,10 @@ apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 googleServices { disableVersionCheck = true }
 ext { enableCrashlytics = true }
+
+android.applicationVariants.all { variant ->
+    if (variant.name.contains('foss')) {
+        project.tasks.getByName('process' + variant.name.capitalize() + 'GoogleServices').enabled = false
+        project.tasks.getByName('injectCrashlyticsMappingFileId' + variant.name.capitalize()).enabled = false
+    }
+}
