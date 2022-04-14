@@ -139,6 +139,11 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/FirstRunTheme" />
         <activity
+            android:name=".GoLiveActivity"
+            android:launchMode="singleTask"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/FirstRunTheme" />
+        <activity
             android:name=".VerificationActivity"
             android:launchMode="singleTask"
             android:parentActivityName=".MainActivity"

@@ -1,4 +1,16 @@
-package com.odysee.app.ui.golive;
+package com.odysee.app;
+
+import static android.os.Build.VERSION_CODES.M;
+
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.accounts.AccountManager;
@@ -9,26 +21,23 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.camera2.CameraCharacteristics;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
-
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
@@ -41,8 +50,6 @@ import com.haishinkit.media.Camera2Source;
 import com.haishinkit.rtmp.RtmpConnection;
 import com.haishinkit.rtmp.RtmpStream;
 import com.haishinkit.view.HkSurfaceView;
-import com.odysee.app.MainActivity;
-import com.odysee.app.R;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.CameraPermissionListener;
@@ -54,7 +61,6 @@ import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimResultHandler;
 import com.odysee.app.tasks.claim.PublishClaimTask;
-import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -70,11 +76,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class GoLiveFragment extends BaseFragment implements
-        MainActivity.BackPressInterceptor,
-        CameraPermissionListener,
-        StoragePermissionListener,
-        FilePickerListener {
+public class GoLiveActivity extends AppCompatActivity {
     private final String RTMP_URL = "rtmp://stream.odysee.com/live";
     private final double MIN_STREAM_STAKE = 50;
 
@@ -99,31 +101,31 @@ public class GoLiveFragment extends BaseFragment implements
     private Camera2Source cameraSource;
     private BroadcastReceiver screenOnReceiver;
 
-    private boolean launchPickerPending;
     private boolean uploadingThumbnail;
     private String uploadedThumbnailUrl;
     private String lastSelectedThumbnailFile;
     private boolean isStreaming;
     private boolean startingStream;
     private boolean screenTurnedOn;
-    private boolean didShowCloseWarning;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+        setContentView(R.layout.activity_go_live);
 
-        if (getActivity() != null) {
-            Activity activity = getActivity();
-            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {})
-                        .launch(Manifest.permission.RECORD_AUDIO);
-            }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {})
+                    .launch(Manifest.permission.RECORD_AUDIO);
         }
 
         connection = new RtmpConnection();
         stream = new RtmpStream(connection);
         stream.attachAudio(new AudioRecordSource());
-        cameraSource = new Camera2Source(requireContext(), null, false);
+        cameraSource = new Camera2Source(this, null, false);
         stream.attachVideo(cameraSource);
         connection.addEventListener(Event.RTMP_STATUS, new IEventListener() {
             @Override
@@ -155,32 +157,26 @@ public class GoLiveFragment extends BaseFragment implements
                 connection.connect(RTMP_URL);
             }
         });
-    }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_go_live, container, false);
+        imagePrecheckSpaceman = findViewById(R.id.livestream_precheck_spaceman_image);
+        textPrecheckStatus = findViewById(R.id.livestream_precheck_status_text);
+        selectChannelSpinner = findViewById(R.id.livestream_options_select_channel_spinner);
+        textChannelError = findViewById(R.id.livestream_options_channel_error_text);
+        inputTitle = findViewById(R.id.livestream_options_title_input);
+        progress = findViewById(R.id.livestream_progress);
+        imageThumbnail = findViewById(R.id.livestream_options_thumbnail_preview);
+        thumbnailUploadProgress = findViewById(R.id.livestream_options_thumbnail_upload_progress);
 
-        imagePrecheckSpaceman = root.findViewById(R.id.livestream_precheck_spaceman_image);
-        textPrecheckStatus = root.findViewById(R.id.livestream_precheck_status_text);
-        selectChannelSpinner = root.findViewById(R.id.livestream_options_select_channel_spinner);
-        textChannelError = root.findViewById(R.id.livestream_options_channel_error_text);
-        inputTitle = root.findViewById(R.id.livestream_options_title_input);
-        progress = root.findViewById(R.id.livestream_progress);
-        imageThumbnail = root.findViewById(R.id.livestream_options_thumbnail_preview);
-        thumbnailUploadProgress = root.findViewById(R.id.livestream_options_thumbnail_upload_progress);
+        livestreamPrecheckView = findViewById(R.id.livestream_precheck);
+        livestreamOptionsView = findViewById(R.id.livestream_options);
+        livestreamControlsView = findViewById(R.id.livestream_controls);
 
-        livestreamPrecheckView = root.findViewById(R.id.livestream_precheck);
-        livestreamOptionsView = root.findViewById(R.id.livestream_options);
-        livestreamControlsView = root.findViewById(R.id.livestream_controls);
-
-        HkSurfaceView livestreamControlsCameraView = root.findViewById(R.id.livestream_controls_camera_view);
+        HkSurfaceView livestreamControlsCameraView = findViewById(R.id.livestream_controls_camera_view);
         livestreamControlsCameraView.attachStream(stream);
 
-        MaterialButton buttonContinue = root.findViewById(R.id.livestream_options_continue_button);
-        buttonToggleStreaming = root.findViewById(R.id.livestream_controls_toggle_streaming_button);
-        ImageButton buttonSwitchCamera = root.findViewById(R.id.livestream_controls_switch_camera_button);
+        MaterialButton buttonContinue = findViewById(R.id.livestream_options_continue_button);
+        buttonToggleStreaming = findViewById(R.id.livestream_controls_toggle_streaming_button);
+        ImageButton buttonSwitchCamera = findViewById(R.id.livestream_controls_switch_camera_button);
 
         selectChannelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -232,27 +228,21 @@ public class GoLiveFragment extends BaseFragment implements
                     return;
                 }
                 if (!isStreaming) {
-                    Activity activity = getActivity();
-                    if (activity instanceof MainActivity) {
-                        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-                        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
-                        screenOnReceiver = new BroadcastReceiver() {
-                            @Override
-                            public void onReceive(Context context, Intent intent) {
-                                screenTurnedOn = true;
-                            }
-                        };
-                        activity.registerReceiver(screenOnReceiver, filter);
-                    }
+                    IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+                    screenOnReceiver = new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            screenTurnedOn = true;
+                        }
+                    };
+                    registerReceiver(screenOnReceiver, filter);
                     startingStream = true;
                     connection.connect(RTMP_URL);
                     buttonToggleStreaming.setText(R.string.stop_streaming);
                 } else {
-                    Activity activity = getActivity();
-                    if (activity != null) {
-                        activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                    }
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                     connection.close();
                     isStreaming = false;
                     startingStream = false;
@@ -267,167 +257,92 @@ public class GoLiveFragment extends BaseFragment implements
                 cameraSource.switchCamera();
             }
         });
-
-        return root;
     }
 
     @Override
-    public void onResume() {
+    protected void onResume() {
         super.onResume();
 
         if (screenTurnedOn) {
-            Activity activity = getActivity();
-            if (activity instanceof MainActivity) {
-                activity.onBackPressed();
-
-                View view = activity.findViewById(R.id.content_main);
-                Snackbar snackbar = Snackbar.make(view, R.string.stream_stopped_went_to_home_reason, Snackbar.LENGTH_LONG);
-                TextView snackbarText = snackbar.getView().findViewById(R.id.snackbar_text);
-                snackbarText.setMaxLines(Integer.MAX_VALUE);
-                snackbar.show();
-            }
-            return;
+            MainActivity.instance.showStreamStoppedMessage();
+            finish();
         }
 
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            LbryAnalytics.setCurrentScreen(activity, "Go Live", "GoLive");
-            activity.setBackPressInterceptor(this);
-            activity.addCameraPermissionListener(this);
-            activity.addStoragePermissionListener(this);
-            activity.addFilePickerListener(this);
-        }
+        LbryAnalytics.setCurrentScreen(this, "Go Live", "GoLive");
         checkCameraPermissionAndOpenCameraSource();
         fetchChannels();
     }
 
     @Override
-    public void onStop() {
-        connection.close();
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.removeCameraPermissionListener(this);
-            activity.removeStoragePermissionListener(this);
-            if (!MainActivity.startingFilePickerActivity) {
-                activity.removeFilePickerListener(this);
-            }
-        }
-        super.onStop();
-    }
-
-    @Override
-    public void onDestroy() {
+    protected void onDestroy() {
         super.onDestroy();
         connection.dispose();
-        Activity activity = getActivity();
-        if (activity != null && screenOnReceiver != null) {
-            activity.unregisterReceiver(screenOnReceiver);
-        }
+        this.unregisterReceiver(screenOnReceiver);
     }
 
     @Override
-    public boolean onBackPressed() {
-        if (didShowCloseWarning) {
-            return false;
-        }
-
-        /*
-        FIXME: Toolbar back button gets hidden when pressed
-        Therefore answering "No" to the dialog leaves the toolbar without a back button
-        */
-        Activity activity = getActivity();
-        if (activity != null && isStreaming) {
-            new AlertDialog.Builder(getContext())
-                    .setTitle(R.string.confirm_stop_title)
+    public void onBackPressed() {
+        if (isStreaming) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.stop_streaming)
                     .setMessage(R.string.confirm_stop_message)
                     .setNegativeButton(R.string.no, null)
                     .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            didShowCloseWarning = true;
-                            activity.onBackPressed();
+                            GoLiveActivity.super.onBackPressed();
                         }
                     }).show();
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public void onFilePicked(String filePath) {
-        if (Helper.isNullOrEmpty(filePath)) {
-            showError(getString(R.string.undetermined_image_filepath));
-            return;
-        }
-
-        if (filePath.equalsIgnoreCase(lastSelectedThumbnailFile)) {
-            // previous selected thumbnail was uploaded successfully
-            return;
-        }
-
-        uploadThumbnail(filePath);
-    }
-
-    @Override
-    public void onFilePickerCancelled() {
-
-    }
-
-    @Override
-    public void onCameraPermissionGranted() {
-        openCameraSource();
-    }
-
-    @Override
-    public void onCameraPermissionRefused() {
-        showError(getString(R.string.camera_permission_rationale_livestream));
-    }
-
-    @Override
-    public void onStoragePermissionGranted() {
-        if (launchPickerPending) {
-            launchPickerPending = false;
-            launchFilePicker();
         }
     }
 
     @Override
-    public void onStoragePermissionRefused() {
-        showError(getString(R.string.storage_permission_rationale_images));
-        launchPickerPending = false;
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == MainActivity.REQUEST_FILE_PICKER
+                && resultCode == Activity.RESULT_OK && data != null) {
+            Uri fileUri = data.getData();
+            String filePath = Helper.getRealPathFromURI_API19(this, fileUri);
+
+            if (Helper.isNullOrEmpty(filePath)) {
+                showError(getString(R.string.undetermined_image_filepath));
+                return;
+            }
+
+            if (filePath.equalsIgnoreCase(lastSelectedThumbnailFile)) {
+                // previous selected thumbnail was uploaded successfully
+                return;
+            }
+
+            uploadThumbnail(filePath);
+        }
     }
 
     @Override
-    public void onRecordAudioPermissionGranted() {
-
-    }
-
-    @Override
-    public void onRecordAudioPermissionRefused() {
-
-    }
-
-    @Override
-    public boolean shouldSuspendGlobalPlayer() {
-        return true;
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == MainActivity.REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCameraSource();
+            } else {
+                showError(getString(R.string.camera_permission_rationale_livestream));
+            }
+        } else if (requestCode == MainActivity.REQUEST_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                launchFilePicker();
+            } else {
+                showError(getString(R.string.storage_permission_rationale_images));
+            }
+        }
     }
 
     private void uploadThumbnail(String thumbnailPath) {
         if (uploadingThumbnail) {
-            View view = getView();
-            if (view != null) {
-                Snackbar.make(view, R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
-            }
+            Snackbar.make(findViewById(R.id.livestream_main), R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
             return;
         }
 
-        Context context = getContext();
-        if (context != null) {
-            Glide.with(context.getApplicationContext()).load(thumbnailPath).centerCrop().into(imageThumbnail);
-        }
+        Glide.with(thumbnailUploadProgress).load(thumbnailPath).centerCrop().into(imageThumbnail);
 
         uploadingThumbnail = true;
         uploadedThumbnailUrl = null;
@@ -451,29 +366,17 @@ public class GoLiveFragment extends BaseFragment implements
     }
 
     private void launchFilePicker() {
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity.startingFilePickerActivity = true;
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("image/*");
-            ((MainActivity) context).startActivityForResult(
-                    Intent.createChooser(intent, getString(R.string.select_thumbnail)),
-                    MainActivity.REQUEST_FILE_PICKER);
-        }
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, getString(R.string.select_thumbnail)),
+                MainActivity.REQUEST_FILE_PICKER);
     }
 
     private void checkStoragePermissionAndLaunchFilePicker() {
-        Context context = getContext();
-        if (!MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
-            launchPickerPending = true;
-            MainActivity.requestPermission(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    MainActivity.REQUEST_STORAGE_PERMISSION,
-                    getString(R.string.storage_permission_rationale_images),
-                    context,
-                    true);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, MainActivity.REQUEST_STORAGE_PERMISSION);
         } else {
-            launchPickerPending = false;
             launchFilePicker();
         }
     }
@@ -483,14 +386,9 @@ public class GoLiveFragment extends BaseFragment implements
     }
 
     private void checkCameraPermissionAndOpenCameraSource() {
-        Context context = getContext();
-        if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
-            MainActivity.requestPermission(
-                    Manifest.permission.CAMERA,
-                    MainActivity.REQUEST_CAMERA_PERMISSION,
-                    getString(R.string.camera_permission_rationale_livestream),
-                    context,
-                    true);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[] { Manifest.permission.CAMERA }, MainActivity.REQUEST_CAMERA_PERMISSION);
         } else {
             openCameraSource();
         }
@@ -514,7 +412,7 @@ public class GoLiveFragment extends BaseFragment implements
                     options.put("channel_id", selectedChannel.getClaimId());
                     options.put("hexdata", hexData);
 
-                    AccountManager am = AccountManager.get(getContext());
+                    AccountManager am = AccountManager.get(getApplicationContext());
                     String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
                     JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", options, authToken);
                     String signature = result.getString("signature");
@@ -579,7 +477,7 @@ public class GoLiveFragment extends BaseFragment implements
 
     private void publishLivestreamClaim() {
         Claim claim = buildLivestreamClaim();
-        AccountManager am = AccountManager.get(getContext());
+        AccountManager am = AccountManager.get(this);
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
         PublishClaimTask task = new PublishClaimTask(claim, "", null, authToken, new ClaimResultHandler() {
             @Override
@@ -647,10 +545,10 @@ public class GoLiveFragment extends BaseFragment implements
     }
 
     private void updateChannelList(List<Claim> channels) {
-        selectChannelSpinner.setAdapter(new InlineChannelSpinnerAdapter(getContext(), R.layout.spinner_item_channel, channels));
+        selectChannelSpinner.setAdapter(new InlineChannelSpinnerAdapter(this, R.layout.spinner_item_channel, channels));
 
         if (channels.size() > 0) {
-             showLivestreamingOptions();
+            showLivestreamingOptions();
         } else {
             progress.setVisibility(View.GONE);
             showPrecheckError(getString(R.string.precheck_need_channel));
@@ -688,5 +586,15 @@ public class GoLiveFragment extends BaseFragment implements
                 + "?d=" + hexData
                 + "&s=" + signature
                 + "&t=" + signingTs;
+    }
+
+    private void showError(String message) {
+        Snackbar.make(findViewById(R.id.livestream_main), message, Snackbar.LENGTH_LONG).
+                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+    }
+
+    private boolean isDarkMode() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
     }
 }

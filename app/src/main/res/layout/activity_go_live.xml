@@ -2,9 +2,10 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/livestream_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.golive.GoLiveFragment" >
+    tools:context=".GoLiveActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/livestream_controls"
@@ -127,13 +128,14 @@
             android:layout_width="0dp"
             android:layout_height="240dp"
             android:layout_marginTop="16dp"
-            android:foreground="?attr/selectableItemBackground"
             android:background="@android:color/black"
             android:clickable="true"
             android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_thumbnail_text" />
+
         <LinearLayout
             android:id="@+id/livestream_options_thumbnail_upload_progress"
             android:layout_width="wrap_content"
@@ -142,12 +144,14 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="8dp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
-            app:layout_constraintTop_toTopOf="@+id/livestream_options_thumbnail_preview"
-            android:visibility="gone">
+            app:layout_constraintTop_toTopOf="@+id/livestream_options_thumbnail_preview">
+
             <ProgressBar
                 android:layout_width="16sp"
                 android:layout_height="16sp" />
+
             <TextView
                 style="@style/TextView_Light"
                 android:layout_width="wrap_content"
@@ -156,14 +160,16 @@
                 android:text="@string/uploading_thumbnail"
                 android:textColor="@color/white" />
         </LinearLayout>
+
         <RelativeLayout
-            android:background="@drawable/bg_small_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_small_icon"
             app:layout_constraintBottom_toBottomOf="@+id/livestream_options_thumbnail_preview"
             app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
             app:layout_constraintStart_toStartOf="@+id/livestream_options_thumbnail_preview">
+
             <ImageView
                 android:layout_width="16dp"
                 android:layout_height="16dp"
@@ -221,10 +227,10 @@
         android:id="@+id/livestream_progress"
         android:layout_width="36dp"
         android:layout_height="36dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:visibility="gone"
         tools:visibility="visible" />
 </androidx.constraintlayout.widget.ConstraintLayout>

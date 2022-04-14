@@ -226,7 +226,6 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
-import com.odysee.app.ui.golive.GoLiveFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
@@ -991,7 +990,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         popupWindow.dismiss();
                         hideNotifications();
-                        openFragment(GoLiveFragment.class, true, null);
+                        startActivity(new Intent(MainActivity.this, GoLiveActivity.class));
                     }
                 });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
@@ -3195,6 +3194,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public Snackbar getSnackbar(String message) {
         Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
         return snackbar;
+    }
+    public void showStreamStoppedMessage() {
+        View view = findViewById(R.id.content_main);
+        Snackbar snackbar = Snackbar.make(view, R.string.stream_stopped_went_to_home_reason, Snackbar.LENGTH_LONG);
+        TextView snackbarText = snackbar.getView().findViewById(R.id.snackbar_text);
+        snackbarText.setMaxLines(Integer.MAX_VALUE);
+        snackbar.show();
     }
     public void showError(String message) {
         Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
