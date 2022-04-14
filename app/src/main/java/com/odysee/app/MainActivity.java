@@ -4729,9 +4729,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     @Override
                     public void onClick(View view) {
                         // open the playlist fragment with the id
-                        Map<String, Object> params = new HashMap<>();
-                        params.put("collectionId", collection.getId());
-                        openFragment(PlaylistFragment.class, true, params);
+                        openPlaylistFragment(collection.getId());
                     }
                 });
         }
@@ -4752,6 +4750,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
         });
+    }
+
+    public void openPlaylistFragment(String playlistId) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("collectionId", playlistId);
+        openFragment(PlaylistFragment.class, true, params);
     }
 
     public void handleAddUrlToList(String url, String builtInId) {
@@ -4780,9 +4784,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                         @Override
                                         public void onClick(View view) {
                                             // open the playlist fragment with the id
-                                            Map<String, Object> params = new HashMap<>();
-                                            params.put("collectionId", builtInId);
-                                            openFragment(PlaylistFragment.class, true, params);
+                                            openPlaylistFragment(builtInId);
                                         }
                                     });
                         }

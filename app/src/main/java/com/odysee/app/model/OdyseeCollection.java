@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class OdyseeCollection {
+    public static final String PLACEHOLDER_ID_NEW = "__new";
     public static final String BUILT_IN_ID_FAVORITES = "favorites";
     public static final String BUILT_IN_ID_WATCHLATER = "watchlater";
 
@@ -22,6 +23,7 @@ public class OdyseeCollection {
 
     public static final String TYPE_PLAYLIST = "playlist";
 
+    private boolean newPlaceholder;
     private String id;
     private String name;
     private String type;
@@ -29,6 +31,10 @@ public class OdyseeCollection {
     private List<Claim> claims;
     private Date updatedAt;
     private int visibility;
+
+    // published playlist
+    private String claimId;
+    private String permanentUrl;
 
     public OdyseeCollection() {
         items = new ArrayList<>();
