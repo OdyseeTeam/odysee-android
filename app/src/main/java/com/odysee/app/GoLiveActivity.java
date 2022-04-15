@@ -1,8 +1,5 @@
 package com.odysee.app;
 
-import static android.os.Build.VERSION_CODES.M;
-
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -52,10 +49,8 @@ import com.haishinkit.rtmp.RtmpStream;
 import com.haishinkit.view.HkSurfaceView;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
 import com.odysee.app.exceptions.ApiCallException;
-import com.odysee.app.listener.CameraPermissionListener;
-import com.odysee.app.listener.FilePickerListener;
-import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.model.Claim;
+import com.odysee.app.supplier.ClaimListSupplier;
 import com.odysee.app.tasks.UploadImageTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
@@ -69,12 +64,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 public class GoLiveActivity extends AppCompatActivity {
     private final String RTMP_URL = "rtmp://stream.odysee.com/live";
@@ -112,7 +111,7 @@ public class GoLiveActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isDarkMode()) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         setContentView(R.layout.activity_go_live);
@@ -561,23 +560,53 @@ public class GoLiveActivity extends AppCompatActivity {
             return;
         }
 
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {
-            @Override
-            public void onSuccess(List<Claim> claims) {
-                Lbry.ownChannels = new ArrayList<>(claims);
-                updateChannelList(Lbry.ownChannels);
-            }
-
-            @Override
-            public void onError(Exception error) {
-                if (error != null) {
-                    showError(error.getMessage());
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            Supplier<List<Claim>> s = new ClaimListSupplier(Collections.singletonList(Claim.TYPE_CHANNEL), null);
+            CompletableFuture<List<Claim>> cf = CompletableFuture.supplyAsync(s);
+            cf.whenComplete((result, e) -> {
+                if (e != null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Throwable t = e.getCause();
+                            if (t != null) {
+                                showError(t.getMessage());
+                            }
+                            progress.setVisibility(View.GONE);
+                            showPrecheckError(getString(R.string.precheck_error_loading_channels));
+                        }
+                    });
                 }
-                progress.setVisibility(View.GONE);
-                showPrecheckError(getString(R.string.precheck_error_loading_channels));
-            }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                if (result != null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Lbry.ownChannels = new ArrayList<>(result);
+                            updateChannelList(Lbry.ownChannels);
+                        }
+                    });
+                }
+            });
+        } else {
+            ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, new ClaimListResultHandler() {
+                @Override
+                public void onSuccess(List<Claim> claims) {
+                    Lbry.ownChannels = new ArrayList<>(claims);
+                    updateChannelList(Lbry.ownChannels);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    if (error != null) {
+                        showError(error.getMessage());
+                    }
+                    progress.setVisibility(View.GONE);
+                    showPrecheckError(getString(R.string.precheck_error_loading_channels));
+                }
+            });
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
     }
 
     private String createStreamKey(String signature, String signingTs) {
