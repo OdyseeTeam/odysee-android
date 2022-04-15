@@ -462,7 +462,7 @@ public class GoLiveActivity extends AppCompatActivity {
 
                     AccountManager am = AccountManager.get(getApplicationContext());
                     String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-                    JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall("txo_list", options, authToken);
+                    JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_TXO_LIST, options, authToken);
                     JSONObject item = result.getJSONArray("items").getJSONObject(0);
                     int confirmations  = item.getInt("confirmations");
                     if (confirmations > 0) {
