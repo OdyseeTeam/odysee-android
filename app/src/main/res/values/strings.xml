@@ -623,6 +623,7 @@
     <string name="precheck_please_wait">Please wait while we check a few things. If this is your first time, this may take a couple of minutes…</string>
     <string name="precheck_need_channel">You need to create a channel before you can livestream.</string>
     <string name="precheck_error_loading_channels">An error occurred loading your channels. Please try again later.</string>
+    <string name="precheck_wait_confirmation">Please wait, your livestream claim is pending confirmation.</string>
     <string name="select_channel">Please select a channel</string>
     <string name="channel_error_pending">Your channel is still pending. Please wait a couple of minutes and try again.</string>
     <string name="channel_error_need_minimum_credits">You need to have at least %1$,.2f credits staked (directly or through supports) on %2$s to be able to livestream.</string>

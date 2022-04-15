@@ -72,7 +72,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public class GoLiveActivity extends AppCompatActivity {
@@ -99,6 +100,7 @@ public class GoLiveActivity extends AppCompatActivity {
     private RtmpStream stream;
     private Camera2Source cameraSource;
     private BroadcastReceiver screenOnReceiver;
+    private ScheduledExecutorService waitForConfirmationScheduler;
 
     private boolean uploadingThumbnail;
     private String uploadedThumbnailUrl;
@@ -215,7 +217,8 @@ public class GoLiveActivity extends AppCompatActivity {
 
                 progress.setVisibility(View.VISIBLE);
                 livestreamOptionsView.setVisibility(View.GONE);
-                livestreamControlsView.setVisibility(View.VISIBLE);
+                textPrecheckStatus.setText(R.string.precheck_wait_confirmation);
+                livestreamPrecheckView.setVisibility(View.VISIBLE);
                 publishLivestreamClaim();
             }
         });
@@ -276,7 +279,9 @@ public class GoLiveActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         connection.dispose();
-        this.unregisterReceiver(screenOnReceiver);
+        if (screenOnReceiver != null) {
+            unregisterReceiver(screenOnReceiver);
+        }
     }
 
     @Override
@@ -442,6 +447,46 @@ public class GoLiveActivity extends AppCompatActivity {
         executor.shutdown();
     }
 
+    // Poll every 30s waiting for claim to be confirmed before streaming
+    private void waitForConfirmation(String txid) {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        waitForConfirmationScheduler = Executors.newSingleThreadScheduledExecutor();
+        waitForConfirmationScheduler.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Map<String, Object> options = new HashMap<>(2);
+                    options.put("type", Claim.TYPE_STREAM);
+                    options.put("txid", txid);
+
+                    AccountManager am = AccountManager.get(getApplicationContext());
+                    String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+                    JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall("txo_list", options, authToken);
+                    JSONObject item = result.getJSONArray("items").getJSONObject(0);
+                    int confirmations  = item.getInt("confirmations");
+                    if (confirmations > 0) {
+                        signAndSetupStream();
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                progress.setVisibility(View.GONE);
+                                livestreamPrecheckView.setVisibility(View.GONE);
+                                livestreamControlsView.setVisibility(View.VISIBLE);
+                            }
+                        });
+
+                        waitForConfirmationScheduler.shutdownNow();
+                    }
+                } catch (ApiCallException | JSONException ex) {
+                    // Do nothing, will retry in 30s
+                    showError(ex.getMessage());
+                }
+            }
+        }, 0, 30, TimeUnit.SECONDS);
+    }
+
     private Claim buildLivestreamClaim() {
         Claim claim = new Claim();
 
@@ -480,15 +525,12 @@ public class GoLiveActivity extends AppCompatActivity {
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
         PublishClaimTask task = new PublishClaimTask(claim, "", null, authToken, new ClaimResultHandler() {
             @Override
-            public void beforeStart() {
-                buttonToggleStreaming.setEnabled(false);
-            }
+            public void beforeStart() { }
 
             @Override
             public void onSuccess(Claim claimResult) {
-                signAndSetupStream();
-                progress.setVisibility(View.GONE);
-                buttonToggleStreaming.setEnabled(true);
+                String txid = claimResult.getTxid();
+                waitForConfirmation(txid);
             }
 
             @Override
