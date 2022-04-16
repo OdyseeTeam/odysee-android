@@ -3268,7 +3268,11 @@ public class FileViewFragment extends BaseFragment implements
                             public int compare(Comment o1, Comment o2) {
                                 int o1SelfLiked = (Lbryio.isSignedIn() &&  o1.getReactions() != null && o1.getReactions().isLiked()) ? 1 : 0;
                                 int o2SelfLiked = (Lbryio.isSignedIn() && o2.getReactions() != null && o2.getReactions().isLiked()) ? 1 : 0;
-                                return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
+
+                                int o1OtherLikes = o1.getReactions() != null ? o1.getReactions().getOthersLikes() : 0;
+                                int o2OtherLikes = o2.getReactions() != null ? o2.getReactions().getOthersLikes() : 0;
+
+                                return (o2OtherLikes + o2SelfLiked) - (o1OtherLikes + o1SelfLiked);
                             }
                         });
                     }
