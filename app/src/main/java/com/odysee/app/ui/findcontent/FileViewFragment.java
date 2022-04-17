@@ -3016,6 +3016,12 @@ public class FileViewFragment extends BaseFragment implements
         updatePlaylistContentDisplay(index);
         collectionClaimItem = theClaim;
         renderClaim();
+
+        // Save to view history, when playing from a collection
+        if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(theClaim.getType())) {
+            Helper.saveViewHistory(theClaim.getPermanentUrl(), theClaim);
+        }
+
         checkAndLoadComments(true);
     }
 
