@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class OdyseeCollection {
+    public static final String PLACEHOLDER_ID_NEW = "__new";
     public static final String BUILT_IN_ID_FAVORITES = "favorites";
     public static final String BUILT_IN_ID_WATCHLATER = "watchlater";
 
@@ -22,6 +23,7 @@ public class OdyseeCollection {
 
     public static final String TYPE_PLAYLIST = "playlist";
 
+    private boolean newPlaceholder;
     private String id;
     private String name;
     private String type;
@@ -29,6 +31,10 @@ public class OdyseeCollection {
     private List<Claim> claims;
     private Date updatedAt;
     private int visibility;
+
+    // published playlist
+    private String claimId;
+    private String permanentUrl;
 
     public OdyseeCollection() {
         items = new ArrayList<>();
@@ -81,6 +87,20 @@ public class OdyseeCollection {
         collection.setType(Helper.getJSONString("type", null, jsonObject));
         collection.setUpdatedAt(new Date(Helper.getJSONLong("updatedAt", now, jsonObject) * 1000));
         collection.setVisibility(visibility);
+
+        return collection;
+    }
+
+    public static  OdyseeCollection fromClaim(Claim claim, List<String> items) {
+        OdyseeCollection collection = new OdyseeCollection();
+        collection.setId(claim.getClaimId());
+        collection.setClaimId(claim.getClaimId());
+        collection.setPermanentUrl(claim.getPermanentUrl());
+        collection.setItems(new ArrayList<>(items));
+        collection.setName(claim.getTitle());
+        collection.setType(OdyseeCollection.TYPE_PLAYLIST);
+        collection.setUpdatedAt(new Date(claim.getTimestamp() * 1000));
+        collection.setVisibility(OdyseeCollection.VISIBILITY_PUBLIC);  // claims are published, so public
 
         return collection;
     }

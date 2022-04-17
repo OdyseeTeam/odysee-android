@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -54,6 +55,7 @@ public class PlaylistFragment extends BaseFragment implements
 
     private TextView textTitle;
     private TextView textVideoCount;
+    private ImageView visibilityIcon;
     private OdyseeCollection currentCollection;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -63,6 +65,7 @@ public class PlaylistFragment extends BaseFragment implements
         textTitle = root.findViewById(R.id.playlist_title);
         textVideoCount = root.findViewById(R.id.playlist_video_count);
         playlistItemsLoading = root.findViewById(R.id.playlist_items_loading);
+        visibilityIcon = root.findViewById(R.id.playlist_icon);
 
         playlistList = root.findViewById(R.id.playlist_items);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -74,7 +77,10 @@ public class PlaylistFragment extends BaseFragment implements
             public void onClick(View view) {
                 Context context = getContext();
                 if (currentCollection != null && context instanceof MainActivity) {
-                    ((MainActivity) context).openPrivatePlaylist(currentCollection);
+                    MainActivity activity = (MainActivity) context;
+                    // openPrivatePlaylist also works for public (published) collections, because we've already  loaded and resolved
+                    // so we use it, because it's faster, instead of  having to re-resolve
+                    activity.openPrivatePlaylist(currentCollection);
                 }
             }
         });
@@ -90,33 +96,46 @@ public class PlaylistFragment extends BaseFragment implements
         }
 
         final String collectionId = collectionIdParam;
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
+        if (Lbry.isOwnedCollection(collectionId)) {
+            // Check if it's edited and return the updated one, otherwise, just get what we have
 
-            Executors.newSingleThreadExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
-                        OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
+            OdyseeCollection collection = Lbry.getOwnCollectionById(collectionId);
+            if (collection != null) {
+                onPlaylistLoaded(collection);
+            }
+        } else {
+            Context context = getContext();
+            if (context instanceof MainActivity) {
+                MainActivity activity = (MainActivity) context;
 
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onPlaylistLoaded(collection);
-                            }
-                        });
-                    } catch (SQLiteException ex) {
-                        activity.showError(getString(R.string.could_not_load_playlist));
+                Executors.newSingleThreadExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
+                            OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
+
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    onPlaylistLoaded(collection);
+                                }
+                            });
+                        } catch (SQLiteException ex) {
+                            activity.showError(getString(R.string.could_not_load_playlist));
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }
 
     private void onPlaylistLoaded(OdyseeCollection collection) {
         currentCollection = collection;
+        if (visibilityIcon != null) {
+            visibilityIcon.setImageResource(collection.getVisibility() == OdyseeCollection.VISIBILITY_PRIVATE ?
+                    R.drawable.ic_private : R.drawable.ic_public);
+        }
         Helper.setViewText(textTitle, collection.getName());
         Helper.setViewText(textVideoCount, getResources().getQuantityString(R.plurals.video_count, collection.getItems().size(), collection.getItems().size()));
 

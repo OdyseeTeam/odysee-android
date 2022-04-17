@@ -44,6 +44,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public static final int STYLE_BIG_LIST = 1;
     public static final int STYLE_SMALL_LIST = 2;
+    public static final int STYLE_SMALL_LIST_HORIZONTAL = 3;
 
     private float scale;
 
@@ -88,7 +89,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
-        this.scale = context.getResources().getDisplayMetrics().density;
+        if (context != null) {
+            this.scale = context.getResources().getDisplayMetrics().density;
+        }
         this.items = new ArrayList<>();
         this.style = style;
         for (Claim item : items) {
@@ -443,7 +446,13 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         switch (viewType) {
             case VIEW_TYPE_FEATURED: viewResourceId = R.layout.list_item_featured_search_result; break;
             case VIEW_TYPE_CHANNEL: viewResourceId = R.layout.list_item_channel; break;
-            case VIEW_TYPE_STREAM: default: viewResourceId = style == STYLE_BIG_LIST ? R.layout.list_item_stream : R.layout.list_item_small_stream; break;
+            case VIEW_TYPE_STREAM:
+                default:
+                    switch (style) {
+                        case STYLE_BIG_LIST: default: viewResourceId = R.layout.list_item_stream; break;
+                        case STYLE_SMALL_LIST: viewResourceId = R.layout.list_item_small_stream; break;
+                        case STYLE_SMALL_LIST_HORIZONTAL: viewResourceId = R.layout.list_item_small_stream_horizontal; break;
+                    }
         }
 
         View v = LayoutInflater.from(context).inflate(viewResourceId, parent, false);
@@ -469,6 +478,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
             int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
             vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
+        } else if (style == STYLE_SMALL_LIST_HORIZONTAL) {
+            int paddingStart = position == 0 ? 16 : 8;
+            int paddingEnd = position == getItemCount() - 1 ? 16 : 8;
+            int paddingStartScaled = Helper.getScaledValue(paddingStart, scale);
+            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);
+            vh.itemView.setPadding(paddingStartScaled, vh.itemView.getPaddingTop(), paddingEndScaled, vh.itemView.getPaddingBottom());
         }
 
         Claim original = items.get(position);
@@ -549,7 +564,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             }
         });
 
-        vh.publishTimeView.setVisibility(!isPending ? View.VISIBLE : View.GONE);
+        vh.publishTimeView.setVisibility(!isPending && style != STYLE_SMALL_LIST_HORIZONTAL ? View.VISIBLE : View.GONE);
         vh.pendingTextView.setVisibility(isPending && !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         vh.repostInfoView.setVisibility(isRepost && type != VIEW_TYPE_FEATURED ? View.VISIBLE : View.GONE);
         vh.repostChannelView.setText(isRepost && original.getSigningChannel() != null ? original.getSigningChannel().getName() : null);
@@ -588,7 +603,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         Helper.setViewVisibility(vh.loadingTextPlaceholder2, item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(vh.titleView, !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(vh.publisherView, !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(vh.publishTimeView, !item.isLoadingPlaceholder() && !isPending ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(vh.publishTimeView, !item.isLoadingPlaceholder() && !isPending && style != STYLE_SMALL_LIST_HORIZONTAL ? View.VISIBLE : View.GONE);
 
         if (type == VIEW_TYPE_FEATURED && item.isUnresolved()) {
             vh.durationView.setVisibility(View.GONE);
@@ -658,9 +673,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         Helper.setViewText(vh.deviceView, item.getDevice());
 
                         lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
                         vh.itemView.setLayoutParams(lp);
                         vh.itemView.setVisibility(View.VISIBLE);
+                        if (style != STYLE_SMALL_LIST_HORIZONTAL) {
+                            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        }
                     }
                 } else {
                     vh.itemView.setVisibility(View.GONE);

@@ -23,8 +23,13 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.CollectionListAdapter;
 import com.odysee.app.data.DatabaseHelper;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Lbry;
+import com.odysee.app.utils.Lbryio;
+
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,9 +103,16 @@ public class AddToListsDialogFragment extends BottomSheetDialogFragment {
                 public void run() {
                     SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
                     List<OdyseeCollection> privateCollections = DatabaseHelper.getSimpleCollections(db);
+                    List<OdyseeCollection> publicCollections = new ArrayList<>();
+                    try {
+                         publicCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
+                    }  catch  (ApiCallException | JSONException ex) {
+                        // pass
+                    }
 
                     // Also need to load published / public lists at this point
                     List<OdyseeCollection> collections = new ArrayList<>(privateCollections);
+                    collections.addAll(publicCollections);
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {

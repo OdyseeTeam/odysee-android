@@ -4,12 +4,11 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.checkbox.MaterialCheckBox;
 import com.odysee.app.R;
 import com.odysee.app.model.OdyseeCollection;
 
@@ -18,14 +17,14 @@ import java.util.List;
 
 import lombok.Setter;
 
-public class CollectionListAdapter extends RecyclerView.Adapter<CollectionListAdapter.ViewHolder> {
+public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<PlaylistCollectionListAdapter.ViewHolder> {
     private final Context context;
     private List<OdyseeCollection> items;
 
     @Setter
-    private CollectionListItemCheckChangedListener listener;
+    private ClickListener listener;
 
-    public CollectionListAdapter(List<OdyseeCollection> collections, Context context) {
+    public PlaylistCollectionListAdapter(List<OdyseeCollection> collections, Context context) {
         this.context = context;
         this.items = new ArrayList<>(collections);
     }
@@ -44,13 +43,13 @@ public class CollectionListAdapter extends RecyclerView.Adapter<CollectionListAd
     }
 
     @Override
-    public CollectionListAdapter.ViewHolder onCreateViewHolder(ViewGroup root, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.list_item_playlist_edit, root, false);
-        return new CollectionListAdapter.ViewHolder(v);
+    public PlaylistCollectionListAdapter.ViewHolder onCreateViewHolder(ViewGroup root, int viewType) {
+        View v = LayoutInflater.from(context).inflate(R.layout.list_item_playlist, root, false);
+        return new PlaylistCollectionListAdapter.ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(CollectionListAdapter.ViewHolder vh, int position) {
+    public void onBindViewHolder(PlaylistCollectionListAdapter.ViewHolder vh, int position) {
         final OdyseeCollection item = items.get(position);
 
         if (OdyseeCollection.BUILT_IN_ID_WATCHLATER.equalsIgnoreCase(item.getId())) {
@@ -63,29 +62,45 @@ public class CollectionListAdapter extends RecyclerView.Adapter<CollectionListAd
             vh.iconView.setImageResource(R.drawable.ic_private);
         }
 
-        vh.checkBox.setText(item.getName());
-        vh.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        vh.titleView.setText(item.getName());
+
+        int videoCount = item.getItems().size();
+        vh.videoCountView.setText(context.getResources().getQuantityString(R.plurals.video_count, videoCount, videoCount));
+
+        if (item.isNewPlaceholder()) {
+            //vh.thumbnailView.setImageResource(R.drawable.ic_add);
+        } else {
+            // TODO: Load the thumbnail of the first item in the collection (or use a placeholder image?)
+            //vh.thumbnailView.setImageDrawable(null);
+        }
+
+        vh.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
+            public void onClick(View view) {
                 if (listener != null) {
-                    listener.onCheckedChanged(item, checked);
+                    listener.onClick(item, position);
                 }
             }
         });
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        protected final MaterialCheckBox checkBox;
+        protected final ImageView thumbnailView;
         protected final ImageView iconView;
+        protected final TextView titleView;
+        protected final TextView videoCountView;
 
         public ViewHolder(View v) {
             super(v);
-            checkBox = v.findViewById(R.id.playlist_item_checkbox);
+            thumbnailView = v.findViewById(R.id.playlist_item_thumbnail);
             iconView = v.findViewById(R.id.playlist_item_icon);
+            titleView = v.findViewById(R.id.playlist_item_title);
+            videoCountView = v.findViewById(R.id.playlist_item_video_count);
         }
     }
 
-    public interface CollectionListItemCheckChangedListener {
-        void onCheckedChanged(OdyseeCollection collection, boolean checked);
+    public interface ClickListener {
+        void onClick(OdyseeCollection collection, int position);
     }
 }
+
