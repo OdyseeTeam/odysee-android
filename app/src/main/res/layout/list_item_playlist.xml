@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
     android:orientation="horizontal"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
@@ -11,10 +12,12 @@
 
     <ImageView
         android:id="@+id/playlist_item_thumbnail"
+        android:background="@color/lightGrey"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:layout_centerVertical="true"
         android:scaleType="centerCrop"
-        android:layout_centerVertical="true" />
+        android:src="@drawable/spaceman" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"

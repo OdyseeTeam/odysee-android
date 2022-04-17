@@ -21,15 +21,15 @@
             android:fontFamily="@font/inter"
             android:textSize="18sp"
             style="@style/TextView_SemiBold" />
+
         <ImageView
             android:id="@+id/playlist_icon"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_toEndOf="@id/playlist_title"
-            android:layout_marginStart="8dp"
             android:layout_centerVertical="true"
-            android:src="@drawable/ic_private"
-            />
+            android:layout_marginStart="8dp"
+            android:layout_toEndOf="@id/playlist_title"
+            android:src="@drawable/ic_private" />
     </RelativeLayout>
 
     <androidx.appcompat.widget.LinearLayoutCompat

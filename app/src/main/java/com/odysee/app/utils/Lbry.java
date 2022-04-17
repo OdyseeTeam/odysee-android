@@ -30,6 +30,7 @@ import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.ClaimSearchCacheValue;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
@@ -48,6 +49,7 @@ public final class Lbry {
     public static List<Claim> ownClaims = new ArrayList<>();
     public static List<Claim> ownChannels = new ArrayList<>(); // Make this a subset of ownClaims?
     public static List<String> abandonedClaimIds = new ArrayList<>();
+    public static List<OdyseeCollection> ownCollections = new ArrayList<>();
 
     public static final int TTL_CLAIM_SEARCH_VALUE = 120000; // 2-minute TTL for cache
     public static final String API_CONNECTION_STRING = "https://api.na-backend.odysee.com/api/v1/proxy";
@@ -651,6 +653,74 @@ public final class Lbry {
                 claimCache.get(key).setFile(null);
             }
         }
+    }
+
+    public static List<OdyseeCollection> loadOwnCollections(String authToken) throws  ApiCallException, JSONException  {
+        Map<String, Object> options = new HashMap<>();
+        options.put("claim_type", Collections.singletonList("collection"));
+        options.put("page", 1);
+        options.put("page_size", 999);
+        options.put("resolve", true);
+
+        JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_CLAIM_LIST, options, authToken);
+        JSONArray items = result.getJSONArray("items");
+        if (items.length() == ownCollections.size()) {
+            // do a very shallow comparison, so that we  don't have to do a long load process every time
+            return ownCollections;
+        }
+
+        List<OdyseeCollection> collections = new ArrayList<>();
+        for (int i = 0; i < items.length(); i++) {
+            Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
+
+            //  for each claim, we need to claim_search the "claims" in values
+            //  not very efficient, would've been nicer to have claim urls instead of just IDs
+            if (!Helper.isNullOrEmpty(claim.getClaimId())) {
+                Map<String, Object> opt = Lbry.buildClaimSearchOptions(
+                        null,
+                        null,
+                        null,
+                        new ArrayList<>(claim.getClaimIds()),
+                        null,
+                        null,
+                        null,
+                        null,
+                        0,
+                        0,
+                        1,
+                        999
+                );
+                List<Claim> claimsInCollection = Lbry.claimSearch(opt, API_CONNECTION_STRING);
+                List<String> claimUrls = new ArrayList<>();
+                for (Claim collectionClaim : claimsInCollection) {
+                    claimUrls.add(collectionClaim.getPermanentUrl());
+                }
+
+                OdyseeCollection actualCollection = OdyseeCollection.fromClaim(claim,  claimUrls);
+                collections.add(actualCollection);
+            }
+        }
+
+        ownCollections = new ArrayList<>(collections);
+
+        return collections;
+    }
+
+    public static boolean isOwnedCollection(String id) {
+        for (OdyseeCollection collection : ownCollections) {
+            if (id.equalsIgnoreCase(collection.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public static OdyseeCollection getOwnCollectionById(String id) {
+        for (OdyseeCollection collection : ownCollections) {
+            if (id.equalsIgnoreCase(collection.getId())) {
+                return collection;
+            }
+        }
+        return null;
     }
 
     public static String generateId() {

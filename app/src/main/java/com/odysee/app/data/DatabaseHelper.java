@@ -206,6 +206,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_GET_EXISTING_COLLECTION_ITEM_COUNT = "SELECT COUNT(url) FROM collection_items WHERE collection_id = ? AND url = ?";
     private static final String SQL_GET_MAX_ITEM_ORDER_FOR_COLLECTION = "SELECT MAX(item_order) FROM collection_items WHERE collection_id = ?";
     private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, visibility, updated_at FROM collections WHERE id = ?";
+    private static final String SQL_DELETE_COLLECTION_BY_ID = "DELETE FROM collections WHERE id = ?";
     private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, visibility, updated_at FROM collections";
     private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
 
@@ -639,6 +640,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 });
             }
 
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    public static void deleteCollection(OdyseeCollection collection, SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION, new Object[] { collection.getId() });
+            db.execSQL(SQL_DELETE_COLLECTION_BY_ID, new Object[] { collection.getId() });
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();

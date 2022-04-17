@@ -30,6 +30,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import com.odysee.app.adapter.CollectionListAdapter;
 import com.odysee.app.adapter.PlaylistCollectionListAdapter;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.runnable.DeleteViewHistoryItem;
 import org.json.JSONException;
@@ -66,6 +67,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 
 public class LibraryFragment extends BaseFragment implements
         ActionMode.Callback, DownloadActionListener, SelectionModeListener {
@@ -91,6 +93,7 @@ public class LibraryFragment extends BaseFragment implements
     private boolean listReachedEnd;
     private boolean contentListLoading;
     private boolean initialOwnClaimsFetched;
+    private TextView textNoHistory;
 
     private CardView cardStats;
     private TextView linkStats;
@@ -123,6 +126,7 @@ public class LibraryFragment extends BaseFragment implements
     private View historyLinkView;
     private View favoritesLinkView;
     private View watchLaterLinkView;
+    private ProgressBar playlistsLoading;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -229,6 +233,7 @@ public class LibraryFragment extends BaseFragment implements
         LinearLayoutManager playlistsLLM = new LinearLayoutManager(getContext());
         playlistsList = root.findViewById(R.id.library_playlists_list);
         playlistsList.setLayoutManager(playlistsLLM);
+        playlistsLoading = root.findViewById(R.id.library_playlists_loading);
 
         historyLinkView = root.findViewById(R.id.library_item_history);
         favoritesLinkView = root.findViewById(R.id.library_item_favorites);
@@ -272,7 +277,7 @@ public class LibraryFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Library", "Library");
-            activity.addDownloadActionListener(this);
+            //activity.addDownloadActionListener(this);
         }
 
         // renderFilter(); // Show tab according to selected filter
@@ -281,7 +286,7 @@ public class LibraryFragment extends BaseFragment implements
     }
 
     private void loadPlaylists() {
-
+        Helper.setViewVisibility(playlistsLoading, View.VISIBLE);
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
@@ -298,6 +303,12 @@ public class LibraryFragment extends BaseFragment implements
 
                     // Also need to load published / public lists at this point
                     List<OdyseeCollection> collections = new ArrayList<>(privateCollections);
+                    try {
+                        List<OdyseeCollection> publicCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
+                        collections.addAll(publicCollections);
+                    } catch (ApiCallException | JSONException ex) {
+                        // pass
+                    }
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
@@ -322,19 +333,14 @@ public class LibraryFragment extends BaseFragment implements
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     MainActivity activity = (MainActivity) context;
-                    if (Helper.isNullOrEmpty(collection.getPermanentUrl()) && collection.getItems().size() > 0) {
-                        activity.openPrivatePlaylist(collection);
-                    } else if (!Helper.isNullOrEmpty(collection.getPermanentUrl())) {
-                        //activity.openFileClaim();
-                    } else {
-                        activity.openPlaylistFragment(collection.getId());
-                    }
+                    activity.openPlaylistFragment(collection.getId());
                 }
             }
         });
         if (playlistsList != null) {
             playlistsList.setAdapter(adapter);
         }
+        Helper.setViewVisibility(playlistsLoading, View.INVISIBLE);
     }
 
     public void onPause() {
@@ -444,11 +450,6 @@ public class LibraryFragment extends BaseFragment implements
     private void showRecent() {
         if (actionMode != null) {
             actionMode.finish();
-        }
-        if (contentListAdapter != null) {
-            contentListAdapter.setHideFee(false);
-            contentListAdapter.clearItems();
-            contentListAdapter.setCanEnterSelectionMode(true);
         }
         listReachedEnd = false;
 
@@ -627,13 +628,9 @@ public class LibraryFragment extends BaseFragment implements
     }
 
     private void checkListEmpty() {
-        layoutListEmpty.setVisibility(contentListAdapter == null || contentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-
-        MainActivity a = (MainActivity) getActivity();
-        if (a != null) {
-            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
-        }
-        textListEmpty.setText(R.string.library_no_history);
+        boolean hasRecent = contentListAdapter != null && contentListAdapter.getItemCount() > 0;
+        Helper.setViewVisibility(recentList, hasRecent ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(textNoHistory, !hasRecent ? View.VISIBLE : View.GONE);
     }
 
     @MainThread

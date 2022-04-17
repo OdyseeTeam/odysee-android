@@ -68,10 +68,10 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
         vh.videoCountView.setText(context.getResources().getQuantityString(R.plurals.video_count, videoCount, videoCount));
 
         if (item.isNewPlaceholder()) {
-            vh.thumbnailView.setImageResource(R.drawable.ic_add);
+            //vh.thumbnailView.setImageResource(R.drawable.ic_add);
         } else {
             // TODO: Load the thumbnail of the first item in the collection (or use a placeholder image?)
-            vh.thumbnailView.setImageDrawable(null);
+            //vh.thumbnailView.setImageDrawable(null);
         }
 
         vh.itemView.setOnClickListener(new View.OnClickListener() {

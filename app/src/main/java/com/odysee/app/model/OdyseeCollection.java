@@ -91,6 +91,20 @@ public class OdyseeCollection {
         return collection;
     }
 
+    public static  OdyseeCollection fromClaim(Claim claim, List<String> items) {
+        OdyseeCollection collection = new OdyseeCollection();
+        collection.setId(claim.getClaimId());
+        collection.setClaimId(claim.getClaimId());
+        collection.setPermanentUrl(claim.getPermanentUrl());
+        collection.setItems(new ArrayList<>(items));
+        collection.setName(claim.getTitle());
+        collection.setType(OdyseeCollection.TYPE_PLAYLIST);
+        collection.setUpdatedAt(new Date(claim.getTimestamp() * 1000));
+        collection.setVisibility(OdyseeCollection.VISIBILITY_PUBLIC);  // claims are published, so public
+
+        return collection;
+    }
+
     public static OdyseeCollection createPrivatePlaylist(String title) {
         OdyseeCollection collection = new OdyseeCollection();
         collection.setName(title);
