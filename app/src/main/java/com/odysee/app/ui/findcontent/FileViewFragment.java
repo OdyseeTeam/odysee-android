@@ -603,8 +603,10 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                // TODO: Determine if we should save the playlist in the view history? Or save the first claim?
-                Helper.saveViewHistory(currentUrl, fileClaim);
+                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(actualClaim.getType())) {
+                    // We don't want to save actual collections to the view history
+                    Helper.saveViewHistory(currentUrl, actualClaim);
+                }
 
                 if (Helper.isClaimBlocked(actualClaim)) {
                     renderClaimBlocked();
@@ -1096,8 +1098,11 @@ public class FileViewFragment extends BaseFragment implements
 
                     Helper.saveUrlHistory(url, fileClaim.getTitle(), UrlSuggestion.TYPE_FILE);
 
-                    // also save view history
-                    Helper.saveViewHistory(url, fileClaim);
+                    // do not save collections to view history
+                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getType())) {
+                        // also save view history
+                        Helper.saveViewHistory(url, fileClaim);
+                    }
 
                     checkAndResetNowPlayingClaim();
 
