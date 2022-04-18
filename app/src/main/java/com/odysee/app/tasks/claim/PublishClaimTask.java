@@ -24,16 +24,16 @@ public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
     private final Claim claim;
     private final String filePath;
     private final View progressView;
+    private String authToken;
     private final ClaimResultHandler handler;
     private Exception error;
-    private String authToken;
 
     public PublishClaimTask(Claim claim, String filePath, View progressView, String authToken, ClaimResultHandler handler) {
         this.claim = claim;
         this.filePath = filePath;
         this.progressView = progressView;
-        this.handler = handler;
         this.authToken = authToken;
+        this.handler = handler;
     }
     protected void onPreExecute() {
         Helper.setViewVisibility(progressView, View.VISIBLE);
