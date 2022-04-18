@@ -427,7 +427,7 @@ public class PublishFormFragment extends BaseFragment implements
                     showError(error);
                     return;
                 }
-                if (Lbry.walletBalance == null || Lbry.walletBalance.getAvailable().doubleValue() < depositAmount) {
+                if (Lbry.getAvailableBalance() < depositAmount) {
                     showError(getString(R.string.deposit_more_than_balance));
                     return;
                 }

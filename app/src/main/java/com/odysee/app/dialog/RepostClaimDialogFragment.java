@@ -146,6 +146,7 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
         return view;
     }
 
+    @Override
     public void onResume() {
         super.onResume();
         Context context = getContext();
@@ -155,6 +156,7 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
         fetchChannels();
     }
 
+    @Override
     public void onPause() {
         Context context = getContext();
         if (context instanceof MainActivity) {
@@ -230,7 +232,7 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
         }
 
         BigDecimal bid = new BigDecimal(depositString);
-        if (bid.doubleValue() > Lbry.walletBalance.getAvailable().doubleValue()) {
+        if (bid.doubleValue() > Lbry.getAvailableBalance()) {
             showError(getString(R.string.insufficient_balance));
             return;
         }

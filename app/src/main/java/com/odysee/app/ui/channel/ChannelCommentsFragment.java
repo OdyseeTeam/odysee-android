@@ -10,7 +10,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -101,7 +100,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
         commentEnabledCheck = new CommentEnabledCheck();
     }
 
-
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_channel_comments, container, false);
@@ -140,6 +139,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
         commentsNestedLayout.setVisibility(View.GONE);
     }
 
+    @Override
     public void onResume() {
         super.onResume();
 
@@ -148,6 +148,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
         applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
+    @Override
     public void onStop() {
         super.onStop();
     }
@@ -715,7 +716,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
                     showError(error);
                     return;
                 }
-                if (Lbry.walletBalance == null || Lbry.walletBalance.getAvailable().doubleValue() < depositAmount) {
+                if (Lbry.walletBalance == null || Lbry.getAvailableBalance() < depositAmount) {
                     showError(getString(R.string.deposit_more_than_balance));
                     return;
                 }
@@ -770,6 +771,6 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
             }
         });
 
-        Helper.setViewText(inlineBalanceValue, Helper.shortCurrencyFormat(Lbry.walletBalance.getAvailable().doubleValue()));
+        Helper.setViewText(inlineBalanceValue, Helper.shortCurrencyFormat(Lbry.getAvailableBalance()));
     }
 }
