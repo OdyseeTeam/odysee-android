@@ -24,7 +24,7 @@ public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
     private final Claim claim;
     private final String filePath;
     private final View progressView;
-    private String authToken;
+    private final String authToken;
     private final ClaimResultHandler handler;
     private Exception error;
 
