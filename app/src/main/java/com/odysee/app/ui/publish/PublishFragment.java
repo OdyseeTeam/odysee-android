@@ -122,30 +122,30 @@ public class PublishFragment extends BaseFragment implements
     }
 
     private void displayPreviewWithCameraX() {
-        Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
-            cameraProviderFuture = ProcessCameraProvider.getInstance(context);
-            cameraProviderFuture.addListener(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                        if (cameraProvider != null) {
-                            Preview preview = new Preview.Builder().build();
-                            CameraSelector cameraSelector = new CameraSelector.Builder()
-                                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                                    .build();
-
-                            Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
-                            preview.setSurfaceProvider(cameraPreview.createSurfaceProvider(camera.getCameraInfo()));
-                            cameraPreviewInitialized = true;
-                        }
-                    } catch (ExecutionException | IllegalArgumentException | InterruptedException ex) {
-                        // pass
-                    }
-                }
-            }, ContextCompat.getMainExecutor(context));
-        }
+//        Context context = getContext();
+//        if (MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
+//            cameraProviderFuture = ProcessCameraProvider.getInstance(context);
+//            cameraProviderFuture.addListener(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+//                        if (cameraProvider != null) {
+//                            Preview preview = new Preview.Builder().build();
+//                            CameraSelector cameraSelector = new CameraSelector.Builder()
+//                                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+//                                    .build();
+//
+//                            Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
+//                            preview.setSurfaceProvider(cameraPreview.createSurfaceProvider(camera.getCameraInfo()));
+//                            cameraPreviewInitialized = true;
+//                        }
+//                    } catch (ExecutionException | IllegalArgumentException | InterruptedException ex) {
+//                        // pass
+//                    }
+//                }
+//            }, ContextCompat.getMainExecutor(context));
+//        }
     }
 
     private void checkCameraPermissionAndRecord() {
@@ -292,7 +292,7 @@ public class PublishFragment extends BaseFragment implements
                                     Map<String, Object> params = new HashMap<>();
                                     params.put("galleryItem", item);
                                     params.put("suggestedUrl", getSuggestedPublishUrl());
-//                                    ((MainActivity) context).openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+                                    ((MainActivity) context).openFragment(PublishFormFragment.class, true, params);
                                 }
                             }
                         });
@@ -415,7 +415,7 @@ public class PublishFragment extends BaseFragment implements
             Map<String, Object> params = new HashMap<>();
             params.put("directFilePath", filePath);
             params.put("suggestedUrl", getSuggestedPublishUrl());
-//            ((MainActivity) context).openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+            ((MainActivity) context).openFragment(PublishFormFragment.class, true, params);
         }
     }
 

@@ -119,6 +119,8 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bitcoinj:bitcoinj-tools:0.14.7'
     implementation 'org.java-websocket:Java-WebSocket:1.5.1'
+    implementation 'io.tus.java.client:tus-java-client:0.4.5'
+    implementation 'io.tus.android.client:tus-android-client:0.1.10'
 
     implementation 'com.github.ktprograms.HaishinKit~kt:haishinkit:8943375956'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1'

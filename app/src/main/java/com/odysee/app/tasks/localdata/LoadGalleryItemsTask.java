@@ -54,7 +54,8 @@ public class LoadGalleryItemsTask extends AsyncTask<Void, GalleryItem, List<Gall
                 cursor = resolver.query(
                         MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                         projection, null, null,
-                        String.format("%s DESC LIMIT 150", MediaStore.MediaColumns.DATE_MODIFIED));
+                        // TODO: Re-add LIMIT 150
+                        String.format("%s DESC", MediaStore.MediaColumns.DATE_MODIFIED));
                 if (cursor != null) {
                     while (cursor.moveToNext()) {
                         int idColumn = cursor.getColumnIndex(MediaStore.MediaColumns._ID);
