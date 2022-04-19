@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,11 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
-import com.odysee.app.utils.Lbryio;
 
 /*
   version: '0.1',
@@ -100,6 +101,16 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             blockedChannelUrls.add(uri.toString());
         }
 
+        Map<String, OdyseeCollection> allCollections = null;
+        OdyseeCollection favoritesPlaylist = null;
+        OdyseeCollection watchlaterPlaylist = null;
+        if (db != null) {
+            allCollections = DatabaseHelper.loadAllCollections(db);
+            // get the built in collections
+            favoritesPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_FAVORITES);
+            watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+        }
+
         // Get the previous saved state
         try {
             boolean isExistingValid = false;
@@ -122,6 +133,56 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         // make sure blocked list was actually loaded from the local store before overwriting
                         value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
                     }
+
+                    // handle builtInCollections
+                    // check favorites last updated at, and compare
+                    JSONObject builtinCollections = Helper.getJSONObject("builtinCollections", value);
+                    if (builtinCollections != null)  {
+                        if (favoritesPlaylist != null) {
+                            JSONObject priorFavorites = Helper.getJSONObject(favoritesPlaylist.getId(), builtinCollections);
+                            long priorFavUpdatedAt = Helper.getJSONLong("updatedAt", 0, priorFavorites);
+                            if (priorFavUpdatedAt < favoritesPlaylist.getUpdatedAtTimestamp()) {
+                                // the current playlist is newer, so we replace
+                                builtinCollections.put(favoritesPlaylist.getId(), favoritesPlaylist.toJSONObject());
+                            }
+                        }
+
+                        if (watchlaterPlaylist != null) {
+                            JSONObject priorWatchLater = Helper.getJSONObject(watchlaterPlaylist.getId(), builtinCollections);
+                            long priorWatchLaterUpdatedAt = Helper.getJSONLong("updatedAt", 0, priorWatchLater);
+                            if (priorWatchLaterUpdatedAt < watchlaterPlaylist.getUpdatedAtTimestamp()) {
+                                // the current playlist is newer, so we replace
+                                builtinCollections.put(watchlaterPlaylist.getId(), watchlaterPlaylist.toJSONObject());
+                            }
+                        }
+                    }
+
+                    // handle unpublishedCollections
+                    JSONObject unpublishedCollections = Helper.getJSONObject("unpublishedCollections", value);
+                    if (unpublishedCollections != null && allCollections != null) {
+                        for (Map.Entry<String, OdyseeCollection> entry : allCollections.entrySet()) {
+                            String collectionId = entry.getKey();
+                            if (Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES, OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(collectionId)) {
+                                continue;
+                            }
+
+                            OdyseeCollection localCollection = entry.getValue();
+                            if (localCollection.getVisibility() != OdyseeCollection.VISIBILITY_PRIVATE) {
+                                continue;
+                            }
+
+                            JSONObject priorCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
+                            if (priorCollection != null) {
+                                long priorCollectionUpdatedAt = Helper.getJSONLong("updatedAt", 0, priorCollection);
+                                if (priorCollectionUpdatedAt < localCollection.getUpdatedAtTimestamp()) {
+                                    unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                                }
+                            } else {
+                                unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                            }
+                        }
+                    }
+
                     sharedObject = shared;
                 }
             }
@@ -133,6 +194,32 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                 value.put("tags", Helper.jsonArrayFromList(followedTags));
                 value.put("following", buildUpdatedNotificationsDisabledStates(subs));
                 value.put("blocked", Helper.jsonArrayFromList(blockedChannelUrls));
+
+                JSONObject builtinCollections = new JSONObject();
+                if (favoritesPlaylist != null) {
+                    builtinCollections.put(favoritesPlaylist.getId(), favoritesPlaylist.toJSONObject());
+                }
+                if (watchlaterPlaylist != null) {
+                    builtinCollections.put(watchlaterPlaylist.getId(), watchlaterPlaylist.toJSONObject());
+                }
+                value.put("builtinCollections", builtinCollections);
+
+                JSONObject unpublishedCollections = new JSONObject();
+                if (allCollections != null) {
+                    for (Map.Entry<String, OdyseeCollection> entry : allCollections.entrySet()) {
+                        String collectionId = entry.getKey();
+                        if (Arrays.asList(OdyseeCollection.BUILT_IN_ID_FAVORITES, OdyseeCollection.BUILT_IN_ID_WATCHLATER).contains(collectionId)) {
+                            continue;
+                        }
+
+                        OdyseeCollection localCollection = entry.getValue();
+                        if (localCollection.getVisibility() != OdyseeCollection.VISIBILITY_PRIVATE) {
+                            continue;
+                        }
+                        unpublishedCollections.put(collectionId, localCollection.toJSONObject());
+                    }
+                }
+                value.put("unpublishedCollections", unpublishedCollections);
 
                 sharedObject = new JSONObject();
                 sharedObject.put("type", "object");

@@ -3,9 +3,12 @@ package com.odysee.app.ui.library;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +28,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import com.odysee.app.adapter.CollectionListAdapter;
+import com.odysee.app.adapter.PlaylistCollectionListAdapter;
+import com.odysee.app.exceptions.ApiCallException;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.runnable.DeleteViewHistoryItem;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,6 +67,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 
 public class LibraryFragment extends BaseFragment implements
         ActionMode.Callback, DownloadActionListener, SelectionModeListener {
@@ -66,7 +75,7 @@ public class LibraryFragment extends BaseFragment implements
     private static final int FILTER_DOWNLOADS = 1;
     private static final int FILTER_PURCHASES = 2;
     private static final int FILTER_HISTORY = 3;
-    private static final int PAGE_SIZE = 50;
+    private static final int PAGE_SIZE = 10;
 
     private ActionMode actionMode;
     private int currentFilter;
@@ -84,6 +93,7 @@ public class LibraryFragment extends BaseFragment implements
     private boolean listReachedEnd;
     private boolean contentListLoading;
     private boolean initialOwnClaimsFetched;
+    private TextView textNoHistory;
 
     private CardView cardStats;
     private TextView linkStats;
@@ -110,6 +120,14 @@ public class LibraryFragment extends BaseFragment implements
     private long totalImageBytes;
     private long totalOtherBytes;
 
+    private RecyclerView recentList;
+    private RecyclerView playlistsList;
+
+    private View historyLinkView;
+    private View favoritesLinkView;
+    private View watchLaterLinkView;
+    private ProgressBar playlistsLoading;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_library, container, false);
@@ -126,7 +144,7 @@ public class LibraryFragment extends BaseFragment implements
         layoutListEmpty = root.findViewById(R.id.library_empty_container);
         textListEmpty = root.findViewById(R.id.library_list_empty_text);
 
-        currentFilter = FILTER_DOWNLOADS;
+        currentFilter = FILTER_HISTORY;
         linkFilterDownloads.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -142,10 +160,10 @@ public class LibraryFragment extends BaseFragment implements
         linkFilterHistory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showHistory();
+                showRecent();
             }
         });
-        contentList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        /*contentList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (contentListLoading) {
@@ -170,7 +188,7 @@ public class LibraryFragment extends BaseFragment implements
                     }
                 }
             }
-        });
+        });*/
         
         // stats
         linkStats = root.findViewById(R.id.library_show_stats);
@@ -208,6 +226,46 @@ public class LibraryFragment extends BaseFragment implements
             }
         });
 
+        LinearLayoutManager recentLLM = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        recentList = root.findViewById(R.id.library_recent_list);
+        recentList.setLayoutManager(recentLLM);
+
+        LinearLayoutManager playlistsLLM = new LinearLayoutManager(getContext());
+        playlistsList = root.findViewById(R.id.library_playlists_list);
+        playlistsList.setLayoutManager(playlistsLLM);
+        playlistsLoading = root.findViewById(R.id.library_playlists_loading);
+
+        historyLinkView = root.findViewById(R.id.library_item_history);
+        favoritesLinkView = root.findViewById(R.id.library_item_favorites);
+        watchLaterLinkView = root.findViewById(R.id.library_item_watchlater);
+
+        historyLinkView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // open history fragment
+            }
+        });
+
+        favoritesLinkView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openPlaylistFragment(OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                }
+            }
+        });
+
+        watchLaterLinkView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openPlaylistFragment(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                }
+            }
+        });
+
         return root;
     }
 
@@ -219,11 +277,70 @@ public class LibraryFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Library", "Library");
-            activity.addDownloadActionListener(this);
+            //activity.addDownloadActionListener(this);
         }
 
         // renderFilter(); // Show tab according to selected filter
-        showHistory(); // For now, only History can be shown
+        showRecent();
+        loadPlaylists();
+    }
+
+    private void loadPlaylists() {
+        Helper.setViewVisibility(playlistsLoading, View.VISIBLE);
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+
+                    SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
+                    Map<String, OdyseeCollection> collectionsMap = DatabaseHelper.loadAllCollections(db);
+                    collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+
+                    List<OdyseeCollection> privateCollections = new ArrayList<>(collectionsMap.values());
+
+                    // Also need to load published / public lists at this point
+                    List<OdyseeCollection> collections = new ArrayList<>(privateCollections);
+                    try {
+                        List<OdyseeCollection> publicCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
+                        collections.addAll(publicCollections);
+                    } catch (ApiCallException | JSONException ex) {
+                        // pass
+                    }
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            onPlaylistsLoaded(collections);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private void onPlaylistsLoaded(List<OdyseeCollection> collections) {
+        PlaylistCollectionListAdapter adapter = new PlaylistCollectionListAdapter(collections, getContext());
+        adapter.setListener(new PlaylistCollectionListAdapter.ClickListener() {
+            @Override
+            public void onClick(OdyseeCollection collection, int position) {
+                if (OdyseeCollection.PLACEHOLDER_ID_NEW.equalsIgnoreCase(collection.getId())) {
+                    // new playlist
+                    return;
+                }
+                // open the playlist
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    activity.openPlaylistFragment(collection.getId());
+                }
+            }
+        });
+        if (playlistsList != null) {
+            playlistsList.setAdapter(adapter);
+        }
+        Helper.setViewVisibility(playlistsLoading, View.INVISIBLE);
     }
 
     public void onPause() {
@@ -251,7 +368,7 @@ public class LibraryFragment extends BaseFragment implements
         if (currentFilter == FILTER_DOWNLOADS) {
             showDownloads();
         } else if (currentFilter == FILTER_HISTORY) {
-            showHistory();
+            showRecent();
         } else if (currentFilter == FILTER_PURCHASES) {
             showPurchases();
         }
@@ -330,18 +447,9 @@ public class LibraryFragment extends BaseFragment implements
         }
     }
 
-    private void showHistory() {
-        currentFilter = FILTER_HISTORY;
-        linkFilterDownloads.setTypeface(null, Typeface.NORMAL);
-        linkFilterPurchases.setTypeface(null, Typeface.NORMAL);
-        linkFilterHistory.setTypeface(null, Typeface.BOLD);
+    private void showRecent() {
         if (actionMode != null) {
             actionMode.finish();
-        }
-        if (contentListAdapter != null) {
-            contentListAdapter.setHideFee(false);
-            contentListAdapter.clearItems();
-            contentListAdapter.setCanEnterSelectionMode(true);
         }
         listReachedEnd = false;
 
@@ -349,7 +457,31 @@ public class LibraryFragment extends BaseFragment implements
         checkStatsLink();
 
         lastDate = null;
-        fetchHistory();
+        loadRecent();
+    }
+
+    private void initRecentAdapter(List<Claim> claims) {
+        Context context = getContext();
+        if (context != null) {
+            contentListAdapter = new ClaimListAdapter(claims, ClaimListAdapter.STYLE_SMALL_LIST_HORIZONTAL, context);
+//          contentListAdapter.setCanEnterSelectionMode(currentFilter == FILTER_DOWNLOADS);
+            contentListAdapter.setCanEnterSelectionMode(true);
+            contentListAdapter.setSelectionModeListener(this);
+            contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                @Override
+                public void onClaimClicked(Claim claim, int position) {
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) context;
+                        if (claim.getName().startsWith("@")) {
+                            activity.openChannelUrl(claim.getPermanentUrl());
+                        } else {
+                            activity.openFileUrl(claim.getPermanentUrl());
+                        }
+                    }
+                }
+            });
+        }
     }
 
     private void initContentListAdapter(List<Claim> claims) {
@@ -362,7 +494,7 @@ public class LibraryFragment extends BaseFragment implements
             contentListAdapter.setHideFee(currentFilter != FILTER_PURCHASES);
             contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                 @Override
-                public void onClaimClicked(Claim claim) {
+                public void onClaimClicked(Claim claim, int position) {
                     Context context = getContext();
                     if (context instanceof MainActivity) {
                         MainActivity activity = (MainActivity) context;
@@ -445,7 +577,7 @@ public class LibraryFragment extends BaseFragment implements
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void fetchHistory() {
+    private void loadRecent() {
         contentListLoading = true;
         Helper.setViewVisibility(layoutListEmpty, View.GONE);
         DatabaseHelper dbHelper = DatabaseHelper.getInstance();
@@ -457,15 +589,12 @@ public class LibraryFragment extends BaseFragment implements
                     if (history.size() > 0) {
                         lastDate = history.get(history.size() - 1).getTimestamp();
                     }
-
                     List<Claim> claims = Helper.claimsFromViewHistory(history);
                     if (contentListAdapter == null) {
-                        initContentListAdapter(claims);
-                    } else {
-                        contentListAdapter.addItems(claims);
+                        initRecentAdapter(claims);
                     }
-                    if (contentListAdapter != null && contentList.getAdapter() == null) {
-                        contentList.setAdapter(contentListAdapter);
+                    if (contentListAdapter != null && recentList.getAdapter() == null) {
+                        recentList.setAdapter(contentListAdapter);
                     }
                     checkListEmpty();
                     contentListLoading = false;
@@ -499,20 +628,9 @@ public class LibraryFragment extends BaseFragment implements
     }
 
     private void checkListEmpty() {
-        layoutListEmpty.setVisibility(contentListAdapter == null || contentListAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-
-        MainActivity a = (MainActivity) getActivity();
-        if (a != null) {
-            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
-        }
-
-        int stringResourceId;
-        switch (currentFilter) {
-            case FILTER_DOWNLOADS: default: stringResourceId = R.string.library_no_downloads; break;
-            case FILTER_HISTORY: stringResourceId = R.string.library_no_history; break;
-            case FILTER_PURCHASES: stringResourceId = R.string.library_no_purchases; break;
-        }
-        textListEmpty.setText(stringResourceId);
+        boolean hasRecent = contentListAdapter != null && contentListAdapter.getItemCount() > 0;
+        Helper.setViewVisibility(recentList, hasRecent ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(textNoHistory, !hasRecent ? View.VISIBLE : View.GONE);
     }
 
     @MainThread

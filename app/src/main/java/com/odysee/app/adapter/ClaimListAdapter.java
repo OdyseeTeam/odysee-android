@@ -45,9 +45,19 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
     private static final int VIEW_TYPE_LIVESTREAM = 4; // featured search result
+
+    public static final int STYLE_BIG_LIST = 1;
+    public static final int STYLE_SMALL_LIST = 2;
+    public static final int STYLE_SMALL_LIST_HORIZONTAL = 3;
+
+    private float scale;
+
     @Getter
     @Setter
     private int contextGroupId;
+    @Getter
+    @Setter
+    private int style;
 
     private final Map<String, Claim> quickClaimIdMap;
     private final Map<String, Claim> quickClaimUrlMap;
@@ -78,6 +88,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private long filterTimeframeFrom;
 
     public ClaimListAdapter(List<Claim> items, Context context) {
+        this(items, STYLE_BIG_LIST, context);
+    }
+
+    public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
         List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
@@ -354,6 +368,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+            contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
+            contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
+            contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
@@ -446,7 +463,13 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         switch (viewType) {
             case VIEW_TYPE_FEATURED: viewResourceId = R.layout.list_item_featured_search_result; break;
             case VIEW_TYPE_CHANNEL: viewResourceId = R.layout.list_item_channel; break;
-            case VIEW_TYPE_STREAM: default: viewResourceId = R.layout.list_item_stream; break;
+            case VIEW_TYPE_STREAM:
+                default:
+                    switch (style) {
+                        case STYLE_BIG_LIST: default: viewResourceId = R.layout.list_item_stream; break;
+                        case STYLE_SMALL_LIST: viewResourceId = R.layout.list_item_small_stream; break;
+                        case STYLE_SMALL_LIST_HORIZONTAL: viewResourceId = R.layout.list_item_small_stream_horizontal; break;
+                    }
         }
 
         View v = LayoutInflater.from(context).inflate(viewResourceId, parent, false);
@@ -465,13 +488,22 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Override
     public void onBindViewHolder(ClaimListAdapter.ViewHolder vh, int position) {
         int type = getItemViewType(position);
-        /*int paddingTop = 0; //position == 0 ? 16 : 8;
-        int paddingBottom = 0; //position == getItemCount() - 1 ? 16 : 8;
-        int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
-        int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
-        vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);*/
 
-        Claim original = items.get(position);
+        if (style == STYLE_SMALL_LIST) {
+            int paddingTop = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            int paddingBottom = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
+            int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
+            int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
+            vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
+        } else if (style == STYLE_SMALL_LIST_HORIZONTAL) {
+            int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            int paddingEnd = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
+            int paddingStartScaled = Helper.getScaledValue(paddingStart, scale);
+            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);
+            vh.itemView.setPadding(paddingStartScaled, vh.itemView.getPaddingTop(), paddingEndScaled, vh.itemView.getPaddingBottom());
+        }
+
+        Claim original = items.get(vh.getAbsoluteAdapterPosition());
         boolean isRepost = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType());
         final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
                 (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
@@ -509,7 +541,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     toggleSelectedClaim(original);
                 } else {
                     if (listener != null) {
-                        listener.onClaimClicked(item);
+                        listener.onClaimClicked(item, vh.getAbsoluteAdapterPosition());
                     }
                 }
             }
@@ -544,12 +576,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null && signingChannel != null) {
-                    listener.onClaimClicked(signingChannel);
+                    listener.onClaimClicked(signingChannel, vh.getAbsoluteAdapterPosition());
                 }
             }
         });
 
-        vh.publishTimeView.setVisibility(!isPending ? View.VISIBLE : View.GONE);
+        vh.publishTimeView.setVisibility(!isPending && style != STYLE_SMALL_LIST_HORIZONTAL ? View.VISIBLE : View.GONE);
         vh.pendingTextView.setVisibility(isPending && !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         vh.repostInfoView.setVisibility(isRepost && type != VIEW_TYPE_FEATURED ? View.VISIBLE : View.GONE);
         vh.repostChannelView.setText(isRepost && original.getSigningChannel() != null ? original.getSigningChannel().getName() : null);
@@ -557,7 +589,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null) {
-                    listener.onClaimClicked(original.getSigningChannel());
+                    listener.onClaimClicked(original.getSigningChannel(), vh.getAbsoluteAdapterPosition());
                 }
             }
         });
@@ -588,7 +620,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         Helper.setViewVisibility(vh.loadingTextPlaceholder2, item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(vh.titleView, !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(vh.publisherView, !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(vh.publishTimeView, !item.isLoadingPlaceholder() && !isPending ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(vh.publishTimeView, !item.isLoadingPlaceholder() && !isPending && style != STYLE_SMALL_LIST_HORIZONTAL ? View.VISIBLE : View.GONE);
 
         if (type == VIEW_TYPE_FEATURED && item.isUnresolved()) {
             vh.durationView.setVisibility(View.GONE);
@@ -643,15 +675,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                             vh.durationView.setText(Helper.formatDuration(duration));
                             vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
                         } else {
-                            vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
-                            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
-                                vh.durationView.setText(Helper.formatDuration(duration));
-                                vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
-                            } else {
-                                vh.durationView.setText(String.valueOf(item.getClaimIds().size()));
-                                vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
-                                vh.durationView.setCompoundDrawablePadding(8);
-                            }
+                            List<String> claimIds = item.getClaimIds() == null ? new ArrayList<>() : item.getClaimIds();
+                            vh.durationView.setText(String.valueOf(claimIds.size()));
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
+                            vh.durationView.setCompoundDrawablePadding(8);
                         }
 
                         LbryFile claimFile = item.getFile();
@@ -676,9 +703,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         Helper.setViewText(vh.deviceView, item.getDevice());
 
                         lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
                         vh.itemView.setLayoutParams(lp);
                         vh.itemView.setVisibility(View.VISIBLE);
+                        if (style != STYLE_SMALL_LIST_HORIZONTAL) {
+                            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        }
                     }
                 } else {
                     // This item should be filtered out -not displayed-
@@ -757,6 +786,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public interface ClaimListItemListener {
-        void onClaimClicked(Claim claim);
+        void onClaimClicked(Claim claim, int position);
     }
 }

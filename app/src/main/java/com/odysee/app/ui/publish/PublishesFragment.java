@@ -127,7 +127,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
                         adapter.setSelectionModeListener(PublishesFragment.this);
                         adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                             @Override
-                            public void onClaimClicked(Claim claim) {
+                            public void onClaimClicked(Claim claim, int position) {
                                 if (context instanceof MainActivity) {
                                     MainActivity activity = (MainActivity) context;
                                     if (claim.getName().startsWith("@")) {

@@ -172,7 +172,7 @@ public class ChannelScheduledLivestreamsFragment extends Fragment implements Sha
                                         livestreamsListAdapter = new ClaimListAdapter(finalScheduledClaims, context);
                                         livestreamsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                                             @Override
-                                            public void onClaimClicked(Claim claim) {
+                                            public void onClaimClicked(Claim claim, int position) {
                                                 Context context = getContext();
                                                 if (context instanceof MainActivity) {
                                                     MainActivity activity = (MainActivity) context;

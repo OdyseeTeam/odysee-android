@@ -15,7 +15,6 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -74,7 +73,6 @@ import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -93,7 +91,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides.Trac
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
-import com.google.android.exoplayer2.upstream.Loader;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
@@ -117,7 +114,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -127,6 +123,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -153,6 +150,7 @@ import com.odysee.app.callable.LighthouseSearch;
 import com.odysee.app.callable.BuildCommentReactOptions;
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
@@ -187,6 +185,7 @@ import com.odysee.app.tasks.claim.AbandonStreamTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
+import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.tasks.claim.PurchaseListTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.file.DeleteFileTask;
@@ -213,6 +212,7 @@ import okhttp3.Response;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
+        ClaimListAdapter.ClaimListItemListener,
         DownloadActionListener,
         FetchClaimsListener,
         PIPModeListener,
@@ -240,8 +240,12 @@ public class FileViewFragment extends BaseFragment implements
     private boolean isPlaying;
 //    private boolean resolving;
 //    private boolean initialFileLoadDone;
-    private Claim claim;
+    private Claim fileClaim;
+    private Claim collectionClaimItem;
+    private String currentPlaylistTitle;
     private String currentUrl;
+    private String currentMediaSourceUrl;
+    private TextView relatedContentTitle;
     private ClaimListAdapter relatedContentAdapter;
     private CommentEnabledCheck commentEnabledCheck;
     private CommentListAdapter commentListAdapter;
@@ -267,6 +271,8 @@ public class FileViewFragment extends BaseFragment implements
     private int lastPositionSaved;
 
     private View tipButton;
+    private boolean playlistResolved;
+    private List<Claim> playlistClaims = new ArrayList<>();
 
     private WebView webView;
     private boolean webViewAdded;
@@ -328,6 +334,7 @@ public class FileViewFragment extends BaseFragment implements
 
         expandButton = root.findViewById(R.id.expand_commentarea_button);
         singleCommentRoot = root.findViewById(R.id.collapsed_comment);
+        relatedContentTitle = root.findViewById(R.id.related_or_playlist);
 
         containerCommentForm = root.findViewById(R.id.container_comment_form);
         containerReplyToComment = root.findViewById(R.id.comment_form_reply_to_container);
@@ -393,21 +400,14 @@ public class FileViewFragment extends BaseFragment implements
 
                         if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
                             // we only want to log a buffer event after the media has already started playing
-                            String mediaSourceUrl = getStreamingUrl();
-                            long duration = MainActivity.appPlayer.getDuration();
-                            long position = MainActivity.appPlayer.getCurrentPosition();
-                            String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
-                            if (mediaSourceUrl.startsWith(CDN_PREFIX)) {
-                                BufferEventTask bufferEvent = new BufferEventTask(claim.getPermanentUrl(), duration, position, 1, userIdHash);
+                            if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
+                                long duration = MainActivity.appPlayer.getDuration();
+                                long position = MainActivity.appPlayer.getCurrentPosition();
+                                String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
+                                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+
+                                BufferEventTask bufferEvent = new BufferEventTask(actualClaim.getPermanentUrl(), duration, position, 1, userIdHash);
                                 bufferEvent.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
-                            } else {
-                                // sdk stream buffer events should be handled differently
-                                Bundle bundle = new Bundle();
-                                bundle.putString("url", claim.getPermanentUrl());
-                                bundle.putLong("stream_duration", duration);
-                                bundle.putLong("stream_position", position);
-                                bundle.putString("user_id_hash", userIdHash);
-                                LbryAnalytics.logEvent(LbryAnalytics.EVENT_BUFFER, bundle);
                             }
                         }
                     }
@@ -415,6 +415,8 @@ public class FileViewFragment extends BaseFragment implements
                     loadingQualityChanged = false;
 
                     showBuffering();
+                } else if (playbackState == Player.STATE_ENDED) {
+                    playNextItemInPlaylist();
                 } else {
                     hideBuffering();
                 }
@@ -428,6 +430,18 @@ public class FileViewFragment extends BaseFragment implements
 
         scrollView = root.findViewById(R.id.file_view_scroll_view);
         return root;
+    }
+
+    private void playNextItemInPlaylist() {
+        if (playlistClaims.size() > 0 && collectionClaimItem != null) {
+            int collectionClaimIndex = playlistClaims.indexOf(collectionClaimItem);
+            if (collectionClaimIndex > -1) {
+                int nextIndex = collectionClaimIndex + 1;
+                if (nextIndex < playlistClaims.size() - 1) {
+                    playClaimFromCollection(playlistClaims.get(nextIndex), nextIndex);
+                }
+            }
+        }
     }
 
     public void onStart() {
@@ -448,6 +462,38 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void handlePlayCollection(Map<String, Object> params) {
+        OdyseeCollection collection = (OdyseeCollection) params.get("collection");
+        playlistClaims = new ArrayList<>(collection.getClaims());
+        playlistResolved = true;
+        currentPlaylistTitle = collection.getName();
+
+        relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
+        relatedContentAdapter.setListener(FileViewFragment.this);
+
+        View root = getView();
+        if (root != null) {
+            RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+            relatedContentList.setAdapter(relatedContentAdapter);
+        }
+
+        if (playlistClaims.size() > 0) {
+            if (params.containsKey("item") && params.containsKey("itemIndex")) {
+                int index = (int) params.get("itemIndex");
+                playClaimFromCollection(playlistClaims.get(index), index);
+            } else {
+                playClaimFromCollection(playlistClaims.get(0), 0);
+            }
+        }
+    }
+
+    private void updatePlaylistContentDisplay(int index) {
+        if (playlistClaims != null) {
+            String value = getString(R.string.playlist_position_tracker, currentPlaylistTitle, index + 1, playlistClaims.size());
+            Helper.setViewText(relatedContentTitle, value);
+        }
+    }
+
     private void checkParams() {
         boolean updateRequired = false;
         Context context = getContext();
@@ -457,10 +503,16 @@ public class FileViewFragment extends BaseFragment implements
             Claim newClaim = null;
             String newUrl = null;
             if (params != null) {
+                if (params.containsKey("collection")) {
+                    handlePlayCollection(params);
+                    return;
+                }
+
+
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
                     // Only update fragment if new claim is different than currently being played
-                    if (newClaim != null && !newClaim.equals(this.claim)) {
+                    if (newClaim != null && !newClaim.equals(this.fileClaim)) {
                         updateRequired = true;
                     }
                 }
@@ -484,7 +536,7 @@ public class FileViewFragment extends BaseFragment implements
                             }
                         }
 
-                        if (claim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
+                        if (fileClaim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
                             updateRequired = true;
                         }
                     }
@@ -505,40 +557,40 @@ public class FileViewFragment extends BaseFragment implements
                 checkNewClaimAndUrl(newClaim, newUrl);
 
                 // This is required to recycle current fragment with new claim from related content
-                claim = null;
+                fileClaim = null;
 
                 if (newClaim != null) {
-                    claim = newClaim;
+                    fileClaim = newClaim;
                 }
 
-                if (claim == null && !Helper.isNullOrEmpty(newUrl)) {
+                if (fileClaim == null && !Helper.isNullOrEmpty(newUrl)) {
                     // check if the claim is already cached
                     currentUrl = newUrl;
                     ClaimCacheKey key = new ClaimCacheKey();
                     key.setUrl(currentUrl);
                     onNewClaim(currentUrl);
                     if (Lbry.claimCache.containsKey(key)) {
-                        claim = Lbry.claimCache.get(key);
+                        fileClaim = Lbry.claimCache.get(key);
                     }
                 }
-                if (claim != null && Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
-                    claim = claim.getRepostedClaim();
-                    if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
+                if (fileClaim != null && Claim.TYPE_REPOST.equalsIgnoreCase(fileClaim.getValueType())) {
+                    fileClaim = fileClaim.getRepostedClaim();
+                    if (fileClaim == null || Helper.isNullOrEmpty(fileClaim.getClaimId())) {
                         // Invalid repost, probably
                         invalidRepost = true;
                         renderNothingAtLocation();
-                    } else if (claim.getName().startsWith("@")) {
+                    } else if (fileClaim.getName().startsWith("@")) {
                         // this is a reposted channel, so launch the channel url
                         if (context instanceof MainActivity) {
                             MainActivity activity = (MainActivity) context;
                             //activity.onBackPressed(); // remove the reposted url page from the back stack
                             activity.getSupportFragmentManager().popBackStack();
-                            activity.openChannelUrl(!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+                            activity.openChannelUrl(!Helper.isNullOrEmpty(fileClaim.getShortUrl()) ? fileClaim.getShortUrl() : fileClaim.getPermanentUrl());
                         }
                         return;
                     }
                 }
-                if (claim == null) {
+                if (fileClaim == null) {
                     resolveUrl(currentUrl);
                 }
             } else {
@@ -546,18 +598,29 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             if (!Helper.isNullOrEmpty(currentUrl)) {
-                Helper.saveUrlHistory(currentUrl, claim != null ? claim.getTitle() : null, UrlSuggestion.TYPE_FILE);
+                Helper.saveUrlHistory(currentUrl, fileClaim != null ? fileClaim.getTitle() : null, UrlSuggestion.TYPE_FILE);
             }
 
-            if (claim != null && !invalidRepost) {
-                Helper.saveViewHistory(currentUrl, claim);
-                if (Helper.isClaimBlocked(claim)) {
+            if (fileClaim != null && !invalidRepost) {
+                if (Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType()) &&
+                        fileClaim.getClaimIds() != null && fileClaim.getClaimIds().size() > 0) {
+                    resolvePlaylistClaimsAndPlayFirst();
+                    return;
+                }
+
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(actualClaim.getType())) {
+                    // We don't want to save actual collections to the view history
+                    Helper.saveViewHistory(currentUrl, actualClaim);
+                }
+
+                if (Helper.isClaimBlocked(actualClaim)) {
                     renderClaimBlocked();
                 } else {
                     checkAndLoadRelatedContent();
                     checkAndLoadComments();
                     renderClaim();
-                    if (claim.getFile() == null) {
+                    if (actualClaim.getFile() == null) {
                         loadFile();
                     } else {
 //                    initialFileLoadDone = true;
@@ -673,15 +736,16 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndResetNowPlayingClaim() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (MainActivity.nowPlayingClaim != null
-                && claim != null &&
-                !MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+                && actualClaim != null &&
+                !MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(actualClaim.getClaimId())) {
             Context context = getContext();
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
                 activity.clearNowPlayingClaim();
-                if (claim != null && !claim.isPlayable()) {
-                    activity.stopExoplayer();
+                if (actualClaim != null && !actualClaim.isPlayable()) {
+                    MainActivity.stopExoplayer();
                 }
             }
         }
@@ -718,29 +782,23 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private String buildLbryTvStreamingUrl() {
-        return String.format("https://cdn.lbryplayer.xyz/content/claims/%s/%s/stream", claim.getName(), claim.getClaimId());
+        return String.format("%s/content/claims/%s/%s/stream", CDN_PREFIX, fileClaim.getName(), fileClaim.getClaimId());
     }
 
     private void loadFile() {
-        if (!Lbry.SDK_READY) {
-            // make use of the lbry.tv streaming URL
-//            loadFilePending = true;
-            return;
-        }
-
-//        loadFilePending = false;
-        String claimId = claim.getClaimId();
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        String claimId = actualClaim.getClaimId();
         FileListTask task = new FileListTask(claimId, null, new FileListTask.FileListResultHandler() {
             @Override
             public void onSuccess(List<LbryFile> files, boolean hasReachedEnd) {
                 if (files.size() > 0) {
-                    claim.setFile(files.get(0));
+                    actualClaim.setFile(files.get(0));
                     checkIsFileComplete();
-                    if (!claim.isPlayable() && !claim.isViewable()) {
+                    if (!actualClaim.isPlayable() && !actualClaim.isViewable()) {
                         showUnsupportedView();
                     }
                 } else {
-                    if (!claim.isPlayable() && !claim.isViewable()) {
+                    if (!actualClaim.isPlayable() && !actualClaim.isViewable()) {
                         restoreMainActionButton();
                     }
                 }
@@ -810,11 +868,12 @@ public class FileViewFragment extends BaseFragment implements
 
         Context context = getContext();
         Helper.setWunderbarValue(currentUrl, context);
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "File", "File");
             activity.updateCurrentDisplayFragment(this);
-            if (claim != null && claim.isPlayable() && activity.isInFullscreenMode()) {
+            if (actualClaim != null && actualClaim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
@@ -917,9 +976,10 @@ public class FileViewFragment extends BaseFragment implements
     private final View.OnClickListener bellIconListener = new View.OnClickListener()  {
         @Override
         public void onClick(View view) {
+            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
             // View is not displayed when user is not signed in, so no need to check for it
-            if (claim != null && claim.getSigningChannel() != null) {
-                Claim publisher = claim.getSigningChannel();
+            if (actualClaim != null && actualClaim.getSigningChannel() != null) {
+                Claim publisher = actualClaim.getSigningChannel();
                 boolean isNotificationsDisabled = Lbryio.isNotificationsDisabled(publisher);
                 final Subscription subscription = Subscription.fromClaim(publisher);
                 subscription.setNotificationsDisabled(!isNotificationsDisabled);
@@ -958,8 +1018,9 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity activity = (MainActivity) getActivity();
 
             if (activity != null && activity.isSignedIn()) {
-                if (claim != null && claim.getSigningChannel() != null) {
-                    Claim publisher = claim.getSigningChannel();
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null && actualClaim.getSigningChannel() != null) {
+                    Claim publisher = actualClaim.getSigningChannel();
                     boolean isFollowing = Lbryio.isFollowing(publisher);
                     if (isFollowing) {
                         // show unfollow confirmation
@@ -987,8 +1048,9 @@ public class FileViewFragment extends BaseFragment implements
     };
 
     private void doFollowUnfollow(boolean isFollowing, View view) {
-        if (claim != null && claim.getSigningChannel() != null) {
-            Claim publisher = claim.getSigningChannel();
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null && actualClaim.getSigningChannel() != null) {
+            Claim publisher = actualClaim.getSigningChannel();
             Subscription subscription = Subscription.fromClaim(publisher);
             view.setEnabled(false);
             Context context = getContext();
@@ -1029,33 +1091,40 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
-                    claim = claims.get(0);
-                    if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType())) {
-                        claim = claim.getRepostedClaim();
+                    fileClaim = claims.get(0);
+                    if (Claim.TYPE_REPOST.equalsIgnoreCase(fileClaim.getValueType())) {
+                        fileClaim = fileClaim.getRepostedClaim();
                         // cache the reposted claim too for subsequent loads
-                        Lbry.addClaimToCache(claim);
-                        if (claim.getName().startsWith("@")) {
+                        Lbry.addClaimToCache(fileClaim);
+                        if (fileClaim.getName().startsWith("@")) {
                             // this is a reposted channel, so finish this activity and launch the channel url
                             Context context = getContext();
                             if (context instanceof  MainActivity) {
                                 MainActivity activity = (MainActivity) context;
                                 activity.getSupportFragmentManager().popBackStack();
-                                activity.openChannelUrl(!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+                                activity.openChannelUrl(!Helper.isNullOrEmpty(fileClaim.getShortUrl()) ? fileClaim.getShortUrl() : fileClaim.getPermanentUrl());
                             }
                             return;
                         }
                     } else {
-                        Lbry.addClaimToCache(claim);
+                        Lbry.addClaimToCache(fileClaim);
                     }
 
-                    Helper.saveUrlHistory(url, claim.getTitle(), UrlSuggestion.TYPE_FILE);
+                    if (Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType()) &&  fileClaim.getClaimIds() != null && fileClaim.getClaimIds().size() > 0) {
+                        collectionClaimItem = null;
+                    }
 
-                    // also save view history
-                    Helper.saveViewHistory(url, claim);
+                    Helper.saveUrlHistory(url, fileClaim.getTitle(), UrlSuggestion.TYPE_FILE);
+
+                    // do not save collections to view history
+                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getType())) {
+                        // also save view history
+                        Helper.saveViewHistory(url, fileClaim);
+                    }
 
                     checkAndResetNowPlayingClaim();
 
-                    if (Helper.isClaimBlocked(claim)) {
+                    if (Helper.isClaimBlocked(fileClaim)) {
                         renderClaimBlocked();
                     } else {
                         loadFile();
@@ -1100,8 +1169,9 @@ public class FileViewFragment extends BaseFragment implements
                 ImageView descIndicator = root.findViewById(R.id.file_view_desc_toggle_arrow);
                 View descriptionArea = root.findViewById(R.id.file_view_description_area);
 
-                boolean hasDescription = claim != null && !Helper.isNullOrEmpty(claim.getDescription());
-                boolean hasTags = claim != null && claim.getTags() != null && claim.getTags().size() > 0;
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                boolean hasDescription = actualClaim != null && !Helper.isNullOrEmpty(actualClaim.getDescription());
+                boolean hasTags = actualClaim != null && actualClaim.getTags() != null && actualClaim.getTags().size() > 0;
 
                 if (descriptionArea.getVisibility() != View.VISIBLE) {
                     if (hasDescription || hasTags) {
@@ -1120,8 +1190,9 @@ public class FileViewFragment extends BaseFragment implements
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (claim != null && odyseeAccount != null) {
-                    react(claim, true);
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null && odyseeAccount != null) {
+                    react(actualClaim, true);
                 }
             }
         });
@@ -1130,19 +1201,21 @@ public class FileViewFragment extends BaseFragment implements
             public void onClick(View view) {
                 AccountManager am = AccountManager.get(root.getContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-                if (claim != null && odyseeAccount != null) {
-                    react(claim, false);
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null && odyseeAccount != null) {
+                    react(actualClaim, false);
                 }
             }
         });
         root.findViewById(R.id.file_view_action_share).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
                     try {
                         String shareUrl = LbryUri.parse(
-                                !Helper.isNullOrEmpty(claim.getCanonicalUrl()) ? claim.getCanonicalUrl() :
-                                        (!Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl())).toOdyseeString();
+                                !Helper.isNullOrEmpty(actualClaim.getCanonicalUrl()) ? actualClaim.getCanonicalUrl() :
+                                        (!Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl())).toOdyseeString();
                         Intent shareIntent = new Intent();
                         shareIntent.setAction(Intent.ACTION_SEND);
                         shareIntent.setType("text/plain");
@@ -1165,8 +1238,9 @@ public class FileViewFragment extends BaseFragment implements
                 MainActivity activity = (MainActivity) getActivity();
 
                 if (activity != null && activity.isSignedIn()) {
-                    if (claim != null) {
-                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(claim, (amount, isTip) -> {
+                    Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                    if (actualClaim != null) {
+                        CreateSupportDialogFragment dialog = CreateSupportDialogFragment.newInstance(actualClaim, (amount, isTip) -> {
                             double sentAmount = amount.doubleValue();
                             String message = getResources().getQuantityString(
                                     isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
@@ -1189,8 +1263,9 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_repost).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
-                    RepostClaimDialogFragment dialog = RepostClaimDialogFragment.newInstance(claim, claim -> {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
+                    RepostClaimDialogFragment dialog = RepostClaimDialogFragment.newInstance(actualClaim, claim -> {
                         Context context = getContext();
                         if (context instanceof MainActivity) {
                             ((MainActivity) context).showMessage(R.string.content_successfully_reposted);
@@ -1208,8 +1283,9 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 Context context = getContext();
-                if (claim != null && context instanceof MainActivity) {
-                    ((MainActivity) context).openPublishForm(claim);
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null && context instanceof MainActivity) {
+                    ((MainActivity) context).openPublishForm(actualClaim);
                 }
             }
         });
@@ -1217,7 +1293,8 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_delete).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_file).
                         setMessage(R.string.confirm_delete_file_message)
@@ -1235,7 +1312,8 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_unpublish).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_content).
                         setMessage(R.string.confirm_delete_content_message)
@@ -1253,7 +1331,8 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_download).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
                     if (downloadInProgress) {
                         onDownloadAborted();
                     } else {
@@ -1266,7 +1345,8 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_action_report).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
                     Context context = getContext();
                     CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
                     ctcspb.setToolbarColor(ContextCompat.getColor(context, R.color.colorPrimary));
@@ -1274,7 +1354,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
                     CustomTabsIntent intent = builder.build();
-                    intent.launchUrl(context, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
+                    intent.launchUrl(context, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", actualClaim.getClaimId())));
                 }
             }
         });
@@ -1359,10 +1439,11 @@ public class FileViewFragment extends BaseFragment implements
         root.findViewById(R.id.file_view_publisher_info_area).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (claim != null && claim.getSigningChannel() != null) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null && actualClaim.getSigningChannel() != null) {
                     removeNotificationAsSource();
 
-                    Claim publisher = claim.getSigningChannel();
+                    Claim publisher = actualClaim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof  MainActivity) {
                         ((MainActivity) context).openChannelClaim(publisher);
@@ -1503,11 +1584,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void deleteCurrentClaim() {
-        if (claim != null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
             Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
             Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
-            AbandonStreamTask task = new AbandonStreamTask(Arrays.asList(claim.getClaimId()), layoutResolving, new AbandonHandler() {
+            AbandonStreamTask task = new AbandonStreamTask(Arrays.asList(actualClaim.getClaimId()), layoutResolving, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
@@ -1595,7 +1677,8 @@ public class FileViewFragment extends BaseFragment implements
             ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_stop);
         }
 
-        if (!claim.isFree()) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (!actualClaim.isFree()) {
             downloadRequested = true;
             onMainActionButtonClicked();
         } else {
@@ -1605,9 +1688,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void deleteClaimFile() {
-        if (claim != null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
             View actionDelete = getView().findViewById(R.id.file_view_action_delete);
-            DeleteFileTask task = new DeleteFileTask(claim.getClaimId(), new GenericTaskHandler() {
+            DeleteFileTask task = new DeleteFileTask(actualClaim.getClaimId(), new GenericTaskHandler() {
                 @Override
                 public void beforeStart() {
                     actionDelete.setEnabled(false);
@@ -1623,8 +1707,8 @@ public class FileViewFragment extends BaseFragment implements
                     }
                     Helper.setViewEnabled(actionDelete, true);
 
-                    claim.setFile(null);
-                    Lbry.unsetFilesForCachedClaims(Arrays.asList(claim.getClaimId()));
+                    actualClaim.setFile(null);
+                    Lbry.unsetFilesForCachedClaims(Arrays.asList(actualClaim.getClaimId()));
 
                     restoreMainActionButton();
                 }
@@ -1642,14 +1726,14 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void renderClaim() {
-        if (claim == null) {
+        Claim claimToRender = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (claimToRender == null) {
             return;
         }
-
-        if (!claim.hasSource()) {
+        if (!claimToRender.hasSource()) {
             // TODO See if the "publisher is not live yet" UI must be shown
         }
-        if (claim.isPlayable() && MainActivity.appPlayer != null) {
+        if (claimToRender.isPlayable() && MainActivity.appPlayer != null) {
             MainActivity.appPlayer.setPlayWhenReady(isPlaying);
         }
 
@@ -1664,7 +1748,7 @@ public class FileViewFragment extends BaseFragment implements
 */
 
         loadViewCount();
-        loadReactions(claim);
+        loadReactions(claimToRender);
         checkIsFollowing();
 
         View root = getView();
@@ -1677,8 +1761,8 @@ public class FileViewFragment extends BaseFragment implements
             ImageView descIndicator = root.findViewById(R.id.file_view_desc_toggle_arrow);
             descIndicator.setImageResource(R.drawable.ic_arrow_dropdown);
 
-            boolean hasDescription = !Helper.isNullOrEmpty(claim.getDescription());
-            boolean hasTags = claim.getTags() != null && claim.getTags().size() > 0;
+            boolean hasDescription = !Helper.isNullOrEmpty(claimToRender.getDescription());
+            boolean hasTags = claimToRender.getTags() != null && claimToRender.getTags().size() > 0;
 
             root.findViewById(R.id.file_view_description).setVisibility(hasDescription ? View.VISIBLE : View.GONE);
             root.findViewById(R.id.file_view_tag_area).setVisibility(hasTags ? View.VISIBLE : View.GONE);
@@ -1687,12 +1771,12 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             root.findViewById(R.id.file_view_description_area).setVisibility(View.GONE);
-            ((TextView) root.findViewById(R.id.file_view_title)).setText(claim.getTitle());
-            ((TextView) root.findViewById(R.id.file_view_description)).setText(claim.getDescription());
+            ((TextView) root.findViewById(R.id.file_view_title)).setText(claimToRender.getTitle());
+            ((TextView) root.findViewById(R.id.file_view_description)).setText(claimToRender.getDescription());
             ((TextView) root.findViewById(R.id.file_view_publisher_name)).setText(
-                    Helper.isNullOrEmpty(claim.getPublisherName()) ? getString(R.string.anonymous) : claim.getPublisherName());
+                    Helper.isNullOrEmpty(claimToRender.getPublisherName()) ? getString(R.string.anonymous) : claimToRender.getPublisherName());
 
-            Claim signingChannel = claim.getSigningChannel();
+            Claim signingChannel = claimToRender.getSigningChannel();
             boolean hasPublisher = signingChannel != null;
             boolean hasPublisherThumbnail = hasPublisher && !Helper.isNullOrEmpty(signingChannel.getThumbnailUrl());
             root.findViewById(R.id.file_view_publisher_avatar).setVisibility(hasPublisher ? View.VISIBLE : View.GONE);
@@ -1720,7 +1804,7 @@ public class FileViewFragment extends BaseFragment implements
             FlexboxLayoutManager flm = new FlexboxLayoutManager(context);
             descTagsList.setLayoutManager(flm);
 
-            List<Tag> tags = claim.getTagObjects();
+            List<Tag> tags = claimToRender.getTagObjects();
             TagListAdapter tagListAdapter = new TagListAdapter(tags, context);
             tagListAdapter.setClickListener(new TagListAdapter.TagClickListener() {
                 @Override
@@ -1740,10 +1824,11 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_media_meta_container).setVisibility(View.VISIBLE);
 
-            Claim.GenericMetadata metadata = claim.getValue();
-            if (!Helper.isNullOrEmpty(claim.getThumbnailUrl())) {
+            Claim.GenericMetadata metadata = claimToRender.getValue();
+            if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl())) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
-                Glide.with(context.getApplicationContext()).asBitmap().load(claim.getThumbnailUrl(context.getResources().getDisplayMetrics().widthPixels, thumbnailView.getLayoutParams().height, 85)).centerCrop().into(thumbnailView);
+                Glide.with(context.getApplicationContext()).asBitmap().load(
+                        claimToRender.getThumbnailUrl(context.getResources().getDisplayMetrics().widthPixels, thumbnailView.getLayoutParams().height, 85)).centerCrop().into(thumbnailView);
             } else {
                 // display first x letters of claim name, with random background
             }
@@ -1763,13 +1848,13 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_open_external_button).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    openClaimExternally(claim, claim.getMediaType());
+                    openClaimExternally(claimToRender, claimToRender.getMediaType());
                 }
             });
 
             if (metadata instanceof Claim.StreamMetadata) {
                 Claim.StreamMetadata streamMetadata = (Claim.StreamMetadata) metadata;
-                long publishTime = streamMetadata.getReleaseTime() > 0 ? streamMetadata.getReleaseTime() * 1000 : claim.getTimestamp() * 1000;
+                long publishTime = streamMetadata.getReleaseTime() > 0 ? streamMetadata.getReleaseTime() * 1000 : claimToRender.getTimestamp() * 1000;
                 ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateUtils.getRelativeTimeSpanString(
                         publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
 
@@ -1777,11 +1862,11 @@ public class FileViewFragment extends BaseFragment implements
                 if (fee != null && Helper.parseDouble(fee.getAmount(), 0) > 0) {
                     root.findViewById(R.id.file_view_fee_container).setVisibility(View.VISIBLE);
                     ((TextView) root.findViewById(R.id.file_view_fee)).setText(
-                            Helper.shortCurrencyFormat(claim.getActualCost(Lbryio.LBCUSDRate).doubleValue()));
+                            Helper.shortCurrencyFormat(claimToRender.getActualCost(Lbryio.LBCUSDRate).doubleValue()));
                 }
             }
 
-            boolean isAnonymous = claim.getSigningChannel() == null;
+            boolean isAnonymous = claimToRender.getSigningChannel() == null;
             View iconFollow = root.findViewById(R.id.file_view_icon_follow);
             View iconUnfollow = root.findViewById(R.id.file_view_icon_unfollow);
             if (isAnonymous) {
@@ -1794,25 +1879,25 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             MaterialButton mainActionButton = root.findViewById(R.id.file_view_main_action_button);
-            if (claim.isPlayable()) {
+            if (claimToRender.isPlayable()) {
                 mainActionButton.setText(R.string.play);
-            } else if (claim.isViewable()) {
+            } else if (claimToRender.isViewable()) {
                 mainActionButton.setText(R.string.view);
             } else {
                 mainActionButton.setText(R.string.download);
             }
         }
 
-        if (claim.isFree() && Helper.isNullOrEmpty(commentHash)) {
-            if (claim.isPlayable() || (!Lbry.SDK_READY && Lbryio.isSignedIn())) {
-                if (MainActivity.nowPlayingClaim != null && MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+        if (claimToRender.isFree() && Helper.isNullOrEmpty(commentHash)) {
+            if (claimToRender.isPlayable() || (!Lbry.SDK_READY && Lbryio.isSignedIn())) {
+                if (MainActivity.nowPlayingClaim != null && MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claimToRender.getClaimId())) {
                     // claim already playing
                     showExoplayerView();
                     playMedia();
                 } else {
                     onMainActionButtonClicked();
                 }
-            } else if (claim.isViewable() && Lbry.SDK_READY) {
+            } else if (claimToRender.isViewable() && Lbry.SDK_READY) {
                 onMainActionButtonClicked();
             } else if (!Lbry.SDK_READY) {
                 restoreMainActionButton();
@@ -1821,20 +1906,24 @@ public class FileViewFragment extends BaseFragment implements
             restoreMainActionButton();
         }
 
-        if (Lbry.SDK_READY && !claim.isPlayable() && !claim.isViewable() && Helper.isNullOrEmpty(commentHash)) {
-            if (claim.getFile() == null) {
+        /*if (Lbry.SDK_READY && !claimToRender.isPlayable() && !claimToRender.isViewable() && Helper.isNullOrEmpty(commentHash)) {
+            if (claimToRender.getFile() == null) {
                 loadFile();
             } else {
                 // file already loaded, but it's unsupported
                 showUnsupportedView();
             }
-        }
+        }*/
 
         checkRewardsDriver();
         checkOwnClaim();
     }
 
     private void checkAndLoadRelatedContent() {
+        if (playlistResolved) {
+            return;
+        }
+
         View root = getView();
         if (root != null) {
             RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
@@ -1851,12 +1940,15 @@ public class FileViewFragment extends BaseFragment implements
     private void checkAndLoadComments(boolean forceReload) {
         View root = getView();
         if (root != null) {
+            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+
             View expandCommentArea = root.findViewById(R.id.expand_commentarea_button);
             View commentsDisabledText = root.findViewById(R.id.file_view_disabled_comments);
             RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
 
             commentLoadingArea.setVisibility(View.VISIBLE);
-            commentEnabledCheck.checkCommentStatus(claim.getSigningChannel().getClaimId(), claim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+            commentEnabledCheck.checkCommentStatus(
+                    actualClaim.getSigningChannel().getClaimId(), actualClaim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {
@@ -1893,8 +1985,9 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.VISIBLE);
             String fileNameString = "";
-            if (claim.getFile() != null && !Helper.isNullOrEmpty(claim.getFile().getDownloadPath())) {
-                LbryFile lbryFile = claim.getFile();
+            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+            if (actualClaim.getFile() != null && !Helper.isNullOrEmpty(actualClaim.getFile().getDownloadPath())) {
+                LbryFile lbryFile = actualClaim.getFile();
                 File file = new File(lbryFile.getDownloadPath());
                 fileNameString = String.format("\"%s\" ", file.getName());
             }
@@ -1941,6 +2034,8 @@ public class FileViewFragment extends BaseFragment implements
             activity.initPlaybackNotification();
         }
 
+        Claim claimToPlay = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+
         View root = getView();
         if (root != null) {
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
@@ -1959,7 +2054,7 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             if (MainActivity.nowPlayingClaim != null &&
-                    MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claim.getClaimId()) &&
+                    MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claimToPlay.getClaimId()) &&
                     !newPlayerCreated) {
                 // if the claim is already playing, we don't need to reload the media source
                 if (MainActivity.appPlayer != null) {
@@ -1982,13 +2077,13 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.appPlayer.addListener(fileViewPlayerListener);
                 }
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).setNowPlayingClaim(claim, currentUrl);
+                    ((MainActivity) context).setNowPlayingClaim(claimToPlay, currentUrl);
                 }
 
                 MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
 
-                if (claim.hasSource()) {
-                    getStreamingUrlAndInitializePlayer();
+                if (claimToPlay.hasSource()) {
+                    getStreamingUrlAndInitializePlayer(claimToPlay);
                 } else {
                     DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
                     if (context != null) {
@@ -2011,18 +2106,18 @@ public class FileViewFragment extends BaseFragment implements
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
                             mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
                         } else {
-                            if (claim.getThumbnailUrl() != null && context != null) {
+                            if (claimToPlay.getThumbnailUrl() != null && context != null) {
                                 ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
                                 Glide.with(context.getApplicationContext()).
                                         asBitmap().
-                                        load(claim.getThumbnailUrl()).
+                                        load(claimToPlay.getThumbnailUrl()).
                                         apply(RequestOptions.circleCropTransform()).
                                         into(thumbnailView);
                             }
 
                             root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
                             TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
-                            userNotStreaming.setText(getString(R.string.user_not_live_yet, claim.getPublisherName()));
+                            userNotStreaming.setText(getString(R.string.user_not_live_yet, claimToPlay.getPublisherName()));
                             userNotStreaming.setVisibility(View.VISIBLE);
                         }
                     }
@@ -2036,15 +2131,16 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void getStreamingUrlAndInitializePlayer() {
+    private void getStreamingUrlAndInitializePlayer(Claim theClaim) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
                 // Get the streaming URL
                 Map<String, Object> params = new HashMap<>();
-                params.put("uri", claim.getPermanentUrl());
+                params.put("uri", theClaim.getPermanentUrl());
                 JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
                 String sourceUrl = (String) result.get("streaming_url");
+                currentMediaSourceUrl = sourceUrl;
 
                 // Get the stream type
                 OkHttpClient client = new OkHttpClient();
@@ -2105,15 +2201,15 @@ public class FileViewFragment extends BaseFragment implements
         String jsonDataUrl = null;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(claim.getSigningChannel().getClaimId()));
+            ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(fileClaim.getSigningChannel().getClaimId()));
             Future<Map<String, JSONObject>> future = executor.submit(callable);
 
             Map<String, JSONObject> jsonData = future.get();
-            jsonDataUrl = getLivestreamUrl(jsonData.get(claim.getSigningChannel().getClaimId()));
+            jsonDataUrl = getLivestreamUrl(jsonData.get(fileClaim.getSigningChannel().getClaimId()));
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         } finally {
-            if (executor != null && !executor.isShutdown()) {
+            if (!executor.isShutdown()) {
                 executor.shutdown();
             }
         }
@@ -2301,9 +2397,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void loadViewCount() {
-        if (claim != null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
             FetchStatCountTask task = new FetchStatCountTask(
-                    FetchStatCountTask.STAT_VIEW_COUNT, claim.getClaimId(), null, new FetchStatCountTask.FetchStatCountHandler() {
+                    FetchStatCountTask.STAT_VIEW_COUNT, actualClaim.getClaimId(), null, new FetchStatCountTask.FetchStatCountHandler() {
                 @Override
                 public void onSuccess(int count) {
                     try {
@@ -2357,7 +2454,7 @@ public class FileViewFragment extends BaseFragment implements
                 }
                 if (data != null && data.has("my_reactions")) {
                     JSONObject othersReactions = (JSONObject) data.get("my_reactions");
-                    if (othersReactions.has(claim.getClaimId())) {
+                    if (othersReactions.has(c.getClaimId())) {
                         int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
                         reactions.setLiked(likes > 0);
                         c.setLiked(likes > 0);
@@ -2527,15 +2624,17 @@ public class FileViewFragment extends BaseFragment implements
 
 
     private void onMainActionButtonClicked() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+
         // Check if the claim is free
-        Claim.GenericMetadata metadata = claim.getValue();
+        Claim.GenericMetadata metadata = actualClaim.getValue();
         if (metadata instanceof Claim.StreamMetadata) {
             View root = getView();
             if (root != null) {
                 root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
                 root.findViewById(R.id.file_view_main_action_loading).setVisibility(View.VISIBLE);
             }
-            if (claim.getFile() == null && !claim.isFree()) {
+            if (actualClaim.getFile() == null && !actualClaim.isFree()) {
                 checkAndConfirmPurchaseUrl();
             } else {
                 handleMainActionForClaim();
@@ -2546,14 +2645,15 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndConfirmPurchaseUrl() {
-        if (claim != null) {
-            PurchaseListTask task = new PurchaseListTask(claim.getClaimId(), null, new ClaimSearchResultHandler() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
+            PurchaseListTask task = new PurchaseListTask(actualClaim.getClaimId(), null, new ClaimSearchResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                     boolean purchased = false;
                     if (claims.size() == 1) {
                         Claim purchasedClaim = claims.get(0);
-                        if (claim.getClaimId().equalsIgnoreCase(purchasedClaim.getClaimId())) {
+                        if (actualClaim.getClaimId().equalsIgnoreCase(purchasedClaim.getClaimId())) {
                             // already purchased
                             purchased = true;
                         }
@@ -2578,9 +2678,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void confirmPurchaseUrl() {
-        if (claim != null) {
-            Fee fee = ((Claim.StreamMetadata) claim.getValue()).getFee();
-            double cost = claim.getActualCost(Lbryio.LBCUSDRate).doubleValue();
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
+            Fee fee = ((Claim.StreamMetadata) actualClaim.getValue()).getFee();
+            double cost = actualClaim.getActualCost(Lbryio.LBCUSDRate).doubleValue();
             String formattedCost = Helper.LBC_CURRENCY_FORMAT.format(cost);
             Context context = getContext();
             if (context != null) {
@@ -2588,7 +2689,7 @@ public class FileViewFragment extends BaseFragment implements
                     String message = getResources().getQuantityString(
                             R.plurals.confirm_purchase_message,
                             cost == 1 ? 1 : 2,
-                            claim.getTitle(),
+                            actualClaim.getTitle(),
                             formattedCost.equals("0") ? Helper.FULL_LBC_CURRENCY_FORMAT.format(cost) : formattedCost);
                     AlertDialog.Builder builder = new AlertDialog.Builder(context).
                             setTitle(R.string.confirm_purchase).
@@ -2621,13 +2722,14 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void tryOpenFileOrFileGet() {
-        if (claim != null) {
-            String claimId = claim.getClaimId();
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
+            String claimId = actualClaim.getClaimId();
             FileListTask task = new FileListTask(claimId, null, new FileListTask.FileListResultHandler() {
                 @Override
                 public void onSuccess(List<LbryFile> files, boolean hasReachedEnd) {
                     if (files.size() > 0) {
-                        claim.setFile(files.get(0));
+                        actualClaim.setFile(files.get(0));
                         handleMainActionForClaim();
                         checkIsFileComplete();
                     } else {
@@ -2644,36 +2746,67 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void handleMainActionForClaim() {
-        if (claim.isFree() && ((claim.isPlayable() && Lbryio.isSignedIn()) || !claim.hasSource())) {
-            // always use lbry.tv streaming when signed in and playabble
-            startTimeMillis = System.currentTimeMillis();
-            showExoplayerView();
-            playMedia();
+    private void resolvePlaylistClaimsAndPlayFirst() {
+        if (playlistResolved) {
             return;
         }
 
-        if (Lbry.SDK_READY) {
-            // Check if the file already exists for the claim
-            if (claim.getFile() != null) {
-                playOrViewMedia();
-            } else {
-                // check if the file exists from file list
-                boolean saveFile = downloadRequested || !claim.isPlayable();
-                if (!saveFile) {
-                    startTimeMillis = System.currentTimeMillis();
-                    fileGet(false);
-                    return;
-                } else {
-                    tryOpenFileOrFileGet();
+        Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
+        Helper.setViewVisibility(layoutResolving, View.VISIBLE);
+        Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
+        Helper.setViewVisibility(layoutDisplayArea, View.GONE);
+
+        Map<String, Object> options = new HashMap<>();
+        options.put("claim_type", "stream");
+        options.put("page", 1);
+        options.put("page_size", 999);
+        options.put("claim_ids", fileClaim.getClaimIds());
+        ClaimSearchTask task = new ClaimSearchTask(options, Lbry.API_CONNECTION_STRING, null, new ClaimSearchResultHandler() {
+            @Override
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
+                playlistResolved = true;
+
+                // reorder the claims based on the order in the list, TODO: find a more efficient way to do this
+                Map<String, Claim> playlistClaimMap = new LinkedHashMap<>();
+                List<String> claimIds = fileClaim.getClaimIds();
+                for (String id : claimIds) {
+                    for (Claim claim : claims) {
+                        if (id.equalsIgnoreCase(claim.getClaimId())) {
+                            playlistClaimMap.put(id, claim);
+                            break;
+                        }
+                    }
+                }
+
+                playlistClaims = new ArrayList<>(playlistClaimMap.values());
+                if (playlistClaims.size() > 0) {
+                    playClaimFromCollection(playlistClaims.get(0), 0);
+                }
+
+                relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
+                relatedContentAdapter.setListener(FileViewFragment.this);
+
+                View root = getView();
+                if (root != null) {
+                    RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+                    relatedContentList.setAdapter(relatedContentAdapter);
                 }
             }
-        } else {
-            if (claim.isPlayable()) {
-                startTimeMillis = System.currentTimeMillis();
-                showExoplayerView();
-                playMedia();
+
+            @Override
+            public void onError(Exception error) {
+                showError(getString(R.string.comment_error));
             }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void handleMainActionForClaim() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim.isPlayable()) {
+            startTimeMillis = System.currentTimeMillis();
+            showExoplayerView();
+            playMedia();
         }
     }
 
@@ -2681,7 +2814,9 @@ public class FileViewFragment extends BaseFragment implements
         if (getFileTask != null && getFileTask.getStatus() != AsyncTask.Status.FINISHED) {
             return;
         }
-        getFileTask = new GetFileTask(claim.getPermanentUrl(), save, null, new GetFileTask.GetFileHandler() {
+
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        getFileTask = new GetFileTask(actualClaim.getPermanentUrl(), save, null, new GetFileTask.GetFileHandler() {
             @Override
             public void beforeStart() {
 
@@ -2690,8 +2825,8 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public void onSuccess(LbryFile file, boolean saveFile) {
                 // queue the download
-                if (claim != null) {
-                    if (claim.isFree()) {
+                if (actualClaim != null) {
+                    if (actualClaim.isFree()) {
                         // paid is handled differently
                         Bundle bundle = new Bundle();
                         bundle.putString("uri", currentUrl);
@@ -2699,11 +2834,11 @@ public class FileViewFragment extends BaseFragment implements
                         LbryAnalytics.logEvent(LbryAnalytics.EVENT_PURCHASE_URI, bundle);
                     }
 
-                    if (!claim.isPlayable()) {
-                        logFileView(claim.getPermanentUrl(), 0);
+                    if (!actualClaim.isPlayable()) {
+                        logFileView(actualClaim.getPermanentUrl(), 0);
                     }
 
-                    claim.setFile(file);
+                    actualClaim.setFile(file);
                     playOrViewMedia();
                 }
             }
@@ -2726,17 +2861,18 @@ public class FileViewFragment extends BaseFragment implements
 
     private void playOrViewMedia() {
         boolean handled = false;
-        String mediaType = claim.getMediaType();
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        String mediaType = actualClaim.getMediaType();
         if (!Helper.isNullOrEmpty(mediaType)) {
-            if (claim.isPlayable()) {
+            if (actualClaim.isPlayable()) {
                 startTimeMillis = System.currentTimeMillis();
                 showExoplayerView();
                 playMedia();
                 handled = true;
-            } else if (claim.isViewable()) {
+            } else if (actualClaim.isViewable()) {
                 // check type and display
                 boolean fileExists = false;
-                LbryFile claimFile = claim.getFile();
+                LbryFile claimFile = actualClaim.getFile();
                 Uri fileUri  = null;
                 if (claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath())) {
                     File file = new File(claimFile.getDownloadPath());
@@ -2775,7 +2911,7 @@ public class FileViewFragment extends BaseFragment implements
                     handled = true;
                 }
             } else {
-                openClaimExternally(claim, mediaType);
+                openClaimExternally(actualClaim, mediaType);
             }
         }
 
@@ -2786,8 +2922,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private long loadLastPlaybackPosition() {
         long position = -1;
-        if (claim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
+            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
             Context context = getContext();
             if (context != null) {
                 SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
@@ -2798,8 +2935,9 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void savePlaybackPosition() {
-        if (MainActivity.appPlayer != null && claim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (MainActivity.appPlayer != null && actualClaim != null) {
+            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
             long position = MainActivity.appPlayer.getCurrentPosition();
             Context context = getContext();
             if (context != null) {
@@ -2870,6 +3008,19 @@ public class FileViewFragment extends BaseFragment implements
         startActivityForResult(chooser, 419);
     }
 
+    private void playClaimFromCollection(Claim theClaim, int index) {
+        updatePlaylistContentDisplay(index);
+        collectionClaimItem = theClaim;
+        renderClaim();
+
+        // Save to view history, when playing from a collection
+        if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(theClaim.getType())) {
+            Helper.saveViewHistory(theClaim.getPermanentUrl(), theClaim);
+        }
+
+        checkAndLoadComments(true);
+    }
+
     public void showError(String message) {
         View root = getView();
         if (root != null) {
@@ -2880,11 +3031,11 @@ public class FileViewFragment extends BaseFragment implements
     private void loadRelatedContent() {
         // reset the list view
         View root = getView();
-        if (claim != null && root != null) {
+        if (fileClaim != null && root != null) {
             Context context = getContext();
 
             List<Claim> loadingPlaceholders = new ArrayList<>();
-            int loadingPlaceholdersLength = Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) ? claim.getClaimIds().size() : 15;
+            int loadingPlaceholdersLength = Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType()) ? fileClaim.getClaimIds().size() : 15;
             for (int i = 0; i < loadingPlaceholdersLength; i++) {
                 Claim placeholder = new Claim();
                 placeholder.setLoadingPlaceholder(true);
@@ -2903,9 +3054,9 @@ public class FileViewFragment extends BaseFragment implements
                 canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
             }
 
-            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType())) {
-                String title = claim.getTitle();
-                String claimId = claim.getClaimId();
+            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) {
+                String title = fileClaim.getTitle();
+                String claimId = fileClaim.getClaimId();
 
                 final boolean nsfw = canShowMatureContent;
                 relatedLoading.setVisibility(View.VISIBLE);
@@ -2949,16 +3100,16 @@ public class FileViewFragment extends BaseFragment implements
                 t.start();
             } else {
                 TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
-                relatedOrPlayList.setText(claim.getTitle());
+                relatedOrPlayList.setText(fileClaim.getTitle());
                 relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
                 relatedOrPlayList.setPadding(0, 0, 0, 16);
                 relatedOrPlayList.setTypeface(null, Typeface.BOLD);
 
                 Map<String, Object> claimSearchOptions = new HashMap<>(3);
 
-                claimSearchOptions.put("claim_ids", claim.getClaimIds());
+                claimSearchOptions.put("claim_ids", fileClaim.getClaimIds());
                 claimSearchOptions.put("not_tags", canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS));
-                claimSearchOptions.put("page_size", claim.getClaimIds().size());
+                claimSearchOptions.put("page_size", fileClaim.getClaimIds().size());
 
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
@@ -2968,19 +3119,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     if (playlistClaimItems != null) {
                         relatedContentAdapter.setItems(playlistClaimItems);
-                        relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim) {
-                                if (claim.isLoadingPlaceholder()) {
-                                    return;
-                                }
-
-                                if (context instanceof MainActivity) {
-                                    MainActivity activity = (MainActivity) context;
-                                    activity.openFileUrl(claim.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
-                                }
-                            }
-                        });
+                        relatedContentAdapter.setListener(FileViewFragment.this);
 
                         View v = getView();
                         if (v != null) {
@@ -3001,10 +3140,30 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @Override
+    public void onClaimClicked(Claim claimItem, int position) {
+        if (claimItem.isLoadingPlaceholder()) {
+            return;
+        }
+
+        if ((fileClaim != null && Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) ||
+                (collectionClaimItem != null && playlistClaims.size() > 0)) {
+            playClaimFromCollection(claimItem, position);
+            return;
+        }
+
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.openFileUrl(claimItem.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
+        }
+    }
+
     private void relatedContentRequestSuccedded(List<Claim> claims) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         List<Claim> filteredClaims = new ArrayList<>();
         for (Claim c : claims) {
-            if (!c.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
+            if (!c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId())) {
                 filteredClaims.add(c);
             }
         }
@@ -3016,7 +3175,7 @@ public class FileViewFragment extends BaseFragment implements
             relatedContentAdapter.setItems(filteredClaims);
             relatedContentAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                 @Override
-                public void onClaimClicked(Claim claim) {
+                public void onClaimClicked(Claim claim, int position) {
                     if (claim.isLoadingPlaceholder()) {
                         return;
                     }
@@ -3054,10 +3213,11 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
     private void loadComments() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         View root = getView();
-        if (root != null && claim != null) {
+        if (root != null && actualClaim != null) {
             ProgressBar commentsLoading = root.findViewById(R.id.file_view_comments_progress);
-            CommentListTask task = new CommentListTask(1, 200, claim.getClaimId(), commentsLoading, new CommentListHandler() {
+            CommentListTask task = new CommentListTask(1, 200, actualClaim.getClaimId(), commentsLoading, new CommentListHandler() {
                 @Override
                 public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                     if (!comments.isEmpty()) {
@@ -3115,7 +3275,11 @@ public class FileViewFragment extends BaseFragment implements
                             public int compare(Comment o1, Comment o2) {
                                 int o1SelfLiked = (Lbryio.isSignedIn() &&  o1.getReactions() != null && o1.getReactions().isLiked()) ? 1 : 0;
                                 int o2SelfLiked = (Lbryio.isSignedIn() && o2.getReactions() != null && o2.getReactions().isLiked()) ? 1 : 0;
-                                return (o2.getReactions().getOthersLikes() + o2SelfLiked) - (o1.getReactions().getOthersLikes() + o1SelfLiked);
+
+                                int o1OtherLikes = o1.getReactions() != null ? o1.getReactions().getOthersLikes() : 0;
+                                int o2OtherLikes = o2.getReactions() != null ? o2.getReactions().getOthersLikes() : 0;
+
+                                return (o2OtherLikes + o2SelfLiked) - (o1OtherLikes + o1SelfLiked);
                             }
                         });
                     }
@@ -3188,12 +3352,13 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void ensureCommentListAdapterCreated(final List<Comment> comments) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if ( commentListAdapter == null ) {
 
             final Context androidContext = getContext();
             final View root = getView();
 
-            commentListAdapter = new CommentListAdapter(comments, getContext(), claim, new CommentListAdapter.CommentListListener() {
+            commentListAdapter = new CommentListAdapter(comments, getContext(), actualClaim, new CommentListAdapter.CommentListListener() {
                 @Override
                 public void onListChanged() {
                     checkNoComments();
@@ -3211,7 +3376,7 @@ public class FileViewFragment extends BaseFragment implements
             });
             commentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                 @Override
-                public void onClaimClicked(Claim claim) {
+                public void onClaimClicked(Claim claim, int position) {
                     if (!Helper.isNullOrEmpty(claim.getName()) && claim.getName().startsWith("@") &&
                             androidContext instanceof MainActivity) {
                         removeNotificationAsSource();
@@ -3444,6 +3609,7 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity.appPlayer.removeListener(fileViewPlayerListener);
             PlaybackParameters params = new PlaybackParameters(1.0f);
             MainActivity.appPlayer.setPlaybackParameters(params);
+            MainActivity.videoIsTranscoded = false;
         }
     }
 
@@ -3503,16 +3669,18 @@ public class FileViewFragment extends BaseFragment implements
         bundle.putLong("time_to_start_seconds", Double.valueOf(timeToStartMillis / 1000.0).longValue());
         LbryAnalytics.logEvent(LbryAnalytics.EVENT_PLAY, bundle);
 
-        logFileView(claim.getPermanentUrl(), timeToStartMillis);
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        logFileView(actualClaim.getPermanentUrl(), timeToStartMillis);
     }
 
     private void logFileView(String url, long timeToStart) {
-        if (claim != null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
             String authToken = Lbryio.AUTH_TOKEN;
             Map<String, String> options = new HashMap<>();
             options.put("uri", url);
-            options.put("claim_id", claim.getClaimId());
-            options.put("outpoint", String.format("%s:%d", claim.getTxid(), claim.getNout()));
+            options.put("claim_id", actualClaim.getClaimId());
+            options.put("outpoint", String.format("%s:%d", actualClaim.getTxid(), actualClaim.getNout()));
             if (timeToStart > 0) {
                 options.put("time_to_start", String.valueOf(timeToStart));
             }
@@ -3589,9 +3757,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkIsFollowing() {
-        if (claim != null && claim.getSigningChannel() != null) {
-            boolean isFollowing = Lbryio.isFollowing(claim.getSigningChannel());
-            boolean notificationsDisabled = Lbryio.isNotificationsDisabled(claim.getSigningChannel());
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null && actualClaim.getSigningChannel() != null) {
+            boolean isFollowing = Lbryio.isFollowing(actualClaim.getSigningChannel());
+            boolean notificationsDisabled = Lbryio.isNotificationsDisabled(actualClaim.getSigningChannel());
             Context context = getContext();
             View root = getView();
             if (context != null && root != null) {
@@ -3639,12 +3808,13 @@ public class FileViewFragment extends BaseFragment implements
     };
 
     private void checkIsFileComplete() {
-        if (claim == null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim == null) {
             return;
         }
         View root = getView();
         if (root != null) {
-            if (claim.getFile() != null && claim.getFile().isCompleted()) {
+            if (actualClaim.getFile() != null && actualClaim.getFile().isCompleted()) {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), View.VISIBLE);
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.GONE);
             } else {
@@ -3671,8 +3841,9 @@ public class FileViewFragment extends BaseFragment implements
     private void onDownloadAborted() {
         downloadInProgress = false;
 
-        if (claim != null) {
-            claim.setFile(null);
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null) {
+            actualClaim.setFile(null);
         }
         View root = getView();
         if (root != null) {
@@ -3720,7 +3891,8 @@ public class FileViewFragment extends BaseFragment implements
             if (activity.isEnteringPIPMode() || activity.isInPictureInPictureMode()) {
                 return;
             }
-            if (claim != null && claim.isPlayable() && !activity.isInFullscreenMode()) {
+            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+            if (actualClaim != null && actualClaim.isPlayable() && !activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
         }
@@ -3728,9 +3900,10 @@ public class FileViewFragment extends BaseFragment implements
 
     private void checkRewardsDriver() {
         Context ctx = getContext();
-        if (ctx != null && claim != null && !claim.isFree() && claim.getFile() == null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (ctx != null && actualClaim != null && !actualClaim.isFree() && actualClaim.getFile() == null) {
             String rewardsDriverText = getString(R.string.earn_some_credits_to_access);
-            checkRewardsDriverCard(rewardsDriverText, claim.getActualCost(Lbryio.LBCUSDRate).doubleValue());
+            checkRewardsDriverCard(rewardsDriverText, actualClaim.getActualCost(Lbryio.LBCUSDRate).doubleValue());
         }
     }
 
@@ -3811,8 +3984,9 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkOwnClaim() {
-        if (claim != null) {
-            boolean isOwnClaim = Lbry.ownClaims.contains(claim);
+        Claim claimToCheck = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (claimToCheck != null) {
+            boolean isOwnClaim = Lbry.ownClaims.contains(claimToCheck);
             View root = getView();
             if (root != null) {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_report), isOwnClaim ? View.GONE : View.VISIBLE);
@@ -4094,9 +4268,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private Comment buildPostComment() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         Comment comment = new Comment();
         Claim channel = (Claim) commentChannelSpinner.getSelectedItem();
-        comment.setClaimId(claim.getClaimId());
+        comment.setClaimId(actualClaim.getClaimId());
         comment.setChannelId(channel.getClaimId());
         comment.setChannelName(channel.getName());
         comment.setText(Helper.getValue(inputComment.getText()));
@@ -4196,8 +4371,8 @@ public class FileViewFragment extends BaseFragment implements
                 singleCommentRoot.setVisibility(View.GONE);
 
                 Bundle bundle = new Bundle();
-                bundle.putString("claim_id", claim != null ? claim.getClaimId() : null);
-                bundle.putString("claim_name", claim != null ? claim.getName() : null);
+                bundle.putString("claim_id", fileClaim != null ? fileClaim.getClaimId() : null);
+                bundle.putString("claim_name", fileClaim != null ? fileClaim.getName() : null);
                 LbryAnalytics.logEvent(LbryAnalytics.EVENT_COMMENT_CREATE, bundle);
 
                 Context context = getContext();

@@ -337,7 +337,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                         contentListAdapter = new ClaimListAdapter(finalItems, context);
                                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                                             @Override
-                                            public void onClaimClicked(Claim claim) {
+                                            public void onClaimClicked(Claim claim, int position) {
                                                 Context context = getContext();
                                                 if (context instanceof MainActivity) {
                                                     MainActivity activity = (MainActivity) context;

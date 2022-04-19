@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:clickable="true"
+    android:focusable="true"
+    android:paddingTop="8dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:background="@drawable/bg_selected_list_item">
+    <LinearLayout
+        android:id="@+id/claim_repost_info"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+        <com.odysee.app.ui.controls.SolidIconView
+            android:layout_width="16dp"
+            android:layout_height="12dp"
+            android:layout_gravity="center_vertical"
+            android:textColor="@color/lightForeground"
+            android:textSize="12dp"
+            android:text="@string/fa_repost" />
+        <TextView
+            android:id="@+id/claim_repost_channel"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            style="@style/TextView_Light"
+            android:textColor="@color/lightForeground" android:focusable="true"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            style="@style/TextView_Light"
+            android:text="@string/reposted"
+            android:textColor="@color/lightForeground" />
+    </LinearLayout>
+    <RelativeLayout
+        android:layout_width="160dp"
+        android:layout_height="wrap_content">
+        <RelativeLayout
+            android:id="@+id/claim_media_container"
+            android:layout_width="160dp"
+            android:layout_height="90dp">
+            <RelativeLayout
+                android:layout_centerHorizontal="true"
+                android:background="@drawable/bg_thumbnail_icon"
+                android:id="@+id/claim_no_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/claim_thumbnail_alpha"
+                    style="@style/TextView_Light"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:singleLine="true"
+                    android:textAllCaps="true"
+                    android:textColor="@color/white"
+                    android:textSize="24sp" />
+            </RelativeLayout>
+
+            <ImageView
+                android:id="@+id/claim_thumbnail"
+                android:layout_width="160dp"
+                android:layout_height="90dp"
+                android:scaleType="centerCrop"
+                />
+            <TextView
+                android:background="@android:color/black"
+                android:id="@+id/claim_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="4dp"
+                android:layout_marginBottom="4dp"
+                style="@style/TextView_Light"
+                android:textColor="@android:color/white"
+                android:padding="2dp"
+                android:visibility="gone" />
+            <LinearLayout
+                android:id="@+id/claim_fee_container"
+                android:background="@drawable/bg_stream_cost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="4dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="7dp"
+                android:visibility="gone">
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="center_vertical"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_credits" />
+                <TextView
+                    android:id="@+id/claim_fee"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="1dp"
+                    style="@style/TextView_Light"
+                    android:textColor="@android:color/black" />
+            </LinearLayout>
+            <RelativeLayout
+                android:layout_centerHorizontal="true"
+                android:background="@drawable/bg_stream_overlay_icon"
+                android:id="@+id/claim_selected_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_centerInParent="true"
+                    android:src="@drawable/ic_check"
+                    app:tint="@color/statsImage" />
+            </RelativeLayout>
+            <LinearLayout
+                android:id="@+id/claim_thumbnail_placeholder"
+                android:background="@color/lighterGrey"
+                android:orientation="vertical"
+                android:layout_width="160dp"
+                android:layout_height="90dp"
+                android:visibility="gone" />
+        </RelativeLayout>
+    </RelativeLayout>
+    <LinearLayout
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/claim_text_loading_placeholder_1"
+            android:background="@color/lighterGrey"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="16dp"
+            android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/claim_text_loading_placeholder_2"
+            android:background="@color/lighterGrey"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="16dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/claim_vanity_url"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/claim_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter"
+            android:textFontWeight="300"
+            android:textSize="11sp" />
+        <TextView
+            android:id="@+id/claim_publisher"
+            android:background="?attr/selectableItemBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/inter"
+            android:textColor="@color/colorPrimary"
+            android:textSize="11sp"
+            android:singleLine="true" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/claim_publish_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter"
+                android:textSize="10sp"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/claim_pending_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/TextView_Light"
+                android:text="@string/pending"
+                android:textSize="10sp"
+                android:textStyle="italic"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/claim_file_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                style="@style/TextView_Light"
+                android:textSize="10sp"
+                android:visibility="gone" />
+        </RelativeLayout>
+        <!-- download progress bar -->
+        <ProgressBar
+            android:id="@+id/claim_download_progress"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone"
+            style="?android:progressBarStyleHorizontal" />
+        <TextView
+            android:id="@+id/claim_view_device"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            style="@style/TextView_Light"
+            android:singleLine="true"
+            android:textColor="@color/lightGrey"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

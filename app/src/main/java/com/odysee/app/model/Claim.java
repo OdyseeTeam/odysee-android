@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -110,6 +111,7 @@ public class Claim {
         claim.setPermanentUrl(Helper.getJSONString("permanent_url", null, item));
         claim.setTxid(Helper.getJSONString("txid", null, item));
         claim.setNout(Helper.getJSONInt("nout", -1, item));
+
         return claim;
     }
 
@@ -137,13 +139,17 @@ public class Claim {
         }
 
         Fee fee = ((StreamMetadata) value).getFee();
-        if (fee != null) {
-            double amount = Helper.parseDouble(fee.getAmount(), 0);
-            if ("usd".equalsIgnoreCase(fee.getCurrency())) {
-                return new BigDecimal(String.valueOf(amount / usdRate));
-            }
+        try {
+            if (fee != null) {
+                double amount = Helper.parseDouble(fee.getAmount(), 0);
+                if ("usd".equalsIgnoreCase(fee.getCurrency())) {
+                    return new BigDecimal(String.valueOf(amount / usdRate));
+                }
 
-            return new BigDecimal(String.valueOf(amount)); // deweys
+                return new BigDecimal(String.valueOf(amount)); // deweys
+            }
+        } catch (NumberFormatException ex) {
+            // pass
         }
 
         return new BigDecimal(0);
@@ -172,6 +178,8 @@ public class Claim {
             String mediaType = metadata.getSource() != null ? metadata.getSource().getMediaType() : null;
             if (mediaType != null) {
                 return mediaType.startsWith("video") || mediaType.startsWith("audio");
+            } else {
+                return livestreamUrl != null;
             }
         }
         return false;

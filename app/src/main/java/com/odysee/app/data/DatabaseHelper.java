@@ -1,5 +1,6 @@
 package com.odysee.app.data;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -11,8 +12,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.ViewHistory;
@@ -22,7 +27,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 10;
+    public static final int DATABASE_VERSION = 11;
     public static final String DATABASE_NAME = "LbryApp.db";
     private static DatabaseHelper instance;
 
@@ -62,7 +67,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     ", is_seen INTEGER DEFAULT 0 NOT NULL " +
                     ", timestamp TEXT NOT NULL)",
             "CREATE TABLE shuffle_watched (id INTEGER PRIMARY KEY NOT NULL, claim_id TEXT NOT NULL)",
-            "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)"
+            "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)",
+            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL, visibility INTEGER DEFAULT 1 NOT NULL)",
+            "CREATE TABLE collection_items (collection_id TEXT NOT NULL, url TEXT NOT NULL, item_order INTEGER DEFAULT 1 NOT NULL, PRIMARY KEY(collection_id, url))"
     };
     private static final String[] SQL_CREATE_INDEXES = {
             "CREATE UNIQUE INDEX idx_subscription_url ON subscriptions (url)",
@@ -133,6 +140,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "CREATE TABLE blocked_channels (claim_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL)",
             "CREATE INDEX idx_blocked_channel_name ON blocked_channels (name)"
     };
+    private static final String[] SQL_V10_V11_UPGRADE = {
+            "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL, visibility INTEGER DEFAULT 1 NOT NULL)",
+            "CREATE TABLE collection_items (collection_id TEXT NOT NULL, url TEXT NOT NULL, item_order INTEGER DEFAULT 1 NOT NULL, PRIMARY KEY(collection_id, url))"
+    };
 
     private static final String SQL_INSERT_SUBSCRIPTION = "REPLACE INTO subscriptions (channel_name, url, is_notifications_disabled) VALUES (?, ?, ?)";
     private static final String SQL_UPDATE_SUBSCRIPTION_NOTIFICATION = "UPDATE subscriptions SET is_notification_disabled = ? WHERE url = ?";
@@ -183,6 +194,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_REMOVE_ALL_VIEW_HISTORY = "DELETE FROM view_history";
     private static final String SQL_REMOVE_ALL_TAGS = "DELETE FROM tags";
     private static final String SQL_REMOVE_ALL_NOTIFICATIONS = "DELETE FROM notifications";
+    private static final String SQL_REMOVE_ALL_CUSTOM_COLLECTIONS = "DELETE FROM collections WHERE id <> 'favorites' AND  id <> 'watchlater'";
+    private static final String SQL_REMOVE_ALL_COLLECTION_ITEMS = "DELETE FROM collection_items";
+
+    private static final String SQL_GET_BUILTIN_COLLECTION_COUNT = "SELECT COUNT(id) FROM collections WHERE id = 'favorites' OR id = 'watchlater'";
+    private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
+    private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
+    private static final String SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION = "DELETE FROM collection_items WHERE collection_id = ?";
+    private static final String SQL_UPDATE_COLLECTION_UPDATED_AT = "UPDATE collections SET updated_at = ? WHERE id = ?";
+    private static final String SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION = "INSERT INTO collection_items (collection_id, url, item_order) VALUES  (?, ?, ?)";
+    private static final String SQL_GET_EXISTING_COLLECTION_ITEM_COUNT = "SELECT COUNT(url) FROM collection_items WHERE collection_id = ? AND url = ?";
+    private static final String SQL_GET_MAX_ITEM_ORDER_FOR_COLLECTION = "SELECT MAX(item_order) FROM collection_items WHERE collection_id = ?";
+    private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, visibility, updated_at FROM collections WHERE id = ?";
+    private static final String SQL_DELETE_COLLECTION_BY_ID = "DELETE FROM collections WHERE id = ?";
+    private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, visibility, updated_at FROM collections";
+    private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
 
     public DatabaseHelper(Context context) {
         super(context, String.format("%s/%s", context.getFilesDir().getAbsolutePath(), DATABASE_NAME), null, DATABASE_VERSION);
@@ -242,6 +268,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 10) {
             for (String sql : SQL_V9_V10_UPGRADE) {
+                db.execSQL(sql);
+            }
+        }
+        if (oldVersion < 11) {
+            for (String sql : SQL_V10_V11_UPGRADE) {
                 db.execSQL(sql);
             }
         }
@@ -548,6 +579,215 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return blockedChannels;
     }
 
+    @SuppressLint("SimpleDateFormat")
+    public static void checkAndCreateBuiltinPlaylists(SQLiteDatabase db) {
+        int count = 0;
+        Cursor cursor = null;
+
+        db.beginTransaction();
+        try {
+            cursor = db.rawQuery(SQL_GET_BUILTIN_COLLECTION_COUNT, null);
+            if (cursor.moveToNext()) {
+                count = cursor.getInt(0);
+            }
+            if (count != 2) {
+                Date now = new Date();
+                db.execSQL(SQL_CREATE_BUILTIN_COLLECTION, new Object[]{
+                        OdyseeCollection.BUILT_IN_ID_FAVORITES,
+                        "Favorites",
+                        "playlist",
+                        OdyseeCollection.VISIBILITY_PRIVATE,
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
+                });
+                db.execSQL(SQL_CREATE_BUILTIN_COLLECTION, new Object[]{
+                        OdyseeCollection.BUILT_IN_ID_WATCHLATER,
+                        "Watch Later",
+                        "playlist",
+                        OdyseeCollection.VISIBILITY_PRIVATE,
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(now)
+                });
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+            Helper.closeCursor(cursor);
+        }
+    }
+
+    public static void saveCollection(OdyseeCollection collection, SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            if (collection.getId() == null) {
+                collection.setId(UUID.randomUUID().toString());
+            }
+
+            db.execSQL(SQL_CREATE_COLLECTION, new Object[] {
+                    collection.getId(),
+                    collection.getName(),
+                    collection.getType(),
+                    collection.getVisibility(),
+                    new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(collection.getUpdatedAt())
+            });
+
+            db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION, new Object[] { collection.getId() });
+
+            List<String> items = new ArrayList<>(collection.getItems());
+            for (int i = 0; i < items.size(); i++)  {
+                db.execSQL(SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION, new Object[] {
+                        collection.getId(),
+                        items.get(i),
+                        (i + 1)  //  item order
+                });
+            }
+
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    public static void deleteCollection(OdyseeCollection collection, SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION, new Object[] { collection.getId() });
+            db.execSQL(SQL_DELETE_COLLECTION_BY_ID, new Object[] { collection.getId() });
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    // only load the collection details without the items (for listing)
+    public static List<OdyseeCollection> getSimpleCollections(SQLiteDatabase db) {
+        List<OdyseeCollection> collections = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(SQL_GET_COLLECTIONS, null);
+            while (cursor.moveToNext()) {
+                int columnIndex = 0;
+                OdyseeCollection collection = new OdyseeCollection();
+                collection.setId(cursor.getString(columnIndex++));
+                collection.setName(cursor.getString(columnIndex++));
+                collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
+                try {
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                } catch (ParseException ex)  {
+                    collection.setUpdatedAt(new Date());
+                }
+                collections.add(collection);
+            }
+        } finally {
+            Helper.closeCursor(cursor);
+        }
+
+        return collections;
+    }
+
+    public static Map<String, OdyseeCollection> loadAllCollections(SQLiteDatabase db) {
+        Map<String, OdyseeCollection> collections = new HashMap<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(SQL_GET_COLLECTIONS, null);
+            while (cursor.moveToNext()) {
+                int columnIndex = 0;
+                OdyseeCollection collection = new OdyseeCollection();
+                collection.setId(cursor.getString(columnIndex++));
+                collection.setName(cursor.getString(columnIndex++));
+                collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
+                try {
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                } catch (ParseException ex)  {
+                    collection.setUpdatedAt(new Date());
+                }
+                collections.put(collection.getId(), collection);
+            }
+            Helper.closeCursor(cursor);
+
+            for (Map.Entry<String, OdyseeCollection> entry : collections.entrySet()) {
+                OdyseeCollection collection = entry.getValue();
+                cursor = db.rawQuery(SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION, new String[] { collection.getId() });
+                while (cursor.moveToNext()) {
+                    collection.addItem(cursor.getString(0), false);
+                }
+                Helper.closeCursor(cursor);
+            }
+        } finally {
+            Helper.closeCursor(cursor);
+        }
+
+        return collections;
+    }
+
+    public static OdyseeCollection loadCollection(String id, SQLiteDatabase db) {
+        OdyseeCollection collection = null;
+
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(SQL_GET_COLLECTION_BY_ID, new String[] { id });
+            if (cursor.moveToNext()) {
+                int columnIndex = 0;
+                collection = new OdyseeCollection();
+                collection.setId(cursor.getString(columnIndex++));
+                collection.setName(cursor.getString(columnIndex++));
+                collection.setType(cursor.getString(columnIndex++));
+                collection.setVisibility(cursor.getInt(columnIndex++));
+                try {
+                    collection.setUpdatedAt(new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).parse(cursor.getString(columnIndex++)));
+                } catch (ParseException ex)  {
+                    collection.setUpdatedAt(new Date());
+                }
+            }
+            Helper.closeCursor(cursor);
+
+            if (collection != null) {
+                cursor = db.rawQuery(SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION, new String[] { collection.getId() });
+                while (cursor.moveToNext()) {
+                    collection.addItem(cursor.getString(0), false);
+                }
+            }
+        } finally {
+            Helper.closeCursor(cursor);
+        }
+
+        return collection;
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    public static void addCollectionItem(String id, String url, SQLiteDatabase db) {
+        db.beginTransaction();
+        Cursor cursor = null;
+        try {
+            // check if the item exists first. If it does, we can skip everything else
+            boolean exists = false;
+            cursor = db.rawQuery(SQL_GET_EXISTING_COLLECTION_ITEM_COUNT, new String[] { id, url });
+            if (cursor.moveToNext()) {
+                exists = cursor.getInt(0) > 0;
+            }
+            Helper.closeCursor(cursor);
+
+            if (!exists) {
+                int nextItemOrder = 1;
+                cursor = db.rawQuery(SQL_GET_MAX_ITEM_ORDER_FOR_COLLECTION, new String[]{id});
+                if (cursor.moveToNext()) {
+                    nextItemOrder = cursor.getInt(0) + 1;
+                }
+
+                db.execSQL(SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION, new Object[]{
+                        id, url, nextItemOrder
+                });
+                db.execSQL(SQL_UPDATE_COLLECTION_UPDATED_AT, new Object[] {
+                        new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(new Date()), id
+                });
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            Helper.closeCursor(cursor);
+            db.endTransaction();
+        }
+    }
+
     public static void clearLocalUserData(SQLiteDatabase db) {
         db.beginTransaction();
         try {
@@ -557,6 +797,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(SQL_REMOVE_ALL_TAGS);
             db.execSQL(SQL_REMOVE_ALL_NOTIFICATIONS);
             db.execSQL(SQL_REMOVE_ALL_BLOCKED_CHANNELS);
+            db.execSQL(SQL_REMOVE_ALL_COLLECTION_ITEMS);
+            db.execSQL(SQL_REMOVE_ALL_CUSTOM_COLLECTIONS);
             db.setTransactionSuccessful();
         } catch (SQLiteException ex) {
             // pass

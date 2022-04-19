@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -481,7 +482,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 if (listener != null && comment.getPoster() != null) {
-                    listener.onClaimClicked(comment.getPoster());
+                    listener.onClaimClicked(comment.getPoster(), position);
                 }
             }
         });
@@ -533,37 +534,76 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
      */
     private void switchRepliesVisibility(String parentId) {
         int firstChild = - 1;
-        int lastIndex = -1;
+        int lastIndex;
 
         // By calculating the range of items which will be hidden/displayed and then
         // using it on the notification to the adapter, RecyclerView optimizes the change
         // and also animates it -for free!!!-
-        for (Comment c : items) {
-            if (c.getParentId() != null && c.getParentId().equalsIgnoreCase(parentId)) {
-                if (firstChild == -1) {
-                    firstChild = items.indexOf(c);
-                    lastIndex = firstChild + 1;
+        Comment parentComment = items.stream().filter(c -> c.getId().equalsIgnoreCase(parentId)).findFirst().orElse(null);
+        int parentPosition = items.indexOf(parentComment);
+
+        List<Comment> directChilds = items.stream().filter(c -> c.getParentId() != null &&  c.getParentId().equalsIgnoreCase(parentId)).collect(Collectors.toList());
+        Comment lastChildCandidate = directChilds.get(directChilds.size() - 1);
+
+        lastIndex = items.indexOf(lastChildCandidate);
+        if (directChilds.size() > 1) {
+            String lastChildCandidateId = lastChildCandidate.getId();
+            List<Comment> lastGlobalChildCandidates = items.stream().filter(c -> {
+                if (c.getParentId() != null && c.getParentId().equalsIgnoreCase(lastChildCandidateId)) {
+                    return true;
                 } else {
-                    lastIndex = items.indexOf(c) + 1;
+                    return false;
                 }
+            }).collect(Collectors.toList());
+
+            if (lastGlobalChildCandidates.size() > 0) {
+                // Last child candidate has more childs
+                boolean isLast = false;
+                String candidateParentId = lastGlobalChildCandidates.get(lastGlobalChildCandidates.size() - 1).getId();
+
+                while (!isLast) {
+                    String finalCandidateParentId = candidateParentId;
+                    List<Comment> candidates = items.stream().filter(c -> c.getParentId() != null && c.getParentId().equalsIgnoreCase(finalCandidateParentId)).collect(Collectors.toList());
+                    isLast = containsLastChild(candidates);
+
+                    if (!isLast) {
+                        candidateParentId = candidates.get(candidates.size() - 1).getId();
+                    }
+                }
+
+                String finalCandidateId = candidateParentId;
+                Comment lastComment = items.stream().filter(c -> c.getId().equalsIgnoreCase(finalCandidateId)).findFirst().orElse(null);
+                lastIndex = items.indexOf(lastComment);
             }
         }
 
+        Comment firstChildComment = items.stream().filter(c -> (c.getParentId() != null && c.getParentId().equalsIgnoreCase(parentId))).findFirst().orElse(null);
+
+        if (firstChildComment != null) {
+            firstChild = items.indexOf(firstChildComment);
+        }
+
+        // childsToBeShown contains a list of parentIds.
+        // RecyclerView will display any item which parentId was contained on childsToBeShown
         if (!childsToBeShown.contains(parentId)) {
             childsToBeShown.add(parentId);
         } else {
             childsToBeShown.remove(parentId);
 
-            // Also remove child parentIds from the list so child replies are also collpased
+            // Also remove child parentIds from the list so child replies are also collapsed
             for (int i = firstChild; i < lastIndex; i++) {
                 childsToBeShown.remove(items.get(i).getParentId());
             }
         }
-        notifyItemRangeChanged(firstChild, lastIndex - firstChild);
+        notifyItemRangeChanged(parentPosition, lastIndex - parentPosition + 1);
     }
 
     public boolean isCollapsed() {
         return collapsed;
+    }
+
+    private boolean containsLastChild(List<Comment> comments) {
+        return comments.size() == 0;
     }
 
     public interface CommentListListener {
