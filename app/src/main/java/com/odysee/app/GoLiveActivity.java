@@ -297,6 +297,8 @@ public class GoLiveActivity extends AppCompatActivity {
                             GoLiveActivity.super.onBackPressed();
                         }
                     }).show();
+        } else {
+            super.onBackPressed();
         }
     }
 
