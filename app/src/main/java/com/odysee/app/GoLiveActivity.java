@@ -262,6 +262,12 @@ public class GoLiveActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        cameraSource.close();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
@@ -272,7 +278,10 @@ public class GoLiveActivity extends AppCompatActivity {
 
         LbryAnalytics.setCurrentScreen(this, "Go Live", "GoLive");
         checkCameraPermissionAndOpenCameraSource();
-        fetchChannels();
+
+        if (waitForConfirmationScheduler == null) {
+            fetchChannels();
+        }
     }
 
     @Override
@@ -480,6 +489,7 @@ public class GoLiveActivity extends AppCompatActivity {
                         });
 
                         waitForConfirmationScheduler.shutdownNow();
+                        waitForConfirmationScheduler = null;
                     }
                 } catch (ApiCallException | JSONException ex) {
                     // Do nothing, will retry in 30s
