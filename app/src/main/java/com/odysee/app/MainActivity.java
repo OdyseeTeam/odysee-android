@@ -68,32 +68,20 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.BillingClientStateListener;
-import com.android.billingclient.api.BillingResult;
-import com.android.billingclient.api.ConsumeParams;
-import com.android.billingclient.api.ConsumeResponseListener;
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.ext.cast.CastPlayer;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.cache.Cache;
-import com.google.android.gms.cast.framework.CastContext;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResult;
@@ -249,11 +237,13 @@ import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
 import com.odysee.app.utils.ContentSources;
+import com.odysee.app.utils.FirebaseMessagingToken;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.PurchasedChecker;
 import com.odysee.app.utils.Utils;
 
 import lombok.Getter;
@@ -288,8 +278,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static SimpleExoPlayer appPlayer;
     public static Cache playerCache;
     public static boolean playerReassigned;
-    public CastContext castContext;
-    public static CastPlayer castPlayer;
+//    public CastContext castContext;
+//    public static CastPlayer castPlayer;
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
     public static String nowPlayingClaimUrl;
@@ -306,7 +296,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean initialCategoriesLoaded;
     private boolean initialBlockedChannelsLoaded;
     private ActionMode actionMode;
-    private BillingClient billingClient;
+    @Getter
+    private PurchasedChecker purchasedChecker;
     @Getter
     private boolean enteringPIPMode = false;
     private boolean fullSyncInProgress = false;
@@ -541,19 +532,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initSpecialRouteMap();
 
         LbryAnalytics.init(this);
-        try {
-            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
-                @Override
-                public void onComplete(@NonNull Task<String> task) {
-                    if (!task.isSuccessful()) {
-                        return;
-                    }
-                    firebaseMessagingToken = task.getResult();
-                }
-            });
-        } catch (IllegalStateException ex) {
-            // pass
-        }
+        FirebaseMessagingToken.getFirebaseMessagingToken(new FirebaseMessagingToken.GetTokenListener() {
+            @Override
+            public void onComplete(String token) {
+                firebaseMessagingToken = token;
+            }
+        });
 
         // create player notification channel
         NotificationManager notificationManager =  (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -589,23 +573,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
 
-        // setup the billing client in main activity (to handle cases where the verification purchase flow may have been interrupted)
-        billingClient = BillingClient.newBuilder(this)
-                .setListener(new PurchasesUpdatedListener() {
-                    @Override
-                    public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
-                        int responseCode = billingResult.getResponseCode();
-                        if (responseCode == BillingClient.BillingResponseCode.OK && purchases != null)
-                        {
-                            for (Purchase purchase : purchases) {
-                                handlePurchase(purchase);
-                            }
-                        }
-                    }
-                })
-                .enablePendingPurchases()
-                .build();
-        establishBillingClientConnection();
+        // setup the purchased checker in main activity (to handle cases where the verification purchase flow may have been interrupted)
+        purchasedChecker = new PurchasedChecker(this, MainActivity.this);
+        purchasedChecker.createBillingClientAndEstablishConnection();
 
         playerNotificationManager = new PlayerNotificationManager.Builder(
                 this, PLAYBACK_NOTIFICATION_ID, PLAYER_NOTIFICATION_CHANNEL_ID, new PlayerNotificationDescriptionAdapter()).build();
@@ -1759,7 +1729,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onResume();
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
-        checkPurchases();
+        purchasedChecker.checkPurchases();
         checkWebSocketClient();
         checkBottomNavigationHeight();
         updateMiniPlayerMargins(findViewById(R.id.bottom_navigation).getVisibility() == View.VISIBLE);
@@ -1810,73 +1780,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public boolean isFirstYouTubeSyncDone() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_FIRST_YOUTUBE_SYNC_DONE, false);
-    }
-
-    public void checkPurchases() {
-        if (billingClient != null) {
-            Purchase.PurchasesResult result = billingClient.queryPurchases(BillingClient.SkuType.INAPP);
-            if (result.getPurchasesList() != null) {
-                for (Purchase purchase : result.getPurchasesList()) {
-                    handlePurchase(purchase);
-                }
-            }
-        }
-    }
-
-    public void checkPurchases(GenericTaskHandler handler) {
-        boolean purchaseFound = false;
-        if (billingClient != null) {
-            Purchase.PurchasesResult result = billingClient.queryPurchases(BillingClient.SkuType.INAPP);
-            if (result.getPurchasesList() != null) {
-                for (Purchase purchase : result.getPurchasesList()) {
-                    handlePurchase(purchase, handler);
-                    purchaseFound = true;
-                    return;
-                }
-            }
-        }
-
-        if (!purchaseFound) {
-            handler.onError(new Exception(getString(R.string.skip_queue_purchase_not_found)));
-        }
-    }
-
-    private void handlePurchase(Purchase purchase) {
-        handleBillingPurchase(purchase, billingClient, MainActivity.this, null, new RewardVerifiedHandler() {
-            @Override
-            public void onSuccess(RewardVerified rewardVerified) {
-                if (Lbryio.currentUser != null) {
-                    Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
-                }
-            }
-
-            @Override
-            public void onError(Exception error) {
-                // pass
-            }
-        });
-    }
-
-    private void handlePurchase(Purchase purchase, GenericTaskHandler handler) {
-        handleBillingPurchase(purchase, billingClient, MainActivity.this, null, new RewardVerifiedHandler() {
-            @Override
-            public void onSuccess(RewardVerified rewardVerified) {
-                if (Lbryio.currentUser != null) {
-                    Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
-                }
-
-                if (handler != null) {
-                    handler.onSuccess();
-                }
-            }
-
-            @Override
-            public void onError(Exception error) {
-                if (handler != null) {
-                    handler.onError(error);
-                }
-            }
-        });
     }
 
     @Override
@@ -4968,53 +4871,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return false;
         }
         return (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED);
-    }
-
-    private void establishBillingClientConnection() {
-        if (billingClient != null) {
-            billingClient.startConnection(new BillingClientStateListener() {
-                @Override
-                public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
-                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                        // no need to do anything here. purchases are always checked server-side
-                        checkPurchases();
-                    }
-                }
-
-                @Override
-                public void onBillingServiceDisconnected() {
-                    establishBillingClientConnection();
-                }
-            });
-        }
-    }
-
-    public static void handleBillingPurchase(
-            Purchase purchase,
-            BillingClient billingClient,
-            Context context,
-            View progressView,
-            RewardVerifiedHandler handler) {
-        String sku = purchase.getSku();
-        if (SKU_SKIP.equalsIgnoreCase(sku)) {
-            // send purchase token for verification
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED
-                /*&& isSignatureValid(purchase)*/) {
-                // consume the purchase
-                String purchaseToken = purchase.getPurchaseToken();
-                ConsumeParams consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchaseToken).build();
-                billingClient.consumeAsync(consumeParams, new ConsumeResponseListener() {
-                    @Override
-                    public void onConsumeResponse(@NonNull BillingResult billingResult, @NonNull String s) {
-
-                    }
-                });
-
-                // send the purchase token to the backend to complete verification
-                AndroidPurchaseTask task = new AndroidPurchaseTask(purchaseToken, progressView, context, handler);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            }
-        }
     }
 
     public interface BackPressInterceptor {

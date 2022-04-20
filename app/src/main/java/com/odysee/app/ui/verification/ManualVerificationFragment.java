@@ -76,7 +76,7 @@ public class ManualVerificationFragment extends Fragment {
             public void onClick(View view) {
                 showLoading();
                 if (MainActivity.instance != null) {
-                    MainActivity.instance.checkPurchases(new GenericTaskHandler() {
+                    MainActivity.instance.getPurchasedChecker().checkPurchases(new GenericTaskHandler() {
                         @Override
                         public void beforeStart() {
 

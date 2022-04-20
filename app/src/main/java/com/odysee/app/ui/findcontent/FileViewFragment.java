@@ -3830,7 +3830,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void toggleCast() {
-        if (!MainActivity.castPlayer.isCastSessionAvailable()) {
+        /*if (!MainActivity.castPlayer.isCastSessionAvailable()) {
             showError(getString(R.string.no_cast_session_available));
             return;
         }
@@ -3839,7 +3839,7 @@ public class FileViewFragment extends BaseFragment implements
             setCurrentPlayer(MainActivity.castPlayer);
         } else {
             setCurrentPlayer(MainActivity.appPlayer);
-        }
+        }*/
     }
 
     private void onDownloadAborted() {
