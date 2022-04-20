@@ -8,6 +8,10 @@
 ## Build from Source
 To build the app, even as a debug APK, you will need to copy `app/twitter.properties.sample` file as `app/twitter.properties`
 
+### Build Variants
+
+There are two build variants: Full and FOSS. The Full variant uses Google APIs and the FOSS variant doesn't. You can switch between them on the "Build Variants" tab in Android Studio.
+
 ## Release
 To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit `app/build.gradle` file the following way:
 

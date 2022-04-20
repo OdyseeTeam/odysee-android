@@ -14,6 +14,7 @@
         android:maxSdkVersion="22" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
@@ -27,6 +28,18 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.google.android.exoplayer2.ext.cast.DefaultCastOptionsProvider" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_spaceman_launcher_foreground" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/odyseePink" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="io.lbry.browser.LBRY_ENGAGEMENT_CHANNEL" />
         <meta-data
             android:name="wakelock"
             android:value="0" />
@@ -147,6 +160,13 @@
             android:theme="@style/AppTheme.NoActionBarTranslucent"
             android:windowSoftInputMode="adjustResize" />
 
+        <service
+            android:name=".LbrynetMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <service
             android:name=".service.OdyseeAccountAuthenticatorService"
             android:enabled="true"
