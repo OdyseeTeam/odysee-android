@@ -345,14 +345,12 @@ public class PublishFragment extends BaseFragment implements
     public void onCameraPermissionRefused() {
         if (takePhotoPending) {
             takePhotoPending = false;
-            Snackbar.make(getView(), R.string.camera_permission_rationale_photo, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            showError(getString(R.string.camera_permission_rationale_photo));
             return;
         }
 
         recordPending = false;
-        Snackbar.make(getView(), R.string.camera_permission_rationale_record, Snackbar.LENGTH_LONG).
-                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+        showError(getString(R.string.camera_permission_rationale_record));
     }
 
     @Override
@@ -382,8 +380,7 @@ public class PublishFragment extends BaseFragment implements
         storagePermissionRefusedOnce = true;
         View root = getView();
         if (root != null) {
-            Snackbar.make(root, R.string.storage_permission_rationale_videos, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            showError(getString(R.string.storage_permission_rationale_videos));
             Helper.setViewText(noVideosLoaded, R.string.storage_permission_rationale_videos);
         }
 

@@ -23,7 +23,7 @@ public class CommentItemDecoration extends RecyclerView.ItemDecoration {
         if (adapter != null) {
             Comment comment = adapter.items.get(position);
 
-            if (comment.getParentId()!= null) {
+            if (comment.getParentId() != null) {
                 outRect.left = marginInPx;
             }
         }

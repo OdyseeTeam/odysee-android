@@ -799,8 +799,7 @@ public class LibraryFragment extends BaseFragment implements
             }
             View root = getView();
             if (root != null) {
-                String message = getResources().getQuantityString(R.plurals.files_deleted, claimIds.size());
-                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                showMessage(getResources().getQuantityString(R.plurals.files_deleted, claimIds.size()));
             }
         } else if (currentFilter == FILTER_HISTORY) {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
