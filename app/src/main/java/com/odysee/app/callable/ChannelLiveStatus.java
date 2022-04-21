@@ -1,6 +1,5 @@
 package com.odysee.app.callable;
 
-import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,6 +21,7 @@ import okhttp3.ResponseBody;
  * If alwaysReturnData is set to true, then this will return the data field, no matter if channel is not currently livestreaming.
  */
 public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
+    public static final String ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API = "https://api.odysee.live/livestream/is_live?channel_claim_id=";
     private final List<String> channelIds;
     private boolean alwaysReturnData = false;
 
@@ -52,8 +52,8 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
         Request.Builder builder = new Request.Builder();
         OkHttpClient client = new OkHttpClient.Builder().build();
         for (String channelId: channelIds) {
-            String url = "https://api.odysee.live/livestream/is_live?channel_claim_id=".concat(channelId);
-            Log.i("Odysee", "get: getting channel live status from: " + url);
+            String url = ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API.concat(channelId);
+//            Log.i("OdyseeLiveStatus", "get: getting channel live status from: " + url);
             builder.url(url);
             Request request = builder.build();
 

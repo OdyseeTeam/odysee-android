@@ -217,24 +217,40 @@ public class ChannelScheduledLivestreamsFragment extends Fragment implements Sha
             Map<String, JSONObject> upcomingJsonData = futureUpcoming.get();
 
             if (upcomingJsonData.size() > 0) {
-                List<String> claimIds = new ArrayList<>();
-                if (upcomingJsonData.containsKey(channelId) && upcomingJsonData.get(channelId) != null && upcomingJsonData.get(channelId).has("FutureClaims")) {
-                    JSONArray jsonClaimIds = upcomingJsonData.get(channelId).optJSONArray("FutureClaims");
+                if (upcomingJsonData.containsKey(channelId)) {
+                    JSONObject channelData = upcomingJsonData.get(channelId);
+                    if (channelData != null && channelData.has("FutureClaims")) {
+                        JSONArray jsonClaimIds = channelData.optJSONArray("FutureClaims");
 
-                    if (jsonClaimIds != null) {
-                        for (int j = 0; j < jsonClaimIds.length(); j++) {
-                            JSONObject obj = jsonClaimIds.getJSONObject(j);
-                            claimIds.add(obj.getString("ClaimID"));
+                        if (jsonClaimIds != null) {
+                            List<String> claimIds = new ArrayList<>();
+                            for (int j = 0; j < jsonClaimIds.length(); j++) {
+                                JSONObject obj = jsonClaimIds.getJSONObject(j);
+                                claimIds.add(obj.getString("ClaimID"));
+                            }
+
+                            Map<String, Object> claimSearchOptions = buildScheduledLivestreamsOptions();
+
+                            claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                            claimSearchOptions.put("has_no_source", true);
+                            claimSearchOptions.put("claim_ids", claimIds);
+                            Future<List<Claim>> upcomingFuture = executor.submit(new Search(claimSearchOptions));
+
+                            upcomingClaims = upcomingFuture.get();
+                            if (channelData.has("ActiveClaim")) {
+                                // Extract active livestream's claimId to compare with future ones
+                                JSONObject activeClaimIdJSON = (JSONObject) channelData.get("ActiveClaim");
+
+                                upcomingClaims.removeIf(t -> {
+                                    try {
+                                        return channelData.getBoolean("Live") && t.getClaimId().equalsIgnoreCase(activeClaimIdJSON.getString("ClaimID"));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                        return false;
+                                    }
+                                });
+                            }
                         }
-
-                        Map<String, Object> claimSearchOptions = buildScheduledLivestreamsOptions();
-
-                        claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
-                        claimSearchOptions.put("has_no_source", true);
-                        claimSearchOptions.put("claim_ids", claimIds);
-                        Future<List<Claim>> upcomingFuture = executor.submit(new Search(claimSearchOptions));
-
-                        upcomingClaims = upcomingFuture.get();
                     }
                 }
             }
@@ -242,14 +258,15 @@ public class ChannelScheduledLivestreamsFragment extends Fragment implements Sha
             executor.shutdown();
             return upcomingClaims;
         } catch (InterruptedException | ExecutionException | JSONException e) {
-            if (!executor.isShutdown()) {
-                executor.shutdown();
-            }
             Throwable cause = e.getCause();
             if (cause != null) {
                 cause.printStackTrace();
             }
             return null;
+        } finally {
+            if (!executor.isShutdown()) {
+                executor.shutdown();
+            }
         }
     }
 
