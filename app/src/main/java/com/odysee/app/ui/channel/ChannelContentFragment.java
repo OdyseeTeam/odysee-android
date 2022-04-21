@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -383,6 +384,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
 
             livestreamingChannels = isLiveFuture.get();
 
+            Map<String, Integer> viewersForClaim = new HashMap<>();
             if (livestreamingChannels != null && livestreamingChannels.containsKey(channelId)) {
                 String activeClaimId = null;
                 JSONObject jsonData = livestreamingChannels.get(channelId);
@@ -390,6 +392,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                     livestreamUrl = jsonData.getString("VideoURL");
                     JSONObject jsonActiveClaimID = jsonData.getJSONObject("ActiveClaim");
                     activeClaimId = jsonActiveClaimID.getString("ClaimID");
+                    viewersForClaim.put(activeClaimId, jsonData.getInt("ViewerCount"));
                 }
 
                 Map<String, Object> claimSearchOptions = buildContentOptions();
@@ -411,25 +414,22 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                 mostRecentClaims.stream().forEach(c -> {
                     c.setHighlightLive(true);
                     c.setLivestreamUrl(finalLivestreamUrl);
+                    Integer viewers = viewersForClaim.get(c.getClaimId());
+                    if (viewers != null) {
+                        c.setLivestreamViewers(viewers);
+                    }
                 });
             }
         } catch (InterruptedException | ExecutionException | JSONException e) {
-            if (!executor.isShutdown()) {
-                executor.shutdown();
-            }
             Throwable cause = e.getCause();
             if (cause != null) {
                 cause.printStackTrace();
             }
+        } finally {
+            if (!executor.isShutdown()) {
+                executor.shutdown();
+            }
         }
-        // Find the two most recent claims for the channels that are actively broadcasting a stream.
-
-        // Find the first upcoming claim (if one exists) for each channel that's actively broadcasting a stream.
-
-        // Filter out any of those claims that aren't scheduled to start within the configured "soon" buffer time (ex. next 5 min).
-
-        // Reduce the claim list to one "live" claim per channel, based on how close each claim's
-        // release time is to the time the channels stream started.
 
         return mostRecentClaims;
     }

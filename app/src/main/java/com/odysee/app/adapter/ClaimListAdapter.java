@@ -664,8 +664,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         String liveText;
                         if (((Claim.StreamMetadata) item.getValue()).getReleaseTime() > nowTime) {
                             liveText = context.getResources().getString(R.string.soon).toUpperCase();
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
                         } else {
-                            liveText = context.getResources().getString(R.string.live).toUpperCase();
+//                            liveText = context.getResources().getString(R.string.live).toUpperCase();
+                            liveText = String.valueOf(item.getLivestreamViewers());
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
+                            vh.durationView.setCompoundDrawablePadding(8);
                         }
 
                         vh.durationView.setText(liveText);

@@ -21,7 +21,7 @@ import okhttp3.ResponseBody;
  * If alwaysReturnData is set to true, then this will return the data field, no matter if channel is not currently livestreaming.
  */
 public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
-    public static final String ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API = "https://api.odysee.live/livestream/is_live?channel_claim_id=";
+    private static final String ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API = "https://api.odysee.live/livestream/is_live?channel_claim_id=";
     private final List<String> channelIds;
     private boolean alwaysReturnData = false;
 
@@ -32,7 +32,7 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
     /**
      *
      * @param channelIds - list of channels to be queried
-     * @param alwaysReturnData - set to true if you are interested on the data, even if channel is not live rigght now
+     * @param alwaysReturnData - set to true if you are interested on the data, even if channel is not live right now
      */
     public ChannelLiveStatus(List<String> channelIds, boolean alwaysReturnData) {
         this(channelIds);
@@ -44,7 +44,6 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
      * was used to create the object.
      *
      * @return A Java Map object with the "data" key for each channel claim ID stored as a value for its key
-     * @throws Exception
      */
     @Override
     public Map<String, JSONObject> call() throws Exception {

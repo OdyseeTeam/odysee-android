@@ -99,6 +99,7 @@ public class Claim {
     private String livestreamUrl;
 
     private boolean highlightLive;
+    private int livestreamViewers;
 
     // Collections
     private List<String> claimIds;
@@ -576,7 +577,7 @@ public class Claim {
     }
 
     /**
-     * Object to be instantiated. In order to get the URLto the CDN, call toString() on it
+     * Object to be instantiated. In order to get the URL to the CDN, call toString() on it
      */
     static class ImageCDNUrl {
         private String appendedPath = "";
@@ -589,8 +590,9 @@ public class Claim {
 
             appendedPath = appendedPath.concat("plain/").concat(thumbnailUrl);
 
-            if (format != null)
+            if (format != null) {
                 appendedPath = appendedPath.concat("@").concat(format);
+            }
         }
 
         @Override
