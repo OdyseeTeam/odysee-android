@@ -66,6 +66,9 @@
                 <action android:name="android.intent.action.VIEW" />
 
                 <data
+                    android:host="odysee.com"
+                    android:scheme="https" />
+                <data
                     android:host="open.lbry.com"
                     android:scheme="https" />
                 <data
