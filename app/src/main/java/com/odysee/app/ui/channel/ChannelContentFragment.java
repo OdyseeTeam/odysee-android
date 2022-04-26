@@ -395,14 +395,16 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                     viewersForClaim.put(activeClaimId, jsonData.getInt("ViewerCount"));
                 }
 
-                Map<String, Object> claimSearchOptions = buildContentOptions();
+                if (activeClaimId != null && !activeClaimId.equalsIgnoreCase("Confirming")) {
+                    Map<String, Object> claimSearchOptions = buildContentOptions();
 
-                claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
-                claimSearchOptions.put("has_no_source", true);
-                claimSearchOptions.put("claim_id", activeClaimId);
-                Future<List<Claim>> mostRecentsFuture = executor.submit(new Search(claimSearchOptions));
+                    claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                    claimSearchOptions.put("has_no_source", true);
+                    claimSearchOptions.put("claim_id", activeClaimId);
+                    Future<List<Claim>> mostRecentsFuture = executor.submit(new Search(claimSearchOptions));
 
-                mostRecentClaims = mostRecentsFuture.get();
+                    mostRecentClaims = mostRecentsFuture.get();
+                }
             }
 
             executor.shutdown();

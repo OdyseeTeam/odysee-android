@@ -65,10 +65,10 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
                         JSONObject json = new JSONObject(responseString);
                         if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
                             JSONObject jsonData = (JSONObject) json.get("data");
-                            if (!alwaysReturnData && jsonData.has("Live") && jsonData.getBoolean("Live") && jsonData.has("ChannelClaimID") && jsonData.getString("ChannelClaimID").equals(channelId)) {
-                                streamingChannels.put(channelId, jsonData);
-                            } else {
-                                streamingChannels.put(channelId, jsonData);
+                            if (jsonData.has("ChannelClaimID") && jsonData.getString("ChannelClaimID").equals(channelId)) {
+                                if (alwaysReturnData || (jsonData.has("Live") && jsonData.getBoolean("Live"))) {
+                                    streamingChannels.put(channelId, jsonData);
+                                }
                             }
                         }
                     }
