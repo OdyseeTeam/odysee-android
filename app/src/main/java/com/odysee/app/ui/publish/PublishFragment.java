@@ -58,13 +58,13 @@ public class PublishFragment extends BaseFragment implements
     private View loading;
 
     private View buttonRecord;
-    private View buttonTakePhoto;
+//    private View buttonTakePhoto;
     private View buttonUpload;
 
     private boolean loadGalleryItemsPending;
     private boolean launchFilePickerPending;
     private boolean recordPending;
-    private boolean takePhotoPending;
+//    private boolean takePhotoPending;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
 
@@ -84,7 +84,7 @@ public class PublishFragment extends BaseFragment implements
                 3, Helper.getScaledValue(3, context.getResources().getDisplayMetrics().density)));
 
         buttonRecord = root.findViewById(R.id.publish_record_button);
-        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
+//        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
         buttonUpload = root.findViewById(R.id.publish_upload_button);
 
         buttonRecord.setOnClickListener(new View.OnClickListener() {
@@ -93,12 +93,12 @@ public class PublishFragment extends BaseFragment implements
                 checkCameraPermissionAndRecord();
             }
         });
-        buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
+        /*buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 checkCameraPermissionAndTakePhoto();
             }
-        });
+        });*/
         buttonUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -116,7 +116,7 @@ public class PublishFragment extends BaseFragment implements
 
     private void showCameraPreview() {
         buttonRecord.setBackgroundColor(Color.TRANSPARENT);
-        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
+//        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
         displayPreviewWithCameraX();
     }
 
@@ -162,7 +162,7 @@ public class PublishFragment extends BaseFragment implements
         }
     }
 
-    private void checkCameraPermissionAndTakePhoto() {
+    /*private void checkCameraPermissionAndTakePhoto() {
         Context context = getContext();
         if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
             takePhotoPending = true;
@@ -183,7 +183,7 @@ public class PublishFragment extends BaseFragment implements
             takePhotoPending = false;
             ((MainActivity) context).requestTakePhoto();
         }
-    }
+    }*/
 
     private void record() {
         Context context = getContext();
@@ -213,7 +213,7 @@ public class PublishFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity.startingFilePickerActivity = true;
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("*/*");
+            intent.setType("video/*");
             ((MainActivity) context).startActivityForResult(
                     Intent.createChooser(intent, getString(R.string.upload_file)),
                     MainActivity.REQUEST_FILE_PICKER);
@@ -334,20 +334,20 @@ public class PublishFragment extends BaseFragment implements
         if (recordPending) {
             // record video
             record();
-        } else if (takePhotoPending) {
+        }/* else if (takePhotoPending) {
             // take a photo
             takePhoto();
-        }
+        }*/
     }
 
     @Override
     public void onCameraPermissionRefused() {
-        if (takePhotoPending) {
+        /*if (takePhotoPending) {
             takePhotoPending = false;
             Snackbar.make(getView(), R.string.camera_permission_rationale_photo, Snackbar.LENGTH_LONG).
                     setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
             return;
-        }
+        }*/
 
         recordPending = false;
         Snackbar.make(getView(), R.string.camera_permission_rationale_record, Snackbar.LENGTH_LONG).
