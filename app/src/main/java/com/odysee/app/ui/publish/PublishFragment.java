@@ -14,9 +14,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.CameraX;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -68,6 +66,7 @@ public class PublishFragment extends BaseFragment implements
     private boolean recordPending;
     private boolean takePhotoPending;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    private ProcessCameraProvider cameraProvider;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -122,30 +121,30 @@ public class PublishFragment extends BaseFragment implements
     }
 
     private void displayPreviewWithCameraX() {
-//        Context context = getContext();
-//        if (MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
-//            cameraProviderFuture = ProcessCameraProvider.getInstance(context);
-//            cameraProviderFuture.addListener(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-//                        if (cameraProvider != null) {
-//                            Preview preview = new Preview.Builder().build();
-//                            CameraSelector cameraSelector = new CameraSelector.Builder()
-//                                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-//                                    .build();
-//
-//                            Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
-//                            preview.setSurfaceProvider(cameraPreview.createSurfaceProvider(camera.getCameraInfo()));
-//                            cameraPreviewInitialized = true;
-//                        }
-//                    } catch (ExecutionException | IllegalArgumentException | InterruptedException ex) {
-//                        // pass
-//                    }
-//                }
-//            }, ContextCompat.getMainExecutor(context));
-//        }
+        Context context = getContext();
+        if (MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
+            cameraProviderFuture = ProcessCameraProvider.getInstance(context);
+            cameraProviderFuture.addListener(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        cameraProvider = cameraProviderFuture.get();
+                        if (cameraProvider != null) {
+                            Preview preview = new Preview.Builder().build();
+                            CameraSelector cameraSelector = new CameraSelector.Builder()
+                                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                                    .build();
+                            cameraPreview.setScaleType(PreviewView.ScaleType.FILL_START);
+                            preview.setSurfaceProvider(cameraPreview.getSurfaceProvider());
+                            cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
+                            cameraPreviewInitialized = true;
+                        }
+                    } catch (ExecutionException | IllegalArgumentException | InterruptedException ex) {
+                        // pass
+                    }
+                }
+            }, ContextCompat.getMainExecutor(context));
+        }
     }
 
     private void checkCameraPermissionAndRecord() {
@@ -255,7 +254,7 @@ public class PublishFragment extends BaseFragment implements
             }
         }
         if (cameraPreviewInitialized) {
-            CameraX.unbindAll();
+            cameraProvider.unbindAll();
         }
         super.onStop();
     }
