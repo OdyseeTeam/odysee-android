@@ -415,6 +415,21 @@ public class Claim {
         return claim;
     }
 
+    /**
+     * Create a new Claim instance which only sets specific fileds for livestreamed claims
+     * @param claimId - The claimId to used for the claim
+     * @param liveUrl - The url which should be used for connecting to the livestream
+     * @param livestreamViewers - The amount of viewers currently watching the stream
+     * @return A new Claim object
+     */
+    public static Claim fromLiveStatus(String claimId, String liveUrl, int livestreamViewers) {
+        Claim claim = new Claim();
+        claim.setClaimId(claimId);
+        claim.setLivestreamUrl(liveUrl);
+        claim.setLivestreamViewers(livestreamViewers);
+        return claim;
+    }
+
     @SuppressLint("SimpleDateFormat")
     public static Claim fromSearchJSONObject(JSONObject searchResultObject) {
         Claim claim = new Claim();

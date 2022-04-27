@@ -26,10 +26,14 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -653,53 +657,53 @@ public class FollowingFragment extends BaseFragment implements
             fixedExecutor = Executors.newFixedThreadPool(4);
         }
 
+        Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
+        callables.add(() -> fetchActiveLivestreams());
+        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                Future<List<Claim>> searchFuture = fixedExecutor.submit(new Search(claimSearchOptions));
-                Future<Map<String, JSONObject>> liveChannelsFuture = null;
-                if (liveChannels == null) {
-                    liveChannelsFuture = fixedExecutor.submit(new ChannelLiveStatus(getChannelIds()));
-                }
-
                 try {
-                    List<Claim> claims = searchFuture.get();
+                    List<Future<List<Claim>>> results = fixedExecutor.invokeAll(callables);
+
+                    List<Claim> items = new ArrayList<>();
+
+                    for (Future<List<Claim>> f : results) {
+                        if (!f.isCancelled()) {
+                            List<Claim> internalItems = f.get();
+
+                            if (internalItems != null) {
+                                items.addAll(internalItems);
+                            }
+                        }
+                    }
+
+                    fixedExecutor.shutdown();
 
                     if (claimSearchOptions.containsKey("page_size")) {
                         int pageSize = Helper.parseInt(claimSearchOptions.get("page_size"), 0);
-                        contentHasReachedEnd = claims.size() < pageSize;
+                        contentHasReachedEnd = items.size() < pageSize;
                     }
-
-                    claims = Helper.filterClaimsByOutpoint(claims);
-                    claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
 
                     Date d = new Date();
                     Calendar cal = new GregorianCalendar();
                     cal.setTime(d);
 
-                    // Remove claims with a release time in the future
-                    claims.removeIf(e -> {
+                    // Remove claims with a release time in the future or not being livestreams and don't having a source
+                    items.removeIf(e -> {
+                        if ((!e.isHighlightLive() || !e.isLive()) && !e.hasSource()) {
+                            return true;
+                        }
                         Claim.GenericMetadata metadata = e.getValue();
                         return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
                     });
-                    // Remove claims for channels which are currently NOT livestreaming
-                    if (liveChannelsFuture != null) {
-                        liveChannels = liveChannelsFuture.get();
-                    }
-                    claims.removeIf(e -> !liveChannels.containsKey(e.getSigningChannel().getClaimId()) && Claim.TYPE_STREAM.equalsIgnoreCase(e.getValueType()) && !e.hasSource());
 
-                    for (Claim c : claims) {
-                        if (Claim.TYPE_STREAM.equalsIgnoreCase(c.getValueType()) && liveChannels.containsKey(c.getSigningChannel().getClaimId())) {
-                            JSONObject channelData = liveChannels.get(c.getSigningChannel().getClaimId());
-                            if (channelData != null && channelData.has("url")) {
-                                c.setLive(true);
-                                c.setHighlightLive(true);
-                                c.setLivestreamUrl(channelData.getString("url"));
-                            }
-                        }
-                    }
+                    items = Helper.filterClaimsByOutpoint(items);
+                    items = Helper.filterClaimsByBlockedChannels(items, Lbryio.blockedChannels);
+
                     if (a != null) {
-                        List<Claim> finalClaims = claims;
+                        List<Claim> finalClaims = items;
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -736,7 +740,7 @@ public class FollowingFragment extends BaseFragment implements
                             }
                         });
                     }
-                } catch (InterruptedException | ExecutionException | JSONException e) {
+                } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 } finally {
                     if (a != null) {
@@ -754,6 +758,78 @@ public class FollowingFragment extends BaseFragment implements
             }
         });
         t.start();
+    }
+
+    /**
+     *
+     * @return A list of the active claims for followed channels which are currently livestreaming
+     */
+    private List<Claim> fetchActiveLivestreams() {
+        List<Claim> mostRecentClaims = new ArrayList<>();
+        Map<String, JSONObject> livestreamingChannels;
+        try {
+            Future<Map<String, JSONObject>> isLiveFuture = fixedExecutor.submit(new ChannelLiveStatus(getChannelIds(), false));
+
+            livestreamingChannels = isLiveFuture.get();
+
+            List<Claim> activeClaims = new ArrayList<>();
+            if (livestreamingChannels != null) {
+                List<String> activeClaimIds = new ArrayList<>();
+
+                Iterator<Map.Entry<String, JSONObject>> it = livestreamingChannels.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, JSONObject> pair = it.next();
+                    JSONObject j = pair.getValue();
+                    String activeClaimId = null;
+                    if (j.has("ActiveClaim")) {
+                        JSONObject activeJson = (JSONObject) j.get("ActiveClaim");
+                        activeClaimId = activeJson.getString("ClaimID");
+                        String livestreamUrl = j.getString("VideoURL");
+                        int viewersCount = j.getInt("ViewerCount");
+                        System.out.println(pair.getKey() + " = " + pair.getValue());
+                        if (!activeClaimId.equalsIgnoreCase("Confirming")) {
+                            activeClaims.add(Claim.fromLiveStatus(activeClaimId, livestreamUrl, viewersCount));
+                            activeClaimIds.add(activeClaimId);
+                        }
+                    }
+                    it.remove(); // avoids a ConcurrentModificationException
+                }
+
+                if (activeClaimIds.size() > 0) {
+                    Map<String, Object> claimSearchOptions = buildContentOptions();
+
+                    claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                    claimSearchOptions.put("has_no_source", true);
+                    claimSearchOptions.put("claim_ids", activeClaimIds);
+                    Future<List<Claim>> mostRecentsFuture = fixedExecutor.submit(new Search(claimSearchOptions));
+
+                    mostRecentClaims = mostRecentsFuture.get();
+                }
+            }
+
+            if (mostRecentClaims.size() == 0) {
+                return null;
+            } else {
+                mostRecentClaims.stream().forEach(c -> {
+                    Claim p = activeClaims.stream().filter(g -> g.getClaimId().equalsIgnoreCase(c.getClaimId())).findFirst().orElse(null);
+
+                    if (p != null) {
+                        Claim ac = activeClaims.get(activeClaims.indexOf(p));
+                        c.setHighlightLive(true);
+                        c.setLive(true);
+                        c.setLivestreamUrl(ac.getLivestreamUrl());
+                        c.setLivestreamViewers(ac.getLivestreamViewers());
+                    }
+                });
+            }
+        } catch (InterruptedException | ExecutionException | JSONException e) {
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                cause.printStackTrace();
+            }
+        }
+
+        return mostRecentClaims;
     }
 
     private void updateSuggestedDoneButtonText() {
