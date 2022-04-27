@@ -159,6 +159,7 @@
         <item quantity="one">%1$s view</item>
         <item quantity="other">%1$s views</item>
     </plurals>
+    <string name="livestream_view_count">%1$s currently watching</string>
     <plurals name="video_count">
         <item quantity="one">%1$s video</item>
         <item quantity="other">%1$s videos</item>

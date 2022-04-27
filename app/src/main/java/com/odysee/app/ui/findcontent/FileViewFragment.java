@@ -294,6 +294,8 @@ public class FileViewFragment extends BaseFragment implements
     private ScheduledExecutorService scheduledExecutor;
     ScheduledFuture<?> futureReactions;
     Reactions reactions;
+    ScheduledFuture<?> futureViewersCount;
+    ExecutorService executorService;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -511,7 +513,7 @@ public class FileViewFragment extends BaseFragment implements
 
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
-                    // Only update fragment if new claim is different than currently being played
+                    // Only update fragment if new claim is different from currently being played
                     if (newClaim != null && !newClaim.equals(this.fileClaim)) {
                         updateRequired = true;
                     }
@@ -937,19 +939,27 @@ public class FileViewFragment extends BaseFragment implements
 
         // Tasks on the scheduled executor needs to be really terminated to avoid
         // crashes if user presses back after going to a related content from here
-        purgeLoadingReactionsTask();
+        purgeScheduledTasks();
     }
 
-    private void purgeLoadingReactionsTask() {
-        if (scheduledExecutor != null && !scheduledExecutor.isShutdown() && futureReactions != null) {
-            try {
-                // .cancel() will not remove the task, so it is needed to .purge()
+    /**
+     * Cancels scheduled futures and then removes them from the queue so they are no longer run
+     */
+    private void purgeScheduledTasks() {
+        try {
+            if (futureReactions != null) {
                 futureReactions.cancel(true);
+            }
+            if (futureViewersCount != null) {
+                futureViewersCount.cancel(true);
+            }
+            if (scheduledExecutor != null) {
+                // .cancel() will not remove the task, so it is needed to .purge()
                 ((ScheduledThreadPoolExecutor) scheduledExecutor).purge();
                 scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -1747,7 +1757,11 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(tipButton, View.VISIBLE);
 */
 
-        loadViewCount();
+        if (fileClaim != null && fileClaim.isLive()) {
+            loadLiveViewersCount(fileClaim);
+        } else {
+            loadViewCount();
+        }
         loadReactions(claimToRender);
         checkIsFollowing();
 
@@ -2342,7 +2356,7 @@ public class FileViewFragment extends BaseFragment implements
                     selectedQuality = lowestQuality;
                     selectedQualityIndex = availableQualities.indexOf(lowestQuality);
                 } else {
-                    // Otherwise find the highest available quality that is less than the chosen quality
+                    // Otherwise, find the highest available quality that is less than the chosen quality
                     for (int i = 0; i < availableQualities.size(); i++) {
                         int q = availableQualities.get(i);
                         if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
@@ -2425,15 +2439,77 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void loadLiveViewersCount(Claim claim) {
+        if (scheduledExecutor == null) {
+            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
+        }
+
+        if (executorService == null) {
+            executorService = Executors.newSingleThreadScheduledExecutor();
+        }
+
+        if (futureViewersCount != null) {
+            futureViewersCount.cancel(true);
+        }
+
+        Runnable r = () -> {
+            updateLiveViewersCount(claim);
+        };
+        futureViewersCount = scheduledExecutor.scheduleAtFixedRate(r, 10, 5, TimeUnit.SECONDS);
+    }
+
+    private void updateLiveViewersCount(Claim claim) {
+        Activity a = getActivity();
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String channelClaimId = claim.getSigningChannel().getClaimId();
+                Future<Map<String, JSONObject>> futureViewersCount = executorService.submit(new ChannelLiveStatus(Collections.singletonList(channelClaimId), false));
+
+                try {
+                    Map<String, JSONObject> channelStatus = futureViewersCount.get();
+
+                    if (channelStatus.containsKey(channelClaimId)) {
+                        JSONObject jsonData = channelStatus.get(channelClaimId);
+                        if (a != null && jsonData != null) {
+                            Integer count = jsonData.getInt("ViewerCount");
+                            a.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        String displayText = getResources().getString(R.string.livestream_view_count, count);
+                                        View root = getView();
+                                        if (root != null) {
+                                            TextView textViewCount = root.findViewById(R.id.file_view_view_count);
+                                            Helper.setViewText(textViewCount, displayText);
+                                            Helper.setViewVisibility(textViewCount, View.VISIBLE);
+                                        }
+                                    } catch (IllegalStateException ex) {
+                                        ex.printStackTrace();
+                                    }
+                                }
+                            });
+                        }
+
+                    }
+                } catch (ExecutionException | InterruptedException | JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        t.start();
+    }
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
-            scheduledExecutor = new ScheduledThreadPoolExecutor(1);
+            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
         }
-        if (futureReactions != null)
+        if (futureReactions != null) {
             futureReactions.cancel(true);
+        }
 
-        if (reactions == null)
+        if (reactions == null) {
             reactions = new Reactions();
+        }
 
         Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
@@ -3185,6 +3261,7 @@ public class FileViewFragment extends BaseFragment implements
                         if (claim.getName().startsWith("@")) {
                             activity.openChannelClaim(claim);
                         } else {
+                            purgeScheduledTasks();
                             Map<String, Object> params = new HashMap<>(1);
                             params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
 
@@ -4476,15 +4553,18 @@ public class FileViewFragment extends BaseFragment implements
 
     private void react(Claim claim, boolean like) {
         Runnable runnable = () -> {
-            purgeLoadingReactionsTask();
+            if (futureReactions != null && futureReactions.isCancelled()) {
+                futureReactions.cancel(true);
+            }
 
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
 
-            if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
+            if ((like && claim.isLiked()) || (!like && claim.isDisliked())) {
                 options.put("remove", "true");
+            }
 
             try {
                 JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));

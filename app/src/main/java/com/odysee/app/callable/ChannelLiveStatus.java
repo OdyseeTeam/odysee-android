@@ -31,8 +31,8 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
 
     /**
      *
-     * @param channelIds - list of channels to be queried
-     * @param alwaysReturnData - set to true if you are interested on the data, even if channel is not live right now
+     * @param channelIds list of channels to be queried
+     * @param alwaysReturnData set to true if you are interested on the data, even if channel is not live right now
      */
     public ChannelLiveStatus(List<String> channelIds, boolean alwaysReturnData) {
         this(channelIds);
