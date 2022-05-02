@@ -71,6 +71,19 @@ public class LbryUriTest {
     }
 
     @Test
+    public void parseOdyseeComWithChannel() {
+        LbryUri obtained = new LbryUri();
+
+        try {
+            obtained = LbryUri.parse("https://odysee.com/@lbry:3f/lbryturns4:6", false);
+        } catch (LbryUriException e) {
+            e.printStackTrace();
+        }
+
+        assertEquals(expected, obtained);
+    }
+
+    @Test
     public void parseLbryProtocolWithChannel() {
         LbryUri obtained = new LbryUri();
 
