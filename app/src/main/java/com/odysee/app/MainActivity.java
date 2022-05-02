@@ -71,8 +71,8 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.google.android.exoplayer2.ui.PlayerView;
@@ -275,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private boolean unlockingTips;
 
-    public static SimpleExoPlayer appPlayer;
+    public static ExoPlayer appPlayer;
     public static Cache playerCache;
     public static boolean playerReassigned;
 //    public CastContext castContext;
@@ -395,6 +395,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
 
     private static final String TAG = "OdyseeMain";
+    private static final String FILE_VIEW_TAG = "FileView";
 
     private UrlSuggestionListAdapter urlSuggestionListAdapter;
     private List<UrlSuggestion> recentUrlHistory;
@@ -1222,6 +1223,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         checkNotificationOpenIntent(intent);
     }
 
+    @Override
     public void onConfigurationChanged(@NotNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         switch (newConfig.orientation) {
@@ -1569,6 +1571,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         playerReassigned = true;
     }
 
+    private boolean isMiniPlayerVisible() {
+        return findViewById(R.id.miniplayer).getVisibility() == View.VISIBLE;
+    }
+
     private void setPlayerForMiniPlayerView() {
         PlayerView view = findViewById(R.id.global_now_playing_player_view);
         if (view != null) {
@@ -1655,8 +1661,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                     }
                                 }
                                 sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-                                ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                                        Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
+                                ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(Lbry.getTotalBalance()));
                             }
                         });
                     } catch (ExecutionException | InterruptedException e) {
@@ -1678,8 +1683,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
             sendBroadcast(new Intent(ACTION_WALLET_BALANCE_UPDATED));
-            ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(
-                    Lbry.walletBalance == null ? 0 : Lbry.walletBalance.getTotal().doubleValue()));
+            ((TextView) findViewById(R.id.floating_balance_value)).setText(Helper.shortCurrencyFormat(Lbry.getTotalBalance()));
         }
     }
 
@@ -1754,6 +1758,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         initialiseUserInstall();
         // checkPendingOpens();
+    }
+
+    public void displayCurrentlyPlayingVideo() {
+        if (appPlayer != null && appPlayer.isPlaying() && !isMiniPlayerVisible()) {
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag(FILE_VIEW_TAG);
+            if (fragment != null) {
+                updateCurrentDisplayFragment(fragment);
+                hideBottomNavigation();
+                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+            }
+        }
     }
 
     private void checkBottomNavigationHeight() {
@@ -2168,7 +2184,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void checkNowPlaying() {
         // Don't show the toolbar when returning from the Share Activity
-        if (getSupportFragmentManager().findFragmentByTag("FileView") == null)
+        if (getSupportFragmentManager().findFragmentByTag(FILE_VIEW_TAG) == null)
             findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
         if (nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
@@ -2474,7 +2490,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             try {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
                 DatabaseHelper.clearNotifications(db);
-                notificationListAdapter.clearNotifications();
+                if (notificationListAdapter != null) {
+                    notificationListAdapter.clearNotifications();
+                }
                 loadUnseenNotificationsCount();
 
                 DatabaseHelper.clearViewHistory(db);
@@ -2761,7 +2779,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         @Override
                         public void onSuccess(List<Subscription> subscriptions, List<Subscription> diff) {
                             Lbryio.subscriptions = new ArrayList<>(subscriptions);
-                            if (diff.size() > 0) {
+                            if (!diff.isEmpty()) {
                                 saveSharedUserState();
                             }
 
@@ -2797,7 +2815,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 }
 
-                if (blockedChannels != null && blockedChannels.size() > 0) {
+                if (blockedChannels != null && !blockedChannels.isEmpty()) {
                     if (!initialBlockedListLoaded()) {
                         // first time the blocked list is loaded, so we attempt to merge the entries
                         List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
@@ -2857,7 +2875,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Lbryio.lastRemoteHash = hash;
                     Lbryio.lastWalletSync = new WalletSync(hash, data);
 
-                    if (pendingSyncSetQueue.size() > 0) {
+                    if (!pendingSyncSetQueue.isEmpty()) {
                         fullSyncInProgress = true;
                         WalletSync nextSync = pendingSyncSetQueue.remove(0);
                         syncSet(nextSync.getHash(), nextSync.getData());
@@ -2871,7 +2889,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 @Override
                 public void onSyncSetError(Exception error) {
                     // log app exceptions
-                    if (pendingSyncSetQueue.size() > 0) {
+                    if (!pendingSyncSetQueue.isEmpty()) {
                         WalletSync nextSync = pendingSyncSetQueue.remove(0);
                         syncSet(nextSync.getHash(), nextSync.getData());
                     } else if (queuedSyncCount > 0) {
@@ -3224,7 +3242,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     unseenIds.add(notification.getRemoteId());
                 }
             }
-            if (unseenIds.size() > 0) {
+            if (!unseenIds.isEmpty()) {
                 AccountManager am = AccountManager.get(this);
                 Map<String, String> options = new HashMap<>();
                 options.put("notification_ids", Helper.joinL(unseenIds, ","));
@@ -4032,7 +4050,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             FragmentTransaction transaction;
             if (fragment instanceof FileViewFragment) {
-                transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, "FileView");
+                transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, FILE_VIEW_TAG);
             } else {
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
             }
@@ -4058,7 +4076,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             fetchOwnChannels();
             root.findViewById(R.id.user_not_signed_in).setVisibility(View.GONE);
 
-            if (Lbry.ownChannels.size() > 0) {
+            if (!Lbry.ownChannels.isEmpty()) {
                 root.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
                 root.findViewById(R.id.no_channels).setVisibility(View.GONE);
             } else {
@@ -4095,7 +4113,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         channelCreationBottomSheet = null;
     }
     public void fetchOwnChannels() {
-        AccountManager am = AccountManager.get(this);
         ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
@@ -4412,7 +4429,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void updateLocalNotifications(List<LbryNotification> notifications){
-        findViewById(R.id.notification_list_empty_container).setVisibility(notifications.size() == 0 ? View.VISIBLE : View.GONE);
+        findViewById(R.id.notification_list_empty_container).setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
         findViewById(R.id.notifications_progress).setVisibility(View.GONE);
         loadUnseenNotificationsCount();
 
@@ -4511,7 +4528,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void resolveCommentAuthors(List<String> urls) {
-        if (urls != null && urls.size() > 0) {
+        if (urls != null && !urls.isEmpty()) {
             ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {

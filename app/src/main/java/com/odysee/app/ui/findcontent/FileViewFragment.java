@@ -74,8 +74,8 @@ import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.TracksInfo;
 import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
 import com.google.android.exoplayer2.audio.AudioAttributes;
@@ -322,6 +322,7 @@ public class FileViewFragment extends BaseFragment implements
         commentEnabledCheck = new CommentEnabledCheck();
     }
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_file_view, container, false);
@@ -446,6 +447,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @Override
     public void onStart() {
         super.onStart();
         Context context = getContext();
@@ -864,6 +866,8 @@ public class FileViewFragment extends BaseFragment implements
         resetPlayer();
     }
 */
+
+    @Override
     public void onResume() {
         super.onResume();
         checkParams();
@@ -907,6 +911,7 @@ public class FileViewFragment extends BaseFragment implements
         applyFilterForBlockedChannels(Lbryio.blockedChannels);
     }
 
+    @Override
     public void onPause() {
         if (MainActivity.appPlayer != null) {
             MainActivity.nowPlayingSource = MainActivity.SOURCE_NOW_PLAYING_FILE;
@@ -918,6 +923,7 @@ public class FileViewFragment extends BaseFragment implements
         super.onPause();
     }
 
+    @Override
     public void onStop() {
         super.onStop();
         Context context = getContext();
@@ -1100,7 +1106,7 @@ public class FileViewFragment extends BaseFragment implements
         ResolveTask task = new ResolveTask(url, Lbry.API_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
-                if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
+                if (!claims.isEmpty() && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
                     fileClaim = claims.get(0);
                     if (Claim.TYPE_REPOST.equalsIgnoreCase(fileClaim.getValueType())) {
                         fileClaim = fileClaim.getRepostedClaim();
@@ -2027,7 +2033,7 @@ public class FileViewFragment extends BaseFragment implements
                     .setContentType(C.CONTENT_TYPE_MOVIE)
                     .build();
 
-            MainActivity.appPlayer = new SimpleExoPlayer.Builder(context).build();
+            MainActivity.appPlayer = new ExoPlayer.Builder(context).build();
             MainActivity.appPlayer.setWakeMode(C.WAKE_MODE_NETWORK);
 
             MainActivity.appPlayer.setAudioAttributes(audioAttributes, true);
@@ -2074,6 +2080,11 @@ public class FileViewFragment extends BaseFragment implements
                 if (MainActivity.appPlayer != null) {
                     MainActivity.appPlayer.setPlayWhenReady(true);
                     playbackStarted = true;
+
+                    if (context instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) context;
+                        activity.displayCurrentlyPlayingVideo();
+                    }
 
                     // reconnect the app player
                     if (fileViewPlayerListener != null) {
@@ -2607,7 +2618,7 @@ public class FileViewFragment extends BaseFragment implements
                 jsonParams.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
             }
 
-            if (Lbry.ownChannels.size() > 0) {
+            if (!Lbry.ownChannels.isEmpty()) {
                 jsonParams.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
                 jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
@@ -3097,6 +3108,7 @@ public class FileViewFragment extends BaseFragment implements
         checkAndLoadComments(true);
     }
 
+    @Override
     public void showError(String message) {
         View root = getView();
         if (root != null) {
@@ -3536,6 +3548,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @Override
     public boolean onBackPressed() {
         if (isInFullscreenMode()) {
             disableFullScreenMode();
@@ -4110,7 +4123,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void fetchChannels() {
-        if (Lbry.ownChannels != null && Lbry.ownChannels.size() > 0) {
+        if (Lbry.ownChannels != null && !Lbry.ownChannels.isEmpty()) {
             updateChannelList(Lbry.ownChannels);
             return;
         }
@@ -4404,8 +4417,13 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(relatedContentArea, View.VISIBLE);
             Helper.setViewVisibility(actionsArea, View.VISIBLE);
             Helper.setViewVisibility(publisherArea, View.VISIBLE);
-            if (context != null)
+            if (context != null) {
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_expand, context.getTheme()));
+                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(root.getWindowToken(), 0);
+                }
+            }
         }
     }
 

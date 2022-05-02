@@ -14,12 +14,12 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.text.HtmlCompat;
 
@@ -85,6 +85,7 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
         this.listener = listener;
     }
 
+    @NonNull
     public static CreateSupportDialogFragment newInstance(Claim claim, CreateSupportListener listener) {
         return new CreateSupportDialogFragment(claim, listener);
     }
@@ -187,7 +188,7 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
                 }
 
                 BigDecimal amount = new BigDecimal(amountString);
-                if (amount.doubleValue() > Lbry.walletBalance.getAvailable().doubleValue()) {
+                if (amount.doubleValue() > Lbry.getAvailableBalance()) {
                     showError(getString(R.string.insufficient_balance));
                     return;
                 }
@@ -343,7 +344,7 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
     }
 
     private void fetchChannels() {
-        if (Lbry.ownChannels != null && Lbry.ownChannels.size() > 0) {
+        if (Lbry.ownChannels != null && !Lbry.ownChannels.isEmpty()) {
             updateChannelList(Lbry.ownChannels);
             return;
         }
@@ -400,6 +401,7 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
         }
     }
 
+    @Override
     public void onResume() {
         super.onResume();
         Context context = getContext();
@@ -410,6 +412,7 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
         fetchChannels();
     }
 
+    @Override
     public void onPause() {
         Context context = getContext();
         if (context instanceof MainActivity) {
@@ -426,10 +429,12 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
     }
 
     private void showError(String message) {
-        Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).
+        if (getView() != null) {
+            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).
                 setBackgroundTint(Color.RED).
                 setTextColor(Color.WHITE).
                 show();
+        }
     }
 
     public interface CreateSupportListener {

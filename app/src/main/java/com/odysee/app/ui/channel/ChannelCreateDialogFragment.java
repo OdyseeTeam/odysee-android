@@ -104,7 +104,7 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
                     showError(error);
                     return;
                 }
-                if (Lbry.walletBalance == null || Lbry.walletBalance.getAvailable().doubleValue() < depositAmount) {
+                if (Lbry.walletBalance == null || Lbry.getAvailableBalance() < depositAmount) {
                     showError(getString(R.string.deposit_more_than_balance));
                     return;
                 }
@@ -177,8 +177,7 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
             }
         });
 
-        double balance = Lbry.walletBalance.getAvailable().doubleValue();
-        Helper.setViewText((TextView) balanceView, Helper.shortCurrencyFormat(balance));
+        Helper.setViewText((TextView) balanceView, Helper.shortCurrencyFormat(Lbry.getAvailableBalance()));
         return v;
     }
 
