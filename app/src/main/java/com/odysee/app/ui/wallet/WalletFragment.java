@@ -248,8 +248,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         if (!Helper.isNullOrEmpty(amountString)) {
             try {
                 double amountValue = Double.parseDouble(amountString);
-                double availableAmount = Lbry.walletBalance.getAvailable().doubleValue();
-                if (availableAmount < amountValue) {
+                if (Lbry.getAvailableBalance() < amountValue) {
                     Snackbar.make(getView(), R.string.insufficient_balance, Snackbar.LENGTH_LONG).
                             setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
                     return false;
@@ -656,6 +655,9 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     }
 
     public void onWalletBalanceUpdated(WalletBalance walletBalance) {
+        if (walletBalance == null) {
+            return;
+        }
         double totalBalance = walletBalance.getTotal().doubleValue();
         double spendableBalance = walletBalance.getAvailable().doubleValue();
         double supportingBalance = walletBalance.getClaims().doubleValue() + walletBalance.getTips().doubleValue() + walletBalance.getSupports().doubleValue();

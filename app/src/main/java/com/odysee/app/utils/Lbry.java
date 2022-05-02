@@ -113,12 +113,24 @@ public final class Lbry {
     public static KeyStore KEYSTORE;
     public static boolean SDK_READY = false;
 
+    private Lbry() {
+        // Ignore
+    }
+
     public static void startupInit() {
         abandonedClaimIds = new ArrayList<>();
         ownChannels = new ArrayList<>();
         ownClaims = new ArrayList<>();
         knownTags = new ArrayList<>();
         followedTags = new ArrayList<>();
+    }
+
+    public static double getTotalBalance() {
+        return walletBalance != null ? walletBalance.getTotal().doubleValue() : 0;
+    }
+
+    public static double getAvailableBalance() {
+        return walletBalance != null ? Lbry.walletBalance.getAvailable().doubleValue() : 0;
     }
 
     public static void parseStatus(String response) {

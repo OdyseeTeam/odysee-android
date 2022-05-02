@@ -109,6 +109,7 @@ public class ChannelFormFragment extends BaseFragment implements
     private String lastSelectedCoverFile;
     private String lastSelectedThumbnailFile;
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_channel_form, container, false);
@@ -328,7 +329,7 @@ public class ChannelFormFragment extends BaseFragment implements
             showError(error);
             return;
         }
-        if (Lbry.walletBalance == null || Lbry.walletBalance.getAvailable().doubleValue() < depositAmount) {
+        if (Lbry.getAvailableBalance() < depositAmount) {
             showError(getString(R.string.deposit_more_than_balance));
             return;
         }

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -123,7 +125,9 @@ public class FollowingFragment extends BaseFragment implements
     private ClaimSearchTask contentClaimSearchTask;
     private boolean loadingSuggested;
     private boolean loadingContent;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_following, container, false);
@@ -542,13 +546,12 @@ public class FollowingFragment extends BaseFragment implements
                 }
             }
         }
-
-        excludeChannelIdsForDiscover = channelIds != null ? new ArrayList<>(channelIds) : null;
+        excludeChannelIdsForDiscover = new ArrayList<>(channelIds);
     }
 
     private void fetchAndResolveChannelList() {
         buildChannelIdsAndUrls();
-        if (channelIds.size() > 0) {
+        if (!channelIds.isEmpty()) {
             ResolveTask resolveSubscribedTask = new ResolveTask(channelUrls, Lbry.API_CONNECTION_STRING, channelListLoading, new ClaimListResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
@@ -558,7 +561,7 @@ public class FollowingFragment extends BaseFragment implements
 
                 @Override
                 public void onError(Exception error) {
-                    fetchAndResolveChannelList();
+                    handler.postDelayed(FollowingFragment.this::fetchAndResolveChannelList, 5_000);
                 }
             });
             resolveSubscribedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -774,7 +777,7 @@ public class FollowingFragment extends BaseFragment implements
 
     // handler methods
     public void onSuccess(List<Subscription> subscriptions) {
-        if (subscriptions.size() == 0) {
+        if (subscriptions.isEmpty()) {
             // fresh start
             // TODO: Only do this if there are no local subscriptions stored
             currentSuggestedPage = 1;
