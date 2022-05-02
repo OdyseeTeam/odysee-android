@@ -71,8 +71,8 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.google.android.exoplayer2.ui.PlayerView;
@@ -275,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private boolean unlockingTips;
 
-    public static SimpleExoPlayer appPlayer;
+    public static ExoPlayer appPlayer;
     public static Cache playerCache;
     public static boolean playerReassigned;
 //    public CastContext castContext;

@@ -73,8 +73,8 @@ import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.TracksInfo;
 import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
 import com.google.android.exoplayer2.audio.AudioAttributes;
@@ -2001,7 +2001,7 @@ public class FileViewFragment extends BaseFragment implements
                     .setContentType(C.CONTENT_TYPE_MOVIE)
                     .build();
 
-            MainActivity.appPlayer = new SimpleExoPlayer.Builder(context).build();
+            MainActivity.appPlayer = new ExoPlayer.Builder(context).build();
             MainActivity.appPlayer.setWakeMode(C.WAKE_MODE_NETWORK);
 
             MainActivity.appPlayer.setAudioAttributes(audioAttributes, true);
