@@ -120,7 +120,7 @@ dependencies {
     implementation 'org.bitcoinj:bitcoinj-tools:0.14.7'
     implementation 'org.java-websocket:Java-WebSocket:1.5.1'
 
-    implementation 'com.github.ktprograms.HaishinKit~kt:haishinkit:7a38a664be'
+    implementation 'com.github.ktprograms.HaishinKit~kt:haishinkit:8943375956'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
 
