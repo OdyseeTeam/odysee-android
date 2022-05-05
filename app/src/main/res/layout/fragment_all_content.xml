@@ -59,9 +59,10 @@
                 android:orientation="horizontal">
                 <LinearLayout
                     android:id="@+id/all_content_sort_link"
-                    android:background="?attr/selectableItemBackground"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true">
                     <TextView
@@ -82,23 +83,25 @@
 
                 <TextView
                     android:id="@+id/all_content_from_prefix"
-                    android:layout_centerVertical="true"
-                    android:layout_toEndOf="@id/all_content_sort_link"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="2dp"
+                    android:layout_gravity="center_vertical"
                     style="@style/TextView_Light"
                     android:text="@string/from"
+                    tools:visibility="visible"
                     android:visibility="gone" />
                 <LinearLayout
                     android:id="@+id/all_content_time_link"
-                    android:background="?attr/selectableItemBackground"
-                    android:layout_centerVertical="true"
-                    android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:layout_gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:layout_marginStart="2dp"
-                    android:layout_toEndOf="@id/all_content_sort_link"
+                    tools:visibility="visible"
                     android:visibility="gone">
                     <TextView
                         android:id="@+id/all_content_time_link_text"
@@ -123,12 +126,16 @@
                 android:background="?attr/selectableItemBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:minHeight="48dp"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
+                android:gravity="center_vertical"
                 android:clickable="true"
+                android:focusable="true"
                 style="@style/TextView_Light"
                 android:text="@string/customize"
-                android:visibility="gone" />
+                android:visibility="gone"
+                tools:visibility="visible"/>
         </RelativeLayout>
 
         <TextView
