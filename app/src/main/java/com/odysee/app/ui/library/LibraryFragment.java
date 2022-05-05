@@ -631,6 +631,12 @@ public class LibraryFragment extends BaseFragment implements
         boolean hasRecent = contentListAdapter != null && contentListAdapter.getItemCount() > 0;
         Helper.setViewVisibility(recentList, hasRecent ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(textNoHistory, !hasRecent ? View.VISIBLE : View.GONE);
+
+        // The "Clear All" button is shown at the main app toolbar, so its visibility is changed from MainActivity instance
+        MainActivity a = (MainActivity) getActivity();
+        if (a != null) {
+            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
+        }
     }
 
     @MainThread
