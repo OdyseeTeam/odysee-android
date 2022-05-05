@@ -8,6 +8,7 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.MANAGE_ACCOUNTS"
@@ -134,6 +135,12 @@
             android:theme="@style/FirstRunTheme" />
         <activity
             android:name=".YouTubeSyncActivity"
+            android:launchMode="singleTask"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/FirstRunTheme" />
+        <activity
+            android:name=".GoLiveActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
             android:launchMode="singleTask"
             android:parentActivityName=".MainActivity"
             android:theme="@style/FirstRunTheme" />

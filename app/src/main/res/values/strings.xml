@@ -12,6 +12,7 @@
     <string name="editors_choice">Editor\'s Choice</string>
     <string name="your_tags">Your Tags</string>
     <string name="all_content">All Content</string>
+    <string name="go_live">Go Live</string>
     <string name="channels">Channels</string>
     <string name="library">Library</string>
     <string name="publishes">Publishes</string>
@@ -618,6 +619,29 @@
     <string name="no_added_tags">You have not added any tags yet. Add tags to improve discovery.</string>
     <string name="form_no_tag_results">We could not find new tags that have not been added yet.</string>
 
+    <!-- Go Live -->
+    <string name="precheck_please_wait">Please wait while we check a few things. If this is your first time, this may take a couple of minutes…</string>
+    <string name="precheck_need_channel">You need to create a channel before you can livestream.</string>
+    <string name="precheck_error_loading_channels">An error occurred loading your channels. Please try again later.</string>
+    <string name="precheck_wait_confirmation">Please wait, your livestream claim is pending confirmation.</string>
+    <string name="select_channel">Please select a channel</string>
+    <string name="channel_error_pending">Your channel is still pending. Please wait a couple of minutes and try again.</string>
+    <string name="channel_error_need_minimum_credits">You need to have at least %1$,.2f credits staked (directly or through supports) on %2$s to be able to livestream.</string>
+    <string name="error_publishing_livestream">An error occurred trying to set up your livestream. Please try again later.</string>
+    <string name="specify_title">Please specify a title for your livestream</string>
+    <string name="please_select_thumbnail">Please select a thumbnail</string>
+    <string name="need_valid_channel">Please select a valid channel to continue</string>
+    <string name="stream_key_not_generated">Your stream key could not be generated. Please try again later.</string>
+    <string name="stream_connect_failed">Could not establish a connection to the streaming URL. Please try again.</string>
+    <string name="stream_connect_failed_retrying">Could not establish a connection to the streaming URL. Retrying…</string>
+    <string name="camera_permission_rationale_livestream">Odysee requires access to your camera to livestream.</string>
+    <string name="start_streaming">Start streaming</string>
+    <string name="stop_streaming">Stop streaming</string>
+    <string name="switch_camera">Switch camera</string>
+    <string name="stream_stopped_went_to_home_reason">Because livestreaming sometimes doesn\'t resume properly after sleeping the device, your stream was automatically stopped.</string>
+    <string name="confirm_stop_title">Stop streaming?</string>
+    <string name="confirm_stop_message">Do you want to stop streaming?</string>
+
     <!-- Channels -->
     <string name="no_channel_created">You have not created a channel.\nStart now by creating a new channel!</string>
     <string name="create_a_channel">Create a channel</string>
@@ -644,7 +668,7 @@
     <string name="deposit">Deposit</string>
     <string name="deposit_remains_yours">The credits remains yours. It is a deposit to reserve the name and can be undone at any time.</string>
     <string name="storage_permission_rationale_download">LBRY requires access to download content to your device.</string>
-    <string name="storage_permission_rationale_images">LBRY requires access to load images from your device storage.</string>
+    <string name="storage_permission_rationale_images">Odysee requires access to load images from your device storage.</string>
     <string name="select_thumbnail">Select thumbnail</string>
     <string name="select_cover">Select cover image</string>
     <string name="undetermined_image_filepath">The file path could not be determined for the selected image. Please select an image in a different location.</string>

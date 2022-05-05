@@ -915,6 +915,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
+                View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
@@ -926,6 +927,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
 
+                buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -983,6 +985,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
+                buttonGoLive.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        startActivity(new Intent(MainActivity.this, GoLiveActivity.class));
+                    }
+                });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -3180,6 +3190,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
     public Snackbar getSnackbar(String message) {
         return Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+    }
+    public void showStreamStoppedMessage() {
+        View view = findViewById(R.id.content_main);
+        Snackbar snackbar = Snackbar.make(view, R.string.stream_stopped_went_to_home_reason, Snackbar.LENGTH_LONG);
+        TextView snackbarText = snackbar.getView().findViewById(R.id.snackbar_text);
+        snackbarText.setMaxLines(Integer.MAX_VALUE);
+        snackbar.show();
     }
     public void showError(String message) {
         getSnackbar(message).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();

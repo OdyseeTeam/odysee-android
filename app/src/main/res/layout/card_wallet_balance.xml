@@ -21,6 +21,7 @@
                 android:layout_height="wrap_content"
                 lbry:textSize="@dimen/wallet_total_balance_font_size"
                 lbry:iconSize="24dp"
+                tools:text="123.45"
                 android:textFontWeight="300" />
 
             <TextView
@@ -51,6 +52,7 @@
                     android:layout_height="wrap_content"
                     lbry:textSize="@dimen/wallet_detail_balance_font_size"
                     lbry:iconSize="14dp"
+                    tools:text="67.89"
                     android:textFontWeight="300" />
 
                 <TextView
