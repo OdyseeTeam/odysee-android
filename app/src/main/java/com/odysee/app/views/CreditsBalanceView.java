@@ -23,6 +23,7 @@ public class CreditsBalanceView extends TextView {
     private float iconSize;
     Rect r;
     Paint p;
+    Drawable icon;
 
     public CreditsBalanceView(Context context) {
         super(context);
@@ -48,6 +49,10 @@ public class CreditsBalanceView extends TextView {
             float px = 8 * (metrics.densityDpi / 160f);
 
             setPadding((int) iconSize + Math.round(px), 0, 0, 0);
+            //noinspection UseCompatLoadingForDrawables
+            icon = getResources().getDrawable(R.drawable.ic_credits, context.getTheme());
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             a.recycle();
         }
@@ -62,13 +67,10 @@ public class CreditsBalanceView extends TextView {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        drawLbryCredits(canvas);
-    }
-
-    private void drawLbryCredits(Canvas c) {
-        @SuppressLint("UseCompatLoadingForDrawables") Drawable icon = getResources().getDrawable(R.drawable.ic_credits, null);
-        float delta = (c.getHeight() - iconSize) / 2;
-        icon.setBounds(0, (int) delta, (int) iconSize, (int) (delta + iconSize));
-        icon.draw(c);
+        if (getText().length() > 0) {
+            float delta = (getHeight() - iconSize) / 2;
+            icon.setBounds(0, (int) delta, (int) iconSize, (int) (delta + iconSize));
+            icon.draw(canvas);
+        }
     }
 }
