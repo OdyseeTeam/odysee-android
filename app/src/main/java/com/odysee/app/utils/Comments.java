@@ -37,7 +37,7 @@ public class Comments {
 
     public static JSONObject channelSignPrivate(JSONObject commentBody, final String channelId, final String channelName, final String hexDataSource) throws ApiCallException, JSONException {
 
-        final String hexData = toHexString(hexDataSource);
+        final String hexData = Helper.toHexString(hexDataSource);
 
         Map<String, Object> signingParams = new HashMap<>(3);
         signingParams.put("hexdata", hexData);
@@ -48,19 +48,6 @@ public class Comments {
             return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
         else
             return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
-    }
-
-    private static String toHexString(final String value) {
-        final byte[] commentBodyBytes = value.getBytes(StandardCharsets.UTF_8);
-
-        final String hexString;
-
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)
-            hexString = Hex.encodeHexString(commentBodyBytes, false);
-        else
-            hexString = new String(Hex.encodeHex(commentBodyBytes));
-
-        return hexString;
     }
 
     /**
