@@ -1,5 +1,7 @@
 package com.odysee.app;
 
+import android.content.res.Configuration;
+import android.view.WindowInsetsController;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -112,10 +114,28 @@ public class GoLiveActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        // Change status bar text color depending on Night mode when app is running
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (!getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                } else {
+                    //noinspection deprecation
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            } else {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                }
+            }
         }
+
         setContentView(R.layout.activity_go_live);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -676,8 +696,21 @@ public class GoLiveActivity extends AppCompatActivity {
                 setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
     }
 
-    private boolean isDarkMode() {
+    /**
+     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
+     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
+     */
+    public String getDarkModeAppSetting() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            return sp.getString(MainActivity.PREFERENCE_KEY_DARK_MODE_SETTING, MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
+        } else {
+            boolean darkMode = sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
+            if (darkMode) {
+                return MainActivity.APP_SETTING_DARK_MODE_NIGHT;
+            } else {
+                return MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT;
+            }
+        }
     }
 }
