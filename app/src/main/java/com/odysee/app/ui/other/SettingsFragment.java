@@ -2,6 +2,7 @@ package com.odysee.app.ui.other;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatDelegate;
@@ -66,10 +67,32 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     @Override
     public void onStop() {
         Context context = getContext();
-        if (context instanceof MainActivity) {
-            ((MainActivity) context).resetCurrentDisplayFragment();
+
+        if (context != null) {
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).resetCurrentDisplayFragment();
+            }
+
+            // Applying dark mode default setting after closing the Settings fragment avoids a problem where
+            // some UI components being hidden when they shouldn't. If current dark mode is the same as the
+            // applied one, no activity recreation is performed, so there is no penalty.
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+            if (sp != null && Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                String darkModeValue = sp.getString(MainActivity.PREFERENCE_KEY_DARK_MODE_SETTING, MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
+                switch (darkModeValue) {
+                    case MainActivity.APP_SETTING_DARK_MODE_NIGHT:
+                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                        break;
+                    case MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT:
+                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                        break;
+                    default:
+                        AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
+                        break;
+                }
+            }
+            super.onStop();
         }
-        super.onStop();
     }
 
     @Override
@@ -77,16 +100,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_DARK_MODE)) {
             boolean darkMode = sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
             AppCompatDelegate.setDefaultNightMode(darkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        }
-        if (key.equalsIgnoreCase("com.odysee.app.preference.userinterface.DarkModeSetting")) {
-            String darkModeValue = sp.getString("com.odysee.app.preference.userinterface.DarkModeSetting", MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
-            if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT)) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            } else if (darkModeValue.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT)){
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            } else {
-                AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
-            }
         }
     }
 }

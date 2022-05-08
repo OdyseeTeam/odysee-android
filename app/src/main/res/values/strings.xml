@@ -329,7 +329,7 @@
     <string name="mobile_default_quality">Default quality when using mobile data</string>
     <string name="playback_default_speed">Default playback speed</string>
     <string name="enable_dark_mode">Enable dark theme</string>
-    <string name="darkmode_setting">Dark mode setting</string>
+    <string name="darkmode_setting">Dark mode setting (applies when exiting this Settings UI)</string>
     <string name="enable_autosearch">Perform search while typing</string>
     <string name="show_mature_content">Show mature content</string>
     <string name="show_url_suggestions">Show URL suggestions</string>
