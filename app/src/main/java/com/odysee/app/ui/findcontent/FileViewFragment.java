@@ -2136,11 +2136,15 @@ public class FileViewFragment extends BaseFragment implements
                         .build();
                 try (Response response = client.newCall(request).execute()) {
                     String contentType = response.header("Content-Type");
-                    MainActivity.videoIsTranscoded = contentType.equals("application/x-mpegurl"); // m3u8
+                    if (contentType != null) {
+                        MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
 
                 new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
-            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+            } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                 // TODO: How does error handling work here
                 ex.printStackTrace();
             }
@@ -2164,9 +2168,7 @@ public class FileViewFragment extends BaseFragment implements
                     .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
                     .createMediaSource(MediaItem.fromUri(sourceUrl));
         } else {
-            mediaSource = new ProgressiveMediaSource.Factory(
-                    cacheDataSourceFactory, new DefaultExtractorsFactory()
-            )
+            mediaSource = new ProgressiveMediaSource.Factory(cacheDataSourceFactory, new DefaultExtractorsFactory())
                     .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
                     .createMediaSource(MediaItem.fromUri(sourceUrl));
         }
