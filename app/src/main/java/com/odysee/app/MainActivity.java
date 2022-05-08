@@ -488,15 +488,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         loadAuthToken();
 
         // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+            if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-                    //noinspection deprecation
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
                     //noinspection deprecation
@@ -1143,24 +1144,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    /**
-     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
-     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
-     */
-    public String getDarkModeAppSetting() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-            return sp.getString(PREFERENCE_KEY_DARK_MODE_SETTING, APP_SETTING_DARK_MODE_NOTNIGHT);
-        } else {
-            boolean darkMode = sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
-            if (darkMode) {
-                return APP_SETTING_DARK_MODE_NIGHT;
-            } else {
-                return APP_SETTING_DARK_MODE_NOTNIGHT;
-            }
-        }
-    }
-
     public boolean isBackgroundPlaybackEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
@@ -1735,14 +1718,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         accountManager.addOnAccountsUpdatedListener(this, null, true);
 
         // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
                 //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+            if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
@@ -2255,14 +2239,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         View appBarMainContainer = findViewById(R.id.appbar);
 
         appBarMainContainer.setFitsSystemWindows(false);
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
             getWindow().setDecorFitsSystemWindows(true);
 
             WindowInsetsController windowInsetsController = getWindow().getInsetsController();
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
                 int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-                if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)
-                     || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM)
+                if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT)
+                     || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM)
                           && (nightModeFlags == Configuration.UI_MODE_NIGHT_NO || nightModeFlags == Configuration.UI_MODE_NIGHT_UNDEFINED))) {
                     windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 }
@@ -2272,7 +2257,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
 
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 //noinspection deprecation
                 flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             }
@@ -2404,7 +2389,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         this.actionMode = mode;
-        if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+        if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
+            //noinspection deprecation
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
 
@@ -2447,7 +2434,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             notificationListAdapter.setInSelectionMode(false);
             notificationListAdapter.notifyDataSetChanged();
         }
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         this.actionMode = null;

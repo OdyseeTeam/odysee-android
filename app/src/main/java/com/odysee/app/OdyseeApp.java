@@ -31,7 +31,7 @@ public class OdyseeApp extends Application {
      * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
      * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
      */
-    private String getDarkModeAppSetting() {
+    public String getDarkModeAppSetting() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             return sp.getString(PREFERENCE_KEY_DARK_MODE_SETTING, APP_SETTING_DARK_MODE_NOTNIGHT);

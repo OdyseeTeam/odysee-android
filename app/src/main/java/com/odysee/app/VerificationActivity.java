@@ -51,13 +51,14 @@ public class VerificationActivity extends FragmentActivity implements Verificati
         super.onCreate(savedInstanceState);
 
         // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (!getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+            if (!darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+            if (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
@@ -388,23 +389,5 @@ public class VerificationActivity extends FragmentActivity implements Verificati
     public void onDestroy() {
         Helper.unregisterReceiver(sdkReceiver, this);
         super.onDestroy();
-    }
-
-    /**
-     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
-     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
-     */
-    public String getDarkModeAppSetting() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-            return sp.getString(MainActivity.PREFERENCE_KEY_DARK_MODE_SETTING, MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
-        } else {
-            boolean darkMode = sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
-            if (darkMode) {
-                return MainActivity.APP_SETTING_DARK_MODE_NIGHT;
-            } else {
-                return MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT;
-            }
-        }
     }
 }
