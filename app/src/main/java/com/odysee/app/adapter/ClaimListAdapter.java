@@ -2,12 +2,14 @@ package com.odysee.app.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -15,6 +17,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.odysee.app.R;
+import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
@@ -321,6 +325,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final View feeContainer;
         protected final TextView feeView;
         protected final ImageView thumbnailView;
+        protected final View playbackProgressView;
         protected final View noThumbnailView;
         protected final TextView alphaView;
         protected final TextView vanityUrlView;
@@ -347,6 +352,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             alphaView = v.findViewById(R.id.claim_thumbnail_alpha);
             noThumbnailView = v.findViewById(R.id.claim_no_thumbnail);
             thumbnailView = v.findViewById(R.id.claim_thumbnail);
+            playbackProgressView = v.findViewById(R.id.playback_progress_view);
             vanityUrlView = v.findViewById(R.id.claim_vanity_url);
             durationView = v.findViewById(R.id.claim_duration);
             titleView = v.findViewById(R.id.claim_title);
@@ -655,6 +661,25 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                     long duration = item.getDuration();
                     vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
+                    long lastPlaybackPosition = loadLastPlaybackPosition(item);
+                    if (lastPlaybackPosition != -1 && duration > 0) {
+                        long lastPlaybackPositionSeconds = lastPlaybackPosition / 1000;
+                        vh.thumbnailView.getViewTreeObserver()
+                                .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                    @Override
+                                    public boolean onPreDraw() {
+                                        int width = vh.thumbnailView.getMeasuredWidth();
+                                        if (width > 0) {
+                                            Helper.setViewWidth(vh.playbackProgressView,
+                                                    (int) (((double) lastPlaybackPositionSeconds / duration) * width));
+                                            vh.thumbnailView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                        }
+                                        return true;
+                                    }
+                                });
+                    } else {
+                        Helper.setViewWidth(vh.playbackProgressView, 0);
+                    }
                     if (type == VIEW_TYPE_LIVESTREAM) {
                         vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
 
@@ -788,6 +813,19 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         }
 
         notifyItemChanged(items.indexOf(claim));
+    }
+
+    private long loadLastPlaybackPosition(Claim claim) {
+        long position = -1;
+        try {
+            String url = !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl();
+            String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+            position = sp.getLong(key, -1);
+        } catch (LbryUriException ex) {
+            ex.printStackTrace();
+        }
+        return position;
     }
 
     public interface ClaimListItemListener {

@@ -3145,11 +3145,16 @@ public class FileViewFragment extends BaseFragment implements
         long position = -1;
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (actualClaim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
-            Context context = getContext();
-            if (context != null) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                position = sp.getLong(key, -1);
+            try {
+                String url = !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl();
+                String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+                Context context = getContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    position = sp.getLong(key, -1);
+                }
+            } catch (LbryUriException ex) {
+                ex.printStackTrace();
             }
         }
         return position;
@@ -3158,12 +3163,17 @@ public class FileViewFragment extends BaseFragment implements
     private void savePlaybackPosition() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (MainActivity.appPlayer != null && actualClaim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
-            long position = MainActivity.appPlayer.getCurrentPosition();
-            Context context = getContext();
-            if (context != null) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                sp.edit().putLong(key, position).apply();
+            try {
+                String url = !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl();
+                String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+                long position = MainActivity.appPlayer.getCurrentPosition();
+                Context context = getContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    sp.edit().putLong(key, position).apply();
+                }
+            } catch (LbryUriException ex) {
+                ex.printStackTrace();
             }
         }
     }
