@@ -96,7 +96,6 @@ import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import com.odysee.app.OdyseeApp;
@@ -975,18 +974,17 @@ public class FileViewFragment extends BaseFragment implements
                 subscription.setNotificationsDisabled(!isNotificationsDisabled);
                 view.setEnabled(false);
                 Context context = getContext();
+                final View rootView = getView();
                 new ChannelSubscribeTask(context, publisher.getClaimId(), subscription, false, new ChannelSubscribeTask.ChannelSubscribeHandler() {
                     @Override
                     public void onSuccess() {
                         view.setEnabled(true);
                         Lbryio.updateSubscriptionNotificationsDisabled(subscription);
-                        Context context = getContext();
-                        if (context instanceof MainActivity) {
-                            ((MainActivity) context).showMessage(subscription.isNotificationsDisabled() ?
-                                    R.string.receive_no_notifications : R.string.receive_all_notifications);
-                        }
                         checkIsFollowing();
+                        showMessage(subscription.isNotificationsDisabled() ?
+                                R.string.receive_no_notifications : R.string.receive_all_notifications);
 
+                        Context context = getContext();
                         if (context != null) {
                             context.sendBroadcast(new Intent(MainActivity.ACTION_SAVE_SHARED_USER_STATE));
                         }
@@ -1235,7 +1233,7 @@ public class FileViewFragment extends BaseFragment implements
                             String message = getResources().getQuantityString(
                                     isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
                                     new DecimalFormat("#,###.##").format(sentAmount));
-                            Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
+                            showMessage(message);
                         });
                         Context context = getContext();
                         if (context instanceof MainActivity) {
@@ -1256,10 +1254,7 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (actualClaim != null) {
                     RepostClaimDialogFragment dialog = RepostClaimDialogFragment.newInstance(actualClaim, claim -> {
-                        Context context = getContext();
-                        if (context instanceof MainActivity) {
-                            ((MainActivity) context).showMessage(R.string.content_successfully_reposted);
-                        }
+                        showMessage(R.string.content_successfully_reposted);
                     });
                     Context context = getContext();
                     if (context instanceof MainActivity) {
@@ -1579,14 +1574,16 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
             Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
+
+            final View rootView = getView();
             AbandonStreamTask task = new AbandonStreamTask(Arrays.asList(actualClaim.getClaimId()), layoutResolving, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
                     if (context instanceof MainActivity) {
                         if (failedClaimIds.size() == 0) {
+                            showMessage(R.string.content_deleted);
                             MainActivity activity = (MainActivity) context;
-                            activity.showMessage(R.string.content_deleted);
                             activity.onBackPressed();
                         } else {
                             showError(getString(R.string.content_failed_delete));
@@ -3038,14 +3035,6 @@ public class FileViewFragment extends BaseFragment implements
         checkAndLoadComments(true);
     }
 
-    @Override
-    public void showError(String message) {
-        View root = getView();
-        if (root != null) {
-            Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-        }
-    }
-
     private void loadRelatedContent() {
         // reset the list view
         View root = getView();
@@ -3737,7 +3726,7 @@ public class FileViewFragment extends BaseFragment implements
                                 activity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        ((MainActivity) activity).showError(ex.getMessage());
+                                        showError(ex.getMessage());
                                     }
                                 });
                             }
@@ -3763,7 +3752,7 @@ public class FileViewFragment extends BaseFragment implements
                                 activity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        ((MainActivity) activity).showError(ex.getMessage());
+                                        showError(ex.getMessage());
                                     }
                                 });
                             }
@@ -3808,15 +3797,10 @@ public class FileViewFragment extends BaseFragment implements
         @Override
         public void onSuccess(double amountClaimed, String message) {
             if (Helper.isNullOrEmpty(message)) {
-                message = getResources().getQuantityString(
+                showMessage(getResources().getQuantityString(
                         R.plurals.claim_reward_message,
                         amountClaimed == 1 ? 1 : 2,
-                        new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed));
-            }
-            View root = getView();
-
-            if (root != null) {
-                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                        new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed)));
             }
         }
 
@@ -4046,8 +4030,7 @@ public class FileViewFragment extends BaseFragment implements
     private void showStoragePermissionRefusedError() {
         View root = getView();
         if (root != null) {
-            Snackbar.make(root, R.string.storage_permission_rationale_download, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            showError(getString(R.string.storage_permission_rationale_download));
         }
     }
 
@@ -4367,6 +4350,7 @@ public class FileViewFragment extends BaseFragment implements
         AccountManager am = AccountManager.get(getContext());
         Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
 
+        final View rootView = getView();
         CommentCreateTask task = new CommentCreateTask(comment, am.peekAuthToken(odyseeAccount, "auth_token_type"), progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
             @Override
             public void onSuccess(Comment createdComment) {
@@ -4399,10 +4383,7 @@ public class FileViewFragment extends BaseFragment implements
                 bundle.putString("claim_name", fileClaim != null ? fileClaim.getName() : null);
                 LbryAnalytics.logEvent(LbryAnalytics.EVENT_COMMENT_CREATE, bundle);
 
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).showMessage(R.string.comment_posted);
-                }
+                showMessage(R.string.comment_posted);
             }
 
             @Override

@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -214,7 +213,7 @@ public class FollowingFragment extends BaseFragment implements
                 int selected = suggestedChannelAdapter == null ? 0 : suggestedChannelAdapter.getSelectedCount();
                 int remaining = MIN_SUGGESTED_SUBSCRIBE_COUNT - selected;
                 if (remaining == MIN_SUGGESTED_SUBSCRIBE_COUNT) {
-                    Snackbar.make(getView(), R.string.select_five_subscriptions, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.select_five_subscriptions);
                 } else {
                     fetchSubscriptions();
                     showSubscribedContent();

@@ -22,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.widget.NestedScrollView;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -50,6 +49,7 @@ import com.odysee.app.tasks.CommentListHandler;
 import com.odysee.app.tasks.CommentListTask;
 import com.odysee.app.tasks.claim.*;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
+import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -60,7 +60,7 @@ import com.odysee.app.checkers.CommentEnabledCheck;
 import lombok.Getter;
 import lombok.Setter;
 
-public class ChannelCommentsFragment extends Fragment implements ChannelCreateDialogFragment.ChannelCreateListener {
+public class ChannelCommentsFragment extends BaseFragment implements ChannelCreateDialogFragment.ChannelCreateListener {
 
     @Setter
     private Claim claim;
@@ -614,10 +614,7 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
                 bundle.putString("claim_name", claim != null ? claim.getName() : null);
                 LbryAnalytics.logEvent(LbryAnalytics.EVENT_COMMENT_CREATE, bundle);
 
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).showMessage(R.string.comment_posted);
-                }
+                showMessage(R.string.comment_posted);
             }
 
             @Override
@@ -631,13 +628,6 @@ public class ChannelCommentsFragment extends Fragment implements ChannelCreateDi
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    public void showError(String message) {
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            ((MainActivity) context).showError(message);
-        }
     }
 
     private void checkNoComments() {

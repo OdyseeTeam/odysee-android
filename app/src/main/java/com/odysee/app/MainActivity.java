@@ -630,7 +630,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // Preliminary internal releases of Odysee was using SharedPreferences to store the authentication token.
         // Currently, it is using Android AccountManager, so let's check if value is stored and remove it for
-        // for privacy concerns.
+        // privacy concerns.
         if (sharedPreferences.contains("auth_token")) {
             sharedPreferencesEditor.remove("auth_token").apply();
         }
@@ -3183,22 +3183,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         registerReceiver(requestsReceiver, intentFilter);
     }
 
-    public void showMessage(int stringResourceId) {
-        Snackbar.make(findViewById(R.id.content_main), stringResourceId, Snackbar.LENGTH_LONG).show();
-    }
     public void showMessage(String message) {
         showMessage(message, null, null);
     }
     public void showMessage(String message, String actionText, View.OnClickListener actionListener) {
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+        Snackbar snackbar = getSnackbar(message);
         if (!Helper.isNullOrEmpty(actionText) && actionListener != null) {
             snackbar.setAction(actionText, actionListener);
         }
         snackbar.show();
     }
     public Snackbar getSnackbar(String message) {
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
-        return snackbar;
+        return Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
     }
     public void showStreamStoppedMessage() {
         View view = findViewById(R.id.content_main);
@@ -3208,13 +3204,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         snackbar.show();
     }
     public void showError(String message) {
-        Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
-                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+        getSnackbar(message).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
     }
 
-    public void showError(String message, @NotNull View root) {
-        Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-    }
     public void showNotifications() {
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);

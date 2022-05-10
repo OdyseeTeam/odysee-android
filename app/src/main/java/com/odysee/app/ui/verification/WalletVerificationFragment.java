@@ -2,7 +2,6 @@ package com.odysee.app.ui.verification;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,10 +12,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import com.odysee.app.R;
@@ -25,11 +22,12 @@ import com.odysee.app.model.WalletSync;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
+import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbryio;
 import lombok.Setter;
 
-public class WalletVerificationFragment extends Fragment {
+public class WalletVerificationFragment extends BaseFragment {
 
     @Setter
     private WalletSyncListener listener = null;
@@ -243,13 +241,5 @@ public class WalletVerificationFragment extends Fragment {
             }
         });
         setTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    private void showError(String message) {
-        View view = getView();
-        if (view != null) {
-            Snackbar.make(view, message, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-        }
     }
 }

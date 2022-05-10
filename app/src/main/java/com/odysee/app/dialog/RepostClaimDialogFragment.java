@@ -181,10 +181,7 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
                 @Override
                 public void onError(Exception error) {
                     // could not fetch channels
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        ((MainActivity) context).showError(error.getMessage());
-                    }
+                    showError(error.getMessage());
                     dismiss();
                 }
             });

@@ -205,7 +205,7 @@ public class ChannelCreateDialogFragment extends BottomSheetDialogFragment {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    activity.showError(message, activity.findViewById(R.id.main_activity_other_fragment));
+                    showError(message);
                 }
             });
         }

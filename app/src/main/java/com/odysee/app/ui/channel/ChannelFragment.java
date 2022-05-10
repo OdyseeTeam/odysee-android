@@ -3,7 +3,6 @@ package com.odysee.app.ui.channel;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -26,7 +25,6 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -220,7 +218,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                 String message = getResources().getQuantityString(
                                         isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
                                         new DecimalFormat("#,###.##").format(sentAmount));
-                                Snackbar.make(view1, message, Snackbar.LENGTH_LONG).show();
+                                showMessage(message);
                             }
                         });
                         Context context = getContext();
@@ -267,13 +265,11 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                             view.setEnabled(true);
                             Lbryio.updateSubscriptionNotificationsDisabled(subscription);
 
-                            Context context = getContext();
-                            if (context instanceof MainActivity) {
-                                ((MainActivity) context).showMessage(subscription.isNotificationsDisabled() ?
-                                        R.string.receive_no_notifications : R.string.receive_all_notifications);
-                            }
+                            showMessage(subscription.isNotificationsDisabled() ?
+                                    R.string.receive_no_notifications : R.string.receive_all_notifications);
                             checkIsFollowing();
 
+                            Context context = getContext();
                             if (context != null) {
                                 context.sendBroadcast(new Intent(MainActivity.ACTION_SAVE_SHARED_USER_STATE));
                             }
@@ -366,21 +362,19 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         if (claim != null) {
             Helper.setViewVisibility(layoutDisplayArea, View.GONE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
+
+            final View rootView = getView();
             AbandonChannelTask task = new AbandonChannelTask(Collections.singletonList(claim.getClaimId()), layoutResolving, Lbryio.AUTH_TOKEN, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
-                    if (context instanceof MainActivity) {
+                    if (context instanceof MainActivity && rootView != null) {
+                        MainActivity activity = (MainActivity) context;
                         if (failedClaimIds.size() == 0) {
-                            MainActivity activity = (MainActivity) context;
-                            activity.showMessage(R.string.channel_deleted);
+                            showMessage(R.string.channel_deleted);
                             activity.onBackPressed();
                         } else {
-                            View root = getView();
-                            if (root != null) {
-                                Snackbar.make(root, R.string.channel_failed_delete, Snackbar.LENGTH_LONG).
-                                        setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-                            }
+                            showError(context.getResources().getString(R.string.channel_failed_delete));
                         }
                     }
                 }

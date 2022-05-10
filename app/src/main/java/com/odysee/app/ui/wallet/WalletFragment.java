@@ -8,7 +8,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -37,7 +36,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -172,7 +170,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             ClipData data = ClipData.newPlainText("address", textWalletReceiveAddress.getText());
             clipboard.setPrimaryClip(data);
         }
-        Snackbar.make(getView(), R.string.address_copied, Snackbar.LENGTH_SHORT).show();
+        showMessage(R.string.address_copied);
     }
 
     private void fetchRecentTransactions() {
@@ -240,8 +238,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         String recipientAddress = Helper.getValue(inputSendAddress.getText());
         String amountString = Helper.getValue(inputSendAmount.getText());
         if (!recipientAddress.matches(LbryUri.REGEX_ADDRESS)) {
-            Snackbar.make(getView(), R.string.invalid_recipient_address, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            showError(getString(R.string.invalid_recipient_address));
             return false;
         }
 
@@ -249,14 +246,12 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
             try {
                 double amountValue = Double.parseDouble(amountString);
                 if (Lbry.getAvailableBalance() < amountValue) {
-                    Snackbar.make(getView(), R.string.insufficient_balance, Snackbar.LENGTH_LONG).
-                            setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                    showError(getString(R.string.insufficient_balance));
                     return false;
                 }
             } catch (NumberFormatException ex) {
                 // pass
-                Snackbar.make(getView(), R.string.invalid_amount, Snackbar.LENGTH_LONG).
-                        setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                showError(getString(R.string.invalid_amount));
                 return false;
             }
         }
@@ -427,8 +422,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
                     format(new BigDecimal(amountString).doubleValue());
         } catch (NumberFormatException ex) {
             if (view != null) {
-                Snackbar.make(view, R.string.invalid_amount, Snackbar.LENGTH_LONG).
-                        setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                showError(getString(R.string.invalid_amount));
             }
             return;
         }
@@ -437,8 +431,7 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         double actualSendAmount = Double.parseDouble(amount);
         if (actualSendAmount < Helper.MIN_SPEND) {
             if (view != null) {
-                Snackbar.make(view, R.string.min_spend_required, Snackbar.LENGTH_LONG).
-                        setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                showError(getString(R.string.min_spend_required));
             }
             return;
         }
@@ -482,18 +475,14 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
                 View view = getView();
                 if (result) {
-                    String message = getResources().getQuantityString(
+                    showMessage(getResources().getQuantityString(
                             R.plurals.you_sent_credits, actualSendAmount == 1.0 ? 1 : 2,
-                            new DecimalFormat("#,###.####").format(actualSendAmount));
+                            new DecimalFormat("#,###.####").format(actualSendAmount)));
                     Helper.setViewText(inputSendAddress, null);
                     Helper.setViewText(inputSendAmount, null);
-                    if (view != null) {
-                        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
-                    }
                 } else {
                     if (view != null) {
-                        Snackbar.make(view, R.string.send_credit_error, Snackbar.LENGTH_LONG).
-                                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                        showError(getString(R.string.send_credit_error));
                     }
                 }
             }
