@@ -99,6 +99,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.odysee.app.OdyseeApp;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -721,7 +722,8 @@ public class FileViewFragment extends BaseFragment implements
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
             MainActivity activity = (MainActivity) context;
-            WebSettingsCompat.setForceDark(webView.getSettings(), (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) || (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_YES)) ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+            String darkModeAppSetting = ((OdyseeApp) activity.getApplication()).getDarkModeAppSetting();
+            WebSettingsCompat.setForceDark(webView.getSettings(), (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_YES)) ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
     }
 
