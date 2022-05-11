@@ -112,7 +112,9 @@ public class SearchFragment extends BaseFragment implements
                     root.findViewById(R.id.file_type_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.publish_time_filter_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.time_filter_spinner).setVisibility(View.VISIBLE);
-                    root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                    if (((Chip) root.findViewById(R.id.chipSearchFile)).isChecked()) {
+                        root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                    }
                 } else {
                     root.findViewById(R.id.chipgroupFilter).setVisibility(View.GONE);
                     root.findViewById(R.id.file_type_label).setVisibility(View.GONE);
