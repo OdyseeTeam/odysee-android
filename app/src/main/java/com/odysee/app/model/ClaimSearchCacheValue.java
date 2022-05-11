@@ -7,12 +7,12 @@ import lombok.Getter;
 
 public class ClaimSearchCacheValue {
     @Getter
-    private final List<Claim> claims;
+    private final Page claimsPage;
     @Getter
     private final long timestamp;
 
-    public ClaimSearchCacheValue(List<Claim> claims, long timestamp) {
-        this.claims = new ArrayList<>(claims);
+    public ClaimSearchCacheValue(Page claimsPage, long timestamp) {
+        this.claimsPage = claimsPage;
         this.timestamp = timestamp;
     }
 

@@ -17,6 +17,6 @@ public class Search implements Callable<List<Claim>> {
 
     @Override
     public List<Claim> call() throws Exception {
-        return Helper.filterInvalidReposts(Lbry.claimSearch(options, Lbry.API_CONNECTION_STRING));
+        return Helper.filterInvalidReposts(Lbry.claimSearch(options, Lbry.API_CONNECTION_STRING).getClaims());
     }
 }
