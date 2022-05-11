@@ -161,7 +161,7 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(isChecked, null);
+                    resultListAdapter.setFileTypeFilters(isChecked, null, null, null);
                 }
             }
         });
@@ -169,7 +169,23 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(null, isChecked);
+                    resultListAdapter.setFileTypeFilters(null, isChecked, null, null);
+                }
+            }
+        });
+        ((CheckBox) root.findViewById(R.id.image_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(null, null, isChecked, null);
+                }
+            }
+        });
+        ((CheckBox) root.findViewById(R.id.text_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(null, null, null, isChecked);
                 }
             }
         });

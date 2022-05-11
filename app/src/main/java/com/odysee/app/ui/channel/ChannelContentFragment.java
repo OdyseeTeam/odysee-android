@@ -280,7 +280,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
 
         Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
         callables.add(() -> findActiveStream());
-        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING).getClaims());
 
         getLoadingView().setVisibility(View.VISIBLE);
         Thread t = new Thread(new Runnable() {

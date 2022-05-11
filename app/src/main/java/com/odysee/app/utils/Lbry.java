@@ -512,14 +512,16 @@ public final class Lbry {
                     String claimValueType = claim.getValueType();
                     String claimMediaType = claim.getMediaType();
 
-                    // Using Java Stream API to make it easier to add new future claim types
+                    // Using Java Stream API to make it easier to add new future claim types/media types
                     List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
                                                     .collect(Collectors.toList());
+                    Stream<String> mediaTypes = Stream.of("video", "audio", "image", "text");
 
-                    // For now, only claims which are audio, videos, playlists or already/scheduled livestreaming now can be viewed
+                    // For now, only claims which are video, audio, images, text, playlists
+                    // or already/scheduled livestreaming now can be viewed
                     if (claimTypes.contains(claimValueType.toLowerCase())
                             || !claim.hasSource()
-                            || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
+                            || (claim.hasSource() && mediaTypes.anyMatch(claimMediaType::contains))) {
                         claims.add(claim);
                     }
 

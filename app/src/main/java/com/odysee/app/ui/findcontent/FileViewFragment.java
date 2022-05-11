@@ -102,6 +102,12 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
+import org.commonmark.Extension;
+import org.commonmark.ext.autolink.AutolinkExtension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.ext.ins.InsExtension;
+import org.commonmark.ext.task.list.items.TaskListItemsExtension;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -134,6 +140,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -217,6 +224,7 @@ import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -2644,6 +2652,59 @@ public class FileViewFragment extends BaseFragment implements
         });
         t.start();
     }
+
+    private void viewMedia() {
+        Claim claimToView = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        String mediaType = claimToView.getMediaType();
+        View root = getView();
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get the streaming URL
+                Map<String, Object> params = new HashMap<>();
+                params.put("uri", claimToView.getPermanentUrl());
+                JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                String sourceUrl = (String) result.get("streaming_url");
+
+                if (mediaType.startsWith("image")) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        View container = root.findViewById(R.id.file_view_imageviewer_container);
+                        PhotoView photoView = root.findViewById(R.id.file_view_imageviewer);
+
+                        Context context = getContext();
+                        if (context != null) {
+                            Glide.with(context.getApplicationContext()).load(sourceUrl).centerInside().into(photoView);
+                        }
+                        container.setVisibility(View.VISIBLE);
+                    });
+                } else if (Arrays.asList("text/markdown", "text/md").contains(mediaType.toLowerCase())) {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url(sourceUrl)
+                            .build();
+                    try (Response response = client.newCall(request).execute()) {
+                        ResponseBody body = response.body();
+                        if (body != null) {
+                            String html = buildMarkdownHtml(body.string());
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                View container = root.findViewById(R.id.file_view_webview_container);
+                                initWebView(root);
+                                applyThemeToWebView();
+
+                                if (webView != null) {
+                                    webView.loadData(Base64.encodeToString(html.getBytes(), Base64.NO_PADDING), "text/html", "base64");
+                                }
+                                container.setVisibility(View.VISIBLE);
+                            });
+                        }
+                    }
+                }
+            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+    }
+
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(2);
@@ -3028,6 +3089,8 @@ public class FileViewFragment extends BaseFragment implements
             startTimeMillis = System.currentTimeMillis();
             showExoplayerView();
             playMedia();
+        } else if (actualClaim.isViewable()) {
+            viewMedia();
         }
     }
 
@@ -3187,9 +3250,17 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private String buildMarkdownHtml(String markdown) {
-        Parser parser = Parser.builder().build();
+        List<Extension> extensions =  Arrays.asList(
+                AutolinkExtension.create(),
+                StrikethroughExtension.create(),
+                TablesExtension.create(),
+                InsExtension.create(),
+                TaskListItemsExtension.create()
+        );
+        Parser parser = Parser.builder().extensions(extensions).build();
         Node document = parser.parse(markdown);
         HtmlRenderer renderer = HtmlRenderer.builder()
+                .extensions(extensions)
                 .attributeProviderFactory(new AttributeProviderFactory() {
                     @Override
                     public AttributeProvider create(AttributeProviderContext context) {

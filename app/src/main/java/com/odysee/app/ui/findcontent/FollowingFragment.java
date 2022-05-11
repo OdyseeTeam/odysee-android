@@ -661,7 +661,7 @@ public class FollowingFragment extends BaseFragment implements
 
         Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
         callables.add(() -> fetchActiveLivestreams());
-        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING).getClaims());
 
         Thread t = new Thread(new Runnable() {
             @Override
