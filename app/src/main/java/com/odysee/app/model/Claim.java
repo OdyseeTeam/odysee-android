@@ -99,6 +99,9 @@ public class Claim {
     private boolean isLive;
     private String livestreamUrl;
 
+    private boolean highlightLive;
+    private int livestreamViewers;
+
     // Collections
     private List<String> claimIds;
 
@@ -177,6 +180,8 @@ public class Claim {
             String mediaType = metadata.getSource() != null ? metadata.getSource().getMediaType() : null;
             if (mediaType != null) {
                 return mediaType.startsWith("video") || mediaType.startsWith("audio");
+            } else {
+                return livestreamUrl != null;
             }
         }
         return false;
@@ -201,6 +206,22 @@ public class Claim {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns highlightLive field value
+     * @return Current highlightLive field value
+     */
+    public boolean isHighlightLive() {
+        return highlightLive;
+    }
+
+    /**
+     * Sets the highlightLive field value for this Claim object
+     * @param highlightLive - true if you want claim list item to show "LIVE"/"SOON" instead of duration
+     */
+    public void setHighlightLive(boolean highlightLive) {
+        this.highlightLive = highlightLive;
     }
 
     public String getThumbnailUrl() {
@@ -399,6 +420,21 @@ public class Claim {
         return claim;
     }
 
+    /**
+     * Create a new Claim instance which only sets specific fileds for livestreamed claims
+     * @param claimId - The claimId to used for the claim
+     * @param liveUrl - The url which should be used for connecting to the livestream
+     * @param livestreamViewers - The amount of viewers currently watching the stream
+     * @return A new Claim object
+     */
+    public static Claim fromLiveStatus(String claimId, String liveUrl, int livestreamViewers) {
+        Claim claim = new Claim();
+        claim.setClaimId(claimId);
+        claim.setLivestreamUrl(liveUrl);
+        claim.setLivestreamViewers(livestreamViewers);
+        return claim;
+    }
+
     @SuppressLint("SimpleDateFormat")
     public static Claim fromSearchJSONObject(JSONObject searchResultObject) {
         Claim claim = new Claim();
@@ -561,7 +597,7 @@ public class Claim {
     }
 
     /**
-     * Object to be instantiated. In order to get the URLto the CDN, call toString() on it
+     * Object to be instantiated. In order to get the URL to the CDN, call toString() on it
      */
     static class ImageCDNUrl {
         private String appendedPath = "";
@@ -574,8 +610,9 @@ public class Claim {
 
             appendedPath = appendedPath.concat("plain/").concat(thumbnailUrl);
 
-            if (format != null)
+            if (format != null) {
                 appendedPath = appendedPath.concat("@").concat(format);
+            }
         }
 
         @Override

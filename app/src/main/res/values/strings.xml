@@ -90,6 +90,7 @@
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>
     <string name="live">Live</string>
+    <string name="soon">Soon</string>
     <string name="tags">Tags</string>
     <string name="like_desc">Fire icon</string>
     <string name="dislike_desc">Slime icon</string>
@@ -164,6 +165,7 @@
         <item quantity="one">%1$s view</item>
         <item quantity="other">%1$s views</item>
     </plurals>
+    <string name="livestream_view_count">%1$s currently watching</string>
     <plurals name="video_count">
         <item quantity="one">%1$s video</item>
         <item quantity="other">%1$s videos</item>
@@ -188,6 +190,7 @@
     <!-- Channel view -->
     <string name="no_channel_info">There\'s nothing here yet.\nPlease check back later.</string>
     <string name="content">Content</string>
+    <string name="scheduled_livestreams">Scheduled Livestreams</string>
     <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>

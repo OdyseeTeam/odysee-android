@@ -23,6 +23,9 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +44,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private static final int VIEW_TYPE_STREAM = 1;
     private static final int VIEW_TYPE_CHANNEL = 2;
     private static final int VIEW_TYPE_FEATURED = 3; // featured search result
+    private static final int VIEW_TYPE_LIVESTREAM = 4; // featured search result
 
     public static final int STYLE_BIG_LIST = 1;
     public static final int STYLE_SMALL_LIST = 2;
@@ -89,12 +93,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
-        if (context != null) {
-            this.scale = context.getResources().getDisplayMetrics().density;
-        }
+        List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
-        this.style = style;
-        for (Claim item : items) {
+        for (Claim item : sortedItems) {
             if (item != null) {
                 this.items.add(item);
             }
@@ -197,23 +198,39 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
 
     public void addItems(List<Claim> claims) {
-        final int initialCount = items.size();
-
         for (Claim claim : claims) {
             if (claim != null) {
-                boolean c = items.stream().anyMatch(p -> p.getClaimId() != null && p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+                boolean alreadyAdded = items.stream().anyMatch(p -> p.getClaimId() != null && p.getClaimId().equalsIgnoreCase(claim.getClaimId()));
+                if (claim.getLivestreamUrl() != null) {
+                    if (!alreadyAdded) {
+                        // Determine first claim which is not livestreaming
+                        Claim c = items.stream().filter(v -> v != null && v.getLivestreamUrl() == null).findFirst().orElse(null);
 
-                if (!c) {
-                    items.add(claim);
+                        // Insert livestreaming one before first item which is not a livestream
+                        if (c != null) {
+                            int position = items.indexOf(c);
+                            int positionToInsert = position > 0 ? position - 1 : 0;
+                            items.add(positionToInsert, claim);
+                            notifyItemInserted(positionToInsert);
+                        } else if (items.size() > 0) {
+                            // There is no item on the list of items which is not a livestream
+                            items.add(claim);
+                            notifyItemInserted(items.size());
+                        }
+                    }
+                } else {
+                    if (!alreadyAdded) {
+                        items.add(claim);
+                        notifyItemInserted(items.size() - 1);
+                    }
                 }
             }
         }
 
-        notifyItemRangeInserted(initialCount, items.size() - initialCount);
-
         notFoundClaimUrlMap.clear();
         notFoundClaimIdMap.clear();
     }
+
     public void setItems(List<Claim> claims) {
         if (items.size() > 0)
             notifyItemRangeRemoved(0, items.size());
@@ -369,6 +386,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     public int getItemViewType(int position) {
         if (items.get(position).isFeatured()) {
             return VIEW_TYPE_FEATURED;
+        } else if (items.get(position).isLive() || items.get(position).isHighlightLive()) {
+            return VIEW_TYPE_LIVESTREAM;
         }
 
         Claim claim = items.get(position);
@@ -405,7 +424,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 quickClaimIdMap.put(claimId, claim);
                 quickClaimUrlMap.put(url, claim);
                 claim.setFile(file);
-                notifyDataSetChanged();
+                notifyItemChanged(i);
                 claimFound = true;
                 break;
             }
@@ -473,20 +492,20 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         int type = getItemViewType(position);
 
         if (style == STYLE_SMALL_LIST) {
-            int paddingTop = position == 0 ? 16 : 8;
-            int paddingBottom = position == getItemCount() - 1 ? 16 : 8;
+            int paddingTop = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            int paddingBottom = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
             int paddingTopScaled = Helper.getScaledValue(paddingTop, scale);
             int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
             vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
         } else if (style == STYLE_SMALL_LIST_HORIZONTAL) {
-            int paddingStart = position == 0 ? 16 : 8;
-            int paddingEnd = position == getItemCount() - 1 ? 16 : 8;
+            int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            int paddingEnd = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
             int paddingStartScaled = Helper.getScaledValue(paddingStart, scale);
             int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);
             vh.itemView.setPadding(paddingStartScaled, vh.itemView.getPaddingTop(), paddingEndScaled, vh.itemView.getPaddingBottom());
         }
 
-        Claim original = items.get(position);
+        Claim original = items.get(vh.getAbsoluteAdapterPosition());
         boolean isRepost = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType());
         final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
                 (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
@@ -524,7 +543,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     toggleSelectedClaim(original);
                 } else {
                     if (listener != null) {
-                        listener.onClaimClicked(item, position);
+                        listener.onClaimClicked(item, vh.getAbsoluteAdapterPosition());
                     }
                 }
             }
@@ -559,7 +578,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null && signingChannel != null) {
-                    listener.onClaimClicked(signingChannel, position);
+                    listener.onClaimClicked(signingChannel, vh.getAbsoluteAdapterPosition());
                 }
             }
         });
@@ -572,7 +591,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             @Override
             public void onClick(View view) {
                 if (listener != null) {
-                    listener.onClaimClicked(original.getSigningChannel(), position);
+                    listener.onClaimClicked(original.getSigningChannel(), vh.getAbsoluteAdapterPosition());
                 }
             }
         });
@@ -635,10 +654,26 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                     long duration = item.getDuration();
-                    vh.durationView.setVisibility((duration > 0 || item.isLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
-                    if (item.isLive() && !Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
+                    if (type == VIEW_TYPE_LIVESTREAM) {
                         vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-                        vh.durationView.setText(context.getResources().getString(R.string.live).toUpperCase());
+
+                        Date ct = new Date();
+                        Calendar cal = GregorianCalendar.getInstance(); // locale-specific
+                        cal.setTime(ct);
+
+                        long nowTime = cal.getTimeInMillis() / 1000L;
+                        String liveText;
+                        if (((Claim.StreamMetadata) item.getValue()).getReleaseTime() > nowTime) {
+                            liveText = context.getResources().getString(R.string.soon).toUpperCase();
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+                        } else {
+                            liveText = String.valueOf(item.getLivestreamViewers());
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
+                            vh.durationView.setCompoundDrawablePadding(8);
+                        }
+
+                        vh.durationView.setText(liveText);
                     } else {
                         vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
                         if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
@@ -680,6 +715,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         }
                     }
                 } else {
+                    // This item should be filtered out -not displayed-
                     vh.itemView.setVisibility(View.GONE);
                     lp.height = 0;
                     lp.width = 0;

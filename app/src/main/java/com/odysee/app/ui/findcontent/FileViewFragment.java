@@ -54,6 +54,7 @@ import android.widget.TextView;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.browser.customtabs.CustomTabColorSchemeParams;
@@ -99,6 +100,7 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
@@ -300,6 +302,8 @@ public class FileViewFragment extends BaseFragment implements
     private ScheduledExecutorService scheduledExecutor;
     ScheduledFuture<?> futureReactions;
     Reactions reactions;
+    ScheduledFuture<?> futureViewersCount;
+    ExecutorService executorService;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -332,6 +336,7 @@ public class FileViewFragment extends BaseFragment implements
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
+    private String claimLivestreamUrl;
 
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -544,7 +549,7 @@ public class FileViewFragment extends BaseFragment implements
 
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
-                    // Only update fragment if new claim is different than currently being played
+                    // Only update fragment if new claim is different from currently being played
                     if (newClaim != null && !newClaim.equals(this.fileClaim)) {
                         updateRequired = true;
                     }
@@ -573,6 +578,9 @@ public class FileViewFragment extends BaseFragment implements
                             updateRequired = true;
                         }
                     }
+                }
+                if (params.containsKey("livestreamUrl")) {
+                    claimLivestreamUrl = (String) params.get("livestreamUrl");
                 }
             } else if (currentUrl != null) {
                 updateRequired = true;
@@ -804,6 +812,18 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private String getStreamingUrl() {
+        if (claimLivestreamUrl != null) {
+            return claimLivestreamUrl;
+        } else {
+            return buildLbryTvStreamingUrl();
+        }
+    }
+
+    private String buildLbryTvStreamingUrl() {
+        return String.format("%s/content/claims/%s/%s/stream", CDN_PREFIX, fileClaim.getName(), fileClaim.getClaimId());
+    }
+
     private void loadFile() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         String claimId = actualClaim.getClaimId();
@@ -969,19 +989,27 @@ public class FileViewFragment extends BaseFragment implements
 
         // Tasks on the scheduled executor needs to be really terminated to avoid
         // crashes if user presses back after going to a related content from here
-        purgeLoadingReactionsTask();
+        purgeScheduledTasks();
     }
 
-    private void purgeLoadingReactionsTask() {
-        if (scheduledExecutor != null && !scheduledExecutor.isShutdown() && futureReactions != null) {
-            try {
-                // .cancel() will not remove the task, so it is needed to .purge()
+    /**
+     * Cancels scheduled futures and then removes them from the queue so they are no longer run
+     */
+    private void purgeScheduledTasks() {
+        try {
+            if (futureReactions != null) {
                 futureReactions.cancel(true);
+            }
+            if (futureViewersCount != null) {
+                futureViewersCount.cancel(true);
+            }
+            if (scheduledExecutor != null) {
+                // .cancel() will not remove the task, so it is needed to .purge()
                 ((ScheduledThreadPoolExecutor) scheduledExecutor).purge();
                 scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -1865,7 +1893,11 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(tipButton, View.VISIBLE);
 */
 
-        loadViewCount();
+        if (fileClaim != null && fileClaim.isLive()) {
+            loadLiveViewersCount(fileClaim);
+        } else {
+            loadViewCount();
+        }
         loadReactions(claimToRender);
         checkIsFollowing();
 
@@ -2210,12 +2242,19 @@ public class FileViewFragment extends BaseFragment implements
                 if (claimToPlay.hasSource()) {
                     getStreamingUrlAndInitializePlayer(claimToPlay);
                 } else {
-                    String mediaSourceUrl = getLivestreamUrl();
                     DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
                     if (context != null) {
                         dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
                     }
+
                     MediaSource mediaSource = null;
+                    String mediaSourceUrl;
+
+                    if (!Helper.isNullOrEmpty(claimLivestreamUrl)) {
+                        mediaSourceUrl = claimLivestreamUrl;
+                    } else {
+                        mediaSourceUrl = getLivestreamUrl();
+                    }
 
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
@@ -2310,80 +2349,51 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     /**
-     * @return The URL to connect to get the video stream, usually a .M3U8
+     * Call this to get the livestreaming URL for the media. This is to be used when we directly arrive here
+     * from outside the app, like through a deep link
+     * @return The URL to connect to get the video stream, usually a link to an .M3U8 file
      */
-    @AnyThread
+    @WorkerThread
     private String getLivestreamUrl() {
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<JSONObject> task = new Supplier<JSONObject>() {
-                @Override
-                public JSONObject get() {
-                    return getLivestreamData(actualClaim);
-                }
-            };
-            CompletableFuture<JSONObject> completableFuture = CompletableFuture.supplyAsync(task);
-            CompletableFuture<String> cf = completableFuture.thenApply(jsonData -> getLivestreamUrl(jsonData));
-            try {
-                return cf.get();
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
-            }
-        } else {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            Callable<JSONObject> callable = () -> getLivestreamData(actualClaim);
-            Future<JSONObject> future = executor.submit(callable);
+        // User could land on this fragment from a deep-link. That means the livestream would have not been resolved,
+        // so it needs to be done
+        String jsonDataUrl = null;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(fileClaim.getSigningChannel().getClaimId()));
+            Future<Map<String, JSONObject>> future = executor.submit(callable);
 
-            for (;;) {
-                if (future.isDone()) {
-                    try {
-                        JSONObject jsonData = future.get();
-                        return getLivestreamUrl(jsonData);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
+            Map<String, JSONObject> jsonData = future.get();
+            jsonDataUrl = getLivestreamUrl(jsonData.get(fileClaim.getSigningChannel().getClaimId()));
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            if (!executor.isShutdown()) {
+                executor.shutdown();
             }
         }
-        return null;
+
+        return jsonDataUrl;
     }
 
+    @AnyThread
+    @Nullable
     private String getLivestreamUrl(JSONObject jsonData) {
-        if (jsonData != null && jsonData.has("live")) {
-            try {
+        try {
+            if (jsonData != null && jsonData.has("live")) {
                 if (jsonData.getBoolean("live") && jsonData.has("url")) {
                     return jsonData.getString("url");
                 } else {
                     return "notlive";
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-
-    private JSONObject getLivestreamData(Claim claim) {
-        String urlLivestream = String.format("https://api.live.odysee.com/v1/odysee/live/%s", claim.getSigningChannel().getClaimId());
-
-        Request.Builder builder = new Request.Builder().url(urlLivestream);
-        Request request = builder.build();
-
-        OkHttpClient client = new OkHttpClient.Builder().build();
-
-        try {
-            Response resp = client.newCall(request).execute();
-            String responseString = resp.body().string();
-            resp.close();
-            JSONObject json = new JSONObject(responseString);
-            if (resp.code() >= 200 && resp.code() < 300) {
-                if (json.isNull("data") || (json.has("success") && !json.getBoolean("success"))) {
-                    return null;
+            } else if (jsonData != null && jsonData.has("Live")) {
+                if (jsonData.getBoolean("Live") && jsonData.has("VideoURL")) {
+                    return jsonData.getString("VideoURL");
+                } else {
+                    return "notlive";
                 }
-
-                return (JSONObject) json.get("data");
             }
-        } catch (IOException | JSONException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
         }
         return null;
@@ -2491,7 +2501,7 @@ public class FileViewFragment extends BaseFragment implements
                     selectedQuality = lowestQuality;
                     selectedQualityIndex = availableQualities.indexOf(lowestQuality);
                 } else {
-                    // Otherwise find the highest available quality that is less than the chosen quality
+                    // Otherwise, find the highest available quality that is less than the chosen quality
                     for (int i = 0; i < availableQualities.size(); i++) {
                         int q = availableQualities.get(i);
                         if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
@@ -2574,15 +2584,77 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void loadLiveViewersCount(Claim claim) {
+        if (scheduledExecutor == null) {
+            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
+        }
+
+        if (executorService == null) {
+            executorService = Executors.newSingleThreadScheduledExecutor();
+        }
+
+        if (futureViewersCount != null) {
+            futureViewersCount.cancel(true);
+        }
+
+        Runnable r = () -> {
+            updateLiveViewersCount(claim);
+        };
+        futureViewersCount = scheduledExecutor.scheduleAtFixedRate(r, 10, 5, TimeUnit.SECONDS);
+    }
+
+    private void updateLiveViewersCount(Claim claim) {
+        Activity a = getActivity();
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String channelClaimId = claim.getSigningChannel().getClaimId();
+                Future<Map<String, JSONObject>> futureViewersCount = executorService.submit(new ChannelLiveStatus(Collections.singletonList(channelClaimId), false));
+
+                try {
+                    Map<String, JSONObject> channelStatus = futureViewersCount.get();
+
+                    if (channelStatus.containsKey(channelClaimId)) {
+                        JSONObject jsonData = channelStatus.get(channelClaimId);
+                        if (a != null && jsonData != null) {
+                            Integer count = jsonData.getInt("ViewerCount");
+                            a.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        String displayText = getResources().getString(R.string.livestream_view_count, count);
+                                        View root = getView();
+                                        if (root != null) {
+                                            TextView textViewCount = root.findViewById(R.id.file_view_view_count);
+                                            Helper.setViewText(textViewCount, displayText);
+                                            Helper.setViewVisibility(textViewCount, View.VISIBLE);
+                                        }
+                                    } catch (IllegalStateException ex) {
+                                        ex.printStackTrace();
+                                    }
+                                }
+                            });
+                        }
+
+                    }
+                } catch (ExecutionException | InterruptedException | JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        t.start();
+    }
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
-            scheduledExecutor = new ScheduledThreadPoolExecutor(1);
+            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
         }
-        if (futureReactions != null)
+        if (futureReactions != null) {
             futureReactions.cancel(true);
+        }
 
-        if (reactions == null)
+        if (reactions == null) {
             reactions = new Reactions();
+        }
 
         Runnable runnable = () -> {
             Map<String, String> options = new HashMap<>();
@@ -3327,6 +3399,7 @@ public class FileViewFragment extends BaseFragment implements
                         if (claim.getName().startsWith("@")) {
                             activity.openChannelClaim(claim);
                         } else {
+                            purgeScheduledTasks();
                             Map<String, Object> params = new HashMap<>(1);
                             params.put("url", !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl());
 
@@ -4616,15 +4689,18 @@ public class FileViewFragment extends BaseFragment implements
 
     private void react(Claim claim, boolean like) {
         Runnable runnable = () -> {
-            purgeLoadingReactionsTask();
+            if (futureReactions != null && futureReactions.isCancelled()) {
+                futureReactions.cancel(true);
+            }
 
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
             options.put("clear_types", like ? "dislike" : "like");
 
-            if ((like && claim.isLiked()) || (!like && claim.isDisliked()))
+            if ((like && claim.isLiked()) || (!like && claim.isDisliked())) {
                 options.put("remove", "true");
+            }
 
             try {
                 JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));

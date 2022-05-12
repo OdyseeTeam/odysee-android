@@ -1,5 +1,6 @@
 package com.odysee.app.ui.findcontent;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -26,18 +27,26 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ChannelFilterListAdapter;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.SuggestedChannelGridAdapter;
+import com.odysee.app.callable.ChannelLiveStatus;
+import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.dialog.DiscoverDialogFragment;
@@ -125,6 +134,9 @@ public class FollowingFragment extends BaseFragment implements
     private boolean loadingSuggested;
     private boolean loadingContent;
     private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private ExecutorService fixedExecutor;
+    Map<String, JSONObject> liveChannels;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -382,6 +394,7 @@ public class FollowingFragment extends BaseFragment implements
             }
         }
 
+        liveChannels = null;
         if (Lbryio.subscriptions != null && Lbryio.subscriptions.size() > 0) {
             fetchLoadedSubscriptions(true);
         } else {
@@ -631,80 +644,194 @@ public class FollowingFragment extends BaseFragment implements
         if (reset && contentListAdapter != null) {
             contentListAdapter.clearItems();
             currentClaimSearchPage = 1;
+            liveChannels = null;
         }
 
         contentClaimSearchLoading = true;
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
-        contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.API_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
+
+        Activity a = getActivity();
+
+        getLoadingView().setVisibility(View.VISIBLE);
+
+        if (fixedExecutor == null || fixedExecutor.isShutdown()) {
+            fixedExecutor = Executors.newFixedThreadPool(4);
+        }
+
+        Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
+        callables.add(() -> fetchActiveLivestreams());
+        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                claims = Helper.filterClaimsByOutpoint(claims);
-                claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
+            public void run() {
+                try {
+                    List<Future<List<Claim>>> results = fixedExecutor.invokeAll(callables);
 
-                Date d = new Date();
-                Calendar cal = new GregorianCalendar();
-                cal.setTime(d);
+                    List<Claim> items = new ArrayList<>();
 
-                // Remove claims with a release time in the future
-                claims.removeIf(e -> {
-                    Claim.GenericMetadata metadata = e.getValue();
-                    return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
-                });
+                    for (Future<List<Claim>> f : results) {
+                        if (!f.isCancelled()) {
+                            List<Claim> internalItems = f.get();
 
-                // Sort claims so those which are livestreaming now are shwon on the top of the list
-                Collections.sort(claims, new Comparator<Claim>() {
-                    @Override
-                    public int compare(Claim claim, Claim t1) {
-                        if (claim.isLive() && !t1.isLive())
-                            return -1;
-                        else if (!claim.isLive() && t1.isLive())
-                            return 1;
-                        else
-                            return 0;
+                            if (internalItems != null) {
+                                items.addAll(internalItems);
+                            }
+                        }
                     }
-                });
 
-                if (contentListAdapter == null) {
-                    Context context = getContext();
-                    if (context != null) {
-                        contentListAdapter = new ClaimListAdapter(claims, context);
-                        contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                    fixedExecutor.shutdown();
+
+                    if (claimSearchOptions.containsKey("page_size")) {
+                        int pageSize = Helper.parseInt(claimSearchOptions.get("page_size"), 0);
+                        contentHasReachedEnd = items.size() < pageSize;
+                    }
+
+                    Date d = new Date();
+                    Calendar cal = new GregorianCalendar();
+                    cal.setTime(d);
+
+                    // Remove claims with a release time in the future or not being livestreams and don't having a source
+                    items.removeIf(e -> {
+                        if ((!e.isHighlightLive() || !e.isLive()) && !e.hasSource()) {
+                            return true;
+                        }
+                        Claim.GenericMetadata metadata = e.getValue();
+                        return metadata instanceof Claim.StreamMetadata && (((Claim.StreamMetadata) metadata).getReleaseTime()) > (cal.getTimeInMillis() / 1000L);
+                    });
+
+                    items = Helper.filterClaimsByOutpoint(items);
+                    items = Helper.filterClaimsByBlockedChannels(items, Lbryio.blockedChannels);
+
+                    if (a != null) {
+                        List<Claim> finalClaims = items;
+                        a.runOnUiThread(new Runnable() {
                             @Override
-                            public void onClaimClicked(Claim claim, int position) {
-                                Context context = getContext();
-                                if (context instanceof MainActivity) {
-                                    MainActivity activity = (MainActivity) context;
-                                    if (claim.getName().startsWith("@")) {
-                                        // channel claim
-                                        activity.openChannelClaim(claim);
-                                    } else {
-                                        activity.openFileClaim(claim);
+                            public void run() {
+                                getLoadingView().setVisibility(View.GONE);
+                                if (contentListAdapter == null) {
+                                    Context context = getContext();
+                                    if (context != null) {
+                                        contentListAdapter = new ClaimListAdapter(finalClaims, context);
+                                        contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                            @Override
+                                            public void onClaimClicked(Claim claim, int position) {
+                                                Context context = getContext();
+                                                if (context instanceof MainActivity) {
+                                                    MainActivity activity = (MainActivity) context;
+                                                    if (claim.getName().startsWith("@")) {
+                                                        // channel claim
+                                                        activity.openChannelClaim(claim);
+                                                    } else {
+                                                        activity.openFileClaim(claim);
+                                                    }
+                                                }
+                                            }
+                                        });
                                     }
+                                } else {
+                                    contentListAdapter.addItems(finalClaims);
                                 }
+                                if (contentList != null && contentList.getAdapter() == null) {
+                                    contentList.setAdapter(contentListAdapter);
+                                }
+
+                                contentClaimSearchLoading = false;
+                                checkNoContent(false);
                             }
                         });
                     }
-                } else {
-                    contentListAdapter.addItems(claims);
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                getLoadingView().setVisibility(View.GONE);
+                                contentClaimSearchLoading = false;
+                                checkNoContent(false);
+                            }
+                        });
+                    }
                 }
-
-                if (contentList != null && contentList.getAdapter() == null) {
-                    contentList.setAdapter(contentListAdapter);
-                }
-
-                contentHasReachedEnd = hasReachedEnd;
-                contentClaimSearchLoading = false;
-                checkNoContent(false);
-            }
-
-            @Override
-            public void onError(Exception error) {
-                contentClaimSearchLoading = false;
-                checkNoContent(false);
+                fixedExecutor.shutdown();
             }
         });
-        contentClaimSearchTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
+    }
+
+    /**
+     *
+     * @return A list of the active claims for followed channels which are currently livestreaming
+     */
+    private List<Claim> fetchActiveLivestreams() {
+        List<Claim> mostRecentClaims = new ArrayList<>();
+        Map<String, JSONObject> livestreamingChannels;
+        try {
+            Future<Map<String, JSONObject>> isLiveFuture = fixedExecutor.submit(new ChannelLiveStatus(getChannelIds(), false));
+
+            livestreamingChannels = isLiveFuture.get();
+
+            List<Claim> activeClaims = new ArrayList<>();
+            if (livestreamingChannels != null) {
+                List<String> activeClaimIds = new ArrayList<>();
+
+                Iterator<Map.Entry<String, JSONObject>> it = livestreamingChannels.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, JSONObject> pair = it.next();
+                    JSONObject j = pair.getValue();
+                    String activeClaimId = null;
+                    if (j.has("ActiveClaim")) {
+                        JSONObject activeJson = (JSONObject) j.get("ActiveClaim");
+                        activeClaimId = activeJson.getString("ClaimID");
+                        String livestreamUrl = j.getString("VideoURL");
+                        int viewersCount = j.getInt("ViewerCount");
+                        System.out.println(pair.getKey() + " = " + pair.getValue());
+                        if (!activeClaimId.equalsIgnoreCase("Confirming")) {
+                            activeClaims.add(Claim.fromLiveStatus(activeClaimId, livestreamUrl, viewersCount));
+                            activeClaimIds.add(activeClaimId);
+                        }
+                    }
+                    it.remove(); // avoids a ConcurrentModificationException
+                }
+
+                if (activeClaimIds.size() > 0) {
+                    Map<String, Object> claimSearchOptions = buildContentOptions();
+
+                    claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                    claimSearchOptions.put("has_no_source", true);
+                    claimSearchOptions.put("claim_ids", activeClaimIds);
+                    Future<List<Claim>> mostRecentsFuture = fixedExecutor.submit(new Search(claimSearchOptions));
+
+                    mostRecentClaims = mostRecentsFuture.get();
+                }
+            }
+
+            if (mostRecentClaims.size() == 0) {
+                return null;
+            } else {
+                mostRecentClaims.stream().forEach(c -> {
+                    Claim p = activeClaims.stream().filter(g -> g.getClaimId().equalsIgnoreCase(c.getClaimId())).findFirst().orElse(null);
+
+                    if (p != null) {
+                        Claim ac = activeClaims.get(activeClaims.indexOf(p));
+                        c.setHighlightLive(true);
+                        c.setLive(true);
+                        c.setLivestreamUrl(ac.getLivestreamUrl());
+                        c.setLivestreamViewers(ac.getLivestreamViewers());
+                    }
+                });
+            }
+        } catch (InterruptedException | ExecutionException | JSONException e) {
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                cause.printStackTrace();
+            }
+        }
+
+        return mostRecentClaims;
     }
 
     private void updateSuggestedDoneButtonText() {
