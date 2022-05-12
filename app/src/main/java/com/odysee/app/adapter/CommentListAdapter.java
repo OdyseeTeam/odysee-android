@@ -54,7 +54,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     @Setter
     private Boolean collapsed = true;
 
-    private List<String> childsToBeShown;
+    private List<String> childrenToBeShown;
 
     private final Claim claim;
 
@@ -62,7 +62,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
     public CommentListAdapter(List<Comment> items, Context context, Claim claim, CommentListListener commentListListener) {
         this.items = new ArrayList<>(items);
-        this.childsToBeShown= new ArrayList<>();
+        this.childrenToBeShown = new ArrayList<>();
         this.context = context;
         this.commentListListener = commentListListener;
 
@@ -288,7 +288,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
                 if ( remove == true ) {
                     items.remove(i);
-                    childsToBeShown.remove(commentToRemove.getId());
+                    childrenToBeShown.remove(commentToRemove.getId());
                 }
             }
 
@@ -331,13 +331,13 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         switchViewReplies(comment, (TextView) holder.viewReplies);
 
         ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
-        if (collapsed || (comment.getParentId() != null && !childsToBeShown.contains(comment.getParentId()))) {
+        if (collapsed || (comment.getParentId() != null && !childrenToBeShown.contains(comment.getParentId()))) {
             holder.itemView.setVisibility(View.GONE);
             lp.height = 0;
             lp.width = 0;
             holder.itemView.setLayoutParams(lp);
         } else {
-            if (comment.getParentId() == null || (comment.getParentId() != null && childsToBeShown.contains(comment.getParentId()))) {
+            if (comment.getParentId() == null || (comment.getParentId() != null && childrenToBeShown.contains(comment.getParentId()))) {
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                 lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
                 holder.itemView.setLayoutParams(lp);
@@ -516,7 +516,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
     }
 
     private void switchViewReplies(Comment comment, TextView vrt) {
-        if (childsToBeShown.contains(comment.getId())) {
+        if (childrenToBeShown.contains(comment.getId())) {
             vrt.setText(context.getText(R.string.comment_hide_replies));
         } else {
             vrt.setText(context.getText(R.string.comment_view_replies));
@@ -585,14 +585,14 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
 
         // childsToBeShown contains a list of parentIds.
         // RecyclerView will display any item which parentId was contained on childsToBeShown
-        if (!childsToBeShown.contains(parentId)) {
-            childsToBeShown.add(parentId);
+        if (!childrenToBeShown.contains(parentId)) {
+            childrenToBeShown.add(parentId);
         } else {
-            childsToBeShown.remove(parentId);
+            childrenToBeShown.remove(parentId);
 
             // Also remove child parentIds from the list so child replies are also collapsed
             for (int i = firstChild; i < lastIndex; i++) {
-                childsToBeShown.remove(items.get(i).getParentId());
+                childrenToBeShown.remove(items.get(i).getParentId());
             }
         }
         notifyItemRangeChanged(parentPosition, lastIndex - parentPosition + 1);
