@@ -255,12 +255,10 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
                 View root = getView();
                 if (root != null) {
                     if (failedClaimIds.size() > 0) {
-                        Snackbar.make(root, R.string.one_or_more_publishes_failed_abandon, Snackbar.LENGTH_LONG).
-                                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                        showError(getString(R.string.one_or_more_publishes_failed_abandon));
                     } else if (successfulClaimIds.size() == claimIds.size()) {
                         try {
-                            String message = getResources().getQuantityString(R.plurals.publishes_deleted, successfulClaimIds.size());
-                            Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                            showMessage(getResources().getQuantityString(R.plurals.publishes_deleted, successfulClaimIds.size()));
                         } catch (IllegalStateException ex) {
                             // pass
                         }

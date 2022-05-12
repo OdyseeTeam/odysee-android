@@ -1,8 +1,7 @@
 package com.odysee.app;
 
-import static android.os.Build.VERSION_CODES.M;
-
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -10,6 +9,7 @@ import android.os.Handler;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowInsetsController;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
@@ -68,10 +68,29 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppCompatDelegate.setDefaultNightMode(isDarkMode() ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        if (Build.VERSION.SDK_INT >= M && !isDarkMode()) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (!darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                } else {
+                    //noinspection deprecation
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            } else {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                }
+            }
         }
+
         setContentView(R.layout.activity_youtube_sync);
 
         mainProgress = findViewById(R.id.youtube_sync_main_progress);

@@ -20,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -114,7 +113,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
             public void onClick(View view) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openRewards();
+                    ((MainActivity) context).openRewards(null);
                 }
             }
         });
@@ -160,7 +159,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
                     @Override
                     public void onSuccess() {
-                        Snackbar.make(getView(), getString(R.string.invite_sent_to, email), Snackbar.LENGTH_LONG).show();
+                        showMessage(getString(R.string.invite_sent_to, email));
                         Helper.setViewText(inputEmail, null);
                         Helper.setViewEnabled(buttonInviteByEmail, true);
                         fetchInviteStatus();
@@ -240,7 +239,7 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
             ClipData data = ClipData.newPlainText("inviteLink", textInviteLink.getText());
             clipboard.setPrimaryClip(data);
         }
-        Snackbar.make(getView(), R.string.invite_link_copied, Snackbar.LENGTH_SHORT).show();
+        showMessage(R.string.invite_link_copied);
     }
 
     private void updateChannelList(List<Claim> channels) {

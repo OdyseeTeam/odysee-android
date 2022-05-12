@@ -16,7 +16,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,7 +23,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.File;
@@ -198,7 +196,7 @@ public class ChannelFormFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (uploading) {
-                    Snackbar.make(getView(), R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.wait_for_upload);
                     return;
                 }
 
@@ -209,7 +207,7 @@ public class ChannelFormFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (uploading) {
-                    Snackbar.make(view, R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.wait_for_upload);
                     return;
                 }
 
@@ -221,7 +219,7 @@ public class ChannelFormFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (uploading) {
-                    Snackbar.make(view, R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.wait_for_upload);
                     return;
                 }
 
@@ -256,7 +254,6 @@ public class ChannelFormFragment extends BaseFragment implements
             Context context = getContext();
             if (context instanceof MainActivity) {
                 ((MainActivity) context).onBackPressed();
-                return;
             }
         } else if (params.containsKey("claim")) {
             Claim claim = (Claim) params.get("claim");
@@ -360,10 +357,9 @@ public class ChannelFormFragment extends BaseFragment implements
                     LbryAnalytics.logEvent(LbryAnalytics.EVENT_CHANNEL_CREATE, bundle);
                 }
 
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) context;
-                    activity.showMessage(R.string.channel_save_successful);
+                showMessage(R.string.channel_save_successful);
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
                     activity.onBackPressed();
                 }
             }
@@ -416,8 +412,11 @@ public class ChannelFormFragment extends BaseFragment implements
 
     public void onFilePicked(String filePath) {
         if (Helper.isNullOrEmpty(filePath)) {
-            Snackbar.make(getView(), R.string.undetermined_image_filepath, Snackbar.LENGTH_LONG).setBackgroundTint(
-                    ContextCompat.getColor(getContext(), R.color.red)).show();
+            View rootView = getView();
+            Context context = getContext();
+            if (rootView != null && context != null) {
+                showError(getString(R.string.undetermined_image_filepath));
+            }
             return;
         }
 
@@ -489,9 +488,11 @@ public class ChannelFormFragment extends BaseFragment implements
         }
     }
     public void onStoragePermissionRefused() {
-        Snackbar.make(getView(), R.string.storage_permission_rationale_images, Snackbar.LENGTH_LONG).setBackgroundTint(
-                ContextCompat.getColor(getContext(), R.color.red)
-        ).show();
+        Context ctx = getContext();
+
+        if (ctx != null) {
+            showError(ctx.getResources().getString(R.string.storage_permission_rationale_images));
+        }
     }
 
     @Override
@@ -558,12 +559,16 @@ public class ChannelFormFragment extends BaseFragment implements
         Helper.setViewVisibility(noTagResultsView, suggestedTagsAdapter == null || suggestedTagsAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
     public void addTag(Tag tag) {
+        View rootView = getView();
+        MainActivity a = (MainActivity) getActivity();
         if (addedTagsAdapter.getTags().contains(tag)) {
-            Snackbar.make(getView(), getString(R.string.tag_already_added, tag.getName()), Snackbar.LENGTH_LONG).show();
+            if (rootView != null && a != null) {
+                showMessage(getString(R.string.tag_already_added, tag.getName()));
+            }
             return;
         }
         if (addedTagsAdapter.getItemCount() == 5) {
-            Snackbar.make(getView(), R.string.tag_limit_reached, Snackbar.LENGTH_LONG).show();
+            showMessage(R.string.tag_limit_reached);
             return;
         }
 

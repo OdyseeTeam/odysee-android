@@ -264,6 +264,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static MainActivity instance;
     private int pendingSourceTabId;
 
+    @Getter
     private boolean shuttingDown;
     private Date remoteNotifcationsLastLoaded;
     private Map<String, Class> specialRouteFragmentClassMap;
@@ -484,30 +485,28 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // pass (don't fail initialization on some _weird_ device implementations)
         }
 
-        // Set app theme depending on Night mode
-        if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        } else if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)){
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-        }
-
         initKeyStore();
         loadAuthToken();
 
         // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+            if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
+                    //noinspection deprecation
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            } else {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 }
             }
         }
@@ -632,7 +631,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // Preliminary internal releases of Odysee was using SharedPreferences to store the authentication token.
         // Currently, it is using Android AccountManager, so let's check if value is stored and remove it for
-        // for privacy concerns.
+        // privacy concerns.
         if (sharedPreferences.contains("auth_token")) {
             sharedPreferencesEditor.remove("auth_token").apply();
         }
@@ -915,6 +914,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
+                View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
@@ -926,6 +926,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
 
+                buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -983,6 +984,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
+                buttonGoLive.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        startActivity(new Intent(MainActivity.this, GoLiveActivity.class));
+                    }
+                });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -1133,24 +1142,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         int scaledMiniPlayerBottomMargin = (withBottomNavigation ? bottomNavigationHeight : 0) + getScaledValue(2);
         if (lp.leftMargin != scaledMiniPlayerMargin || lp.rightMargin != scaledMiniPlayerMargin || lp.bottomMargin != scaledMiniPlayerBottomMargin) {
             lp.setMargins(scaledMiniPlayerMargin, 0, scaledMiniPlayerMargin, scaledMiniPlayerBottomMargin);
-        }
-    }
-
-    /**
-     * Returns the Dark mode app setting, which could be Light/Night -up to Android 10- or Light/Night/System -from Android 11-
-     * @return - For API Level < 30, 'night' or 'notnight'. For newer versions, 'system' also.
-     */
-    public String getDarkModeAppSetting() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-            return sp.getString(PREFERENCE_KEY_DARK_MODE_SETTING, APP_SETTING_DARK_MODE_NOTNIGHT);
-        } else {
-            boolean darkMode = sp.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
-            if (darkMode) {
-                return APP_SETTING_DARK_MODE_NIGHT;
-            } else {
-                return APP_SETTING_DARK_MODE_NOTNIGHT;
-            }
         }
     }
 
@@ -1730,6 +1721,25 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         accountManager.addOnAccountsUpdatedListener(this, null, true);
+
+        // Change status bar text color depending on Night mode when app is running
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                } else {
+                    //noinspection deprecation
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                }
+            }
+        }
     }
 
     @Override
@@ -2234,14 +2244,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         View appBarMainContainer = findViewById(R.id.appbar);
 
         appBarMainContainer.setFitsSystemWindows(false);
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
             getWindow().setDecorFitsSystemWindows(true);
 
             WindowInsetsController windowInsetsController = getWindow().getInsetsController();
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
                 int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-                if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NOTNIGHT)
-                     || (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_SYSTEM)
+                if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT)
+                     || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM)
                           && (nightModeFlags == Configuration.UI_MODE_NIGHT_NO || nightModeFlags == Configuration.UI_MODE_NIGHT_UNDEFINED))) {
                     windowInsetsController.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 }
@@ -2251,7 +2262,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
 
-            if (!getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 //noinspection deprecation
                 flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             }
@@ -2383,7 +2394,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         this.actionMode = mode;
-        if (getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+        if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
+            //noinspection deprecation
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
 
@@ -2426,7 +2439,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             notificationListAdapter.setInSelectionMode(false);
             notificationListAdapter.notifyDataSetChanged();
         }
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && getDarkModeAppSetting().equals(APP_SETTING_DARK_MODE_NIGHT)) {
+
+        String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         this.actionMode = null;
@@ -3172,31 +3188,30 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         registerReceiver(requestsReceiver, intentFilter);
     }
 
-    public void showMessage(int stringResourceId) {
-        Snackbar.make(findViewById(R.id.content_main), stringResourceId, Snackbar.LENGTH_LONG).show();
-    }
     public void showMessage(String message) {
         showMessage(message, null, null);
     }
     public void showMessage(String message, String actionText, View.OnClickListener actionListener) {
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+        Snackbar snackbar = getSnackbar(message);
         if (!Helper.isNullOrEmpty(actionText) && actionListener != null) {
             snackbar.setAction(actionText, actionListener);
         }
         snackbar.show();
     }
     public Snackbar getSnackbar(String message) {
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
-        return snackbar;
+        return Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG);
+    }
+    public void showStreamStoppedMessage() {
+        View view = findViewById(R.id.content_main);
+        Snackbar snackbar = Snackbar.make(view, R.string.stream_stopped_went_to_home_reason, Snackbar.LENGTH_LONG);
+        TextView snackbarText = snackbar.getView().findViewById(R.id.snackbar_text);
+        snackbarText.setMaxLines(Integer.MAX_VALUE);
+        snackbar.show();
     }
     public void showError(String message) {
-        Snackbar.make(findViewById(R.id.content_main), message, Snackbar.LENGTH_LONG).
-                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+        getSnackbar(message).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
     }
 
-    public void showError(String message, @NotNull View root) {
-        Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-    }
     public void showNotifications() {
         findViewById(R.id.content_main_container).setVisibility(View.GONE);
         findViewById(R.id.notifications_container).setVisibility(View.VISIBLE);

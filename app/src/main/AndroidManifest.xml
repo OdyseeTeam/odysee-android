@@ -8,6 +8,7 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.MANAGE_ACCOUNTS"
@@ -19,6 +20,7 @@
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
 
     <application
+        android:name=".OdyseeApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -34,6 +36,7 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
+            android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
@@ -134,6 +137,12 @@
             android:theme="@style/FirstRunTheme" />
         <activity
             android:name=".YouTubeSyncActivity"
+            android:launchMode="singleTask"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/FirstRunTheme" />
+        <activity
+            android:name=".GoLiveActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
             android:launchMode="singleTask"
             android:parentActivityName=".MainActivity"
             android:theme="@style/FirstRunTheme" />

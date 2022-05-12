@@ -24,12 +24,15 @@ public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
     private final Claim claim;
     private final String filePath;
     private final View progressView;
+    private final String authToken;
     private final ClaimResultHandler handler;
     private Exception error;
-    public PublishClaimTask(Claim claim, String filePath, View progressView, ClaimResultHandler handler) {
+
+    public PublishClaimTask(Claim claim, String filePath, View progressView, String authToken, ClaimResultHandler handler) {
         this.claim = claim;
         this.filePath = filePath;
         this.progressView = progressView;
+        this.authToken = authToken;
         this.handler = handler;
     }
     protected void onPreExecute() {
@@ -83,7 +86,7 @@ public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
 
         Claim claimResult = null;
         try {
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_PUBLISH, options);
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PUBLISH, options, authToken);
             if (result.has("outputs")) {
                 JSONArray outputs = result.getJSONArray("outputs");
                 for (int i = 0; i < outputs.length(); i++) {

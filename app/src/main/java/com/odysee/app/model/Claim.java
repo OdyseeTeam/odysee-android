@@ -89,6 +89,7 @@ public class Claim {
     private boolean isChannelSignatureValid;
     private GenericMetadata value;
     private LbryFile file; // associated file if it exists
+    private Meta meta;
 
     private boolean liked;
     private boolean disliked;
@@ -407,6 +408,10 @@ public class Claim {
                     }
                 }
             }
+
+            JSONObject metaObject = claimObject.getJSONObject("meta");
+            String metaJson = metaObject.toString();
+            claim.setMeta(gson.fromJson(metaJson, Meta.class));
         } catch (JSONException ex) {
             ex.printStackTrace();
             // pass

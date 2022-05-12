@@ -631,6 +631,12 @@ public class LibraryFragment extends BaseFragment implements
         boolean hasRecent = contentListAdapter != null && contentListAdapter.getItemCount() > 0;
         Helper.setViewVisibility(recentList, hasRecent ? View.VISIBLE : View.GONE);
         Helper.setViewVisibility(textNoHistory, !hasRecent ? View.VISIBLE : View.GONE);
+
+        // The "Clear All" button is shown at the main app toolbar, so its visibility is changed from MainActivity instance
+        MainActivity a = (MainActivity) getActivity();
+        if (a != null) {
+            a.switchClearViewHistoryButton(currentFilter == FILTER_HISTORY && contentListAdapter != null && contentListAdapter.getItemCount() > 0);
+        }
     }
 
     @MainThread
@@ -799,8 +805,7 @@ public class LibraryFragment extends BaseFragment implements
             }
             View root = getView();
             if (root != null) {
-                String message = getResources().getQuantityString(R.plurals.files_deleted, claimIds.size());
-                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                showMessage(getResources().getQuantityString(R.plurals.files_deleted, claimIds.size()));
             }
         } else if (currentFilter == FILTER_HISTORY) {
             ExecutorService executorService = Executors.newSingleThreadExecutor();

@@ -4,7 +4,6 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -21,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -159,7 +157,7 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            ((MainActivity) activity).showError(e.getMessage());
+                            showError(e.getMessage());
                         }
                     });
                 }
@@ -206,7 +204,7 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                                     activity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            ((MainActivity) activity).showError(ex.getMessage());
+                                            showError(ex.getMessage());
                                         }
                                     });
                                 }
@@ -322,14 +320,8 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                 public void onSuccess(double amountClaimed, String message) {
                     loadingView.setVisibility(View.INVISIBLE);
                     if (Helper.isNullOrEmpty(message)) {
-                        message = getResources().getQuantityString(
-                                R.plurals.claim_reward_message,
-                                amountClaimed == 1 ? 1 : 2,
-                                new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed));
-                    }
-                    View view = getView();
-                    if (view != null) {
-                        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+                        showMessage(getResources().getQuantityString(R.plurals.claim_reward_message, amountClaimed == 1 ? 1 : 2,
+                                new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed)));
                     }
                     Helper.setViewEnabled(buttonClaim, true);
                     Helper.setViewEnabled(inputClaimCode, true);
@@ -341,9 +333,8 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                 @Override
                 public void onError(Exception error) {
                     loadingView.setVisibility(View.INVISIBLE);
-                    View view = getView();
-                    if (view != null && error != null && !Helper.isNullOrEmpty(error.getMessage())) {
-                        Snackbar.make(view, error.getMessage(), Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                    if (error != null && !Helper.isNullOrEmpty(error.getMessage())) {
+                        showError(error.getMessage());
                     }
                     Helper.setViewEnabled(buttonClaim, true);
                     Helper.setViewEnabled(inputClaimCode, true);
@@ -371,8 +362,7 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                             message = e.getMessage();
                         }
                         if (message != null) {
-                            Snackbar.make(root, message,
-                                    Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                            showError(message);
                         }
                     }
                     if (result != null) {
@@ -383,12 +373,8 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                                         R.plurals.claim_reward_message,
                                         amountClaimed == 1 ? 1 : 2,
                                         new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed)) : "";
-                        String message = Helper.getJSONString("reward_notification", defaultMessage, result);
 
-                        View view = getView();
-                        if (view != null) {
-                            Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
-                        }
+                        showMessage(Helper.getJSONString("reward_notification", defaultMessage, result));
                         Helper.setViewEnabled(buttonClaim, true);
                         Helper.setViewEnabled(inputClaimCode, true);
 

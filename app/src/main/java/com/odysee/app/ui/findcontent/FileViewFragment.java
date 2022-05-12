@@ -43,6 +43,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -97,10 +98,10 @@ import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 import com.odysee.app.callable.ChannelLiveStatus;
+import com.odysee.app.OdyseeApp;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -108,6 +109,8 @@ import org.commonmark.renderer.html.AttributeProvider;
 import org.commonmark.renderer.html.AttributeProviderContext;
 import org.commonmark.renderer.html.AttributeProviderFactory;
 import org.commonmark.renderer.html.HtmlRenderer;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONException;
@@ -115,6 +118,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -141,6 +145,7 @@ import java.util.function.Supplier;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
+import com.odysee.app.adapter.ChatMessageListAdapter;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
@@ -206,6 +211,9 @@ import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
 import com.odysee.app.checkers.CommentEnabledCheck;
 
+import javax.net.ssl.SSLParameters;
+
+import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -312,6 +320,20 @@ public class FileViewFragment extends BaseFragment implements
     private TextView commentPostAsAlpha;
     private MaterialButton buttonCommentSignedInUserRequired;
 
+    private View layoutActionsArea;
+    private View layoutLivestreamChat;
+    private View layoutCommentsArea;
+    private View layoutRelatedContentArea;
+    private View dividerRelatedContentArea;
+    private View dividerDescriptionArea;
+
+    private RecyclerView chatMessageList;
+    private EditText inputChatMessage;
+    private View buttonSendChatMessage;
+
+    private boolean leavingFileView;
+    private WebSocketClient webSocketClient;
+
     // if this is set, scroll to the specific comment on load
     private String commentHash;
     private String claimLivestreamUrl;
@@ -363,6 +385,18 @@ public class FileViewFragment extends BaseFragment implements
         dislikeReactionAmount = root.findViewById(R.id.dislikes_amount);
         likeReactionIcon = root.findViewById(R.id.like_icon);
         dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
+
+        chatMessageList = root.findViewById(R.id.file_view_live_chat_messages);
+        chatMessageList.setLayoutManager(new LinearLayoutManager(getContext()));
+        inputChatMessage = root.findViewById(R.id.file_view_live_chat_text_input);
+        buttonSendChatMessage = root.findViewById(R.id.file_view_live_chat_send_button);
+
+        layoutActionsArea = root.findViewById(R.id.file_view_actions_area);
+        layoutLivestreamChat = root.findViewById(R.id.file_view_live_chat_area);
+        layoutCommentsArea = root.findViewById(R.id.file_view_comments_area);
+        layoutRelatedContentArea = root.findViewById(R.id.file_view_related_content_area);
+        dividerDescriptionArea = root.findViewById(R.id.file_view_divider_description_area);
+        dividerRelatedContentArea = root.findViewById(R.id.file_view_divider_related_content_area);
 
         initUi(root);
 
@@ -729,7 +763,8 @@ public class FileViewFragment extends BaseFragment implements
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
             MainActivity activity = (MainActivity) context;
-            WebSettingsCompat.setForceDark(webView.getSettings(), (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) || (activity.getDarkModeAppSetting().equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_YES)) ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+            String darkModeAppSetting = ((OdyseeApp) activity.getApplication()).getDarkModeAppSetting();
+            WebSettingsCompat.setForceDark(webView.getSettings(), (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_YES)) ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
     }
 
@@ -871,6 +906,11 @@ public class FileViewFragment extends BaseFragment implements
     public void onResume() {
         super.onResume();
         checkParams();
+        leavingFileView = false;
+
+        if (initialChatLoaded) {
+            checkWebSocketClient();
+        }
 
         Context context = getContext();
         Helper.setWunderbarValue(currentUrl, context);
@@ -919,6 +959,10 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
         if (context instanceof MainActivity) {
             ((MainActivity) context).updateMiniPlayerMargins(true);
+        }
+        leavingFileView = true;
+        if (webSocketClient != null) {
+            webSocketClient.close();
         }
         super.onPause();
     }
@@ -1001,18 +1045,17 @@ public class FileViewFragment extends BaseFragment implements
                 subscription.setNotificationsDisabled(!isNotificationsDisabled);
                 view.setEnabled(false);
                 Context context = getContext();
+                final View rootView = getView();
                 new ChannelSubscribeTask(context, publisher.getClaimId(), subscription, false, new ChannelSubscribeTask.ChannelSubscribeHandler() {
                     @Override
                     public void onSuccess() {
                         view.setEnabled(true);
                         Lbryio.updateSubscriptionNotificationsDisabled(subscription);
-                        Context context = getContext();
-                        if (context instanceof MainActivity) {
-                            ((MainActivity) context).showMessage(subscription.isNotificationsDisabled() ?
-                                    R.string.receive_no_notifications : R.string.receive_all_notifications);
-                        }
                         checkIsFollowing();
+                        showMessage(subscription.isNotificationsDisabled() ?
+                                R.string.receive_no_notifications : R.string.receive_all_notifications);
 
+                        Context context = getContext();
                         if (context != null) {
                             context.sendBroadcast(new Intent(MainActivity.ACTION_SAVE_SHARED_USER_STATE));
                         }
@@ -1261,7 +1304,7 @@ public class FileViewFragment extends BaseFragment implements
                             String message = getResources().getQuantityString(
                                     isTip ? R.plurals.you_sent_a_tip : R.plurals.you_sent_a_support, sentAmount == 1.0 ? 1 : 2,
                                     new DecimalFormat("#,###.##").format(sentAmount));
-                            Snackbar.make(root.findViewById(R.id.file_view_claim_display_area), message, Snackbar.LENGTH_LONG).show();
+                            showMessage(message);
                         });
                         Context context = getContext();
                         if (context instanceof MainActivity) {
@@ -1282,10 +1325,7 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (actualClaim != null) {
                     RepostClaimDialogFragment dialog = RepostClaimDialogFragment.newInstance(actualClaim, claim -> {
-                        Context context = getContext();
-                        if (context instanceof MainActivity) {
-                            ((MainActivity) context).showMessage(R.string.content_successfully_reposted);
-                        }
+                        showMessage(R.string.content_successfully_reposted);
                     });
                     Context context = getContext();
                     if (context instanceof MainActivity) {
@@ -1497,6 +1537,69 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
+        buttonSendChatMessage.setEnabled(false);
+        buttonSendChatMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                String chatMessage = Helper.getValue(inputChatMessage.getText());
+
+                if (fetchingChannels) {
+                    // still fetching channels, don't do anything yet
+                    showError(getString(R.string.wait_while_channels_loaded));
+                    return;
+                }
+
+                if (Lbry.ownChannels.size() == 0) {
+                    showError(getString(R.string.create_channel_for_chat));
+                    return;
+                }
+
+                if (!Helper.isNullOrEmpty(chatMessage) && Lbry.ownChannels.size() > 0) {
+                    // send chat messages as the first created channel
+                    Claim channel = Lbry.ownChannels.get(0);
+                    final Map<String, Object> params = new HashMap<>();
+                    params.put("claim_id", actualClaim.getClaimId());
+                    params.put("channel_id", channel.getClaimId());
+                    params.put("comment", chatMessage);
+
+                    Helper.setViewEnabled(inputChatMessage, false);
+                    Helper.setViewEnabled(buttonSendChatMessage, false);
+
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Lbry.authenticatedGenericApiCall(Lbry.METHOD_COMMENT_CREATE, params, Lbryio.AUTH_TOKEN);
+                                finishChatSend(true);
+                            } catch (ApiCallException ex) {
+                                showError(getString(R.string.could_not_send_chat_message));
+                                finishChatSend(false);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        inputChatMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                Helper.setViewEnabled(buttonSendChatMessage, charSequence.length() > 0);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
         RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
         RecyclerView commentsList = root.findViewById(R.id.file_view_comments_list);
         relatedContentList.setNestedScrollingEnabled(false);
@@ -1560,6 +1663,19 @@ public class FileViewFragment extends BaseFragment implements
         });
     }
 
+    private void finishChatSend(boolean clearInput) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                if (clearInput) {
+                    inputChatMessage.setText(null);
+                }
+                Helper.setViewEnabled(buttonSendChatMessage, inputChatMessage.getText().length() > 0);
+                Helper.setViewEnabled(inputChatMessage, true);
+            }
+        });
+    }
+
     private void removeNotificationAsSource() {
         // If we arrived here from a notification, navigating to a channel
         // will show the notifications panel and a very weird layout after
@@ -1605,14 +1721,16 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
             Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
+
+            final View rootView = getView();
             AbandonStreamTask task = new AbandonStreamTask(Arrays.asList(actualClaim.getClaimId()), layoutResolving, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
                     if (context instanceof MainActivity) {
                         if (failedClaimIds.size() == 0) {
+                            showMessage(R.string.content_deleted);
                             MainActivity activity = (MainActivity) context;
-                            activity.showMessage(R.string.content_deleted);
                             activity.onBackPressed();
                         } else {
                             showError(getString(R.string.content_failed_delete));
@@ -1741,6 +1859,15 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void setLivestreamChatEnabled(boolean enabled) {
+        Helper.setViewVisibility(layoutLivestreamChat, enabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutActionsArea, !enabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutCommentsArea, !enabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutRelatedContentArea, !enabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(dividerDescriptionArea, !enabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(dividerRelatedContentArea, !enabled ? View.VISIBLE : View.GONE);
+    }
+
     private void renderClaim() {
         Claim claimToRender = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (claimToRender == null) {
@@ -1748,6 +1875,9 @@ public class FileViewFragment extends BaseFragment implements
         }
         if (!claimToRender.hasSource()) {
             // TODO See if the "publisher is not live yet" UI must be shown
+
+            // livestream, so we load up the messages and initialise the websocket
+            initLivestreamChat();
         }
         if (claimToRender.isPlayable() && MainActivity.appPlayer != null) {
             MainActivity.appPlayer.setPlayWhenReady(isPlaying);
@@ -1907,6 +2037,8 @@ public class FileViewFragment extends BaseFragment implements
                 mainActionButton.setText(R.string.download);
             }
         }
+
+        setLivestreamChatEnabled(!claimToRender.hasSource());
 
         if (claimToRender.isFree() && Helper.isNullOrEmpty(commentHash)) {
             if (claimToRender.isPlayable() || (!Lbry.SDK_READY && Lbryio.isSignedIn())) {
@@ -2175,11 +2307,15 @@ public class FileViewFragment extends BaseFragment implements
                         .build();
                 try (Response response = client.newCall(request).execute()) {
                     String contentType = response.header("Content-Type");
-                    MainActivity.videoIsTranscoded = contentType.equals("application/x-mpegurl"); // m3u8
+                    if (contentType != null) {
+                        MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
 
                 new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
-            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+            } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                 // TODO: How does error handling work here
                 ex.printStackTrace();
             }
@@ -2203,9 +2339,7 @@ public class FileViewFragment extends BaseFragment implements
                     .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
                     .createMediaSource(MediaItem.fromUri(sourceUrl));
         } else {
-            mediaSource = new ProgressiveMediaSource.Factory(
-                    cacheDataSourceFactory, new DefaultExtractorsFactory()
-            )
+            mediaSource = new ProgressiveMediaSource.Factory(cacheDataSourceFactory, new DefaultExtractorsFactory())
                     .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
                     .createMediaSource(MediaItem.fromUri(sourceUrl));
         }
@@ -3108,14 +3242,6 @@ public class FileViewFragment extends BaseFragment implements
         checkAndLoadComments(true);
     }
 
-    @Override
-    public void showError(String message) {
-        View root = getView();
-        if (root != null) {
-            Snackbar.make(root, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
-        }
-    }
-
     private void loadRelatedContent() {
         // reset the list view
         View root = getView();
@@ -3808,7 +3934,7 @@ public class FileViewFragment extends BaseFragment implements
                                 activity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        ((MainActivity) activity).showError(ex.getMessage());
+                                        showError(ex.getMessage());
                                     }
                                 });
                             }
@@ -3834,7 +3960,7 @@ public class FileViewFragment extends BaseFragment implements
                                 activity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        ((MainActivity) activity).showError(ex.getMessage());
+                                        showError(ex.getMessage());
                                     }
                                 });
                             }
@@ -3879,15 +4005,10 @@ public class FileViewFragment extends BaseFragment implements
         @Override
         public void onSuccess(double amountClaimed, String message) {
             if (Helper.isNullOrEmpty(message)) {
-                message = getResources().getQuantityString(
+                showMessage(getResources().getQuantityString(
                         R.plurals.claim_reward_message,
                         amountClaimed == 1 ? 1 : 2,
-                        new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed));
-            }
-            View root = getView();
-
-            if (root != null) {
-                Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                        new DecimalFormat(Helper.LBC_CURRENCY_FORMAT_PATTERN).format(amountClaimed)));
             }
         }
 
@@ -4117,8 +4238,7 @@ public class FileViewFragment extends BaseFragment implements
     private void showStoragePermissionRefusedError() {
         View root = getView();
         if (root != null) {
-            Snackbar.make(root, R.string.storage_permission_rationale_download, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            showError(getString(R.string.storage_permission_rationale_download));
         }
     }
 
@@ -4438,6 +4558,7 @@ public class FileViewFragment extends BaseFragment implements
         AccountManager am = AccountManager.get(getContext());
         Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
 
+        final View rootView = getView();
         CommentCreateTask task = new CommentCreateTask(comment, am.peekAuthToken(odyseeAccount, "auth_token_type"), progressPostComment, new CommentCreateTask.CommentCreateWithTipHandler() {
             @Override
             public void onSuccess(Comment createdComment) {
@@ -4470,10 +4591,7 @@ public class FileViewFragment extends BaseFragment implements
                 bundle.putString("claim_name", fileClaim != null ? fileClaim.getName() : null);
                 LbryAnalytics.logEvent(LbryAnalytics.EVENT_COMMENT_CREATE, bundle);
 
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).showMessage(R.string.comment_posted);
-                }
+                showMessage(R.string.comment_posted);
             }
 
             @Override
@@ -4612,6 +4730,101 @@ public class FileViewFragment extends BaseFragment implements
         }
         if (commentListAdapter != null) {
             commentListAdapter.filterBlockedChannels(blockedChannels);
+        }
+    }
+
+    private boolean initialChatLoaded;
+    private ChatMessageListAdapter chatMessageListAdapter;
+
+    private void initLivestreamChat() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        // load up the previous 75 chat messages, if there are any
+        CommentListTask task = new CommentListTask(1, 75, actualClaim.getClaimId(), null, new CommentListHandler() {
+            @Override
+            public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
+                initialChatLoaded = true;
+                Collections.reverse(comments);
+                chatMessageListAdapter = new ChatMessageListAdapter(comments, getContext());
+                chatMessageList.setAdapter(chatMessageListAdapter);
+                chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+
+                checkWebSocketClient();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                // pass
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    @SneakyThrows
+    private void checkWebSocketClient() {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if ((webSocketClient == null || webSocketClient.isClosed()) && actualClaim != null && !actualClaim.hasSource()) {
+            webSocketClient = new WebSocketClient(new URI(String.format("%s%s", Lbryio.WS_COMMENT_BASE_URL, actualClaim.getClaimId()))) {
+                @Override
+                public void onOpen(ServerHandshake handshakedata) { }
+
+                @Override
+                public void onMessage(String message) {
+                    try {
+                        JSONObject json = new JSONObject(message);
+                        String type = Helper.getJSONString("type", null, json);
+                        if ("delta".equalsIgnoreCase(type)) {
+                            JSONObject data = Helper.getJSONObject("data", json);
+                            if (data != null) {
+                                JSONObject commentJson = Helper.getJSONObject("comment", data);
+                                if (commentJson != null) {
+                                    Comment comment = new Comment();
+                                    comment.setText(Helper.getJSONString("comment", "", commentJson));
+                                    comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
+                                    if (!Helper.isNullOrEmpty(comment.getChannelName())) {
+                                        if (chatMessageListAdapter == null) {
+                                            chatMessageListAdapter = new ChatMessageListAdapter(Arrays.asList(comment), getContext());
+                                            chatMessageList.setAdapter(chatMessageListAdapter);
+                                        } else {
+                                            chatMessageListAdapter.addMessage(comment);
+                                            new Handler().postDelayed(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                }
+                                            }, 100);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (JSONException ex) {
+                        // pass
+                    }
+                }
+
+                @Override
+                public void onClose(int code, String reason, boolean remote) {
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) context;
+                        if (!activity.isShuttingDown() && !leavingFileView) {
+                            // attempt to re-establish the connection if the app isn't being closed
+                            checkWebSocketClient();
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Exception ex) { }
+
+                protected void onSetSSLParameters(SSLParameters sslParameters) {
+                    // don't call setEndpointIdentificationAlgorithm for API level < 24
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                    }
+                }
+            };
+            webSocketClient.connect();
         }
     }
 

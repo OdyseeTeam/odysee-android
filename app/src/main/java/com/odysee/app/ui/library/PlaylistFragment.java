@@ -43,8 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-import lombok.Setter;
-
 public class PlaylistFragment extends BaseFragment implements
         ActionMode.Callback, DownloadActionListener, SelectionModeListener {
 
@@ -122,7 +120,7 @@ public class PlaylistFragment extends BaseFragment implements
                                 }
                             });
                         } catch (SQLiteException ex) {
-                            activity.showError(getString(R.string.could_not_load_playlist));
+                            showError(getString(R.string.could_not_load_playlist));
                         }
                     }
                 });
@@ -182,10 +180,7 @@ public class PlaylistFragment extends BaseFragment implements
             @Override
             public void onError(Exception error) {
                 // pass
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).showError(getString(R.string.could_not_load_playlist));
-                }
+                showError(getString(R.string.could_not_load_playlist));
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

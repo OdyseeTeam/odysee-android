@@ -1,16 +1,17 @@
 package com.odysee.app.ui.publish;
 
 import android.Manifest;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -39,7 +40,6 @@ import com.arthenica.mobileffmpeg.StatisticsCallback;
 import com.bumptech.glide.Glide;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -400,7 +400,7 @@ public class PublishFormFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 if (uploading) {
-                    Snackbar.make(view, R.string.publish_thumbnail_in_progress, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.publish_thumbnail_in_progress);
                     return;
                 } else if (Helper.isNullOrEmpty(uploadedThumbnailUrl)) {
                     showError(getString(R.string.publish_no_thumbnail));
@@ -408,7 +408,7 @@ public class PublishFormFragment extends BaseFragment implements
                 }
 
                 if (transcodeInProgress) {
-                    Snackbar.make(view, R.string.optimization_in_progress, Snackbar.LENGTH_LONG).show();
+                    showMessage(R.string.optimization_in_progress);
                     return;
                 }
 
@@ -423,8 +423,7 @@ public class PublishFormFragment extends BaseFragment implements
                     return;
                 }
                 if (depositAmount < Helper.MIN_DEPOSIT) {
-                    String error = getResources().getQuantityString(R.plurals.min_deposit_required, depositAmount == 1 ? 1 : 2, String.valueOf(Helper.MIN_DEPOSIT));
-                    showError(error);
+                    showError(getResources().getQuantityString(R.plurals.min_deposit_required, depositAmount == 1 ? 1 : 2, String.valueOf(Helper.MIN_DEPOSIT)));
                     return;
                 }
                 if (Lbry.getAvailableBalance() < depositAmount) {
@@ -685,7 +684,7 @@ public class PublishFormFragment extends BaseFragment implements
         if (uploading) {
             View view = getView();
             if (view != null) {
-                Snackbar.make(view, R.string.wait_for_upload, Snackbar.LENGTH_LONG).show();
+                showMessage(R.string.wait_for_upload);
             }
             return;
         }
@@ -824,9 +823,9 @@ public class PublishFormFragment extends BaseFragment implements
     private void cancelOnFatalCondition(String message) {
         Context context = getContext();
         if (context instanceof MainActivity) {
+            showError(message);
             MainActivity activity = (MainActivity) context;
-            activity.showError(message);
-            new Handler().postDelayed(new Runnable() {
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     activity.onBackPressed();
@@ -1040,7 +1039,9 @@ public class PublishFormFragment extends BaseFragment implements
             finalFilePath = currentGalleryItem != null ? currentGalleryItem.getFilePath() : currentFilePath;
         }
         saveInProgress = true;
-        PublishClaimTask task = new PublishClaimTask(claim, finalFilePath, progressPublish, new ClaimResultHandler() {
+        AccountManager am = AccountManager.get(getContext());
+        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
+        PublishClaimTask task = new PublishClaimTask(claim, finalFilePath, progressPublish, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();
@@ -1063,10 +1064,10 @@ public class PublishFormFragment extends BaseFragment implements
                 bundle.putString("claim_name", claimResult.getName());
                 LbryAnalytics.logEvent(editMode ? LbryAnalytics.EVENT_PUBLISH_UPDATE : LbryAnalytics.EVENT_PUBLISH, bundle);
 
+                showMessage(R.string.publish_successful);
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     MainActivity activity = (MainActivity) context;
-                    activity.showMessage(R.string.publish_successful);
                     activity.sendBroadcast(new Intent(MainActivity.ACTION_PUBLISH_SUCCESSFUL));
                 }
             }
@@ -1161,11 +1162,11 @@ public class PublishFormFragment extends BaseFragment implements
         }
 
         if (addedTagsAdapter.getTags().contains(tag)) {
-            Snackbar.make(getView(), getString(R.string.tag_already_added, tag.getName()), Snackbar.LENGTH_LONG).show();
+            showMessage(getString(R.string.tag_already_added, tag.getName()));
             return;
         }
         if (addedTagsAdapter.getItemCount() == 5) {
-            Snackbar.make(getView(), R.string.tag_limit_reached, Snackbar.LENGTH_LONG).show();
+            showMessage(R.string.tag_limit_reached);
             return;
         }
 
@@ -1253,8 +1254,7 @@ public class PublishFormFragment extends BaseFragment implements
         if (Helper.isNullOrEmpty(filePath)) {
             View view = getView();
             if (view != null) {
-                Snackbar.make(view, R.string.undetermined_image_filepath, Snackbar.LENGTH_LONG).
-                        setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                showError(getString(R.string.undetermined_image_filepath));
             }
             return;
         }

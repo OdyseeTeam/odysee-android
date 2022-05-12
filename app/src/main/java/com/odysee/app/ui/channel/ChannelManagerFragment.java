@@ -4,7 +4,6 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,7 +22,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -148,7 +146,7 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                         public void run() {
                             Throwable t = e.getCause();
                             if (t != null) {
-                                activity.showError(t.getMessage());
+                                showError(t.getMessage());
                             }
                         }
                     });
@@ -334,12 +332,10 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                 View root = getView();
                 if (root != null) {
                     if (failedClaimIds.size() > 0) {
-                        Snackbar.make(root, R.string.one_or_more_channels_failed_abandon, Snackbar.LENGTH_LONG).
-                                setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+                        showError(getString(R.string.one_or_more_channels_failed_abandon));
                     } else if (successfulClaimIds.size() == claimIds.size()) {
                         try {
-                            String message = getResources().getQuantityString(R.plurals.channels_deleted, successfulClaimIds.size());
-                            Snackbar.make(root, message, Snackbar.LENGTH_LONG).show();
+                            showMessage(getResources().getQuantityString(R.plurals.channels_deleted, successfulClaimIds.size()));
                         } catch (IllegalStateException ex) {
                             // pass
                         }

@@ -86,7 +86,7 @@ public class BaseFragment extends Fragment {
                         public void onClick(View view) {
                             Context context = getContext();
                             if (context instanceof MainActivity) {
-                                ((MainActivity) context).openRewards();
+                                ((MainActivity) context).openRewards(null);
                             }
                         }
                     });
@@ -105,10 +105,25 @@ public class BaseFragment extends Fragment {
 
     public void showError(String message) {
         Context context = getContext();
-        if (context != null) {
-            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+        View v = getView();
+        if (context != null && v != null) {
+            Snackbar.make(v, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
         }
     }
 
+    public void showMessage(int stringResourceId) {
+        Context c = getContext();
+
+        if (c != null) {
+            showMessage(c.getResources().getString(stringResourceId));
+        }
+    }
+
+    public void showMessage(String message) {
+        Context context = getContext();
+        View rootView = getView();
+        if (context != null && rootView != null) {
+            Snackbar.make(rootView, message, Snackbar.LENGTH_LONG).show();
+        }
+    }
 }
