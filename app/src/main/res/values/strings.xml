@@ -155,6 +155,11 @@
     <string name="reply">Reply</string>
     <string name="replying_to">Replying to %1$s</string>
     <string name="choose_app">Choose app</string>
+
+    <string name="wait_while_channels_loaded">Please wait while we load your channels.</string>
+    <string name="create_channel_for_chat">Please create a channel before sending chat messages.</string>
+    <string name="could_not_send_chat_message">Your chat message could not be sent at this time. Please try again later.</string>
+
     <plurals name="view_count">
         <item quantity="one">%1$s view</item>
         <item quantity="other">%1$s views</item>

@@ -44,7 +44,7 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
     }
 
     protected List<Comment> doInBackground(Void... voids) {
-        List<Comment> comments = null;
+        List<Comment> comments = new ArrayList<>();
 
         try {
             Map<String, Object> options = new HashMap<>();

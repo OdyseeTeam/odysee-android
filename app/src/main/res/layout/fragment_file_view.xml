@@ -209,9 +209,8 @@
         <androidx.core.widget.NestedScrollView
             android:id="@+id/file_view_scroll_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:clipToPadding="false">
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -792,10 +791,12 @@
                 </RelativeLayout>
 
                 <View
+                    android:id="@+id/file_view_divider_description_area"
                     android:layout_width="match_parent"
                     android:layout_height="0.5dp"
                     android:layout_marginBottom="12dp"
-                    android:background="@color/divider" />
+                    android:background="@color/divider"
+                    android:visibility="gone"/>
 
                 <LinearLayout
                     android:id="@+id/file_view_description_area"
@@ -852,6 +853,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:visibility="gone"
                     android:paddingBottom="16dp">
 
                     <LinearLayout
@@ -938,9 +940,11 @@
                 </LinearLayout>
 
                 <View
+                    android:id="@+id/file_view_divider_related_content_area"
                     android:layout_width="match_parent"
                     android:layout_height="0.5dp"
                     android:layout_marginBottom="12dp"
+                    android:visibility="gone"
                     android:background="@color/divider" />
 
                 <LinearLayout
@@ -948,6 +952,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
+                    android:visibility="gone"
                     android:orientation="vertical">
 
                     <RelativeLayout
@@ -992,15 +997,75 @@
                         android:layout_height="wrap_content"
                         android:overScrollMode="never" />
                 </LinearLayout>
-
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
+
+        <RelativeLayout
+            android:id="@+id/file_view_live_chat_area"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/file_view_live_chat_messages"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_above="@id/file_view_live_chat_input_divider" />
+            <View
+                android:id="@+id/file_view_live_chat_input_divider"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginBottom="8dp"
+                android:layout_above="@id/file_view_live_chat_selector"
+                android:background="@color/divider" />
+            <RelativeLayout
+                android:id="@+id/file_view_live_chat_selector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@id/file_view_live_chat_text_input_area">
+            </RelativeLayout>
+            <RelativeLayout
+                android:id="@+id/file_view_live_chat_text_input_area"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_alignParentBottom="true">
+                <EditText
+                    android:id="@+id/file_view_live_chat_text_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_toStartOf="@id/file_view_live_chat_send_button"
+                    android:background="@android:color/transparent"
+                    android:imeOptions="actionSend"
+                    android:importantForAutofill="no"
+                    android:inputType="textAutoComplete"
+                    android:maxLength="300"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:singleLine="true"
+                    android:textSize="14sp" />
+                <RelativeLayout
+                    android:id="@+id/file_view_live_chat_send_button"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true">
+                    <ImageView
+                        android:contentDescription="@string/send"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_centerInParent="true"
+                        app:srcCompat="@drawable/ic_send"
+                        app:tint="?attr/colorPrimary" />
+                </RelativeLayout>
+            </RelativeLayout>
+        </RelativeLayout>
     </LinearLayout>
 
     <RelativeLayout
         android:id="@+id/file_view_imageviewer_container"
         android:background="@android:color/black"
         android:clickable="true"
+        android:focusable="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">

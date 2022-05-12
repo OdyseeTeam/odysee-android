@@ -264,6 +264,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static MainActivity instance;
     private int pendingSourceTabId;
 
+    @Getter
     private boolean shuttingDown;
     private Date remoteNotifcationsLastLoaded;
     private Map<String, Class> specialRouteFragmentClassMap;
