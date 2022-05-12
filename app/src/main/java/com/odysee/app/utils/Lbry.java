@@ -13,7 +13,6 @@ import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -134,21 +133,6 @@ public final class Lbry {
         return walletBalance != null ? Lbry.walletBalance.getAvailable().doubleValue() : 0;
     }
 
-    public static void parseStatus(String response) {
-        try {
-            JSONObject json = parseSdkResponse(response);
-            INSTALLATION_ID = json.getString("installation_id");
-            if (json.has("lbry_id")) {
-                // if DHT is not enabled, lbry_id won't be set
-                NODE_ID = json.getString("lbry_id");
-            }
-            IS_STATUS_PARSED = true;
-        } catch (JSONException | LbryResponseException ex) {
-            // pass
-            Log.e(TAG, "Could not parse status response.", ex);
-        }
-    }
-
     public static Response apiCall(String method, Map<String, Object> params, String connectionString) throws LbryRequestException {
         return apiCall(method, params, connectionString, null);
     }
@@ -257,41 +241,17 @@ public final class Lbry {
         }
     }
 
-    public static JSONObject parseSdkResponse(String responseString) throws LbryResponseException {
-        try {
-            JSONObject json = new JSONObject(responseString);
-            if (json.has("error")) {
-                String errorMessage = null;
-                Object jsonError = json.get("error");
-                if (jsonError instanceof String) {
-                    errorMessage = jsonError.toString();
-                } else {
-                    errorMessage = ((JSONObject) jsonError).getString("message");
-                }
-                throw new LbryResponseException(json.getString("error"));
-            }
-
-            return json;
-        } catch (JSONException ex) {
-            throw new LbryResponseException(String.format("Could not parse response: %s", responseString), ex);
-        }
-    }
-
     /**
      * API Calls
      */
-    public static Claim resolve(String url, String connectionString) throws ApiCallException {
-        List<Claim> results = resolve(Arrays.asList(url), connectionString);
-        return results.size() > 0 ? results.get(0) : null;
-    }
     public static List<Claim> resolve(List<String> urls, String connectionString) throws ApiCallException {
         List<Claim> claims = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("urls", urls);
         try {
             JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_RESOLVE, params, connectionString));
-            Iterator<String> keys = result.keys();
-            if (keys != null) {
+            if (result != null) {
+                Iterator<String> keys = result.keys();
                 while (keys.hasNext()) {
                     Claim claim = Claim.fromJSONObject(result.getJSONObject(keys.next()));
                     claims.add(claim);
@@ -402,23 +362,6 @@ public final class Lbry {
 
     // build claim search for surf mode
     public static Map<String, Object> buildClaimSearchOptions(
-            String claimType, List<String> notTags, List<String> channelIds, List<String> orderBy, long maxDuration, int limitClaimsPerChannel, int page, int pageSize) {
-        return buildClaimSearchOptions(
-                Collections.singletonList(claimType),
-                null,
-                notTags,
-                null,
-                channelIds,
-                null,
-                orderBy,
-                null,
-                maxDuration,
-                limitClaimsPerChannel,
-                page,
-                pageSize);
-    }
-
-    public static Map<String, Object> buildClaimSearchOptions(
             String claimType,
             List<String> anyTags,
             List<String> notTags,
@@ -507,21 +450,23 @@ public final class Lbry {
 
                 for (int i = 0; i < items.length(); i++) {
                     Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
-                    String claimValueType = claim.getValueType();
-                    String claimMediaType = claim.getMediaType();
+                    if (claim != null) {
+                        String claimValueType = claim.getValueType();
+                        String claimMediaType = claim.getMediaType();
 
-                    // Using Java Stream API to make it easier to add new future claim types
-                    List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
-                                                    .collect(Collectors.toList());
+                        // Using Java Stream API to make it easier to add new future claim types
+                        List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
+                                                        .collect(Collectors.toList());
 
-                    // For now, only claims which are audio, videos, playlists or already/scheduled livestreaming now can be viewed
-                    if (claimTypes.contains(claimValueType.toLowerCase())
-                            || !claim.hasSource()
-                            || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
-                        claims.add(claim);
+                        // For now, only claims which are audio, videos, playlists or already/scheduled livestreaming now can be viewed
+                        if (claimTypes.contains(claimValueType.toLowerCase())
+                                || !claim.hasSource()
+                                || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
+                            claims.add(claim);
+                        }
+
+                        addClaimToCache(claim);
                     }
-
-                    addClaimToCache(claim);
                 }
             }
 

@@ -23,29 +23,35 @@ public class ClaimCacheKey {
 
     public static ClaimCacheKey fromClaimShortUrl(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
-        LbryUri url = LbryUri.tryParse(claim.getShortUrl());
-        if (url != null) {
-            key.setUrl(url.toString());
+        if (claim != null) {
+            LbryUri url = LbryUri.tryParse(claim.getShortUrl());
+            if (url != null) {
+                key.setUrl(url.toString());
+            }
         }
         return key;
     }
 
     public static ClaimCacheKey fromClaimPermanentUrl(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
-        LbryUri url = LbryUri.tryParse(claim.getPermanentUrl());
-        if (url != null) {
-            key.setUrl(url.toString());
+        if (claim != null) {
+            LbryUri url = LbryUri.tryParse(claim.getPermanentUrl());
+            if (url != null) {
+                key.setUrl(url.toString());
+            }
         }
         return key;
     }
 
     public static ClaimCacheKey fromClaim(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
-        key.setClaimId(claim.getClaimId());
-        LbryUri claimUrl = !Helper.isNullOrEmpty(claim.getShortUrl()) ?
-                LbryUri.tryParse(claim.getShortUrl()) : LbryUri.tryParse(claim.getPermanentUrl());
-        if (claimUrl != null) {
-            key.setUrl(claimUrl.toString());
+        if (claim != null) {
+            key.setClaimId(claim.getClaimId());
+            LbryUri claimUrl = !Helper.isNullOrEmpty(claim.getShortUrl()) ?
+                    LbryUri.tryParse(claim.getShortUrl()) : LbryUri.tryParse(claim.getPermanentUrl());
+            if (claimUrl != null) {
+                key.setUrl(claimUrl.toString());
+            }
         }
         return key;
     }

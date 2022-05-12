@@ -749,7 +749,7 @@ public final class Helper {
     public static List<Claim> filterInvalidClaims(List<Claim> claims) {
         List<Claim> filtered = new ArrayList<>();
         for (Claim claim : claims) {
-            if (Helper.isNullOrEmpty(claim.getClaimId())) {
+            if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
                 continue;
             }
             filtered.add(claim);
@@ -760,10 +760,12 @@ public final class Helper {
     public static List<Claim> filterInvalidReposts(List<Claim> claims) {
         List<Claim> filtered = new ArrayList<>();
         for (Claim claim : claims) {
-            if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) && claim.getRepostedClaim() == null) {
-                continue;
+            if (claim != null) {
+                if (Claim.TYPE_REPOST.equalsIgnoreCase(claim.getValueType()) && claim.getRepostedClaim() == null) {
+                    continue;
+                }
+                filtered.add(claim);
             }
-            filtered.add(claim);
         }
         return filtered;
     }
