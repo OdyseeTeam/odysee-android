@@ -18,6 +18,7 @@ public class ViewHistory {
     private String publisherName;
     private String publisherTitle;
     private String thumbnailUrl;
+    private long duration;
     private String device;
     private long releaseTime;
     private Date timestamp;
@@ -33,6 +34,7 @@ public class ViewHistory {
         history.setClaimName(claim.getName());
         history.setTitle(claim.getTitle());
         history.setThumbnailUrl(claim.getThumbnailUrl());
+        history.setDuration(claim.getDuration());
 
         Claim.GenericMetadata metadata = claim.getValue();
         if (metadata instanceof Claim.StreamMetadata) {
