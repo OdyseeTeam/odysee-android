@@ -4791,7 +4791,7 @@ public class FileViewFragment extends BaseFragment implements
                                                         chatMessageList.setAdapter(chatMessageListAdapter);
                                                     } else {
                                                         chatMessageListAdapter.addMessage(comment);
-                                                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                                        new Handler(Looper.myLooper()).postDelayed(new Runnable() {
                                                             @Override
                                                             public void run() {
                                                                 chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
