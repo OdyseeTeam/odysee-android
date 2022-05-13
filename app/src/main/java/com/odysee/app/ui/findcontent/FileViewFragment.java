@@ -4778,21 +4778,29 @@ public class FileViewFragment extends BaseFragment implements
                                 JSONObject commentJson = Helper.getJSONObject("comment", data);
                                 if (commentJson != null) {
                                     Comment comment = new Comment();
-                                    comment.setText(Helper.getJSONString("comment", "", commentJson));
-                                    comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
-                                    if (!Helper.isNullOrEmpty(comment.getChannelName())) {
-                                        if (chatMessageListAdapter == null) {
-                                            chatMessageListAdapter = new ChatMessageListAdapter(Arrays.asList(comment), getContext());
-                                            chatMessageList.setAdapter(chatMessageListAdapter);
-                                        } else {
-                                            chatMessageListAdapter.addMessage(comment);
-                                            new Handler().postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                    Activity a = getActivity();
+                                    if (a != null) {
+                                        a.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                comment.setText(Helper.getJSONString("comment", "", commentJson));
+                                                comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
+                                                if (!Helper.isNullOrEmpty(comment.getChannelName())) {
+                                                    if (chatMessageListAdapter == null) {
+                                                        chatMessageListAdapter = new ChatMessageListAdapter(Collections.singletonList(comment), getContext());
+                                                        chatMessageList.setAdapter(chatMessageListAdapter);
+                                                    } else {
+                                                        chatMessageListAdapter.addMessage(comment);
+                                                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                            }
+                                                        }, 100);
+                                                    }
                                                 }
-                                            }, 100);
-                                        }
+                                            }
+                                        });
                                     }
                                 }
                             }
@@ -4819,7 +4827,7 @@ public class FileViewFragment extends BaseFragment implements
 
                 protected void onSetSSLParameters(SSLParameters sslParameters) {
                     // don't call setEndpointIdentificationAlgorithm for API level < 24
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                         sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
                     }
                 }
