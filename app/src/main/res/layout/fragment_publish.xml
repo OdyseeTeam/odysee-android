@@ -9,10 +9,10 @@
         android:id="@+id/publish_main_actions"
         android:layout_width="match_parent"
         android:layout_height="300dp">
-        <androidx.camera.view.PreviewView
+        <!--<androidx.camera.view.PreviewView
             android:id="@+id/publish_camera_preview"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent" />-->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -27,6 +27,10 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_marginStart="-1.5dp">
+                <androidx.camera.view.PreviewView
+                    android:id="@+id/publish_camera_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -59,7 +63,7 @@
                     android:background="@color/publishBackground"
                     android:layout_width="3dp"
                     android:layout_height="match_parent" />
-                <RelativeLayout
+                <!--<RelativeLayout
                     android:id="@+id/publish_photo_button"
                     android:clickable="true"
                     android:background="@android:color/black"
@@ -96,7 +100,7 @@
                     android:background="@color/publishBackground"
                     android:layout_width="match_parent"
                     android:layout_height="3dp"
-                    android:layout_below="@id/publish_photo_button" />
+                    android:layout_below="@id/publish_photo_button" />-->
 
                 <RelativeLayout
                     android:id="@+id/publish_upload_button"
@@ -105,8 +109,9 @@
                     android:foreground="?attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_below="@id/publish_photo_upload_divider"
                     android:layout_toEndOf="@id/publish_vertical_divider">
+                    <!--From RelativeLayout:
+                    android:layout_below="@id/publish_photo_upload_divider"-->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

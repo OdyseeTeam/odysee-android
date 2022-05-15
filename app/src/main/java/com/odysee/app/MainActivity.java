@@ -229,6 +229,7 @@ import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
+import com.odysee.app.ui.publish.PublishFormFragment;
 import com.odysee.app.ui.publish.PublishFragment;
 import com.odysee.app.ui.publish.PublishesFragment;
 import com.odysee.app.ui.findcontent.AllContentFragment;
@@ -712,13 +713,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 // Hide bottom navigation
                 // Hide main bar
                 // Show PublishFragment.class
-                // hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
-//                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
-//                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
-//                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
-//                hideActionBar();
                 clearPlayingPlayer();
-                startActivity(new Intent(view.getContext(), ComingSoon.class));
+                hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
+                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
+                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+                hideActionBar();
             }
         });
 
@@ -3533,7 +3533,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (publishFragment != null) {
                     params.put("suggestedUrl", publishFragment.getSuggestedPublishUrl());
                 }
-//                openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+                openFragment(PublishFormFragment.class, true, params);
             }
             cameraOutputFilename = null;
         }
