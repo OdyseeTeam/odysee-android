@@ -114,7 +114,7 @@ public class FollowingFragment extends BaseFragment implements
     private final List<Integer> queuedSuggestedPages = new ArrayList<>();
 
     private int currentSuggestedPage = 0;
-    private int currentClaimSearchPage;
+    private int currentClaimSearchPage = 1;
     private boolean suggestedHasReachedEnd;
     private boolean contentHasReachedEnd;
     private boolean contentPendingFetch = false;
@@ -489,7 +489,7 @@ public class FollowingFragment extends BaseFragment implements
                 contentReleaseTime,
                 0,
                 0,
-                currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,
+                currentClaimSearchPage,
                 Helper.CONTENT_PAGE_SIZE);
     }
 
@@ -661,7 +661,7 @@ public class FollowingFragment extends BaseFragment implements
 
         Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
         callables.add(() -> fetchActiveLivestreams());
-        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING).getClaims());
 
         Thread t = new Thread(new Runnable() {
             @Override

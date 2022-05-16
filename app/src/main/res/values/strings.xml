@@ -403,6 +403,8 @@
     <string name="search_filter_type_channel_label">Channel</string>
     <string name="search_filter_filetype_video">Video</string>
     <string name="search_filter_filetype_audio">Audio</string>
+    <string name="search_filter_filetype_image">Image</string>
+    <string name="search_filter_filetype_text">Text</string>
     <string-array name="publish_timeframe_filter">
         <item>Anytime</item>
         <item>Last 24 hours</item>

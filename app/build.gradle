@@ -113,7 +113,12 @@ dependencies {
     implementation 'com.hbb20:ccp:2.5.3'
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
-    implementation 'com.atlassian.commonmark:commonmark:0.14.0'
+    implementation 'org.commonmark:commonmark:0.18.1'
+    implementation 'org.commonmark:commonmark-ext-autolink:0.18.1'
+    implementation 'org.commonmark:commonmark-ext-gfm-strikethrough:0.18.1'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.18.1'
+    implementation 'org.commonmark:commonmark-ext-ins:0.18.1'
+    implementation 'org.commonmark:commonmark-ext-task-list-items:0.18.1'
 
     implementation 'com.arthenica:mobile-ffmpeg-full:4.4.LTS'
     implementation 'commons-codec:commons-codec:1.15'

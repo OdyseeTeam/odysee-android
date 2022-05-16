@@ -40,9 +40,10 @@ public class Claim {
     public static final String TYPE_REPOST = "repost";
     public static final String TYPE_COLLECTION = "collection";
 
+    public static final String STREAM_TYPE_VIDEO = "video";
     public static final String STREAM_TYPE_AUDIO = "audio";
     public static final String STREAM_TYPE_IMAGE = "image";
-    public static final String STREAM_TYPE_VIDEO = "video";
+    public static final String STREAM_TYPE_TEXT = "text";
     public static final String STREAM_TYPE_SOFTWARE = "software";
 
     public static final String ORDER_BY_EFFECTIVE_AMOUNT = "effective_amount";

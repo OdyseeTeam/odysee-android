@@ -107,9 +107,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
 
-        claimFileTypes = new ArrayList<>(2);
+        claimFileTypes = new ArrayList<>(4);
         claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
         claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
+        claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
+        claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
     }
 
     public List<Claim> getSelectedItems() {
@@ -280,7 +282,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyDataSetChanged();
     }
 
-    public void setFileTypeFilters(@Nullable Boolean showVideos, @Nullable Boolean showAudios) {
+    public void setFileTypeFilters(
+            @Nullable Boolean showVideos,
+            @Nullable Boolean showAudios,
+            @Nullable Boolean showImages,
+            @Nullable Boolean showTexts
+    ) {
         if (claimFileTypes != null) {
             if (showVideos != null && showVideos && !claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO)) {
                 claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
@@ -292,6 +299,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
             } else if (showAudios != null && !showAudios && claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO)) {
                 claimFileTypes.remove(Claim.STREAM_TYPE_AUDIO);
+            }
+
+            if (showImages != null && showImages && !claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
+                claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
+            } else if (showImages != null && !showImages && claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
+                claimFileTypes.remove(Claim.STREAM_TYPE_IMAGE);
+            }
+
+            if (showTexts != null && showTexts && !claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
+                claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
+            } else if (showTexts != null && !showTexts && claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
+                claimFileTypes.remove(Claim.STREAM_TYPE_TEXT);
             }
         }
         notifyDataSetChanged();
@@ -754,6 +773,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         String mediaType;
         boolean isVideo = false;
         boolean isAudio = false;
+        boolean isImage = false;
+        boolean isText = false;
         Claim.GenericMetadata metadata = claim.getValue();
         if (metadata instanceof Claim.StreamMetadata) {
             Claim.StreamMetadata.Source source = ((Claim.StreamMetadata) metadata).getSource();
@@ -761,12 +782,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             if (mediaType != null) {
                 isVideo = mediaType.startsWith(Claim.STREAM_TYPE_VIDEO);
                 isAudio = mediaType.startsWith(Claim.STREAM_TYPE_AUDIO);
+                isImage = mediaType.startsWith(Claim.STREAM_TYPE_IMAGE);
+                isText = mediaType.startsWith(Claim.STREAM_TYPE_TEXT);
             }
         }
         return (Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !filterByChannel)
                 || (!filterByFile && !filterByChannel)
-                || (((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo) || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio))
-                     && filterByFile);
+                || (filterByFile && ((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE) && isImage)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_TEXT) && isText)));
     }
 
     private void toggleSelectedClaim(Claim claim) {
