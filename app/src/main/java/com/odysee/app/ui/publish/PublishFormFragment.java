@@ -74,7 +74,7 @@ import com.odysee.app.tasks.UploadImageTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimResultHandler;
-import com.odysee.app.tasks.claim.PublishClaimTask;
+import com.odysee.app.tasks.claim.TusPublishTask;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
@@ -1041,7 +1041,7 @@ public class PublishFormFragment extends BaseFragment implements
         saveInProgress = true;
         AccountManager am = AccountManager.get(getContext());
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        PublishClaimTask task = new PublishClaimTask(claim, finalFilePath, progressPublish, authToken, new ClaimResultHandler() {
+        TusPublishTask task = new TusPublishTask(claim, finalFilePath, progressPublish, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();

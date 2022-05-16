@@ -52,6 +52,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.annotation.WorkerThread;
@@ -102,6 +103,12 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
+import org.commonmark.Extension;
+import org.commonmark.ext.autolink.AutolinkExtension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.ext.ins.InsExtension;
+import org.commonmark.ext.task.list.items.TaskListItemsExtension;
 import org.commonmark.node.Code;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -134,6 +141,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -142,6 +150,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -217,6 +226,7 @@ import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
@@ -1525,7 +1535,7 @@ public class FileViewFragment extends BaseFragment implements
                 // Prevents crash for when comment list isn't loaded yet but user tries to expand.
                 if (commentListAdapter != null) {
                     switchCommentListVisibility(commentListAdapter.isCollapsed());
-                    commentListAdapter.switchExpandedState();
+                    commentListAdapter.switchExpandedStateUI();
                 }
             }
         });
@@ -2100,7 +2110,7 @@ public class FileViewFragment extends BaseFragment implements
 
             commentLoadingArea.setVisibility(View.VISIBLE);
             commentEnabledCheck.checkCommentStatus(
-                    actualClaim.getSigningChannel().getClaimId(), actualClaim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                    actualClaim.getSigningChannel().getClaimId(), actualClaim.getSigningChannel().getName(), isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {
@@ -2644,6 +2654,59 @@ public class FileViewFragment extends BaseFragment implements
         });
         t.start();
     }
+
+    private void viewMedia() {
+        Claim claimToView = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        String mediaType = claimToView.getMediaType();
+        View root = getView();
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get the streaming URL
+                Map<String, Object> params = new HashMap<>();
+                params.put("uri", claimToView.getPermanentUrl());
+                JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                String sourceUrl = (String) result.get("streaming_url");
+
+                if (mediaType.startsWith("image")) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        View container = root.findViewById(R.id.file_view_imageviewer_container);
+                        PhotoView photoView = root.findViewById(R.id.file_view_imageviewer);
+
+                        Context context = getContext();
+                        if (context != null) {
+                            Glide.with(context.getApplicationContext()).load(sourceUrl).centerInside().into(photoView);
+                        }
+                        container.setVisibility(View.VISIBLE);
+                    });
+                } else if (Arrays.asList("text/markdown", "text/md").contains(mediaType.toLowerCase())) {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url(sourceUrl)
+                            .build();
+                    try (Response response = client.newCall(request).execute()) {
+                        ResponseBody body = response.body();
+                        if (body != null) {
+                            String html = buildMarkdownHtml(body.string());
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                View container = root.findViewById(R.id.file_view_webview_container);
+                                initWebView(root);
+                                applyThemeToWebView();
+
+                                if (webView != null) {
+                                    webView.loadData(Base64.encodeToString(html.getBytes(), Base64.NO_PADDING), "text/html", "base64");
+                                }
+                                container.setVisibility(View.VISIBLE);
+                            });
+                        }
+                    }
+                }
+            } catch (LbryRequestException | LbryResponseException | JSONException | IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+    }
+
     private void loadReactions(Claim c) {
         if (scheduledExecutor == null) {
             scheduledExecutor = new ScheduledThreadPoolExecutor(2);
@@ -3028,6 +3091,8 @@ public class FileViewFragment extends BaseFragment implements
             startTimeMillis = System.currentTimeMillis();
             showExoplayerView();
             playMedia();
+        } else if (actualClaim.isViewable()) {
+            viewMedia();
         }
     }
 
@@ -3145,11 +3210,16 @@ public class FileViewFragment extends BaseFragment implements
         long position = -1;
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (actualClaim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
-            Context context = getContext();
-            if (context != null) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                position = sp.getLong(key, -1);
+            try {
+                String url = !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl();
+                String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+                Context context = getContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    position = sp.getLong(key, -1);
+                }
+            } catch (LbryUriException ex) {
+                ex.printStackTrace();
             }
         }
         return position;
@@ -3158,12 +3228,17 @@ public class FileViewFragment extends BaseFragment implements
     private void savePlaybackPosition() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (MainActivity.appPlayer != null && actualClaim != null) {
-            String key = String.format("PlayPos_%s", !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl());
-            long position = MainActivity.appPlayer.getCurrentPosition();
-            Context context = getContext();
-            if (context != null) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                sp.edit().putLong(key, position).apply();
+            try {
+                String url = !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl();
+                String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+                long position = MainActivity.appPlayer.getCurrentPosition();
+                Context context = getContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    sp.edit().putLong(key, position).apply();
+                }
+            } catch (LbryUriException ex) {
+                ex.printStackTrace();
             }
         }
     }
@@ -3187,9 +3262,17 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private String buildMarkdownHtml(String markdown) {
-        Parser parser = Parser.builder().build();
+        List<Extension> extensions =  Arrays.asList(
+                AutolinkExtension.create(),
+                StrikethroughExtension.create(),
+                TablesExtension.create(),
+                InsExtension.create(),
+                TaskListItemsExtension.create()
+        );
+        Parser parser = Parser.builder().extensions(extensions).build();
         Node document = parser.parse(markdown);
         HtmlRenderer renderer = HtmlRenderer.builder()
+                .extensions(extensions)
                 .attributeProviderFactory(new AttributeProviderFactory() {
                     @Override
                     public AttributeProvider create(AttributeProviderContext context) {
@@ -3288,7 +3371,7 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             List<Claim> result = future.get();
 
-                            if (executor != null && !executor.isShutdown()) {
+                            if (!executor.isShutdown()) {
                                 executor.shutdown();
                             }
                             MainActivity a = (MainActivity) getActivity();
@@ -3297,13 +3380,13 @@ public class FileViewFragment extends BaseFragment implements
                                 a.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        relatedContentRequestSuccedded(result);
+                                        relatedContentRequestSucceeded(result);
                                         relatedLoading.setVisibility(View.GONE);
                                     }
                                 });
                             }
                         } catch (InterruptedException | ExecutionException e) {
-                            if (executor != null && !executor.isShutdown()) {
+                            if (!executor.isShutdown()) {
                                 executor.shutdown();
                             }
 
@@ -3344,8 +3427,6 @@ public class FileViewFragment extends BaseFragment implements
                                     v.findViewById(R.id.file_view_no_related_content),
                                     relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
                         }
-
-                        scrollToCommentHash();
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
@@ -3373,14 +3454,11 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void relatedContentRequestSuccedded(List<Claim> claims) {
+    @MainThread
+    private void relatedContentRequestSucceeded(List<Claim> claims) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        List<Claim> filteredClaims = new ArrayList<>();
-        for (Claim c : claims) {
-            if (!c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId())) {
-                filteredClaims.add(c);
-            }
-        }
+        List<Claim> filteredClaims = claims.stream().filter(c -> !c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId()))
+                                           .collect(Collectors.toList());
 
         filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
 
@@ -3422,11 +3500,12 @@ public class FileViewFragment extends BaseFragment implements
                         relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             }
 
-            // if related content loads before comment, this will affect the scroll position
+            // if related content loads before comments, this will affect the scroll position
             // so just ensure that we are at the correct position
             scrollToCommentHash();
         }
     }
+
     private void loadComments() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         View root = getView();
@@ -3541,19 +3620,16 @@ public class FileViewFragment extends BaseFragment implements
                         }
                     });
 
-                    List<Comment> parentComments = rootComments;
-//                    rootComments.clear();
                     for (Comment c : comments) {
-                        if (!parentComments.contains(c)) {
+                        if (!rootComments.contains(c)) {
                             if (c.getParentId() != null) {
-                                Comment item = parentComments.stream().filter(v -> c.getParentId().equalsIgnoreCase(v.getId())).findFirst().orElse(null);
-                                if (item != null) {
-                                    parentComments.add(parentComments.indexOf(item) + 1, c);
-                                }
+                                rootComments.stream().filter(v -> c.getParentId().equalsIgnoreCase(v.getId()))
+                                                     .findFirst()
+                                                     .ifPresent(item -> rootComments.add(rootComments.indexOf(item) + 1, c));
                             }
                         }
                     }
-                    comments = parentComments;
+                    comments = rootComments;
 
                     Context ctx = getContext();
                     View root = getView();
@@ -3569,7 +3645,6 @@ public class FileViewFragment extends BaseFragment implements
     private void ensureCommentListAdapterCreated(final List<Comment> comments) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if ( commentListAdapter == null ) {
-
             final Context androidContext = getContext();
             final View root = getView();
 
@@ -3613,16 +3688,29 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @MainThread
     private void scrollToCommentHash() {
+        if (!Helper.isNullOrEmpty(commentHash)) {
+            scrollToComment(commentHash);
+        }
+    }
+
+    @MainThread
+    private void scrollToComment(String hash) {
         View root = getView();
         // check for the position of commentHash if set
-        if (root != null && !Helper.isNullOrEmpty(commentHash) && commentListAdapter != null && commentListAdapter.getItemCount() > 0) {
+        if (root != null && !Helper.isNullOrEmpty(hash) && commentListAdapter != null && commentListAdapter.getItemCount() > 0) {
             RecyclerView commentList = root.findViewById(R.id.file_view_comments_list);
-            int position = commentListAdapter.getPositionForComment(commentHash);
-            if (position > -1 && commentList.getLayoutManager() != null) {
+            int position = commentListAdapter.getPositionForComment(hash);
+            RecyclerView.LayoutManager listLayoutManager = commentList.getLayoutManager();
+            if (position > -1 && listLayoutManager != null) {
+                switchCommentListVisibility(true);
+                commentListAdapter.switchExpandedStateUI(false);
+                commentListAdapter.collapseExceptHash(hash);
+
                 NestedScrollView scrollView = root.findViewById(R.id.file_view_scroll_view);
                 scrollView.requestChildFocus(commentList, commentList);
-                commentList.getLayoutManager().scrollToPosition(position);
+                listLayoutManager.scrollToPosition(position);
             }
         }
     }
@@ -3635,6 +3723,7 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
             Helper.setViewVisibility(root.findViewById(R.id.collapsed_comment),
+                    (commentListAdapter != null && !commentListAdapter.getCollapsed()) ||
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
 
             if (commentListAdapter == null)
@@ -4529,8 +4618,9 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
             Helper.setViewVisibility(publisherArea, View.GONE);
-            if (context != null)
+            if (context != null) {
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
+            }
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
             root.findViewById(R.id.collapsed_comment).setVisibility(View.VISIBLE);
@@ -4778,21 +4868,29 @@ public class FileViewFragment extends BaseFragment implements
                                 JSONObject commentJson = Helper.getJSONObject("comment", data);
                                 if (commentJson != null) {
                                     Comment comment = new Comment();
-                                    comment.setText(Helper.getJSONString("comment", "", commentJson));
-                                    comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
-                                    if (!Helper.isNullOrEmpty(comment.getChannelName())) {
-                                        if (chatMessageListAdapter == null) {
-                                            chatMessageListAdapter = new ChatMessageListAdapter(Arrays.asList(comment), getContext());
-                                            chatMessageList.setAdapter(chatMessageListAdapter);
-                                        } else {
-                                            chatMessageListAdapter.addMessage(comment);
-                                            new Handler().postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                    Activity a = getActivity();
+                                    if (a != null) {
+                                        a.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                comment.setText(Helper.getJSONString("comment", "", commentJson));
+                                                comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
+                                                if (!Helper.isNullOrEmpty(comment.getChannelName())) {
+                                                    if (chatMessageListAdapter == null) {
+                                                        chatMessageListAdapter = new ChatMessageListAdapter(Collections.singletonList(comment), getContext());
+                                                        chatMessageList.setAdapter(chatMessageListAdapter);
+                                                    } else {
+                                                        chatMessageListAdapter.addMessage(comment);
+                                                        new Handler(Looper.myLooper()).postDelayed(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                            }
+                                                        }, 100);
+                                                    }
                                                 }
-                                            }, 100);
-                                        }
+                                            }
+                                        });
                                     }
                                 }
                             }
@@ -4819,7 +4917,7 @@ public class FileViewFragment extends BaseFragment implements
 
                 protected void onSetSSLParameters(SSLParameters sslParameters) {
                     // don't call setEndpointIdentificationAlgorithm for API level < 24
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                         sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
                     }
                 }

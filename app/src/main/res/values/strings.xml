@@ -122,6 +122,7 @@
     <string name="unable_to_delete_comment">Unable to delete this comment, please try again later.</string>
     <string name="unable_to_edit_comment">Unable to edit this comment, please try again later.</string>
     <string name="edit_comment_dialog_title">Edit Comment</string>
+    <string name="expand_button_accessibility">Button to expand or contract comments</string>
 
 
     <string name="share_lbry_content">Share LBRY content</string>
@@ -403,6 +404,8 @@
     <string name="search_filter_type_channel_label">Channel</string>
     <string name="search_filter_filetype_video">Video</string>
     <string name="search_filter_filetype_audio">Audio</string>
+    <string name="search_filter_filetype_image">Image</string>
+    <string name="search_filter_filetype_text">Text</string>
     <string-array name="publish_timeframe_filter">
         <item>Anytime</item>
         <item>Last 24 hours</item>

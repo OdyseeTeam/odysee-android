@@ -8,10 +8,11 @@ import java.util.Map;
 
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.Page;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 
-public class ClaimSearchTask extends AsyncTask<Void, Void, List<Claim>> {
+public class ClaimSearchTask extends AsyncTask<Void, Void, Page> {
     private final Map<String, Object> options;
     private final String connectionString;
     private final ClaimSearchResultHandler handler;
@@ -24,10 +25,12 @@ public class ClaimSearchTask extends AsyncTask<Void, Void, List<Claim>> {
         this.progressView = progressView;
         this.handler = handler;
     }
+    @Override
     protected void onPreExecute() {
         Helper.setViewVisibility(progressView, View.VISIBLE);
     }
-    protected List<Claim> doInBackground(Void... params) {
+    @Override
+    protected Page doInBackground(Void... params) {
         try {
             return Lbry.claimSearch(options, connectionString);
         } catch (ApiCallException ex) {
@@ -35,11 +38,12 @@ public class ClaimSearchTask extends AsyncTask<Void, Void, List<Claim>> {
             return null;
         }
     }
-    protected void onPostExecute(List<Claim> claims) {
+    @Override
+    protected void onPostExecute(Page claimsPage) {
         Helper.setViewVisibility(progressView, View.INVISIBLE);
         if (handler != null) {
-            if (claims != null) {
-                handler.onSuccess(Helper.filterInvalidReposts(claims), claims.size() < Helper.parseInt(options.get("page_size"), 0));
+            if (claimsPage != null) {
+                handler.onSuccess(Helper.filterInvalidReposts(claimsPage.getClaims()), claimsPage.isLastPage());
             } else {
                 handler.onError(error);
             }

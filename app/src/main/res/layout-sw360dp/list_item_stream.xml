@@ -75,6 +75,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="230dp"
                 android:scaleType="centerCrop" />
+            <View
+                android:id="@+id/playback_progress_view"
+                android:layout_width="0dp"
+                android:layout_height="8dp"
+                android:layout_alignBottom="@+id/claim_thumbnail"
+                android:layout_alignStart="@+id/claim_thumbnail"
+                android:background="#FF0000" />
             <LinearLayout
                 android:id="@+id/claim_fee_container"
                 android:background="@drawable/bg_stream_cost"

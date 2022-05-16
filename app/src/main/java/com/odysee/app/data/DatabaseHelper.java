@@ -27,7 +27,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 11;
+    public static final int DATABASE_VERSION = 12;
     public static final String DATABASE_NAME = "LbryApp.db";
     private static DatabaseHelper instance;
 
@@ -51,6 +51,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     ", publisher_name TEXT" +
                     ", publisher_title TEXT" +
                     ", thumbnail_url TEXT" +
+                    ", duration INTEGER" +
                     ", release_time INTEGER " +
                     ", device TEXT" +
                     ", timestamp TEXT NOT NULL)",
@@ -144,6 +145,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "CREATE TABLE collections (id TEXT PRIMARY KEY NOT NULL, name TEXT, type TEXT NOT NULL, updated_at TEXT NOT NULL, visibility INTEGER DEFAULT 1 NOT NULL)",
             "CREATE TABLE collection_items (collection_id TEXT NOT NULL, url TEXT NOT NULL, item_order INTEGER DEFAULT 1 NOT NULL, PRIMARY KEY(collection_id, url))"
     };
+    private static final String[] SQL_V11_V12_UPGRADE = {
+            "ALTER TABLE view_history ADD COLUMN duration INTEGER"
+    };
 
     private static final String SQL_INSERT_SUBSCRIPTION = "REPLACE INTO subscriptions (channel_name, url, is_notifications_disabled) VALUES (?, ?, ?)";
     private static final String SQL_UPDATE_SUBSCRIPTION_NOTIFICATION = "UPDATE subscriptions SET is_notification_disabled = ? WHERE url = ?";
@@ -169,9 +173,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_GET_SHUFFLE_WATCHED_CLAIMS = "SELECT claim_id FROM shuffle_watched";
 
     private static final String SQL_INSERT_VIEW_HISTORY =
-            "REPLACE INTO view_history (url, claim_id, claim_name, cost, currency, title, publisher_claim_id, publisher_name, publisher_title, thumbnail_url, device, release_time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "REPLACE INTO view_history (url, claim_id, claim_name, cost, currency, title, publisher_claim_id, publisher_name, publisher_title, thumbnail_url, duration, device, release_time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_GET_VIEW_HISTORY =
-            "SELECT url, claim_id, claim_name, cost, currency, title, publisher_claim_id, publisher_name, publisher_title, thumbnail_url, device, release_time, timestamp " +
+            "SELECT url, claim_id, claim_name, cost, currency, title, publisher_claim_id, publisher_name, publisher_title, thumbnail_url, duration, device, release_time, timestamp " +
             "FROM view_history WHERE '' = ? OR timestamp < ? ORDER BY timestamp DESC LIMIT %d";
     private static final String SQL_CLEAR_VIEW_HISTORY = "DELETE FROM view_history";
     private static final String SQL_CLEAR_VIEW_HISTORY_BY_DEVICE = "DELETE FROM view_history WHERE device = ?";
@@ -276,6 +280,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL(sql);
             }
         }
+        if (oldVersion < 12) {
+            for (String sql : SQL_V11_V12_UPGRADE) {
+                db.execSQL(sql);
+            }
+        }
     }
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
@@ -329,6 +338,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 viewHistory.getPublisherName(),
                 viewHistory.getPublisherTitle(),
                 viewHistory.getThumbnailUrl(),
+                viewHistory.getDuration(),
                 viewHistory.getDevice(),
                 viewHistory.getReleaseTime(),
                 new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(new Date())
@@ -354,6 +364,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 item.setPublisherName(cursor.getString(cursorIndex++));
                 item.setPublisherTitle(cursor.getString(cursorIndex++));
                 item.setThumbnailUrl(cursor.getString(cursorIndex++));
+                item.setDuration(cursor.getLong(cursorIndex++));
                 item.setDevice(cursor.getString(cursorIndex++));
                 item.setReleaseTime(cursor.getLong(cursorIndex++));
                 try {

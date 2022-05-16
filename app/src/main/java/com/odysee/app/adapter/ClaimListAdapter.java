@@ -2,12 +2,14 @@ package com.odysee.app.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -15,6 +17,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.odysee.app.R;
+import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
@@ -107,9 +111,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
 
-        claimFileTypes = new ArrayList<>(2);
+        claimFileTypes = new ArrayList<>(4);
         claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
         claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
+        claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
+        claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
     }
 
     public List<Claim> getSelectedItems() {
@@ -280,7 +286,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyDataSetChanged();
     }
 
-    public void setFileTypeFilters(@Nullable Boolean showVideos, @Nullable Boolean showAudios) {
+    public void setFileTypeFilters(
+            @Nullable Boolean showVideos,
+            @Nullable Boolean showAudios,
+            @Nullable Boolean showImages,
+            @Nullable Boolean showTexts
+    ) {
         if (claimFileTypes != null) {
             if (showVideos != null && showVideos && !claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO)) {
                 claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
@@ -292,6 +303,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
             } else if (showAudios != null && !showAudios && claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO)) {
                 claimFileTypes.remove(Claim.STREAM_TYPE_AUDIO);
+            }
+
+            if (showImages != null && showImages && !claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
+                claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
+            } else if (showImages != null && !showImages && claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
+                claimFileTypes.remove(Claim.STREAM_TYPE_IMAGE);
+            }
+
+            if (showTexts != null && showTexts && !claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
+                claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
+            } else if (showTexts != null && !showTexts && claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
+                claimFileTypes.remove(Claim.STREAM_TYPE_TEXT);
             }
         }
         notifyDataSetChanged();
@@ -321,6 +344,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final View feeContainer;
         protected final TextView feeView;
         protected final ImageView thumbnailView;
+        protected final View playbackProgressView;
         protected final View noThumbnailView;
         protected final TextView alphaView;
         protected final TextView vanityUrlView;
@@ -347,6 +371,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             alphaView = v.findViewById(R.id.claim_thumbnail_alpha);
             noThumbnailView = v.findViewById(R.id.claim_no_thumbnail);
             thumbnailView = v.findViewById(R.id.claim_thumbnail);
+            playbackProgressView = v.findViewById(R.id.playback_progress_view);
             vanityUrlView = v.findViewById(R.id.claim_vanity_url);
             durationView = v.findViewById(R.id.claim_duration);
             titleView = v.findViewById(R.id.claim_title);
@@ -655,6 +680,25 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                     long duration = item.getDuration();
                     vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
+                    long lastPlaybackPosition = loadLastPlaybackPosition(item);
+                    if (lastPlaybackPosition != -1 && duration > 0) {
+                        long lastPlaybackPositionSeconds = lastPlaybackPosition / 1000;
+                        vh.thumbnailView.getViewTreeObserver()
+                                .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                    @Override
+                                    public boolean onPreDraw() {
+                                        int width = vh.thumbnailView.getMeasuredWidth();
+                                        if (width > 0) {
+                                            Helper.setViewWidth(vh.playbackProgressView,
+                                                    (int) (((double) lastPlaybackPositionSeconds / duration) * width));
+                                            vh.thumbnailView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                        }
+                                        return true;
+                                    }
+                                });
+                    } else {
+                        Helper.setViewWidth(vh.playbackProgressView, 0);
+                    }
                     if (type == VIEW_TYPE_LIVESTREAM) {
                         vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
 
@@ -754,6 +798,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         String mediaType;
         boolean isVideo = false;
         boolean isAudio = false;
+        boolean isImage = false;
+        boolean isText = false;
         Claim.GenericMetadata metadata = claim.getValue();
         if (metadata instanceof Claim.StreamMetadata) {
             Claim.StreamMetadata.Source source = ((Claim.StreamMetadata) metadata).getSource();
@@ -761,12 +807,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             if (mediaType != null) {
                 isVideo = mediaType.startsWith(Claim.STREAM_TYPE_VIDEO);
                 isAudio = mediaType.startsWith(Claim.STREAM_TYPE_AUDIO);
+                isImage = mediaType.startsWith(Claim.STREAM_TYPE_IMAGE);
+                isText = mediaType.startsWith(Claim.STREAM_TYPE_TEXT);
             }
         }
         return (Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !filterByChannel)
                 || (!filterByFile && !filterByChannel)
-                || (((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo) || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio))
-                     && filterByFile);
+                || (filterByFile && ((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE) && isImage)
+                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_TEXT) && isText)));
     }
 
     private void toggleSelectedClaim(Claim claim) {
@@ -788,6 +838,19 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         }
 
         notifyItemChanged(items.indexOf(claim));
+    }
+
+    private long loadLastPlaybackPosition(Claim claim) {
+        long position = -1;
+        try {
+            String url = !Helper.isNullOrEmpty(claim.getShortUrl()) ? claim.getShortUrl() : claim.getPermanentUrl();
+            String key = String.format("PlayPos_%s", LbryUri.normalize(url));
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+            position = sp.getLong(key, -1);
+        } catch (LbryUriException ex) {
+            ex.printStackTrace();
+        }
+        return position;
     }
 
     public interface ClaimListItemListener {

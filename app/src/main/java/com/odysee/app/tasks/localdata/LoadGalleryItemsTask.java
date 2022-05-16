@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -51,10 +53,18 @@ public class LoadGalleryItemsTask extends AsyncTask<Void, GalleryItem, List<Gall
                         MediaStore.MediaColumns.MIME_TYPE,
                         MediaStore.Video.Media.DURATION
                 };
-                cursor = resolver.query(
-                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                        projection, null, null,
-                        String.format("%s DESC LIMIT 150", MediaStore.MediaColumns.DATE_MODIFIED));
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    cursor = resolver.query(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            projection, null, null,
+                            String.format("%s DESC LIMIT 150", MediaStore.MediaColumns.DATE_MODIFIED));
+                } else {
+                    Bundle queryArgs = new Bundle();
+                    queryArgs.putInt(ContentResolver.QUERY_ARG_LIMIT, 150);
+                    cursor = resolver.query(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            projection, queryArgs, null);
+                }
                 if (cursor != null) {
                     while (cursor.moveToNext()) {
                         int idColumn = cursor.getColumnIndex(MediaStore.MediaColumns._ID);

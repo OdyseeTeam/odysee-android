@@ -22,6 +22,7 @@ import android.provider.MediaStore;
 import android.text.method.LinkMovementMethod;
 import android.view.ContextMenu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -198,6 +199,16 @@ public final class Helper {
     public static void setViewVisibility(View view, int visibility) {
         if (view != null) {
             view.setVisibility(visibility);
+        }
+    }
+
+    public static void setViewWidth(View view, int width) {
+        if (view != null) {
+            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+            layoutParams.width = width;
+            view.setLayoutParams(layoutParams);
+            view.forceLayout();
+            view.getParent().requestLayout();
         }
     }
 

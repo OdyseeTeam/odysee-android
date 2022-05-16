@@ -112,7 +112,9 @@ public class SearchFragment extends BaseFragment implements
                     root.findViewById(R.id.file_type_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.publish_time_filter_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.time_filter_spinner).setVisibility(View.VISIBLE);
-                    root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                    if (((Chip) root.findViewById(R.id.chipSearchFile)).isChecked()) {
+                        root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
+                    }
                 } else {
                     root.findViewById(R.id.chipgroupFilter).setVisibility(View.GONE);
                     root.findViewById(R.id.file_type_label).setVisibility(View.GONE);
@@ -159,7 +161,7 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(isChecked, null);
+                    resultListAdapter.setFileTypeFilters(isChecked, null, null, null);
                 }
             }
         });
@@ -167,7 +169,23 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(null, isChecked);
+                    resultListAdapter.setFileTypeFilters(null, isChecked, null, null);
+                }
+            }
+        });
+        ((CheckBox) root.findViewById(R.id.image_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(null, null, isChecked, null);
+                }
+            }
+        });
+        ((CheckBox) root.findViewById(R.id.text_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (resultListAdapter != null) {
+                    resultListAdapter.setFileTypeFilters(null, null, null, isChecked);
                 }
             }
         });

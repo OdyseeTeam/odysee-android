@@ -31,6 +31,7 @@ import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.ClaimSearchCacheValue;
 import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.Page;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
@@ -404,7 +405,6 @@ public final class Lbry {
         if (claimType != null && claimType.size() > 0) {
             options.put("claim_type", claimType);
         }
-        options.put("no_totals", true);
         options.put("page", page);
         options.put("page_size", pageSize);
         if (!Helper.isNullOrEmpty(releaseTime)) {
@@ -433,15 +433,17 @@ public final class Lbry {
         }
     }
 
-    public static List<Claim> claimSearch(Map<String, Object> options, String connectionString) throws ApiCallException {
+    public static Page claimSearch(Map<String, Object> options, String connectionString) throws ApiCallException {
         if (claimSearchCache.containsKey(options)) {
             ClaimSearchCacheValue value = claimSearchCache.get(options);
             if (value != null && !value.isExpired(TTL_CLAIM_SEARCH_VALUE)) {
-                return claimSearchCache.get(options).getClaims();
+                return claimSearchCache.get(options).getClaimsPage();
             }
         }
 
         List<Claim> claims = new ArrayList<>();
+        boolean isLastPage;
+        Page claimsPage;
         try {
             JSONObject result = (JSONObject) parseResponse(apiCall(METHOD_CLAIM_SEARCH, options, connectionString));
             JSONArray items;
@@ -450,32 +452,35 @@ public final class Lbry {
 
                 for (int i = 0; i < items.length(); i++) {
                     Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
+
                     if (claim != null) {
                         String claimValueType = claim.getValueType();
                         String claimMediaType = claim.getMediaType();
 
-                        // Using Java Stream API to make it easier to add new future claim types
+                        // Using Java Stream API to make it easier to add new future claim types/media types
                         List<String> claimTypes = Stream.of(Claim.TYPE_COLLECTION, Claim.TYPE_REPOST, Claim.TYPE_CHANNEL)
                                                         .collect(Collectors.toList());
+                        Stream<String> mediaTypes = Stream.of("video", "audio", "image", "text");
 
-                        // For now, only claims which are audio, videos, playlists or already/scheduled livestreaming now can be viewed
+                        // For now, only claims which are video, audio, images, text, playlists
+                        // or already/scheduled livestreaming now can be viewed
                         if (claimTypes.contains(claimValueType.toLowerCase())
                                 || !claim.hasSource()
-                                || (claim.hasSource() && (claimMediaType.contains("video") || claimMediaType.contains("audio")))) {
+                                || (claim.hasSource() && mediaTypes.anyMatch(claimMediaType::contains))) {
                             claims.add(claim);
                         }
-
-                        addClaimToCache(claim);
                     }
                 }
             }
 
-            claimSearchCache.put(options, new ClaimSearchCacheValue(claims, System.currentTimeMillis()));
+            isLastPage = Helper.parseInt(options.get("page"), 0) >= result.getInt("total_pages");
+            claimsPage = new Page(claims, isLastPage);
+            claimSearchCache.put(options, new ClaimSearchCacheValue(claimsPage, System.currentTimeMillis()));
         } catch (LbryRequestException | LbryResponseException | JSONException ex) {
             throw new ApiCallException("Could not execute resolve call", ex);
         }
 
-        return claims;
+        return claimsPage;
     }
 
     public static Map<String, Object> buildSingleParam(String key, Object value) {
@@ -626,7 +631,7 @@ public final class Lbry {
                         1,
                         999
                 );
-                List<Claim> claimsInCollection = Lbry.claimSearch(opt, API_CONNECTION_STRING);
+                List<Claim> claimsInCollection = Lbry.claimSearch(opt, API_CONNECTION_STRING).getClaims();
                 List<String> claimUrls = new ArrayList<>();
                 for (Claim collectionClaim : claimsInCollection) {
                     claimUrls.add(collectionClaim.getPermanentUrl());

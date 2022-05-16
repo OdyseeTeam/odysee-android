@@ -14,9 +14,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.CameraX;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -60,14 +58,15 @@ public class PublishFragment extends BaseFragment implements
     private View loading;
 
     private View buttonRecord;
-    private View buttonTakePhoto;
+//    private View buttonTakePhoto;
     private View buttonUpload;
 
     private boolean loadGalleryItemsPending;
     private boolean launchFilePickerPending;
     private boolean recordPending;
-    private boolean takePhotoPending;
+//    private boolean takePhotoPending;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    private ProcessCameraProvider cameraProvider;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -85,7 +84,7 @@ public class PublishFragment extends BaseFragment implements
                 3, Helper.getScaledValue(3, context.getResources().getDisplayMetrics().density)));
 
         buttonRecord = root.findViewById(R.id.publish_record_button);
-        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
+//        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
         buttonUpload = root.findViewById(R.id.publish_upload_button);
 
         buttonRecord.setOnClickListener(new View.OnClickListener() {
@@ -94,12 +93,12 @@ public class PublishFragment extends BaseFragment implements
                 checkCameraPermissionAndRecord();
             }
         });
-        buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
+        /*buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 checkCameraPermissionAndTakePhoto();
             }
-        });
+        });*/
         buttonUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -117,7 +116,7 @@ public class PublishFragment extends BaseFragment implements
 
     private void showCameraPreview() {
         buttonRecord.setBackgroundColor(Color.TRANSPARENT);
-        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
+//        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
         displayPreviewWithCameraX();
     }
 
@@ -129,15 +128,15 @@ public class PublishFragment extends BaseFragment implements
                 @Override
                 public void run() {
                     try {
-                        ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                        cameraProvider = cameraProviderFuture.get();
                         if (cameraProvider != null) {
                             Preview preview = new Preview.Builder().build();
                             CameraSelector cameraSelector = new CameraSelector.Builder()
                                     .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                                     .build();
-
-                            Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
-                            preview.setSurfaceProvider(cameraPreview.createSurfaceProvider(camera.getCameraInfo()));
+                            cameraPreview.setScaleType(PreviewView.ScaleType.FILL_START);
+                            preview.setSurfaceProvider(cameraPreview.getSurfaceProvider());
+                            cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview);
                             cameraPreviewInitialized = true;
                         }
                     } catch (ExecutionException | IllegalArgumentException | InterruptedException ex) {
@@ -163,7 +162,7 @@ public class PublishFragment extends BaseFragment implements
         }
     }
 
-    private void checkCameraPermissionAndTakePhoto() {
+    /*private void checkCameraPermissionAndTakePhoto() {
         Context context = getContext();
         if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
             takePhotoPending = true;
@@ -184,7 +183,7 @@ public class PublishFragment extends BaseFragment implements
             takePhotoPending = false;
             ((MainActivity) context).requestTakePhoto();
         }
-    }
+    }*/
 
     private void record() {
         Context context = getContext();
@@ -214,7 +213,7 @@ public class PublishFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity.startingFilePickerActivity = true;
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("*/*");
+            intent.setType("video/*");
             ((MainActivity) context).startActivityForResult(
                     Intent.createChooser(intent, getString(R.string.upload_file)),
                     MainActivity.REQUEST_FILE_PICKER);
@@ -255,7 +254,7 @@ public class PublishFragment extends BaseFragment implements
             }
         }
         if (cameraPreviewInitialized) {
-            CameraX.unbindAll();
+            cameraProvider.unbindAll();
         }
         super.onStop();
     }
@@ -292,7 +291,7 @@ public class PublishFragment extends BaseFragment implements
                                     Map<String, Object> params = new HashMap<>();
                                     params.put("galleryItem", item);
                                     params.put("suggestedUrl", getSuggestedPublishUrl());
-//                                    ((MainActivity) context).openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+                                    ((MainActivity) context).openFragment(PublishFormFragment.class, true, params);
                                 }
                             }
                         });
@@ -335,19 +334,19 @@ public class PublishFragment extends BaseFragment implements
         if (recordPending) {
             // record video
             record();
-        } else if (takePhotoPending) {
+        }/* else if (takePhotoPending) {
             // take a photo
             takePhoto();
-        }
+        }*/
     }
 
     @Override
     public void onCameraPermissionRefused() {
-        if (takePhotoPending) {
+        /*if (takePhotoPending) {
             takePhotoPending = false;
             showError(getString(R.string.camera_permission_rationale_photo));
             return;
-        }
+        }*/
 
         recordPending = false;
         showError(getString(R.string.camera_permission_rationale_record));
@@ -412,7 +411,7 @@ public class PublishFragment extends BaseFragment implements
             Map<String, Object> params = new HashMap<>();
             params.put("directFilePath", filePath);
             params.put("suggestedUrl", getSuggestedPublishUrl());
-//            ((MainActivity) context).openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+            ((MainActivity) context).openFragment(PublishFormFragment.class, true, params);
         }
     }
 
