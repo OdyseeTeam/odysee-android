@@ -599,8 +599,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             firstChild = items.indexOf(firstChildComment);
         }
 
-        // childsToBeShown contains a list of parentIds.
-        // RecyclerView will display any item which parentId was contained on childsToBeShown
+        // childrenToBeShown contains a list of parentIds.
+        // RecyclerView will display any item which parentId was contained on childrenToBeShown
         if (!childrenToBeShown.contains(parentId)) {
             childrenToBeShown.add(parentId);
         } else {
