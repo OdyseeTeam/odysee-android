@@ -1,5 +1,6 @@
 package com.odysee.app.model;
 
+import android.util.Log;
 import androidx.annotation.Nullable;
 import android.annotation.SuppressLint;
 
@@ -383,46 +384,55 @@ public class Claim {
 
     public static Claim fromJSONObject(JSONObject claimObject) {
         Claim claim = null;
-        String claimJson = claimObject.toString();
-        Type type = new TypeToken<Claim>(){}.getType();
-        Type streamMetadataType = new TypeToken<StreamMetadata>(){}.getType();
-        Type channelMetadataType = new TypeToken<ChannelMetadata>(){}.getType();
+        if (!claimObject.has("error")) {
+            String claimJson = claimObject.toString();
+            Type type = new TypeToken<Claim>(){}.getType();
+            Type streamMetadataType = new TypeToken<StreamMetadata>(){}.getType();
+            Type channelMetadataType = new TypeToken<ChannelMetadata>(){}.getType();
 
-        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-        claim = gson.fromJson(claimJson, type);
+            Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+            claim = gson.fromJson(claimJson, type);
 
-        try {
-            String valueType = claim.getValueType();
-            // Specific value type parsing
-            if (TYPE_REPOST.equalsIgnoreCase(valueType)) {
-                JSONObject repostedClaimObject = claimObject.getJSONObject("reposted_claim");
-                claim.setRepostedClaim(Claim.fromJSONObject(repostedClaimObject));
-            } else {
-                if (claimObject.has("value")) {
-                    JSONObject value = claimObject.getJSONObject("value");
-                    String valueJson = value.toString();
-                    if (TYPE_STREAM.equalsIgnoreCase(valueType)) {
-                        claim.setValue(gson.fromJson(valueJson, streamMetadataType));
-                    } else if (TYPE_CHANNEL.equalsIgnoreCase(valueType)) {
-                        claim.setValue(gson.fromJson(valueJson, channelMetadataType));
-                    } else if (TYPE_COLLECTION.equalsIgnoreCase(valueType)) {
-                        JSONArray claims = value.getJSONArray("claims");
-                        List<String> ids = new ArrayList<>(claims.length());
+            try {
+                String valueType = claim.getValueType();
+                // Specific value type parsing
+                if (TYPE_REPOST.equalsIgnoreCase(valueType)) {
+                    JSONObject repostedClaimObject = claimObject.getJSONObject("reposted_claim");
+                    claim.setRepostedClaim(Claim.fromJSONObject(repostedClaimObject));
+                } else {
+                    if (claimObject.has("value")) {
+                        JSONObject value = claimObject.getJSONObject("value");
+                        String valueJson = value.toString();
+                        if (TYPE_STREAM.equalsIgnoreCase(valueType)) {
+                            claim.setValue(gson.fromJson(valueJson, streamMetadataType));
+                        } else if (TYPE_CHANNEL.equalsIgnoreCase(valueType)) {
+                            claim.setValue(gson.fromJson(valueJson, channelMetadataType));
+                        } else if (TYPE_COLLECTION.equalsIgnoreCase(valueType)) {
+                            JSONArray claims = value.getJSONArray("claims");
+                            List<String> ids = new ArrayList<>(claims.length());
 
-                        for (int i = 0; i < claims.length(); i++) {
-                            ids.add(claims.getString(i));
+                            for (int i = 0; i < claims.length(); i++) {
+                                ids.add(claims.getString(i));
+                            }
+                            claim.setClaimIds(ids);
                         }
-                        claim.setClaimIds(ids);
                     }
                 }
-            }
 
-            JSONObject metaObject = claimObject.getJSONObject("meta");
-            String metaJson = metaObject.toString();
-            claim.setMeta(gson.fromJson(metaJson, Meta.class));
-        } catch (JSONException ex) {
-            ex.printStackTrace();
-            // pass
+                JSONObject metaObject = claimObject.getJSONObject("meta");
+                String metaJson = metaObject.toString();
+                claim.setMeta(gson.fromJson(metaJson, Meta.class));
+            } catch (JSONException ex) {
+                ex.printStackTrace();
+                // pass
+            }
+        } else {
+            try {
+                String errorMessage = claimObject.getString("error");
+                Log.e("Claim", "fromJSONObject: ".concat(errorMessage));
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return claim;
