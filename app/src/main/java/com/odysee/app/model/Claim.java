@@ -354,6 +354,13 @@ public class Claim {
             value.setFee(fee);
         }
 
+        StreamInfo streamInfo = new StreamInfo();
+        if (viewHistory.getDuration() > 0) {
+            value.setStreamType(STREAM_TYPE_VIDEO);
+            streamInfo.setDuration(viewHistory.getDuration());
+            value.setVideo(streamInfo);
+        }
+
         claim.setValue(value);
 
         if (!Helper.isNullOrEmpty(viewHistory.getPublisherClaimId())) {
