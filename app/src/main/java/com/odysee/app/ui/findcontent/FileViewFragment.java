@@ -52,6 +52,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.annotation.WorkerThread;
@@ -149,6 +150,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -1533,7 +1535,7 @@ public class FileViewFragment extends BaseFragment implements
                 // Prevents crash for when comment list isn't loaded yet but user tries to expand.
                 if (commentListAdapter != null) {
                     switchCommentListVisibility(commentListAdapter.isCollapsed());
-                    commentListAdapter.switchExpandedState();
+                    commentListAdapter.switchExpandedStateUI();
                 }
             }
         });
@@ -2108,7 +2110,7 @@ public class FileViewFragment extends BaseFragment implements
 
             commentLoadingArea.setVisibility(View.VISIBLE);
             commentEnabledCheck.checkCommentStatus(
-                    actualClaim.getSigningChannel().getClaimId(), actualClaim.getSigningChannel().getName(), (CommentEnabledCheck.CommentStatus) isEnabled -> {
+                    actualClaim.getSigningChannel().getClaimId(), actualClaim.getSigningChannel().getName(), isEnabled -> {
                 Activity activity = getActivity();
                 if (activity != null) {
                     activity.runOnUiThread(() -> {
@@ -3369,7 +3371,7 @@ public class FileViewFragment extends BaseFragment implements
                         try {
                             List<Claim> result = future.get();
 
-                            if (executor != null && !executor.isShutdown()) {
+                            if (!executor.isShutdown()) {
                                 executor.shutdown();
                             }
                             MainActivity a = (MainActivity) getActivity();
@@ -3378,13 +3380,13 @@ public class FileViewFragment extends BaseFragment implements
                                 a.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        relatedContentRequestSuccedded(result);
+                                        relatedContentRequestSucceeded(result);
                                         relatedLoading.setVisibility(View.GONE);
                                     }
                                 });
                             }
                         } catch (InterruptedException | ExecutionException e) {
-                            if (executor != null && !executor.isShutdown()) {
+                            if (!executor.isShutdown()) {
                                 executor.shutdown();
                             }
 
@@ -3425,8 +3427,6 @@ public class FileViewFragment extends BaseFragment implements
                                     v.findViewById(R.id.file_view_no_related_content),
                                     relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
                         }
-
-                        scrollToCommentHash();
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
@@ -3454,14 +3454,11 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void relatedContentRequestSuccedded(List<Claim> claims) {
+    @MainThread
+    private void relatedContentRequestSucceeded(List<Claim> claims) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        List<Claim> filteredClaims = new ArrayList<>();
-        for (Claim c : claims) {
-            if (!c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId())) {
-                filteredClaims.add(c);
-            }
-        }
+        List<Claim> filteredClaims = claims.stream().filter(c -> !c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId()))
+                                           .collect(Collectors.toList());
 
         filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
 
@@ -3503,11 +3500,12 @@ public class FileViewFragment extends BaseFragment implements
                         relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
             }
 
-            // if related content loads before comment, this will affect the scroll position
+            // if related content loads before comments, this will affect the scroll position
             // so just ensure that we are at the correct position
             scrollToCommentHash();
         }
     }
+
     private void loadComments() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         View root = getView();
@@ -3622,19 +3620,16 @@ public class FileViewFragment extends BaseFragment implements
                         }
                     });
 
-                    List<Comment> parentComments = rootComments;
-//                    rootComments.clear();
                     for (Comment c : comments) {
-                        if (!parentComments.contains(c)) {
+                        if (!rootComments.contains(c)) {
                             if (c.getParentId() != null) {
-                                Comment item = parentComments.stream().filter(v -> c.getParentId().equalsIgnoreCase(v.getId())).findFirst().orElse(null);
-                                if (item != null) {
-                                    parentComments.add(parentComments.indexOf(item) + 1, c);
-                                }
+                                rootComments.stream().filter(v -> c.getParentId().equalsIgnoreCase(v.getId()))
+                                                     .findFirst()
+                                                     .ifPresent(item -> rootComments.add(rootComments.indexOf(item) + 1, c));
                             }
                         }
                     }
-                    comments = parentComments;
+                    comments = rootComments;
 
                     Context ctx = getContext();
                     View root = getView();
@@ -3650,7 +3645,6 @@ public class FileViewFragment extends BaseFragment implements
     private void ensureCommentListAdapterCreated(final List<Comment> comments) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if ( commentListAdapter == null ) {
-
             final Context androidContext = getContext();
             final View root = getView();
 
@@ -3694,16 +3688,29 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    @MainThread
     private void scrollToCommentHash() {
+        if (!Helper.isNullOrEmpty(commentHash)) {
+            scrollToComment(commentHash);
+        }
+    }
+
+    @MainThread
+    private void scrollToComment(String hash) {
         View root = getView();
         // check for the position of commentHash if set
-        if (root != null && !Helper.isNullOrEmpty(commentHash) && commentListAdapter != null && commentListAdapter.getItemCount() > 0) {
+        if (root != null && !Helper.isNullOrEmpty(hash) && commentListAdapter != null && commentListAdapter.getItemCount() > 0) {
             RecyclerView commentList = root.findViewById(R.id.file_view_comments_list);
-            int position = commentListAdapter.getPositionForComment(commentHash);
-            if (position > -1 && commentList.getLayoutManager() != null) {
+            int position = commentListAdapter.getPositionForComment(hash);
+            RecyclerView.LayoutManager listLayoutManager = commentList.getLayoutManager();
+            if (position > -1 && listLayoutManager != null) {
+                switchCommentListVisibility(true);
+                commentListAdapter.switchExpandedStateUI(false);
+                commentListAdapter.collapseExceptHash(hash);
+
                 NestedScrollView scrollView = root.findViewById(R.id.file_view_scroll_view);
                 scrollView.requestChildFocus(commentList, commentList);
-                commentList.getLayoutManager().scrollToPosition(position);
+                listLayoutManager.scrollToPosition(position);
             }
         }
     }
@@ -3716,6 +3723,7 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(root.findViewById(R.id.expand_commentarea_button),
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
             Helper.setViewVisibility(root.findViewById(R.id.collapsed_comment),
+                    (commentListAdapter != null && !commentListAdapter.getCollapsed()) ||
                     commentListAdapter == null || commentListAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
 
             if (commentListAdapter == null)
@@ -4610,8 +4618,9 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(relatedContentArea, View.GONE);
             Helper.setViewVisibility(actionsArea, View.GONE);
             Helper.setViewVisibility(publisherArea, View.GONE);
-            if (context != null)
+            if (context != null) {
                 expandButton.setImageDrawable(getResources().getDrawable(R.drawable.ic_close, context.getTheme()));
+            }
         } else {
             Helper.setViewVisibility(containerCommentForm, View.GONE);
             root.findViewById(R.id.collapsed_comment).setVisibility(View.VISIBLE);

@@ -68,6 +68,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.AnyThread;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -200,18 +202,14 @@ import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletSync;
 import com.odysee.app.model.lbryinc.LbryNotification;
 import com.odysee.app.model.lbryinc.Reward;
-import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.supplier.FetchRewardsSupplier;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
 import com.odysee.app.supplier.NotificationListSupplier;
 import com.odysee.app.supplier.NotificationUpdateSupplier;
 import com.odysee.app.supplier.UnlockingTipsSupplier;
-import com.odysee.app.tasks.GenericTaskHandler;
-import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
-import com.odysee.app.tasks.lbryinc.AndroidPurchaseTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.MergeSubscriptionsTask;
 import com.odysee.app.tasks.claim.ResolveTask;
@@ -4380,8 +4378,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    @AnyThread
     private void loadLocalNotifications() {
-        // Path to here could from from not the main thread, so let's ensure changing visibility
+        // Path to here could be not from the main thread, so let's ensure changing visibility
         // is requested from the main thread
         runOnUiThread(new Runnable() {
             @Override
