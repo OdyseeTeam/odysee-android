@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - master
-      - gh-actions
     # TODO: paths-ignore
 
 jobs:
