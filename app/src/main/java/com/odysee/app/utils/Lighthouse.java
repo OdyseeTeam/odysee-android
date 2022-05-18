@@ -6,10 +6,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
@@ -38,54 +42,58 @@ public class Lighthouse {
     }
 
     public static List<Claim> search(String rawQuery, int size, int from, boolean nsfw, String relatedTo) throws LbryRequestException, LbryResponseException {
-        Uri.Builder uriBuilder = Uri.parse(String.format("%s/search", CONNECTION_STRING)).buildUpon().
-                appendQueryParameter("s", rawQuery).
-                appendQueryParameter("resolve", "true").
-                appendQueryParameter("size", String.valueOf(size)).
-                appendQueryParameter("from", String.valueOf(from));
-        if (!nsfw) {
-            uriBuilder.appendQueryParameter("nsfw", String.valueOf(nsfw).toLowerCase());
-        }
-        if (!Helper.isNullOrEmpty(relatedTo)) {
-            uriBuilder.appendQueryParameter("related_to", relatedTo);
-        }
-
-        Map<String, Object> cacheKey = buildSearchOptionsKey(rawQuery, size, from, nsfw, relatedTo);
-        if (searchCache.containsKey(cacheKey)) {
-            return searchCache.get(cacheKey);
-        }
-
-        List<Claim> results = new ArrayList<>();
-        Request request = new Request.Builder().url(uriBuilder.toString()).build();
-        OkHttpClient client = new OkHttpClient();
-        ResponseBody responseBody = null;
-        Response response = null;
         try {
-            response = client.newCall(request).execute();
-            if (response.code() == 200) {
-                responseBody = response.body();
-                if (responseBody != null) {
-                    JSONArray array = new JSONArray(responseBody.string());
-                    for (int i = 0; i < array.length(); i++) {
-                        Claim claim = Claim.fromSearchJSONObject(array.getJSONObject(i));
-                        results.add(claim);
-                    }
-                }
-                searchCache.put(cacheKey, results);
-            } else {
-                throw new LbryResponseException(response.message());
+            Uri.Builder uriBuilder = Uri.parse(String.format("%s/search", CONNECTION_STRING)).buildUpon().
+                    appendQueryParameter("s", URLEncoder.encode(rawQuery, StandardCharsets.UTF_8.name())).
+                    appendQueryParameter("resolve", "true").
+                    appendQueryParameter("size", String.valueOf(size)).
+                    appendQueryParameter("from", String.valueOf(from));
+            if (!nsfw) {
+                uriBuilder.appendQueryParameter("nsfw", String.valueOf(nsfw).toLowerCase());
             }
-        } catch (IOException ex) {
-            throw new LbryRequestException(String.format("search request for '%s' failed", rawQuery), ex);
-        } catch (JSONException ex) {
-            throw new LbryResponseException(String.format("the search response for '%s' could not be parsed", rawQuery), ex);
-        } finally {
-            if (responseBody != null) {
-                response.close();
+            if (!Helper.isNullOrEmpty(relatedTo)) {
+                uriBuilder.appendQueryParameter("related_to", relatedTo);
             }
-        }
 
-        return results;
+            Map<String, Object> cacheKey = buildSearchOptionsKey(rawQuery, size, from, nsfw, relatedTo);
+            if (searchCache.containsKey(cacheKey)) {
+                return searchCache.get(cacheKey);
+            }
+
+            List<Claim> results = new ArrayList<>();
+            Request request = new Request.Builder().url(uriBuilder.toString()).build();
+            OkHttpClient client = new OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build();
+            ResponseBody responseBody = null;
+            Response response = null;
+            try {
+                response = client.newCall(request).execute();
+                if (response.code() == 200) {
+                    responseBody = response.body();
+                    if (responseBody != null) {
+                        JSONArray array = new JSONArray(responseBody.string());
+                        for (int i = 0; i < array.length(); i++) {
+                            Claim claim = Claim.fromSearchJSONObject(array.getJSONObject(i));
+                            results.add(claim);
+                        }
+                    }
+                    searchCache.put(cacheKey, results);
+                } else {
+                    throw new LbryResponseException(response.message());
+                }
+            } catch (IOException ex) {
+                throw new LbryRequestException(String.format("search request for '%s' failed", rawQuery), ex);
+            } catch (JSONException ex) {
+                throw new LbryResponseException(String.format("the search response for '%s' could not be parsed", rawQuery), ex);
+            } finally {
+                if (responseBody != null) {
+                    response.close();
+                }
+            }
+
+            return results;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static List<UrlSuggestion> autocomplete(String text) throws LbryRequestException, LbryResponseException {
