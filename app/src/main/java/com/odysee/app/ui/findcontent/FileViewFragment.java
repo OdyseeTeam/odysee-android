@@ -4885,7 +4885,9 @@ public class FileViewFragment extends BaseFragment implements
                                                         ses.schedule(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                                if (chatMessageListAdapter.getItemCount() > 0) {
+                                                                    chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                                }
                                                             }
                                                         }, 100, TimeUnit.MILLISECONDS);
                                                     }
