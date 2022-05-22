@@ -12,6 +12,13 @@ To build the app, even as a debug APK, you will need to copy `app/twitter.proper
 
 There are two build variants: Full and FOSS. The Full variant uses Google APIs and the FOSS variant doesn't. You can switch between them on the "Build Variants" tab in Android Studio.
 
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="80">](https://f-droid.org/packages/com.odysee.floss/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     alt="Get it on Google Play"
+     height="80">](https://play.google.com/store/apps/details?id=com.odysee.app)
+
 ## Release
 To create an APK file which can be installed on real devices, you will need to create a digital signature and then edit `app/build.gradle` file the following way:
 
