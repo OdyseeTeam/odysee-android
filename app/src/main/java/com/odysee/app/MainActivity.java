@@ -359,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
     public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
-    public static final String PREFERENCE_KEY_INTERNAL_DEFAULT_PLAYBACK_SPEED = "com.odysee.app.preference.userinterface.DefaultPlaybackSpeed";
+    public static final String PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED = "com.odysee.app.preference.userinterface.PlaybackDefaultSpeed";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_DARK_MODE_SETTING = "com.odysee.app.preference.userinterface.DarkModeSetting";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
@@ -1170,7 +1170,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public int playbackDefaultSpeed() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_DEFAULT_PLAYBACK_SPEED, "100"));
+        return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED, "100"));
     }
 
     public boolean initialSubscriptionMergeDone() {
