@@ -92,7 +92,8 @@ public class Lighthouse {
 
             return results;
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+            return null;
         }
     }
 
