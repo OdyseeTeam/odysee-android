@@ -2318,7 +2318,9 @@ public class FileViewFragment extends BaseFragment implements
                 try (Response response = client.newCall(request).execute()) {
                     String contentType = response.header("Content-Type");
                     if (contentType != null) {
-                        MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+//                        MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+                        // Content-Type is not reliable enough for this use case, so let's always use a non-transcoded media-source for now
+                        MainActivity.videoIsTranscoded = false;
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
