@@ -4881,12 +4881,15 @@ public class FileViewFragment extends BaseFragment implements
                                                         chatMessageList.setAdapter(chatMessageListAdapter);
                                                     } else {
                                                         chatMessageListAdapter.addMessage(comment);
-                                                        new Handler(Looper.myLooper()).postDelayed(new Runnable() {
+                                                        ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
+                                                        ses.schedule(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                                if (chatMessageListAdapter.getItemCount() > 0) {
+                                                                    chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+                                                                }
                                                             }
-                                                        }, 100);
+                                                        }, 100, TimeUnit.MILLISECONDS);
                                                     }
                                                 }
                                             }
