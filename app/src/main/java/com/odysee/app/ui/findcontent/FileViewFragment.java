@@ -1482,6 +1482,7 @@ public class FileViewFragment extends BaseFragment implements
                 // check full screen mode
                 if (isInFullscreenMode()) {
                     disableFullScreenMode();
+                    smoothScrollToLastChatMessage(); // If there are no chat messages or claim is not for a livestream, this will do nothing
                 } else {
                     enableFullScreenMode();
                 }
@@ -4901,9 +4902,7 @@ public class FileViewFragment extends BaseFragment implements
                                                         ses.schedule(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                if (chatMessageListAdapter.getItemCount() > 0) {
-                                                                    chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
-                                                                }
+                                                                smoothScrollToLastChatMessage();
                                                             }
                                                         }, 100, TimeUnit.MILLISECONDS);
                                                     }
@@ -4942,6 +4941,15 @@ public class FileViewFragment extends BaseFragment implements
                 }
             };
             webSocketClient.connect();
+        }
+    }
+
+    /**
+     * Scroll the list of chat messages so last received message becomes visible
+     */
+    private void smoothScrollToLastChatMessage() {
+        if (chatMessageListAdapter.getItemCount() > 0) {
+            chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
         }
     }
 
