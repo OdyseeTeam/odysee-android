@@ -112,11 +112,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/mediaContainerBackground"
-                android:padding="36dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                tools:visibility="visible">
                 <ImageView android:id="@+id/file_view_livestream_thumbnail"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:src="@drawable/user_not_live_thumbnail" />
 
             </LinearLayout>
@@ -225,6 +225,10 @@
                 <TextView android:id="@+id/user_not_streaming"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
                     android:fontFamily="@font/inter"
                     android:textSize="14sp"
                     android:textColor="?android:attr/textColorPrimary"
@@ -660,9 +664,11 @@
                         android:id="@+id/file_view_publisher_info_area"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:minHeight="48dp"
                         android:layout_toStartOf="@id/file_view_publisher_area_actions"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
+                        android:focusable="true"
                         android:paddingStart="16dp"
                         android:paddingTop="12dp"
                         android:paddingBottom="12dp">
@@ -736,8 +742,10 @@
                             android:id="@+id/file_view_icon_follow"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:minHeight="48dp"
                             android:background="?attr/selectableItemBackground"
                             android:clickable="true"
+                            android:focusable="true"
                             android:orientation="horizontal"
                             android:paddingTop="8dp"
                             android:paddingBottom="8dp">

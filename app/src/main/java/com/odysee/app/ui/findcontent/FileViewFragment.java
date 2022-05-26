@@ -539,7 +539,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void updatePlaylistContentDisplay(int index) {
         if (playlistClaims != null) {
-            String value = getString(R.string.playlist_position_tracker, currentPlaylistTitle, index + 1, playlistClaims.size());
+            String value = getString(R.string.playlist_position_tracker, currentPlaylistTitle, String.valueOf(index + 1), String.valueOf(playlistClaims.size()));
             Helper.setViewText(relatedContentTitle, value);
         }
     }
@@ -558,7 +558,6 @@ public class FileViewFragment extends BaseFragment implements
                     return;
                 }
 
-
                 if (params.containsKey("claim")) {
                     newClaim = (Claim) params.get("claim");
                     // Only update fragment if new claim is different from currently being played
@@ -568,30 +567,33 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 if (params.containsKey("url")) {
-                    LbryUri newLbryUri = LbryUri.tryParse(params.get("url").toString());
-                    if (newLbryUri != null) {
-                        newUrl = newLbryUri.toString();
-                        String qs = newLbryUri.getQueryString();
-                        if (!Helper.isNullOrEmpty(qs)) {
-                            String[] qsPairs = qs.split("&");
-                            for (String pair : qsPairs) {
-                                String[] parts = pair.split("=");
-                                if (parts.length < 2) {
-                                    continue;
-                                }
-                                if ("comment_hash".equalsIgnoreCase(parts[0])) {
-                                    commentHash = parts[1];
-                                    break;
+                    Object urlParam = params.get("url");
+                    if (urlParam != null) {
+                        LbryUri newLbryUri = LbryUri.tryParse(urlParam.toString());
+                        if (newLbryUri != null) {
+                            newUrl = newLbryUri.toString();
+                            String qs = newLbryUri.getQueryString();
+                            if (!Helper.isNullOrEmpty(qs)) {
+                                String[] qsPairs = qs.split("&");
+                                for (String pair : qsPairs) {
+                                    String[] parts = pair.split("=");
+                                    if (parts.length < 2) {
+                                        continue;
+                                    }
+                                    if ("comment_hash".equalsIgnoreCase(parts[0])) {
+                                        commentHash = parts[1];
+                                        break;
+                                    }
                                 }
                             }
-                        }
 
-                        if (fileClaim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
-                            updateRequired = true;
+                            if (fileClaim == null || !newUrl.equalsIgnoreCase(currentUrl)) {
+                                updateRequired = true;
+                            }
                         }
                     }
                 }
-                if (params.containsKey("livestreamUrl")) {
+                if (params.containsKey("livestreamUrl") && params.get("livestreamUrl") != null) {
                     claimLivestreamUrl = (String) params.get("livestreamUrl");
                 }
             } else if (currentUrl != null) {
@@ -1482,6 +1484,7 @@ public class FileViewFragment extends BaseFragment implements
                 // check full screen mode
                 if (isInFullscreenMode()) {
                     disableFullScreenMode();
+                    smoothScrollToLastChatMessage(); // If there are no chat messages or claim is not for a livestream, this will do nothing
                 } else {
                     enableFullScreenMode();
                 }
@@ -1886,12 +1889,32 @@ public class FileViewFragment extends BaseFragment implements
             return;
         }
         if (!claimToRender.hasSource()) {
-            // TODO See if the "publisher is not live yet" UI must be shown
+            Context context = getContext();
+            View root = getView();
+            if (claimToRender.getThumbnailUrl() != null && context != null && root != null && !claimToRender.isLive()) {
+                String urlResult = getLivestreamUrl();
+                if (urlResult != null && urlResult.equalsIgnoreCase("notlive")) {
+                    root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
+                    TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
+                    userNotStreaming.setText(context.getString(R.string.user_not_live_yet, claimToRender.getPublisherName()));
+                    userNotStreaming.setVisibility(View.VISIBLE);
+                    ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
+                    Glide.with(context.getApplicationContext()).
+                            asBitmap().
+                            load(claimToRender.getThumbnailUrl()).
+                            into(thumbnailView);
+                } else {
+                    fileClaim.setLive(true);
+                    fileClaim.setLivestreamUrl(urlResult);
+                }
+            }
 
             // livestream, so we load up the messages and initialise the websocket
             initLivestreamChat();
         }
-        if (claimToRender.isPlayable() && MainActivity.appPlayer != null) {
+        if (claimToRender.isPlayable() && MainActivity.appPlayer != null
+                && ((!claimToRender.isLive() && claimLivestreamUrl == null) || (claimToRender.isLive() && claimToRender.getLivestreamUrl() != null))) {
             MainActivity.appPlayer.setPlayWhenReady(isPlaying);
         }
 
@@ -1987,7 +2010,7 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_media_meta_container).setVisibility(View.VISIBLE);
 
             Claim.GenericMetadata metadata = claimToRender.getValue();
-            if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl())) {
+            if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl()) && context != null) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
                 Glide.with(context.getApplicationContext()).asBitmap().load(
                         claimToRender.getThumbnailUrl(context.getResources().getDisplayMetrics().widthPixels, thumbnailView.getLayoutParams().height, 85)).centerCrop().into(thumbnailView);
@@ -2285,6 +2308,7 @@ public class FileViewFragment extends BaseFragment implements
                             }
 
                             root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
+                            root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
                             TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
                             userNotStreaming.setText(getString(R.string.user_not_live_yet, claimToPlay.getPublisherName()));
                             userNotStreaming.setVisibility(View.VISIBLE);
@@ -2308,25 +2332,28 @@ public class FileViewFragment extends BaseFragment implements
                 Map<String, Object> params = new HashMap<>();
                 params.put("uri", theClaim.getPermanentUrl());
                 JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
-                String sourceUrl = (String) result.get("streaming_url");
-                currentMediaSourceUrl = sourceUrl;
+                if (result != null) {
+                    String sourceUrl = (String) result.get("streaming_url");
+                    currentMediaSourceUrl = sourceUrl;
 
-                // Get the stream type
-                OkHttpClient client = new OkHttpClient();
-                Request request = new Request.Builder()
-                        .url(sourceUrl)
-                        .head()
-                        .build();
-                try (Response response = client.newCall(request).execute()) {
-                    String contentType = response.header("Content-Type");
-                    if (contentType != null) {
-                        MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+                    // Get the stream type
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url(sourceUrl)
+                            .head()
+                            .build();
+                    try (Response response = client.newCall(request).execute()) {
+                        String contentType = response.header("Content-Type");
+                        if (contentType != null) {
+                            Log.i(TAG, "getStreamingUrlAndInitializePlayer: Playing media with Content-Type ".concat(contentType));
+                            MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
 
-                new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
+                    new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
+                }
             } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                 // TODO: How does error handling work here
                 ex.printStackTrace();
@@ -2389,26 +2416,16 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     @AnyThread
-    @Nullable
+    @NonNull
     private String getLivestreamUrl(JSONObject jsonData) {
         try {
-            if (jsonData != null && jsonData.has("live")) {
-                if (jsonData.getBoolean("live") && jsonData.has("url")) {
-                    return jsonData.getString("url");
-                } else {
-                    return "notlive";
-                }
-            } else if (jsonData != null && jsonData.has("Live")) {
-                if (jsonData.getBoolean("Live") && jsonData.has("VideoURL")) {
-                    return jsonData.getString("VideoURL");
-                } else {
-                    return "notlive";
-                }
+            if (jsonData != null && jsonData.has("Live") && jsonData.getBoolean("Live") && jsonData.has("VideoURL")) {
+                return jsonData.getString("VideoURL");
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        return null;
+        return "notlive";
     }
 
     private void setCurrentPlayer(Player currentPlayer) {
@@ -2634,7 +2651,7 @@ public class FileViewFragment extends BaseFragment implements
                                 @Override
                                 public void run() {
                                     try {
-                                        String displayText = getResources().getString(R.string.livestream_view_count, count);
+                                        String displayText = getResources().getString(R.string.livestream_view_count, String.valueOf(count));
                                         View root = getView();
                                         if (root != null) {
                                             TextView textViewCount = root.findViewById(R.id.file_view_view_count);
@@ -4891,9 +4908,7 @@ public class FileViewFragment extends BaseFragment implements
                                                         ses.schedule(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                if (chatMessageListAdapter.getItemCount() > 0) {
-                                                                    chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
-                                                                }
+                                                                smoothScrollToLastChatMessage();
                                                             }
                                                         }, 100, TimeUnit.MILLISECONDS);
                                                     }
@@ -4932,6 +4947,15 @@ public class FileViewFragment extends BaseFragment implements
                 }
             };
             webSocketClient.connect();
+        }
+    }
+
+    /**
+     * Scroll the list of chat messages so last received message becomes visible
+     */
+    private void smoothScrollToLastChatMessage() {
+        if (chatMessageListAdapter.getItemCount() > 0) {
+            chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
         }
     }
 

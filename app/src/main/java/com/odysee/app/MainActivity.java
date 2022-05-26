@@ -1480,17 +1480,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (claim.getLivestreamUrl() != null) {
             params.put("livestreamUrl", claim.getLivestreamUrl());
         }
+        params.put("claim", claim);
         openFragment(FileViewFragment.class, true, params);
     }
 
     /**
-     * @deprecated Use openRewards(null) instead
+     *
+     * @param params Can be null if you don't want to pass any parameters
      */
-    @Deprecated
-    public void openRewards() {
-        openRewards(null);
-    }
-
     public void openRewards(@Nullable Map<String, Object> params) {
         if (params != null && params.containsKey("source") ) {
             String sourceParam = (String) params.get("source");
