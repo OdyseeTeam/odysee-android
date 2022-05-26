@@ -757,7 +757,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
         @Override
         public int getItemCount() {
-            return 4;
+            return 5;
         }
     }
 }
