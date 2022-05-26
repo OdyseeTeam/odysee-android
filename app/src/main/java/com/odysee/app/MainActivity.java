@@ -34,6 +34,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Editable;
@@ -1143,6 +1144,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+
+    /**
+     * Returns the Battery Saver mode of the device.
+     *
+     * Note: Some manufacturers are always returning 'false' as its Battery Saver mode. That's not a standard behavior.
+     * @return 'true' if device is in Battery Saver mode. 'false' otherwise
+     */
+    public boolean isBatterySaverMode() {
+        Context ctx = getBaseContext();
+        if (ctx != null) {
+            PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+
+            return (pm != null && pm.isPowerSaveMode());
+        }
+        return false;
+    }
+
     public boolean isBackgroundPlaybackEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK, true);
@@ -1628,6 +1646,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return null;
     }
 
+    // Annotated as AnyThread because it is using an AsyncTask. Change it as needed when that was no longer the case
+    @AnyThread
     public void updateWalletBalance() {
         if (isSignedIn()) {
             Activity a = this;
@@ -2736,13 +2756,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void scheduleWalletBalanceUpdate() {
         if (isSignedIn() && scheduler != null && (scheduledWalletUpdater == null || scheduledWalletUpdater.isDone() || scheduledWalletUpdater.isCancelled())) {
+            MainActivity a = this;
             scheduledWalletUpdater = scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        updateWalletBalance();
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if (!a.isBatterySaverMode()) {
+                        try {
+                            updateWalletBalance();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }, 0, 5, TimeUnit.SECONDS);

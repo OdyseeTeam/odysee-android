@@ -1,7 +1,6 @@
 package com.odysee.app.model;
 
 import lombok.Data;
-import lombok.Getter;
 
 @Data
 public class Reactions {
@@ -9,6 +8,7 @@ public class Reactions {
     private int othersDislikes;
     private boolean liked;
     private boolean disliked;
+    private long lastUpdateTimestamp = 0L;
 
     public Reactions() { }
     public Reactions(int likes, int dislikes) {
