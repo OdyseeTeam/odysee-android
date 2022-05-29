@@ -3366,14 +3366,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
                 findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
                 findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
-                showActionBar();
-                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+
+                ActionBar actionBar = getSupportActionBar();
+                if (actionBar != null) {
+                    showActionBar();
+                    getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                }
             }
         } else if (!enterPIPMode()) {
             // we're at the top of the stack
             if (isSearchUIActive()) {
                 // Close Search UI
-                getSupportFragmentManager().beginTransaction().remove(getSupportFragmentManager().findFragmentByTag("SEARCH")).commit();
+                Fragment fragmentSearch = getSupportFragmentManager().findFragmentByTag("SEARCH");
+                if (fragmentSearch != null) {
+                    getSupportFragmentManager().beginTransaction().remove(fragmentSearch).commit();
+                }
                 switchToolbarForSearch(false);
                 findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
@@ -4066,15 +4073,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
 
             if (currentFragment != null && ((BaseFragment) currentFragment).getParams() != null
-                    && ((BaseFragment) currentFragment).getParams().containsKey("source")
-                    && ((BaseFragment) currentFragment).getParams().get("source").equals("notification")) {
+                    && ((BaseFragment) currentFragment).getParams().containsKey("source")) {
+                String sourceParam = (String) ((BaseFragment) currentFragment).getParams().get("source");
 
-                Map<String, Object> currentParams = new HashMap<>(1);
+                if (sourceParam != null && sourceParam.equals("notification")) {
+                    Map<String, Object> currentParams = new HashMap<>(1);
 
-                if (((BaseFragment) currentFragment).getParams().containsKey("url"))
-                    currentParams.put("url", ((BaseFragment) currentFragment).getParams().get("url"));
+                    if (((BaseFragment) currentFragment).getParams().containsKey("url")) {
+                        currentParams.put("url", ((BaseFragment) currentFragment).getParams().get("url"));
+                    }
 
-                ((BaseFragment) currentFragment).setParams(currentParams);
+                    ((BaseFragment) currentFragment).setParams(currentParams);
+                }
             }
 
             //fragment.setRetainInstance(true);
@@ -4092,7 +4102,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             if (allowNavigateBack) {
                 transaction.addToBackStack(null);
             }
-            getSupportActionBar().setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
+
+            ActionBar actionBar = getSupportActionBar();
+
+            if (actionBar != null) {
+                actionBar.setDisplayHomeAsUpEnabled(!(fragment instanceof FileViewFragment) && allowNavigateBack);
+            }
 
             transaction.commit();
 
@@ -4102,6 +4117,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
             findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.GONE);
         } catch (Exception ex) {
+            ex.printStackTrace();
             // pass
         }
     }
@@ -4159,7 +4175,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             @Override
             public void onError(Exception error) {
-                Log.e("FetchingChannels", "onError: ".concat(error.getLocalizedMessage()));
+                error.printStackTrace();
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -4615,7 +4631,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                         @Override
                         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                            button.setEnabled(titleInput.getText().length() > 0);
+                            Editable text = titleInput.getText();
+                            if (text != null) {
+                                button.setEnabled(text.length() > 0);
+                            }
                         }
 
                         @Override
