@@ -3,7 +3,7 @@
 version=$(./gradlew -q printVersionName --console=plain | tail -1)
 mkdir -p bin/
 rm -f bin/*
-cp app/build/outputs/apk/release/app-release-unsigned.apk bin/odysee-$version-release-unsigned.apk
+cp app/build/outputs/apk/full/release/app-release-unsigned.apk bin/odysee-$version-release-unsigned.apk
 
 # sign APK
 echo "Signing APK..."
