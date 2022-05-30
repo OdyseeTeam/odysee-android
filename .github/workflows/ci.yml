@@ -46,6 +46,45 @@ jobs:
           name: app-full
           path: app/build/outputs/apk/full/debug/*.apk
 
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: gradle/wrapper-validation-action@v1
+
+      - name: Create and checkout branch
+        # push events already checked out the branch
+        if: github.event_name == 'pull_request'
+        run: git checkout -B ${{ github.head_ref }}
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Reveal secrets
+        env:
+          PGP_PRIVATE_KEY: ${{ secrets.PGP_PRIVATE_KEY  }}
+        run: |
+          sudo apt install git-secret gpg-agent
+          git secret reveal
+
+      - name: Build
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }} 
+        run: |
+          sudo apt install zipalign apksigner
+          ./release.sh
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: bin/*.apk
+
   build-foss:
     runs-on: ubuntu-latest
     steps:
