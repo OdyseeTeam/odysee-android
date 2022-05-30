@@ -70,6 +70,7 @@ jobs:
           PGP_PRIVATE_KEY: ${{ secrets.PGP_PRIVATE_KEY  }}
         run: |
           sudo apt install git-secret gpg-agent
+          echo "$PGP_PRIVATE_KEY" | gpg --batch --import
           git secret reveal
 
       - name: Build
