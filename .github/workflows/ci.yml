@@ -79,6 +79,7 @@ jobs:
         run: |
           sudo apt install zipalign apksigner
           ./release.sh
+          rm bin/*-unsigned.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
