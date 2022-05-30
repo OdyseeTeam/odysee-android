@@ -16,25 +16,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <FrameLayout
-            android:id="@+id/main_activity_other_fragment"
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:visibility="gone"/>
+            android:layout_weight="1">
+            <FrameLayout
+                android:id="@+id/fragment_container_main_activity"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-        <FrameLayout
-            android:id="@+id/fragment_container_main_activity"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
+            <FrameLayout
+                android:id="@+id/fragment_container_search"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
 
-        <FrameLayout
-            android:id="@+id/fragment_container_search"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:visibility="gone"/>
+            <FrameLayout
+                android:id="@+id/main_activity_other_fragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/notifications_container"
