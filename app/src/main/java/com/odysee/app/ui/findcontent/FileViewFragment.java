@@ -3556,6 +3556,8 @@ public class FileViewFragment extends BaseFragment implements
                                 }
                             }
                         }).start();
+                    } else {
+                        checkNoComments();
                     }
                 }
 
