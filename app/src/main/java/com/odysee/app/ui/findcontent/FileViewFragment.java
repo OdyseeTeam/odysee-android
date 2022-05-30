@@ -4956,7 +4956,7 @@ public class FileViewFragment extends BaseFragment implements
      * Scroll the list of chat messages so last received message becomes visible
      */
     private void smoothScrollToLastChatMessage() {
-        if (chatMessageListAdapter.getItemCount() > 0) {
+        if (chatMessageListAdapter != null && chatMessageListAdapter.getItemCount() > 0) {
             chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
         }
     }
