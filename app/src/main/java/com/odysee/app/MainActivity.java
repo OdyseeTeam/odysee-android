@@ -42,6 +42,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
+import android.transition.Slide;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -715,7 +716,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 clearPlayingPlayer();
                 hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
                 fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
-                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
                 hideActionBar();
             }
@@ -848,10 +848,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 showBottomNavigation();
                 switchToolbarForSearch(false);
 
+                /* FIXME (when tablet support): Home screen not shown because File View never hidden (#???)
                 // On tablets, multiple fragments could be visible. Don't show Home Screen when File View is visible
                 if (findViewById(R.id.main_activity_other_fragment).getVisibility() != View.VISIBLE) {
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
-                }
+                }*/
+                findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
 
                 showWalletBalance();
                 findViewById(R.id.fragment_container_search).setVisibility(View.GONE);
@@ -1092,6 +1094,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onClick(View view) {
                 if (nowPlayingClaim != null && !Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
                     hideNotifications();
+                    hideGlobalNowPlaying();
                     openFileUrl(nowPlayingClaimUrl);
                 }
             }
@@ -1514,7 +1517,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void renderPictureInPictureMode() {
-        findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
         findViewById(R.id.appbar).setVisibility(View.GONE);
@@ -1555,7 +1557,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         boolean inChannelView = fragment instanceof ChannelFragment;
         boolean inSearchView = fragment instanceof SearchFragment;
 
-        findViewById(R.id.main_activity_other_fragment).setVisibility(!inMainView ? View.VISIBLE : View.GONE);
         findViewById(R.id.content_main).setVisibility(View.VISIBLE);
 
         findViewById(R.id.fragment_container_main_activity).setVisibility(inMainView ? View.VISIBLE : View.GONE);
@@ -1791,7 +1792,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             if (fragment != null) {
                 updateCurrentDisplayFragment(fragment);
                 hideBottomNavigation();
-                findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
                 findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             }
         }
@@ -3364,7 +3364,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
                     showBottomNavigation();
                 }
-                findViewById(R.id.main_activity_other_fragment).setVisibility(View.GONE);
                 findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
 
                 ActionBar actionBar = getSupportActionBar();
@@ -4095,6 +4094,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             FragmentTransaction transaction;
             if (fragment instanceof FileViewFragment) {
+                Slide enterTransition = new Slide(Gravity.BOTTOM);
+                enterTransition.setDuration(this.getResources().getInteger(android.R.integer.config_mediumAnimTime));
+                fragment.setEnterTransition(enterTransition);
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment, FILE_VIEW_TAG);
             } else {
                 transaction = manager.beginTransaction().replace(R.id.main_activity_other_fragment, fragment);
@@ -4112,7 +4114,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             transaction.commit();
 
             currentDisplayFragment = fragment;
-            findViewById(R.id.main_activity_other_fragment).setVisibility(View.VISIBLE);
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
             findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.GONE);
