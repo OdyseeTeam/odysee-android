@@ -1,7 +1,7 @@
 package com.odysee.app.ui.wallet;
 
+import android.app.Activity;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,12 +15,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
+import com.odysee.app.callable.TransactionList;
 import com.odysee.app.model.Transaction;
-import com.odysee.app.tasks.wallet.TransactionListTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
@@ -47,11 +51,16 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
         noTransactionsView = root.findViewById(R.id.transaction_history_no_transactions);
 
         Context context = getContext();
-        LinearLayoutManager llm = new LinearLayoutManager(context);
-        transactionList.setLayoutManager(llm);
-        DividerItemDecoration itemDecoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
-        itemDecoration.setDrawable(ContextCompat.getDrawable(context, R.drawable.thin_divider));
-        transactionList.addItemDecoration(itemDecoration);
+        if (context != null) {
+            LinearLayoutManager llm = new LinearLayoutManager(context);
+            transactionList.setLayoutManager(llm);
+            DividerItemDecoration itemDecoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+            android.graphics.drawable.Drawable thinDivider = ContextCompat.getDrawable(context, R.drawable.thin_divider);
+            if (thinDivider != null) {
+                itemDecoration.setDrawable(thinDivider);
+            }
+            transactionList.addItemDecoration(itemDecoration);
+        }
 
         transactionList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -100,34 +109,57 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
     private void loadTransactions() {
         currentTransactionPage = currentTransactionPage == 0 ? 1 : currentTransactionPage;
         transactionsLoading = true;
-        TransactionListTask task = new TransactionListTask(currentTransactionPage, TRANSACTION_PAGE_LIMIT, Lbryio.AUTH_TOKEN, loading, new TransactionListTask.TransactionListHandler() {
-            @Override
-            public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
-                Context context = getContext();
 
-                transactionsLoading = false;
-                transactionsHaveReachedEnd = hasReachedEnd;
-                if (context != null) {
-                    if (adapter == null) {
-                        adapter = new TransactionListAdapter(transactions, context);
-                        adapter.setListener(TransactionHistoryFragment.this);
-                        if (transactionList != null) {
-                            transactionList.setAdapter(adapter);
-                        }
-                    } else {
-                        adapter.addTransactions(transactions);
+        Activity a = getActivity();
+        loading.setVisibility(View.VISIBLE);
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                Future<List<Transaction>> f = executorService.submit(new TransactionList(currentTransactionPage, TRANSACTION_PAGE_LIMIT, Lbryio.AUTH_TOKEN));
+
+                try {
+                    List<Transaction> resultList = f.get();
+
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Context context = getContext();
+
+                                transactionsLoading = false;
+                                transactionsHaveReachedEnd = resultList.size() < TRANSACTION_PAGE_LIMIT;
+                                if (context != null) {
+                                    if (adapter == null) {
+                                        adapter = new TransactionListAdapter(resultList, context);
+                                        adapter.setListener(TransactionHistoryFragment.this);
+                                        if (transactionList != null) {
+                                            transactionList.setAdapter(adapter);
+                                        }
+                                    } else {
+                                        adapter.addTransactions(resultList);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                loading.setVisibility(View.GONE);
+                                checkNoTransactions();
+                            }
+                        });
                     }
                 }
-                checkNoTransactions();
-            }
-
-            @Override
-            public void onError(Exception error) {
-                transactionsLoading = false;
-                checkNoTransactions();
             }
         });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     @Override
