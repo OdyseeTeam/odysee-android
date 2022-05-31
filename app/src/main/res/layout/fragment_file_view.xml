@@ -42,7 +42,7 @@
         android:orientation="vertical"
         android:visibility="visible">
 
-        <RelativeLayout
+        <com.odysee.app.views.MediaRelativeLayout
             android:id="@+id/file_view_media_container"
             android:layout_width="match_parent"
             android:layout_height="246dp"
@@ -205,7 +205,7 @@
                         android:textSize="14sp" />
                 </LinearLayout>
             </RelativeLayout>
-        </RelativeLayout>
+        </com.odysee.app.views.MediaRelativeLayout>
 
         <androidx.core.widget.NestedScrollView
             android:id="@+id/file_view_scroll_view"

@@ -221,6 +221,7 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
 import com.odysee.app.checkers.CommentEnabledCheck;
+import com.odysee.app.views.MediaRelativeLayout;
 
 import javax.net.ssl.SSLParameters;
 
@@ -1436,6 +1437,7 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
+        MediaRelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
         PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
         View playbackSpeedContainer = playerView.findViewById(R.id.player_playback_speed);
         TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
@@ -1624,7 +1626,7 @@ public class FileViewFragment extends BaseFragment implements
         relatedContentList.setLayoutManager(relatedContentListLLM);
         commentsList.setLayoutManager(commentsListLLM);
 
-        GestureDetector.SimpleOnGestureListener gestureListener = new GestureDetector.SimpleOnGestureListener() {
+        GestureDetector.SimpleOnGestureListener playerGestureListener = new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 ImageView seekOverlay = root.findViewById(R.id.seek_overlay);
@@ -1671,11 +1673,26 @@ public class FileViewFragment extends BaseFragment implements
                 return true;
             }
         };
-        GestureDetector detector = new GestureDetector(getContext(), gestureListener);
+        GestureDetector playerGestureDetector = new GestureDetector(getContext(), playerGestureListener);
         playerView.setOnTouchListener((view, motionEvent) -> {
-            detector.onTouchEvent(motionEvent);
+            playerGestureDetector.onTouchEvent(motionEvent);
             return true;
         });
+
+        GestureDetector.SimpleOnGestureListener mediaContainerGestureListener = new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if (velocityY > 0) {
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) context;
+                        activity.onBackPressed();
+                    }
+                }
+                return true;
+            }
+        };
+        mediaContainer.gestureDetector = new GestureDetector(getContext(), mediaContainerGestureListener);
     }
 
     private void finishChatSend(boolean clearInput) {
