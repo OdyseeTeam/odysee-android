@@ -2360,16 +2360,15 @@ public class FileViewFragment extends BaseFragment implements
                             .head()
                             .build();
                     try (Response response = client.newCall(request).execute()) {
-                        String contentType = response.header("Content-Type");
-                        if (contentType != null) {
-                            Log.i(TAG, "getStreamingUrlAndInitializePlayer: Playing media with Content-Type ".concat(contentType));
-                            MainActivity.videoIsTranscoded = contentType.equals("application/vnd.apple.mpegurl") || contentType.equals("audio/mpegurl"); // HLS
-                        }
+                        String requestUrl = response.request().url().toString();
+                        boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
+                        MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
+                        currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
 
-                    new Handler(Looper.getMainLooper()).post(() -> initializePlayer(sourceUrl));
+                    new Handler(Looper.getMainLooper()).post(() -> initializePlayer(currentMediaSourceUrl));
                 }
             } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                 // TODO: How does error handling work here
