@@ -8,8 +8,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -68,6 +68,7 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
+import com.odysee.app.callable.TransactionList;
 import com.odysee.app.callable.WalletGetUnusedAddress;
 import com.odysee.app.supplier.WalletGetUnusedAddressSupplier;
 import com.odysee.app.exceptions.ApiCallException;
@@ -75,7 +76,6 @@ import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Transaction;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletDetailItem;
-import com.odysee.app.tasks.wallet.TransactionListTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
@@ -190,42 +190,65 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
 
         AccountManager am = AccountManager.get(getContext());
         Account[] accounts = am.getAccounts();
+        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(accounts), "auth_token_type");
 
-        TransactionListTask task = new TransactionListTask(1, 5, am.peekAuthToken(Helper.getOdyseeAccount(accounts), "auth_token_type"), loadingRecentContainer, new TransactionListTask.TransactionListHandler() {
+        loadingRecentContainer.setVisibility(View.VISIBLE);
+        final Activity a = getActivity();
+
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onSuccess(List<Transaction> transactions, boolean hasReachedEnd) {
-                hasFetchedRecentTransactions = true;
-                recentTransactionsAdapter = new TransactionListAdapter(transactions, getContext());
-                recentTransactionsAdapter.setListener(new TransactionListAdapter.TransactionClickListener() {
-                    @Override
-                    public void onTransactionClicked(Transaction transaction) {
+            public void run() {
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                Future<List<Transaction>> f = executorService.submit(new TransactionList(1, 5, authToken));
 
-                    }
+                try {
+                    List<Transaction> resultList = f.get();
 
-                    @Override
-                    public void onClaimUrlClicked(LbryUri uri) {
-                        Context context = getContext();
-                        if (uri != null && context instanceof MainActivity) {
-                            MainActivity activity = (MainActivity) context;
-                            if (uri.isChannel()) {
-                                activity.openChannelUrl(uri.toString());
-                            } else {
-                                activity.openFileUrl(uri.toString());
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                hasFetchedRecentTransactions = true;
+                                recentTransactionsAdapter = new TransactionListAdapter(resultList, getContext());
+                                recentTransactionsAdapter.setListener(new TransactionListAdapter.TransactionClickListener() {
+                                    @Override
+                                    public void onTransactionClicked(Transaction transaction) {
+
+                                    }
+
+                                    @Override
+                                    public void onClaimUrlClicked(LbryUri uri) {
+                                        Context context = getContext();
+                                        if (uri != null && context instanceof MainActivity) {
+                                            MainActivity activity = (MainActivity) context;
+                                            if (uri.isChannel()) {
+                                                activity.openChannelUrl(uri.toString());
+                                            } else {
+                                                activity.openFileUrl(uri.toString());
+                                            }
+                                        }
+                                    }
+                                });
                             }
-                        }
+                        });
                     }
-                });
-                recentTransactionsList.setAdapter(recentTransactionsAdapter);
-                displayNoRecentTransactions();
-            }
-
-            @Override
-            public void onError(Exception error) {
-                hasFetchedRecentTransactions = true;
-                displayNoRecentTransactions();
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (a != null) {
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                recentTransactionsList.setAdapter(recentTransactionsAdapter);
+                                displayNoRecentTransactions();
+                                loadingRecentContainer.setVisibility(View.GONE);
+                            }
+                        });
+                    }
+                }
             }
         });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     private void displayNoRecentTransactions() {
@@ -269,11 +292,17 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         Helper.applyHtmlForTextView(linkSyncFAQ);
 
         Context context = getContext();
-        LinearLayoutManager llm = new LinearLayoutManager(context);
-        recentTransactionsList.setLayoutManager(llm);
-        DividerItemDecoration itemDecoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
-        itemDecoration.setDrawable(ContextCompat.getDrawable(context, R.drawable.thin_divider));
-        recentTransactionsList.addItemDecoration(itemDecoration);
+
+        if (context != null) {
+            LinearLayoutManager llm = new LinearLayoutManager(context);
+            recentTransactionsList.setLayoutManager(llm);
+            DividerItemDecoration itemDecoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+            Drawable thinDivider = ContextCompat.getDrawable(context, R.drawable.thin_divider);
+            if (thinDivider != null) {
+                itemDecoration.setDrawable(thinDivider);
+                recentTransactionsList.addItemDecoration(itemDecoration);
+            }
+        }
 
         buttonViewMore.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -363,16 +392,16 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
         GestureDetector.SimpleOnGestureListener gestureListener = new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                if (switchSyncStatus.isChecked()) {
-                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+                Context c = getContext();
+                if (switchSyncStatus.isChecked() && c != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
                     sp.edit().putBoolean(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_SYNC_ENABLED, false).apply();
                     switchSyncStatus.setText(R.string.off);
                     switchSyncStatus.setChecked(false);
                 } else {
                     // launch verification activity for wallet sync flow
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        ((MainActivity) context).walletSyncSignIn();
+                    if (c instanceof MainActivity) {
+                        ((MainActivity) c).walletSyncSignIn();
                     }
                 }
                 return true;
