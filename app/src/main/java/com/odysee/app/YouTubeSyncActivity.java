@@ -107,11 +107,6 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
         }
     }
 
-    public boolean isDarkMode() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
-    }
-
     private void checkStatus() {
         viewPager.setVisibility(View.INVISIBLE);
         mainProgress.setVisibility(View.VISIBLE);
