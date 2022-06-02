@@ -25,7 +25,7 @@
     <string name="about">About</string>
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign out</string>
-    <string name="use_magic_link">Use magic link</string>
+    <string name="use_magic_link">Use Magic Link via Email</string>
     <string name="sign_up_log_in">Sign Up or Log In</string>
     <string name="community_guidelines">Community Guidelines</string>
     <string name="help_and_support">Help &amp; Support</string>
