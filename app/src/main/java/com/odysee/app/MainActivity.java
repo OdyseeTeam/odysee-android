@@ -339,6 +339,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private static final String KEY_ALIAS = "LBRYKey";
     private static final String KEYSTORE_PROVIDER = "AndroidKeyStore";
 
+    private static final int SIGN_IN_SOURCE_NOTIFICATIONS = -99;
+    private static final int SIGN_IN_SOURCE_PUBLISH = -98;
+
     // broadcast action names
     public static final String ACTION_AUTH_TOKEN_GENERATED = "com.odysee.app.Broadcast.AuthTokenGenerated";
     public static final String ACTION_USER_AUTHENTICATION_SUCCESS = "com.odysee.app.Broadcast.UserAuthenticationSuccess";
@@ -710,14 +713,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.upload_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Hide bottom navigation
-                // Hide main bar
-                // Show PublishFragment.class
-                clearPlayingPlayer();
-                hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
-                fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
-                findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
-                hideActionBar();
+                if (!isSignedIn()) {
+                    simpleSignIn(SIGN_IN_SOURCE_PUBLISH);
+                    return;
+                }
+
+                showPublishFlow();
             }
         });
 
@@ -1074,7 +1075,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (container.getVisibility() != View.VISIBLE) {
                     if (!isSignedIn()) {
                         // use -99 to indicate that notifications should be displayed afterwards
-                        simpleSignIn(-99);
+                        simpleSignIn(SIGN_IN_SOURCE_NOTIFICATIONS);
                         return;
                     }
 
@@ -1117,6 +1118,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             appPlayer.stop();
             clearNowPlayingClaim();
         }
+    }
+
+    private void showPublishFlow() {
+        // Hide bottom navigation
+        // Hide main bar
+        // Show PublishFragment.class
+        clearPlayingPlayer();
+        hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+        hideActionBar();
     }
 
     @Override
@@ -1783,8 +1796,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         scheduleWalletBalanceUpdate();
 
         if (pendingSourceTabId != 0) {
-            if (pendingSourceTabId == -99) {
+            if (pendingSourceTabId == SIGN_IN_SOURCE_NOTIFICATIONS) {
                 showNotifications();
+                pendingSourceTabId = 0;
+                return;
+            }
+            if (pendingSourceTabId == SIGN_IN_SOURCE_PUBLISH) {
+                showPublishFlow();
                 pendingSourceTabId = 0;
                 return;
             }
