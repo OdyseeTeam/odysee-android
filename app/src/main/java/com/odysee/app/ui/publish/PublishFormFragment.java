@@ -225,9 +225,9 @@ public class PublishFormFragment extends BaseFragment implements
         suggestedTagsList = root.findViewById(R.id.form_suggested_tags);
         suggestedTagsList.setLayoutManager(flm2);
 
-        root.findViewById(R.id.form_mature_tags_container).setVisibility(View.VISIBLE);
-        matureTagsList = root.findViewById(R.id.form_mature_tags);
-        matureTagsList.setLayoutManager(flm3);
+        root.findViewById(R.id.form_mature_tags_container).setVisibility(View.GONE);
+        //matureTagsList = root.findViewById(R.id.form_mature_tags);
+        //matureTagsList.setLayoutManager(flm3);
 
         addedTagsAdapter = new TagListAdapter(new ArrayList<>(), context);
         addedTagsAdapter.setCustomizeMode(TagListAdapter.CUSTOMIZE_MODE_REMOVE);
@@ -239,10 +239,10 @@ public class PublishFormFragment extends BaseFragment implements
         suggestedTagsAdapter.setClickListener(this);
         suggestedTagsList.setAdapter(suggestedTagsAdapter);
 
-        matureTagsAdapter = new TagListAdapter(Helper.getTagObjectsForTags(Predefined.PUBLISH_MATURE_TAGS), context);
+        /*matureTagsAdapter = new TagListAdapter(Helper.getTagObjectsForTags(Predefined.PUBLISH_MATURE_TAGS), context);
         matureTagsAdapter.setCustomizeMode(TagListAdapter.CUSTOMIZE_MODE_ADD);
         matureTagsAdapter.setClickListener(this);
-        matureTagsList.setAdapter(matureTagsAdapter);
+        matureTagsList.setAdapter(matureTagsAdapter);*/
 
         initUi();
 
