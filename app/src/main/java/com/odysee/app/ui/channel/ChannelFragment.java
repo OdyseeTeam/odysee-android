@@ -255,31 +255,23 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             public void onClick(View view) {
                 if (claim != null) {
                     boolean isNotificationsDisabled = Lbryio.isNotificationsDisabled(claim);
-                    final Subscription subscription = Subscription.fromClaim(claim);
-                    subscription.setNotificationsDisabled(!isNotificationsDisabled);
-                    view.setEnabled(false);
                     Context context = getContext();
-                    new ChannelSubscribeTask(context, claim.getClaimId(), subscription, false, new ChannelSubscribeTask.ChannelSubscribeHandler() {
-                        @Override
-                        public void onSuccess() {
-                            view.setEnabled(true);
-                            Lbryio.updateSubscriptionNotificationsDisabled(subscription);
-
-                            showMessage(subscription.isNotificationsDisabled() ?
-                                    R.string.receive_no_notifications : R.string.receive_all_notifications);
-                            checkIsFollowing();
-
-                            Context context = getContext();
-                            if (context != null) {
-                                context.sendBroadcast(new Intent(MainActivity.ACTION_SAVE_SHARED_USER_STATE));
-                            }
-                        }
-
-                        @Override
-                        public void onError(Exception exception) {
-                            view.setEnabled(true);
-                        }
-                    }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    if (context != null) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                                .setTitle(isNotificationsDisabled ?
+                                        R.string.confirm_turn_on_notifications : R.string.confirm_turn_off_notifications)
+                                .setMessage(isNotificationsDisabled ?
+                                        R.string.receive_all_notifications : R.string.receive_no_notifications)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        final Subscription subscription = Subscription.fromClaim(claim);
+                                        subscription.setNotificationsDisabled(!isNotificationsDisabled);
+                                        doEnableDisableNotifications(subscription, view);
+                                    }
+                                }).setNegativeButton(R.string.no, null);
+                        builder.show();
+                    }
                 }
             }
         });
@@ -323,6 +315,30 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         });
 
         return root;
+    }
+
+    private void doEnableDisableNotifications(Subscription subscription, View view) {
+        view.setEnabled(false);
+        Context context = getContext();
+        new ChannelSubscribeTask(context, claim.getClaimId(), subscription, false, new ChannelSubscribeTask.ChannelSubscribeHandler() {
+            @Override
+            public void onSuccess() {
+                view.setEnabled(true);
+                Lbryio.updateSubscriptionNotificationsDisabled(subscription);
+
+                checkIsFollowing();
+
+                Context context = getContext();
+                if (context != null) {
+                    context.sendBroadcast(new Intent(MainActivity.ACTION_SAVE_SHARED_USER_STATE));
+                }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                view.setEnabled(true);
+            }
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private void doFollowUnfollow(boolean isFollowing, View view) {
