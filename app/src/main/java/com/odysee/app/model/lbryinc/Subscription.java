@@ -33,7 +33,7 @@ public class Subscription {
         if (lbryUri != null)
             u = lbryUri.toString();
 
-        return new Subscription(claim.getName(), u, false);
+        return new Subscription(claim.getName(), u, true);
     }
     public String toString() {
         return url;

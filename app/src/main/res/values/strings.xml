@@ -195,6 +195,8 @@
     <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>
+    <string name="confirm_turn_on_notifications">Turn on notifications?</string>
+    <string name="confirm_turn_off_notifications">Turn off notifications?</string>
     <string name="receive_all_notifications">You will receive all notifications</string>
     <string name="receive_no_notifications">You will not receive notifications for this channel</string>
     <string name="confirm_unfollow">Stop following channel?</string>
