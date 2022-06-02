@@ -1072,6 +1072,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onClick(View view) {
                 View container = findViewById(R.id.notifications_container);
                 if (container.getVisibility() != View.VISIBLE) {
+                    if (!isSignedIn()) {
+                        // use -99 to indicate that notifications should be displayed afterwards
+                        simpleSignIn(-99);
+                        return;
+                    }
+
                     showNotifications();
                 } else {
                     hideNotifications();
@@ -1777,6 +1783,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         scheduleWalletBalanceUpdate();
 
         if (pendingSourceTabId != 0) {
+            if (pendingSourceTabId == -99) {
+                showNotifications();
+                pendingSourceTabId = 0;
+                return;
+            }
+
             BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
             bottomNavigation.setSelectedItemId(pendingSourceTabId);
             pendingSourceTabId = 0;
