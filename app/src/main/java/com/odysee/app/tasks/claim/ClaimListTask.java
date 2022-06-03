@@ -27,7 +27,10 @@ public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
     private String authToken;
 
     public ClaimListTask(String type, View progressView, String token, ClaimListResultHandler handler) {
-        this(Arrays.asList(type), progressView, handler);
+        this(Arrays.asList(type), progressView, token, handler);
+    }
+    public ClaimListTask(List<String> types, View progressView, String token, ClaimListResultHandler handler) {
+        this(types, progressView, handler);
         this.authToken = token;
     }
     public ClaimListTask(String type, View progressView, ClaimListResultHandler handler) {

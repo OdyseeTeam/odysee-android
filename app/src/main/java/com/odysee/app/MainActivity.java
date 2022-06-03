@@ -918,6 +918,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
+                View buttonPublishes = customView.findViewById(R.id.button_publishes);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
                 View buttonSignOut = customView.findViewById(R.id.button_sign_out);
@@ -930,6 +931,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonPublishes.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -1000,6 +1002,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         popupWindow.dismiss();
                         hideNotifications();
                         openFragment(ChannelManagerFragment.class, true, null);
+                    }
+                });
+                buttonPublishes.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(PublishesFragment.class, true, null);
                     }
                 });
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {

@@ -39,6 +39,7 @@ import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
+import com.odysee.app.utils.Lbryio;
 
 public class PublishesFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
@@ -115,45 +116,46 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
 
     private void fetchPublishes() {
         Helper.setViewVisibility(emptyView, View.GONE);
-        ClaimListTask task = new ClaimListTask(Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), getLoading(), new ClaimListResultHandler() {
-            @Override
-            public void onSuccess(List<Claim> claims) {
-                Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
-                if (adapter == null) {
-                    Context context = getContext();
-                    if (context != null) {
-                        adapter = new ClaimListAdapter(claims, context);
-                        adapter.setCanEnterSelectionMode(true);
-                        adapter.setSelectionModeListener(PublishesFragment.this);
-                        adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                            @Override
-                            public void onClaimClicked(Claim claim, int position) {
-                                if (context instanceof MainActivity) {
-                                    MainActivity activity = (MainActivity) context;
-                                    if (claim.getName().startsWith("@")) {
-                                        activity.openChannelClaim(claim);
-                                    } else {
-                                        activity.openFileClaim(claim);
+        ClaimListTask task = new ClaimListTask(Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST),
+                getLoading(), Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
+                    @Override
+                    public void onSuccess(List<Claim> claims) {
+                        Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
+                        if (adapter == null) {
+                            Context context = getContext();
+                            if (context != null) {
+                                adapter = new ClaimListAdapter(claims, context);
+                                adapter.setCanEnterSelectionMode(true);
+                                adapter.setSelectionModeListener(PublishesFragment.this);
+                                adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                    @Override
+                                    public void onClaimClicked(Claim claim, int position) {
+                                        if (context instanceof MainActivity) {
+                                            MainActivity activity = (MainActivity) context;
+                                            if (claim.getName().startsWith("@")) {
+                                                activity.openChannelClaim(claim);
+                                            } else {
+                                                activity.openFileClaim(claim);
+                                            }
+                                        }
                                     }
+                                });
+                                if (contentList != null) {
+                                    contentList.setAdapter(adapter);
                                 }
                             }
-                        });
-                        if (contentList != null) {
-                            contentList.setAdapter(adapter);
+                        } else {
+                            adapter.setItems(claims);
                         }
+
+                        checkNoPublishes();
                     }
-                } else {
-                    adapter.setItems(claims);
-                }
 
-                checkNoPublishes();
-            }
-
-            @Override
-            public void onError(Exception error) {
-                checkNoPublishes();
-            }
-        });
+                    @Override
+                    public void onError(Exception error) {
+                        checkNoPublishes();
+                    }
+                });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
