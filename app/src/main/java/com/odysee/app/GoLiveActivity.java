@@ -1,6 +1,7 @@
 package com.odysee.app;
 
 import android.content.res.Configuration;
+import android.util.Log;
 import android.view.WindowInsetsController;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -145,7 +146,7 @@ public class GoLiveActivity extends AppCompatActivity {
         connection = new RtmpConnection();
         stream = new RtmpStream(connection);
         stream.attachAudio(new AudioRecordSource());
-        cameraSource = new Camera2Source(this, null, false);
+        cameraSource = new Camera2Source(this, false);
         stream.attachVideo(cameraSource);
         connection.addEventListener(Event.RTMP_STATUS, new IEventListener() {
             @Override
