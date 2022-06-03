@@ -406,11 +406,6 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
         }
     }
 
-    public boolean isDarkMode() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(MainActivity.PREFERENCE_KEY_DARK_MODE, false);
-    }
-
     public void onResume() {
         super.onResume();
         checkCurrentFirstRunStep();

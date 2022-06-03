@@ -53,7 +53,7 @@
             app:title="@string/playback_default_speed" />
         <DropDownPreference
             app:key="com.odysee.app.preference.userinterface.DarkModeSetting"
-            app:defaultValue="notnight"
+            app:defaultValue="system"
             app:entries="@array/darkmode_setting_labels"
             app:entryValues="@array/darkmode_setting_values"
             app:summary="%s"

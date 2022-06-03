@@ -1,5 +1,6 @@
 package com.odysee.app.ui.other;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -10,6 +11,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.utils.LbryAnalytics;
 
@@ -78,17 +80,20 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             // applied one, no activity recreation is performed, so there is no penalty.
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
             if (sp != null && Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                String darkModeValue = sp.getString(MainActivity.PREFERENCE_KEY_DARK_MODE_SETTING, MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT);
-                switch (darkModeValue) {
-                    case MainActivity.APP_SETTING_DARK_MODE_NIGHT:
-                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-                        break;
-                    case MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT:
-                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-                        break;
-                    default:
-                        AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
-                        break;
+                Activity a = getActivity();
+                if (a != null) {
+                    String darkModeValue = ((OdyseeApp) a.getApplication()).getDarkModeAppSetting();
+                    switch (darkModeValue) {
+                        case MainActivity.APP_SETTING_DARK_MODE_NIGHT:
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                            break;
+                        case MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT:
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                            break;
+                        default:
+                            AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM);
+                            break;
+                    }
                 }
             }
             super.onStop();
