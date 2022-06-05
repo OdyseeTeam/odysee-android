@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.adapter.CollectionListAdapter;
 import com.odysee.app.adapter.PlaylistCollectionListAdapter;
 import com.odysee.app.exceptions.ApiCallException;
@@ -41,7 +42,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -808,7 +808,6 @@ public class LibraryFragment extends BaseFragment implements
                 showMessage(getResources().getQuantityString(R.plurals.files_deleted, claimIds.size()));
             }
         } else if (currentFilter == FILTER_HISTORY) {
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
             Activity a = getActivity();
             String message = getResources().getQuantityString(R.plurals.confirm_delete_files, selectedClaims.size());
             AlertDialog.Builder builder;
@@ -824,7 +823,7 @@ public class LibraryFragment extends BaseFragment implements
                                        for (Claim c : selectedClaims) {
                                            try {
                                                Runnable r = new DeleteViewHistoryItem(c.getPermanentUrl());
-                                               Future<?> f = executorService.submit(r);
+                                               Future<?> f = ((OdyseeApp) a.getApplication()).getExecutor().submit(r);
                                                f.get();
                                                a.runOnUiThread(new Runnable() {
                                                    @Override
@@ -842,10 +841,6 @@ public class LibraryFragment extends BaseFragment implements
                                            public void run() {
                                                if (actionMode != null) {
                                                    actionMode.finish();
-                                               }
-
-                                               if (executorService != null && !executorService.isShutdown()) {
-                                                   executorService.shutdown();
                                                }
                                            }
                                        });

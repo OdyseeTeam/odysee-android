@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 
+import com.odysee.app.OdyseeApp;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -36,8 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
@@ -135,7 +134,6 @@ public class FollowingFragment extends BaseFragment implements
     private boolean loadingContent;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private ExecutorService fixedExecutor;
     Map<String, JSONObject> liveChannels;
 
     @Override
@@ -655,9 +653,7 @@ public class FollowingFragment extends BaseFragment implements
 
         getLoadingView().setVisibility(View.VISIBLE);
 
-        if (fixedExecutor == null || fixedExecutor.isShutdown()) {
-            fixedExecutor = Executors.newFixedThreadPool(4);
-        }
+        OdyseeApp app = (OdyseeApp) a.getApplication();
 
         Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
         callables.add(() -> fetchActiveLivestreams());
@@ -667,7 +663,7 @@ public class FollowingFragment extends BaseFragment implements
             @Override
             public void run() {
                 try {
-                    List<Future<List<Claim>>> results = fixedExecutor.invokeAll(callables);
+                    List<Future<List<Claim>>> results = app.getExecutor().invokeAll(callables);
 
                     List<Claim> items = new ArrayList<>();
 
@@ -680,8 +676,6 @@ public class FollowingFragment extends BaseFragment implements
                             }
                         }
                     }
-
-                    fixedExecutor.shutdown();
 
                     if (claimSearchOptions.containsKey("page_size")) {
                         int pageSize = Helper.parseInt(claimSearchOptions.get("page_size"), 0);
@@ -756,7 +750,6 @@ public class FollowingFragment extends BaseFragment implements
                         });
                     }
                 }
-                fixedExecutor.shutdown();
             }
         });
         t.start();
@@ -770,7 +763,9 @@ public class FollowingFragment extends BaseFragment implements
         List<Claim> mostRecentClaims = new ArrayList<>();
         Map<String, JSONObject> livestreamingChannels;
         try {
-            Future<Map<String, JSONObject>> isLiveFuture = fixedExecutor.submit(new ChannelLiveStatus(getChannelIds(), false));
+            Activity a = getActivity();
+            OdyseeApp odyseeApp = (OdyseeApp) a.getApplication();
+            Future<Map<String, JSONObject>> isLiveFuture = odyseeApp.getExecutor().submit(new ChannelLiveStatus(getChannelIds(), false));
 
             livestreamingChannels = isLiveFuture.get();
 
@@ -803,7 +798,7 @@ public class FollowingFragment extends BaseFragment implements
                     claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
                     claimSearchOptions.put("has_no_source", true);
                     claimSearchOptions.put("claim_ids", activeClaimIds);
-                    Future<List<Claim>> mostRecentsFuture = fixedExecutor.submit(new Search(claimSearchOptions));
+                    Future<List<Claim>> mostRecentsFuture = odyseeApp.getExecutor().submit(new Search(claimSearchOptions));
 
                     mostRecentClaims = mostRecentsFuture.get();
                 }

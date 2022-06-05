@@ -20,12 +20,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.LighthouseSearch;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -425,6 +432,7 @@ public class SearchFragment extends BaseFragment implements
 
         Activity a = getActivity();
 
+        Callable<List<Claim>> c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
         if (a != null) {
             a.runOnUiThread(new Runnable() {
                 @Override
@@ -432,27 +440,23 @@ public class SearchFragment extends BaseFragment implements
                     loadingView.setVisibility(View.VISIBLE);
                 }
             });
-        }
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Callable<List<Claim>> c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Future<List<Claim>> future = executor.submit(c);
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(c);
 
-                try {
-                    List<Claim> results = future.get();
+                    try {
+                        List<Claim> results = future.get();
 
-                    List<Claim> sanitizedClaims = new ArrayList<>(results.size());
+                        List<Claim> sanitizedClaims = new ArrayList<>(results.size());
 
-                    for (Claim item : results) {
-                        if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                            sanitizedClaims.add(item);
+                        for (Claim item : results) {
+                            if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                                sanitizedClaims.add(item);
+                            }
                         }
-                    }
 
-                    if (a != null) {
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -477,56 +481,54 @@ public class SearchFragment extends BaseFragment implements
                                 }
                             }
                         });
-                    }
 
-                    // Lighthouse doesn't return "valueType" of the claim, so another request is needed
-                    // to determine if an item is a playlist and get the items on the playlist.
-                    List<String> claimIds = new ArrayList<>();
+                        // Lighthouse doesn't return "valueType" of the claim, so another request is needed
+                        // to determine if an item is a playlist and get the items on the playlist.
+                        List<String> claimIds = new ArrayList<>();
 
-                    for (Claim sanitizedClaim : sanitizedClaims) {
-                        if (!sanitizedClaim.getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
-                            claimIds.add(sanitizedClaim.getClaimId());
+                        for (Claim sanitizedClaim : sanitizedClaims) {
+                            if (!sanitizedClaim.getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
+                                claimIds.add(sanitizedClaim.getClaimId());
+                            }
                         }
-                    }
 
-                    Map<String, Object> claimSearchOptions = new HashMap<>(2);
+                        Map<String, Object> claimSearchOptions = new HashMap<>(2);
 
-                    claimSearchOptions.put("claim_ids", claimIds);
-                    claimSearchOptions.put("page_size", claimIds.size());
+                        claimSearchOptions.put("claim_ids", claimIds);
+                        claimSearchOptions.put("page_size", claimIds.size());
 
-                    Future<List<Claim>> futureSearch = executor.submit(new Search(claimSearchOptions));
-                    List<Claim> totalResults = futureSearch.get();
+                        Future<List<Claim>> futureSearch = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
+                        List<Claim> totalResults = futureSearch.get();
 
-                    // For each claim returned from Lighthouse, replace it by the one using Search API
-                    for (int i = 0; i < sanitizedClaims.size(); i++) {
-                        if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
-                            int finalI = i;
-                            Claim found = totalResults.stream().filter(filteredClaim -> {
-                                return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
-                            }).findAny().orElse(null);
+                        // For each claim returned from Lighthouse, replace it by the one using Search API
+                        for (int i = 0; i < sanitizedClaims.size(); i++) {
+                            if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
+                                int finalI = i;
+                                Claim found = totalResults.stream().filter(filteredClaim -> {
+                                    return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
+                                }).findAny().orElse(null);
 
-                            if (found != null) {
-                                sanitizedClaims.set(i, found);
+                                if (found != null) {
+                                    sanitizedClaims.set(i, found);
 
-                                if (a != null && resultListAdapter != null) {
-                                    a.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                                                resultListAdapter.setItem(found.getClaimId(), found);
-                                            } else {
-                                                resultListAdapter.removeItem(found);
+                                    if (resultListAdapter != null) {
+                                        a.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
+                                                    resultListAdapter.setItem(found.getClaimId(), found);
+                                                } else {
+                                                    resultListAdapter.removeItem(found);
+                                                }
                                             }
-                                        }
-                                    });
+                                        });
+                                    }
                                 }
                             }
                         }
-                    }
-                    contentHasReachedEnd = results.size() < PAGE_SIZE;
-                    searchLoading = false;
+                        contentHasReachedEnd = results.size() < PAGE_SIZE;
+                        searchLoading = false;
 
-                    if (a != null) {
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -540,17 +542,13 @@ public class SearchFragment extends BaseFragment implements
                                 }
                             }
                         });
-                    }
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (!executor.isShutdown()) {
-                        executor.shutdown();
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
-            }
-        });
-        t.start();
+            });
+            t.start();
+        }
     }
 
     public void onClaimClicked(Claim claim, int position) {

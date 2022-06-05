@@ -6,6 +6,10 @@ import android.os.Build;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class OdyseeApp extends Application {
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_DARK_MODE_SETTING = "com.odysee.app.preference.userinterface.DarkModeSetting";
@@ -14,6 +18,8 @@ public class OdyseeApp extends Application {
     public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
 
+    private ExecutorService executor;
+    private ScheduledExecutorService scheduledExecutor;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -43,5 +49,21 @@ public class OdyseeApp extends Application {
                 return APP_SETTING_DARK_MODE_NOTNIGHT;
             }
         }
+    }
+
+    public ExecutorService getExecutor() {
+        if (executor == null) {
+            executor = Executors.newFixedThreadPool(4);
+        }
+
+        return executor;
+    }
+
+    public ScheduledExecutorService getScheduledExecutor() {
+        if (scheduledExecutor == null) {
+            scheduledExecutor = Executors.newScheduledThreadPool(4);
+        }
+
+        return scheduledExecutor;
     }
 }

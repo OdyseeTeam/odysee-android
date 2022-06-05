@@ -144,7 +144,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -316,7 +315,6 @@ public class FileViewFragment extends BaseFragment implements
     ScheduledFuture<?> futureReactions;
     Reactions reactions;
     ScheduledFuture<?> futureViewersCount;
-    ExecutorService executorService;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -1583,19 +1581,21 @@ public class FileViewFragment extends BaseFragment implements
                     Helper.setViewEnabled(inputChatMessage, false);
                     Helper.setViewEnabled(buttonSendChatMessage, false);
 
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    executor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Lbry.authenticatedGenericApiCall(Lbry.METHOD_COMMENT_CREATE, params, Lbryio.AUTH_TOKEN);
-                                finishChatSend(true);
-                            } catch (ApiCallException ex) {
-                                showError(getString(R.string.could_not_send_chat_message));
-                                finishChatSend(false);
+                    Activity a = getActivity();
+                    if (a != null) {
+                        ((OdyseeApp) a.getApplication()).getExecutor().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Lbry.authenticatedGenericApiCall(Lbry.METHOD_COMMENT_CREATE, params, Lbryio.AUTH_TOKEN);
+                                    finishChatSend(true);
+                                } catch (ApiCallException ex) {
+                                    showError(getString(R.string.could_not_send_chat_message));
+                                    finishChatSend(false);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
         });
@@ -2342,40 +2342,41 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void getStreamingUrlAndInitializePlayer(Claim theClaim) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                // Get the streaming URL
-                Map<String, Object> params = new HashMap<>();
-                params.put("uri", theClaim.getPermanentUrl());
-                JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
-                if (result != null) {
-                    String sourceUrl = (String) result.get("streaming_url");
-                    currentMediaSourceUrl = sourceUrl;
+        Activity a = getActivity();
+        if (a != null) {
+            ((OdyseeApp) a.getApplication()).getExecutor().execute(() -> {
+                try {
+                    // Get the streaming URL
+                    Map<String, Object> params = new HashMap<>();
+                    params.put("uri", theClaim.getPermanentUrl());
+                    JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                    if (result != null) {
+                        String sourceUrl = (String) result.get("streaming_url");
+                        currentMediaSourceUrl = sourceUrl;
 
-                    // Get the stream type
-                    OkHttpClient client = new OkHttpClient();
-                    Request request = new Request.Builder()
-                            .url(sourceUrl)
-                            .head()
-                            .build();
-                    try (Response response = client.newCall(request).execute()) {
-                        String requestUrl = response.request().url().toString();
-                        boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
-                        MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
-                        currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
+                        // Get the stream type
+                        OkHttpClient client = new OkHttpClient();
+                        Request request = new Request.Builder()
+                                .url(sourceUrl)
+                                .head()
+                                .build();
+                        try (Response response = client.newCall(request).execute()) {
+                            String requestUrl = response.request().url().toString();
+                            boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
+                            MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
+                            currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(() -> initializePlayer(currentMediaSourceUrl));
                     }
-
-                    new Handler(Looper.getMainLooper()).post(() -> initializePlayer(currentMediaSourceUrl));
+                } catch (LbryRequestException | LbryResponseException | JSONException ex) {
+                    // TODO: How does error handling work here
+                    ex.printStackTrace();
                 }
-            } catch (LbryRequestException | LbryResponseException | JSONException ex) {
-                // TODO: How does error handling work here
-                ex.printStackTrace();
-            }
-        });
-        executor.shutdown();
+            });
+        }
     }
     private void initializePlayer(String sourceUrl) {
         Context context = getContext();
@@ -2413,20 +2414,20 @@ public class FileViewFragment extends BaseFragment implements
         // User could land on this fragment from a deep-link. That means the livestream would have not been resolved,
         // so it needs to be done
         String jsonDataUrl = null;
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        try {
-            ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(fileClaim.getSigningChannel().getClaimId()));
-            Future<Map<String, JSONObject>> future = executor.submit(callable);
+        Activity a = getActivity();
 
-            Map<String, JSONObject> jsonData = future.get();
-            jsonDataUrl = getLivestreamUrl(jsonData.get(fileClaim.getSigningChannel().getClaimId()));
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        } finally {
-            if (!executor.isShutdown()) {
-                executor.shutdown();
+        if (a != null) {
+            try {
+                ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(fileClaim.getSigningChannel().getClaimId()));
+                Future<Map<String, JSONObject>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+
+                Map<String, JSONObject> jsonData = future.get();
+                jsonDataUrl = getLivestreamUrl(jsonData.get(fileClaim.getSigningChannel().getClaimId()));
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
         }
+
 
         return jsonDataUrl;
     }
@@ -2634,10 +2635,6 @@ public class FileViewFragment extends BaseFragment implements
             scheduledExecutor = new ScheduledThreadPoolExecutor(2);
         }
 
-        if (executorService == null) {
-            executorService = Executors.newSingleThreadScheduledExecutor();
-        }
-
         if (futureViewersCount != null) {
             futureViewersCount.cancel(true);
         }
@@ -2650,44 +2647,46 @@ public class FileViewFragment extends BaseFragment implements
 
     private void updateLiveViewersCount(Claim claim) {
         Activity a = getActivity();
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String channelClaimId = claim.getSigningChannel().getClaimId();
-                Future<Map<String, JSONObject>> futureViewersCount = executorService.submit(new ChannelLiveStatus(Collections.singletonList(channelClaimId), false));
+        if (a != null) {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String channelClaimId = claim.getSigningChannel().getClaimId();
+                    Future<Map<String, JSONObject>> futureViewersCount = ((OdyseeApp) a.getApplication()).getExecutor().submit(new ChannelLiveStatus(Collections.singletonList(channelClaimId), false));
 
-                try {
-                    Map<String, JSONObject> channelStatus = futureViewersCount.get();
+                    try {
+                        Map<String, JSONObject> channelStatus = futureViewersCount.get();
 
-                    if (channelStatus.containsKey(channelClaimId)) {
-                        JSONObject jsonData = channelStatus.get(channelClaimId);
-                        if (a != null && jsonData != null) {
-                            Integer count = jsonData.getInt("ViewerCount");
-                            a.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        String displayText = getResources().getString(R.string.livestream_view_count, String.valueOf(count));
-                                        View root = getView();
-                                        if (root != null) {
-                                            TextView textViewCount = root.findViewById(R.id.file_view_view_count);
-                                            Helper.setViewText(textViewCount, displayText);
-                                            Helper.setViewVisibility(textViewCount, View.VISIBLE);
+                        if (channelStatus.containsKey(channelClaimId)) {
+                            JSONObject jsonData = channelStatus.get(channelClaimId);
+                            if (jsonData != null) {
+                                Integer count = jsonData.getInt("ViewerCount");
+                                a.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            String displayText = getResources().getString(R.string.livestream_view_count, String.valueOf(count));
+                                            View root = getView();
+                                            if (root != null) {
+                                                TextView textViewCount = root.findViewById(R.id.file_view_view_count);
+                                                Helper.setViewText(textViewCount, displayText);
+                                                Helper.setViewVisibility(textViewCount, View.VISIBLE);
+                                            }
+                                        } catch (IllegalStateException ex) {
+                                            ex.printStackTrace();
                                         }
-                                    } catch (IllegalStateException ex) {
-                                        ex.printStackTrace();
                                     }
-                                }
-                            });
-                        }
+                                });
+                            }
 
+                        }
+                    } catch (ExecutionException | InterruptedException | JSONException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (ExecutionException | InterruptedException | JSONException e) {
-                    throw new RuntimeException(e);
                 }
-            }
-        });
-        t.start();
+            });
+            t.start();
+        }
     }
 
     private void viewMedia() {
@@ -2842,83 +2841,87 @@ public class FileViewFragment extends BaseFragment implements
     private Map<String, Reactions> loadReactions(List<Comment> comments) {
         List<String> commentIds = new ArrayList<>();
 
-        for (Comment c: comments) {
-            commentIds.add(c.getId());
-        }
+        Activity a = getActivity();
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Map<String, Reactions>> future = executor.submit(() -> {
-            Comments.checkCommentsEndpointStatus();
-            JSONObject jsonParams = new JSONObject();
-            jsonParams.put("comment_ids", TextUtils.join(",", commentIds));
-
-            AccountManager am = AccountManager.get(getContext());
-            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-            if (odyseeAccount != null) {
-                jsonParams.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
+        if (a != null) {
+            for (Comment c: comments) {
+                commentIds.add(c.getId());
             }
 
-            if (!Lbry.ownChannels.isEmpty()) {
-                jsonParams.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
-                jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
+            Future<Map<String, Reactions>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(() -> {
+                Comments.checkCommentsEndpointStatus();
+                JSONObject jsonParams = new JSONObject();
+                jsonParams.put("comment_ids", TextUtils.join(",", commentIds));
 
-                try {
-                    JSONObject jsonChannelSign = Comments.channelSignName(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
-
-                    if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
-                        jsonParams.put("signature", jsonChannelSign.getString("signature"));
-                        jsonParams.put("signing_ts", jsonChannelSign.getString("signing_ts"));
-                    }
-                } catch (ApiCallException | JSONException e) {
-                    e.printStackTrace();
+                AccountManager am = AccountManager.get(getContext());
+                Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                if (odyseeAccount != null) {
+                    jsonParams.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
                 }
-            }
 
-            Map<String, Reactions> result = new HashMap<>();
-            try {
-                Response response = Comments.performRequest(jsonParams, "reaction.List");
-                String responseString = response.body().string();
-                response.close();
+                if (!Lbry.ownChannels.isEmpty()) {
+                    jsonParams.put("channel_id", Lbry.ownChannels.get(0).getClaimId());
+                    jsonParams.put("channel_name", Lbry.ownChannels.get(0).getName());
 
-                JSONObject jsonResponse = new JSONObject(responseString);
+                    try {
+                        JSONObject jsonChannelSign = Comments.channelSignName(jsonParams, jsonParams.getString("channel_id"), jsonParams.getString("channel_name"));
 
-                if (jsonResponse.has("result")) {
-                    JSONObject jsonResult = jsonResponse.getJSONObject("result");
-                    if (jsonResult.has("others_reactions")) {
-                        JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
-                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                            responseOthersReactions.keys().forEachRemaining(key -> {
-                                try {
-                                    result.put(key, getMyReactions(jsonResult, responseOthersReactions, key));
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                            });
-                        } else { // Android versions prior to API 24 lack forEachRemaining()
-                            Iterator<String> itr = responseOthersReactions.keys();
-                            while (itr.hasNext()) {
-                                try {
-                                    String nextKey = itr.next();
-                                    result.put(nextKey, getMyReactions(jsonResult, responseOthersReactions, nextKey));
-                                } catch (JSONException e) {
-                                    Log.e(TAG, "loadReactions for Comment: ".concat(e.getLocalizedMessage()));
+                        if (jsonChannelSign.has("signature") && jsonChannelSign.has("signing_ts")) {
+                            jsonParams.put("signature", jsonChannelSign.getString("signature"));
+                            jsonParams.put("signing_ts", jsonChannelSign.getString("signing_ts"));
+                        }
+                    } catch (ApiCallException | JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                Map<String, Reactions> result = new HashMap<>();
+                try {
+                    Response response = Comments.performRequest(jsonParams, "reaction.List");
+                    String responseString = response.body().string();
+                    response.close();
+
+                    JSONObject jsonResponse = new JSONObject(responseString);
+
+                    if (jsonResponse.has("result")) {
+                        JSONObject jsonResult = jsonResponse.getJSONObject("result");
+                        if (jsonResult.has("others_reactions")) {
+                            JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
+                            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                                responseOthersReactions.keys().forEachRemaining(key -> {
+                                    try {
+                                        result.put(key, getMyReactions(jsonResult, responseOthersReactions, key));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                            } else { // Android versions prior to API 24 lack forEachRemaining()
+                                Iterator<String> itr = responseOthersReactions.keys();
+                                while (itr.hasNext()) {
+                                    try {
+                                        String nextKey = itr.next();
+                                        result.put(nextKey, getMyReactions(jsonResult, responseOthersReactions, nextKey));
+                                    } catch (JSONException e) {
+                                        Log.e(TAG, "loadReactions for Comment: ".concat(e.getLocalizedMessage()));
+                                    }
                                 }
                             }
                         }
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return result;
-        });
+                return result;
+            });
 
-        try {
-            return future.get();
-        } catch (InterruptedException | ExecutionException e ) {
-            e.printStackTrace();
-            return null;
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e ) {
+                e.printStackTrace();
+                return null;
+            }
         }
+        return null;
     }
 
     @Nullable
@@ -3367,7 +3370,8 @@ public class FileViewFragment extends BaseFragment implements
     private void loadRelatedContent() {
         // reset the list view
         View root = getView();
-        if (fileClaim != null && root != null) {
+        Activity a = getActivity();
+        if (fileClaim != null && root != null && a != null) {
             Context context = getContext();
 
             List<Claim> loadingPlaceholders = new ArrayList<>();
@@ -3403,32 +3407,20 @@ public class FileViewFragment extends BaseFragment implements
                 Thread t = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        ExecutorService executor = Executors.newSingleThreadExecutor();
                         LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0, nsfw, claimId);
-                        Future<List<Claim>> future = executor.submit(callable);
+                        Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
                         try {
                             List<Claim> result = future.get();
 
-                            if (!executor.isShutdown()) {
-                                executor.shutdown();
-                            }
-                            MainActivity a = (MainActivity) getActivity();
-
-                            if (a != null) {
-                                a.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        relatedContentRequestSucceeded(result);
-                                        relatedLoading.setVisibility(View.GONE);
-                                    }
-                                });
-                            }
+                            a.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    relatedContentRequestSucceeded(result);
+                                    relatedLoading.setVisibility(View.GONE);
+                                }
+                            });
                         } catch (InterruptedException | ExecutionException e) {
-                            if (!executor.isShutdown()) {
-                                executor.shutdown();
-                            }
-
                             e.printStackTrace();
                         }
                     }
@@ -3447,8 +3439,7 @@ public class FileViewFragment extends BaseFragment implements
                 claimSearchOptions.put("not_tags", canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS));
                 claimSearchOptions.put("page_size", fileClaim.getClaimIds().size());
 
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Future<List<Claim>> future = executor.submit(new Search(claimSearchOptions));
+                Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
 
                 try {
                     List<Claim> playlistClaimItems = future.get();
@@ -4768,37 +4759,32 @@ public class FileViewFragment extends BaseFragment implements
             e.printStackTrace();
         }
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // This makes a network connection, so it needs to be executed on a different thread than main.
-                if (Lbry.ownChannels.size() > 0) {
-                    try {
-                        // This makes a network connection, so it needs to be executed on a different thread than main.
-                        Callable<JSONObject> optionsCallable = new BuildCommentReactOptions(options);
-                        Future<JSONObject> optionsFuture = executor.submit(optionsCallable);
+        Activity a = getActivity();
+        if (a != null) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    // This makes a network connection, so it needs to be executed on a different thread than main.
+                    if (Lbry.ownChannels.size() > 0) {
+                        try {
+                            // This makes a network connection, so it needs to be executed on a different thread than main.
+                            Callable<JSONObject> optionsCallable = new BuildCommentReactOptions(options);
+                            Future<JSONObject> optionsFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(optionsCallable);
 
-                        JSONObject opt = optionsFuture.get();
+                            JSONObject opt = optionsFuture.get();
 
-                        Future<?> futureReactions = executor.submit(new ReactToComment(opt));
-                        futureReactions.get();
+                            Future<?> futureReactions = ((OdyseeApp) a.getApplication()).getExecutor().submit(new ReactToComment(opt));
+                            futureReactions.get();
 
-                        if (!executor.isShutdown()) {
-                            executor.shutdown();
-                        }
-                        refreshCommentAfterReacting(comment);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        if (!executor.isShutdown()) {
-                            executor.shutdown();
+                            refreshCommentAfterReacting(comment);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
                 }
-            }
-        });
-        thread.start();
+            });
+            thread.start();
+        }
     }
 
     private void refreshCommentAfterReacting(Comment comment) {
@@ -4922,8 +4908,7 @@ public class FileViewFragment extends BaseFragment implements
                                                         chatMessageList.setAdapter(chatMessageListAdapter);
                                                     } else {
                                                         chatMessageListAdapter.addMessage(comment);
-                                                        ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
-                                                        ses.schedule(new Runnable() {
+                                                        ((OdyseeApp) a.getApplication()).getScheduledExecutor().schedule(new Runnable() {
                                                             @Override
                                                             public void run() {
                                                                 smoothScrollToLastChatMessage();

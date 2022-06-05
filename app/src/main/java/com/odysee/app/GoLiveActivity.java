@@ -72,7 +72,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -100,7 +99,6 @@ public class GoLiveActivity extends AppCompatActivity {
     private RtmpStream stream;
     private Camera2Source cameraSource;
     private BroadcastReceiver screenOnReceiver;
-    private ScheduledExecutorService waitForConfirmationScheduler;
 
     private boolean uploadingThumbnail;
     private String uploadedThumbnailUrl;
@@ -298,9 +296,7 @@ public class GoLiveActivity extends AppCompatActivity {
         LbryAnalytics.setCurrentScreen(this, "Go Live", "GoLive");
         checkCameraPermissionAndOpenCameraSource();
 
-        if (waitForConfirmationScheduler == null) {
-            fetchChannels();
-        }
+        fetchChannels();
     }
 
     @Override
@@ -481,8 +477,7 @@ public class GoLiveActivity extends AppCompatActivity {
     private void waitForConfirmation(String txid) {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        waitForConfirmationScheduler = Executors.newSingleThreadScheduledExecutor();
-        waitForConfirmationScheduler.scheduleAtFixedRate(new Runnable() {
+        ((OdyseeApp) getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -506,9 +501,6 @@ public class GoLiveActivity extends AppCompatActivity {
                                 livestreamControlsView.setVisibility(View.VISIBLE);
                             }
                         });
-
-                        waitForConfirmationScheduler.shutdownNow();
-                        waitForConfirmationScheduler = null;
                     }
                 } catch (ApiCallException | JSONException ex) {
                     // Do nothing, will retry in 30s
@@ -635,7 +627,7 @@ public class GoLiveActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Supplier<List<Claim>> s = new ClaimListSupplier(Collections.singletonList(Claim.TYPE_CHANNEL), null);
-            CompletableFuture<List<Claim>> cf = CompletableFuture.supplyAsync(s);
+            CompletableFuture<List<Claim>> cf = CompletableFuture.supplyAsync(s, ((OdyseeApp) getApplication()).getExecutor());
             cf.whenComplete((result, e) -> {
                 if (e != null) {
                     runOnUiThread(new Runnable() {
