@@ -675,7 +675,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.feeContainer.setVisibility(cost.doubleValue() > 0 && !hideFee ? View.VISIBLE : View.GONE);
                     vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
                     vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
-                    vh.publisherView.setText(signingChannel != null ? signingChannel.getName() : context.getString(R.string.anonymous));
+                    vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
                     vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                     long duration = item.getDuration();
