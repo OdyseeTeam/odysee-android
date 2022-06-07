@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "30.0.3"
     flavorDimensions "default"
 
@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId "com.odysee.app"
         minSdkVersion 21
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 16
         versionName "0.0.16"
 //        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -127,7 +127,7 @@ dependencies {
     implementation 'io.tus.java.client:tus-java-client:0.4.5'
     implementation 'io.tus.android.client:tus-android-client:0.1.10'
 
-    implementation 'com.github.ktprograms.HaishinKit~kt:haishinkit:8943375956'
+    implementation 'com.github.shogo4405.HaishinKit~kt:haishinkit:0.9.4'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
 

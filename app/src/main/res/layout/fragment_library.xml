@@ -77,7 +77,8 @@
                         android:layout_height="24dp"
                         android:layout_centerVertical="true"
                         android:src="@drawable/ic_history"
-                        android:layout_marginStart="16dp"/>
+                        android:layout_marginStart="16dp"
+                        app:tint="?android:attr/textColorPrimary" />
                     <TextView
                         android:layout_toEndOf="@id/icon_library_item_history"
                         android:layout_width="wrap_content"
@@ -106,7 +107,8 @@
                         android:layout_height="24dp"
                         android:layout_centerVertical="true"
                         android:src="@drawable/ic_favorites"
-                        android:layout_marginStart="16dp"/>
+                        android:layout_marginStart="16dp"
+                        app:tint="?android:attr/textColorPrimary" />
                     <TextView
                         android:layout_toEndOf="@id/icon_library_item_favorites"
                         android:layout_width="wrap_content"
@@ -135,7 +137,8 @@
                         android:layout_height="24dp"
                         android:layout_centerVertical="true"
                         android:src="@drawable/ic_watch_later"
-                        android:layout_marginStart="16dp"/>
+                        android:layout_marginStart="16dp"
+                        app:tint="?android:attr/textColorPrimary" />
                     <TextView
                         android:layout_toEndOf="@id/icon_library_item_watchlater"
                         android:layout_width="wrap_content"

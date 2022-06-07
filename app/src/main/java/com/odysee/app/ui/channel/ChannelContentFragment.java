@@ -41,6 +41,7 @@ import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.Page;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Predefined;
@@ -278,27 +279,36 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         Activity a = getActivity();
 
         if (a != null) {
-            Collection<Callable<List<Claim>>> callables = new ArrayList<>(2);
-            callables.add(() -> findActiveStream());
-            callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING).getClaims());
+            Collection<Callable<Page>> callables = new ArrayList<>(2);
+            callables.add(() -> new Page(findActiveStream(), true /* ignored */));
+            callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
 
             getLoadingView().setVisibility(View.VISIBLE);
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        List<Future<List<Claim>>> results = ((OdyseeApp) a.getApplication()).getExecutor().invokeAll(callables);
+                        List<Future<Page>> results = ((OdyseeApp) a.getApplication()).getExecutor().invokeAll(callables);
 
                         List<Claim> items = new ArrayList<>();
 
-                        for (Future<List<Claim>> f : results) {
-                            if (!f.isCancelled()) {
-                                List<Claim> internalItems = f.get();
-
-                                if (internalItems != null) {
-                                    items.addAll(internalItems);
-                                }
+                        Future<Page> activeStreamFuture = results.get(0);
+                        Page activeStreamPage = activeStreamFuture.get();
+                        if (activeStreamPage != null) {
+                            List<Claim> activeStream = activeStreamPage.getClaims();
+                            if (activeStream != null) {
+                                items.addAll(activeStream);
                             }
+                        }
+
+                        Future<Page> claimSearchFuture = results.get(1);
+                        Page claimSearchPage = claimSearchFuture.get();
+                        boolean hasReachedEnd;
+                        if (claimSearchPage != null) {
+                            items.addAll(claimSearchPage.getClaims());
+                            hasReachedEnd = claimSearchPage.isLastPage();
+                        } else {
+                            hasReachedEnd = true;
                         }
 
                         List<Claim> liveItems = items.stream().filter(e -> e != null && e.isHighlightLive()).collect(Collectors.toList());
@@ -355,7 +365,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                     contentList.setAdapter(contentListAdapter);
                                 }
 
-                                contentHasReachedEnd = true;
+                                contentHasReachedEnd = hasReachedEnd;
                                 contentClaimSearchLoading = false;
                                 checkNoContent();
                             }
