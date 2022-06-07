@@ -657,6 +657,7 @@ public class FileViewFragment extends BaseFragment implements
             if (fileClaim != null && !invalidRepost) {
                 if (Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType()) &&
                         fileClaim.getClaimIds() != null && fileClaim.getClaimIds().size() > 0) {
+                    currentPlaylistTitle = fileClaim.getTitleOrName();
                     resolvePlaylistClaimsAndPlayFirst();
                     return;
                 }
