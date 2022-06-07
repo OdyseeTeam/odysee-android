@@ -226,6 +226,12 @@
                             android:visibility="gone" />
 
                         <TextView
+                            android:id="@+id/claim_view_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignEnd="@+id/claim_file_size" />
+
+                        <TextView
                             android:id="@+id/claim_file_size"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"

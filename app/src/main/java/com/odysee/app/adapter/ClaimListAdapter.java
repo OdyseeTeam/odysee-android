@@ -356,6 +356,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final View repostInfoView;
         protected final TextView repostChannelView;
         protected final View selectedOverlayView;
+        protected final TextView viewCountView;
         protected final TextView fileSizeView;
         protected final ProgressBar downloadProgressView;
         protected final TextView deviceView;
@@ -381,6 +382,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             repostInfoView = v.findViewById(R.id.claim_repost_info);
             repostChannelView = v.findViewById(R.id.claim_repost_channel);
             selectedOverlayView = v.findViewById(R.id.claim_selected_overlay);
+            viewCountView = v.findViewById(R.id.claim_view_count);
             fileSizeView = v.findViewById(R.id.claim_file_size);
             downloadProgressView = v.findViewById(R.id.claim_download_progress);
             deviceView = v.findViewById(R.id.claim_view_device);
@@ -678,6 +680,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.publisherView.setText(signingChannel != null ? signingChannel.getName() : context.getString(R.string.anonymous));
                     vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    if (vh.viewCountView != null) {
+                        vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
+                                R.plurals.view_count, item.getViews(), item.getViews()) : null);
+                    }
                     long duration = item.getDuration();
                     vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
                     long lastPlaybackPosition = loadLastPlaybackPosition(item);
