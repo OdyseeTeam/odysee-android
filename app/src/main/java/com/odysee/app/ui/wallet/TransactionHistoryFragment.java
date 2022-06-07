@@ -16,11 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.callable.TransactionList;
@@ -111,18 +110,17 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
         transactionsLoading = true;
 
         Activity a = getActivity();
-        loading.setVisibility(View.VISIBLE);
+        if (a != null) {
+            loading.setVisibility(View.VISIBLE);
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                Future<List<Transaction>> f = executorService.submit(new TransactionList(currentTransactionPage, TRANSACTION_PAGE_LIMIT, Lbryio.AUTH_TOKEN));
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Future<List<Transaction>> f = ((OdyseeApp) a.getApplication()).getExecutor().submit(new TransactionList(currentTransactionPage, TRANSACTION_PAGE_LIMIT, Lbryio.AUTH_TOKEN));
 
-                try {
-                    List<Transaction> resultList = f.get();
+                    try {
+                        List<Transaction> resultList = f.get();
 
-                    if (a != null) {
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -143,11 +141,9 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
                                 }
                             }
                         });
-                    }
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (a != null) {
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -157,9 +153,9 @@ public class TransactionHistoryFragment extends BaseFragment implements Transact
                         });
                     }
                 }
-            }
-        });
-        t.start();
+            });
+            t.start();
+        }
     }
 
     @Override

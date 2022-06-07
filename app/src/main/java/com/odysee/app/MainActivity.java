@@ -159,10 +159,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -428,11 +426,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private List<FetchClaimsListener> fetchClaimsListeners;
     private List<FetchChannelsListener> fetchChannelsListeners;
     @Getter
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> scheduledWalletUpdater;
     private boolean walletSyncScheduled;
 
-    ScheduledExecutorService searchWorker;
     ScheduledFuture<?> scheduledSearchFuture;
     private boolean autoSearchEnabled = false;
 
@@ -769,10 +765,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     autoSearchEnabled = sp.getBoolean("com.odysee.app.preference.userinterface.Autosearch", false);
                 }
                 if (autoSearchEnabled) {
-                    if (searchWorker == null) {
-                        searchWorker = Executors.newSingleThreadScheduledExecutor();
-                    }
-
                     // Cancel any previously scheduled search as soon as possible if not yet running.
                     // Let it finish otherwise, as it will be re-scheduled on aftertextChanged()
                     if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
@@ -809,7 +801,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 });
                             }
                         };
-                        scheduledSearchFuture = searchWorker.schedule(runnable, 500, TimeUnit.MILLISECONDS);
+                        scheduledSearchFuture = ((OdyseeApp) getApplication()).getScheduledExecutor().schedule(runnable, 500, TimeUnit.MILLISECONDS);
                     } else {
                         SearchFragment searchFragment = (SearchFragment) getSupportFragmentManager().findFragmentByTag("SEARCH");
 
@@ -1156,9 +1148,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void cancelScheduledSearchFuture() {
         if (scheduledSearchFuture != null && !scheduledSearchFuture.isCancelled()) {
             scheduledSearchFuture.cancel(true);
-        }
-        if (searchWorker != null && !searchWorker.isShutdown()) {
-            searchWorker.shutdown();
         }
     }
     public void hideToolbar() {
@@ -1678,9 +1667,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    ExecutorService executorService = Executors.newSingleThreadExecutor();
                     Callable<WalletBalance> c = new WalletBalanceFetch(getAuthToken());
-                    Future<WalletBalance> f = executorService.submit(c);
+                    Future<WalletBalance> f = ((OdyseeApp) a.getApplication()).getExecutor().submit(c);
                     try {
                         WalletBalance balance = f.get();
 
@@ -1699,10 +1687,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         });
                     } catch (ExecutionException | InterruptedException e) {
                         e.printStackTrace();
-                    } finally {
-                        if (!executorService.isShutdown()) {
-                            executorService.shutdown();
-                        }
                     }
                 }
             });
@@ -2587,9 +2571,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void initialiseUserInstall() {
-        ExecutorService service = Executors.newSingleThreadExecutor();
         if (!userInstallInitialised) {
-            service.execute(new Runnable() {
+            ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
@@ -2654,8 +2637,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void loadBlockedChannels() {
         if (!initialBlockedChannelsLoaded) {
-            ExecutorService service = Executors.newSingleThreadExecutor();
-            service.execute(new Runnable() {
+            ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -2674,10 +2656,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void loadInitialCategories() {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-
         if (!initialCategoriesLoaded) {
-            ContentSources.loadCategories(service, new ContentSources.CategoriesLoadedHandler() {
+            ContentSources.loadCategories(((OdyseeApp) getApplication()).getExecutor(), new ContentSources.CategoriesLoadedHandler() {
                 @Override
                 public void onCategoriesLoaded(List<ContentSources.Category> categories) {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -2790,9 +2770,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void scheduleWalletBalanceUpdate() {
-        if (isSignedIn() && scheduler != null && (scheduledWalletUpdater == null || scheduledWalletUpdater.isDone() || scheduledWalletUpdater.isCancelled())) {
+        if (isSignedIn() && (scheduledWalletUpdater == null || scheduledWalletUpdater.isDone() || scheduledWalletUpdater.isCancelled())) {
             MainActivity a = this;
-            scheduledWalletUpdater = scheduler.scheduleAtFixedRate(new Runnable() {
+            scheduledWalletUpdater = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     if (!a.isBatterySaverMode()) {
@@ -2808,8 +2788,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void scheduleWalletSyncTask() {
-        if (scheduler != null && !walletSyncScheduled) {
-            scheduler.scheduleAtFixedRate(new Runnable() {
+        if (!walletSyncScheduled) {
+            ((OdyseeApp) getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     syncWalletAndLoadPreferences();
@@ -3328,16 +3308,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
 
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    ExecutorService executorService = Executors.newSingleThreadExecutor();
                     Supplier<Boolean> task = new NotificationUpdateSupplier(options);
-                    CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, executorService);
+                    CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
                     cf.thenAcceptAsync(result -> {
                         if (result) {
                             SQLiteDatabase db = dbHelper.getWritableDatabase();
                             DatabaseHelper.markNotificationsSeen(db);
                             loadUnseenNotificationsCount();
                         }
-                    }, executorService);
+                    }, ((OdyseeApp) getApplication()).getExecutor());
                 } else {
                     Thread t = new Thread(new Runnable() {
                         @Override
@@ -3481,8 +3460,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
         }
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -3824,11 +3802,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (odyseeAccount != null && authToken != null) {
             options.put("auth_token", authToken);
         }
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
-            CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, executorService);
+            CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
             cf.exceptionally(e -> {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -3873,7 +3850,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         }
                     };
 
-                    Future<List<Reward>> future = executorService.submit(callable);
+                    Future<List<Reward>> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
 
                     try {
                         List<Reward> rewards = future.get();
@@ -4253,10 +4230,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             unlockingTips = true;
 
             Supplier<Boolean> task = new UnlockingTipsSupplier(options, authToken);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(result -> {
-                unlockingTips = false;
-            });
+            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
+            completableFuture.thenAccept(result -> unlockingTips = false);
         } else {
             Thread unlockingThread = new Thread(new Runnable() {
                 @Override
@@ -4271,8 +4246,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         }
                     };
 
-                    ExecutorService executorService = Executors.newSingleThreadExecutor();
-                    Future<Boolean> future = executorService.submit(callable);
+                    Future<Boolean> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
 
                     try {
                         unlockingTips = true;
@@ -4329,9 +4303,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Activity activity = this;
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
             Supplier<List<LbryNotification>> supplier = new NotificationListSupplier(options);
-            CompletableFuture<List<LbryNotification>> cf = CompletableFuture.supplyAsync(supplier, executorService);
+            CompletableFuture<List<LbryNotification>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
             cf.thenAcceptAsync(result -> {
                 activity.runOnUiThread(new Runnable() {
                     @Override
@@ -4355,7 +4328,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 }
 
-            }, executorService);
+            }, ((OdyseeApp) activity.getApplication()).getExecutor());
         } else {
             Thread t = new Thread(new Runnable() {
                 @Override
@@ -4421,8 +4394,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             return notifications;
                         }
                     };
-                    ExecutorService executorService = Executors.newSingleThreadExecutor();
-                    Future<List<LbryNotification>> future = executorService.submit(callable);
+                    Future<List<LbryNotification>> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
 
                     try {
                         List<LbryNotification> notifications = future.get();
@@ -4482,8 +4454,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-
                     Callable<List<LbryNotification>> callable = new Callable<List<LbryNotification>>() {
                         @Override
                         public List<LbryNotification> call() {
@@ -4499,7 +4469,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         }
                     };
 
-                    Future<List<LbryNotification>> futureNotifications = executor.submit(callable);
+                    Future<List<LbryNotification>> futureNotifications = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
                     try {
                         List<LbryNotification> notifications = futureNotifications.get();
 
@@ -4836,8 +4806,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleUnblockChannel(final Claim channel) {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        service.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -4865,8 +4834,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void blockChannel(Claim channel) {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        service.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {

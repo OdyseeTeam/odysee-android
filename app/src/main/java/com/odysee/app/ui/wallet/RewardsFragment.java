@@ -30,11 +30,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.RewardListAdapter;
 import com.odysee.app.exceptions.LbryioRequestException;
@@ -133,39 +133,37 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
 
         Activity activity = getActivity();
 
-        String authToken;
-        AccountManager am = AccountManager.get(getContext());
-        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
-        if (odyseeAccount != null) {
-            authToken = am.peekAuthToken(odyseeAccount, "auth_token_type");
-        } else {
-            authToken = "";
-        }
+        if (activity != null) {
+            String authToken;
+            AccountManager am = AccountManager.get(getContext());
+            Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+            if (odyseeAccount != null) {
+                authToken = am.peekAuthToken(odyseeAccount, "auth_token_type");
+            } else {
+                authToken = "";
+            }
 
-        Map<String, String> options = new HashMap<>();
-        options.put("multiple_rewards_per_type", "true");
-        if (odyseeAccount != null && authToken != null) {
-            options.put("auth_token", authToken);
-        }
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Map<String, String> options = new HashMap<>();
+            options.put("multiple_rewards_per_type", "true");
+            if (odyseeAccount != null && authToken != null) {
+                options.put("auth_token", authToken);
+            }
+            ExecutorService executorService = ((OdyseeApp) activity.getApplication()).getExecutor();
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
-            CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, executorService);
-            cf.exceptionally(e -> {
-                if (activity != null) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
+                CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, executorService);
+                cf.exceptionally(e -> {
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             showError(e.getMessage());
                         }
                     });
-                }
-                return null;
-            }).thenAccept(rewards -> {
-                Lbryio.updateRewardsLists(rewards);
+                    return null;
+                }).thenAccept(rewards -> {
+                    Lbryio.updateRewardsLists(rewards);
 
-                if (activity != null) {
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -181,26 +179,24 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                             Helper.setViewVisibility(rewardList, View.VISIBLE);
                         }
                     });
-                }
-            });
-        } else {
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Callable<List<Reward>> callable = new Callable<List<Reward>>() {
-                        @Override
-                        public List<Reward> call() {
-                            List<Reward> rewards = null;
-                            try {
-                                JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", options, null));
-                                rewards = new ArrayList<>();
-                                if (results != null) {
-                                    for (int i = 0; i < results.length(); i++) {
-                                        rewards.add(Reward.fromJSONObject(results.getJSONObject(i)));
+                });
+            } else {
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Callable<List<Reward>> callable = new Callable<List<Reward>>() {
+                            @Override
+                            public List<Reward> call() {
+                                List<Reward> rewards = null;
+                                try {
+                                    JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", options, null));
+                                    rewards = new ArrayList<>();
+                                    if (results != null) {
+                                        for (int i = 0; i < results.length(); i++) {
+                                            rewards.add(Reward.fromJSONObject(results.getJSONObject(i)));
+                                        }
                                     }
-                                }
-                            } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
-                                if (activity != null) {
+                                } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
                                     activity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
@@ -208,21 +204,19 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                                         }
                                     });
                                 }
+
+                                return rewards;
                             }
+                        };
 
-                            return rewards;
-                        }
-                    };
+                        Future<List<Reward>> future = executorService.submit(callable);
 
-                    Future<List<Reward>> future = executorService.submit(callable);
+                        try {
+                            List<Reward> rewards = future.get();
 
-                    try {
-                        List<Reward> rewards = future.get();
+                            if (rewards != null) {
+                                Lbryio.updateRewardsLists(rewards);
 
-                        if (rewards != null) {
-                            Lbryio.updateRewardsLists(rewards);
-
-                            if (activity != null) {
                                 activity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -239,13 +233,13 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
                                     }
                                 });
                             }
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
                         }
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
                     }
-                }
-            });
-            t.start();
+                });
+                t.start();
+            }
         }
     }
 
@@ -311,9 +305,7 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Supplier<JSONObject> s = new ClaimRewardSupplier(type, code, authToken);
             CompletableFuture<JSONObject> cf = CompletableFuture.supplyAsync(s);
-            cf.whenComplete((result, e) -> {
-                afterClaimingReward(inputClaimCode, buttonClaim, loadingView, activity, result, e);
-            });
+            cf.whenComplete((result, e) -> afterClaimingReward(inputClaimCode, buttonClaim, loadingView, activity, result, e));
         } else {
             ClaimRewardTask task = new ClaimRewardTask(type, code, authToken, new ClaimRewardTask.ClaimRewardHandler() {
                 @Override

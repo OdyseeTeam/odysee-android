@@ -41,7 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -212,8 +213,7 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
             viewPager.setVisibility(View.INVISIBLE);
             onRequestInProgress(true);
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            executor.execute(new Runnable() {
+            ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     String authToken = Lbryio.AUTH_TOKEN;
@@ -275,9 +275,8 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
                 Callable<WalletBalance> c = new WalletBalanceFetch(Lbryio.AUTH_TOKEN);
-                Future<WalletBalance> f = executorService.submit(c);
+                Future<WalletBalance> f = ((OdyseeApp) a.getApplication()).getExecutor().submit(c);
 
                 try {
                     WalletBalance wb = f.get();
@@ -297,10 +296,6 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
                 } catch (Exception e) {
                     e.printStackTrace();
                     emailRewardChecked();
-                } finally {
-                    if (!executorService.isShutdown()) {
-                        executorService.shutdown();
-                    }
                 }
             }
         });
@@ -314,8 +309,7 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
         }
 
         onRequestInProgress(true);
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 Map<String, Object> options = new HashMap<>();

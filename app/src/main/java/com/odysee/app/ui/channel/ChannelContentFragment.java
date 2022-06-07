@@ -15,6 +15,7 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.odysee.app.OdyseeApp;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,8 +27,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -277,66 +276,62 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Activity a = getActivity();
 
-        Collection<Callable<Page>> callables = new ArrayList<>(2);
-        callables.add(() -> new Page(findActiveStream(), true /* ignored */));
-        callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
+        if (a != null) {
+            Collection<Callable<Page>> callables = new ArrayList<>(2);
+            callables.add(() -> new Page(findActiveStream(), true /* ignored */));
+            callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
 
-        getLoadingView().setVisibility(View.VISIBLE);
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    List<Future<Page>> results = executor.invokeAll(callables);
+            getLoadingView().setVisibility(View.VISIBLE);
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        List<Future<Page>> results = ((OdyseeApp) a.getApplication()).getExecutor().invokeAll(callables);
 
-                    List<Claim> items = new ArrayList<>();
+                        List<Claim> items = new ArrayList<>();
 
-                    Future<Page> activeStreamFuture = results.get(0);
-                    Page activeStreamPage = activeStreamFuture.get();
-                    if (activeStreamPage != null) {
-                        List<Claim> activeStream = activeStreamPage.getClaims();
-                        if (activeStream != null) {
-                            items.addAll(activeStream);
+                        Future<Page> activeStreamFuture = results.get(0);
+                        Page activeStreamPage = activeStreamFuture.get();
+                        if (activeStreamPage != null) {
+                            List<Claim> activeStream = activeStreamPage.getClaims();
+                            if (activeStream != null) {
+                                items.addAll(activeStream);
+                            }
                         }
-                    }
 
-                    Future<Page> claimSearchFuture = results.get(1);
-                    Page claimSearchPage = claimSearchFuture.get();
-                    boolean hasReachedEnd;
-                    if (claimSearchPage != null) {
-                        items.addAll(claimSearchPage.getClaims());
-                        hasReachedEnd = claimSearchPage.isLastPage();
-                    } else {
-                        hasReachedEnd = true;
-                    }
-
-                    executor.shutdown();
-
-                    List<Claim> liveItems = items.stream().filter(e -> e != null && e.isHighlightLive()).collect(Collectors.toList());
-                    List<Claim> regularItems = items.stream().filter(e -> e != null && !e.isHighlightLive()).collect(Collectors.toList());
-
-                    for (Claim c : regularItems) {
-                        liveItems.removeIf(e -> e.getClaimId().equalsIgnoreCase(c.getClaimId()));
-                    }
-
-                    regularItems.removeIf(c -> {
-                        Claim.GenericMetadata streamMetadata = c.getValue();
-                        if (streamMetadata instanceof Claim.StreamMetadata) {
-                            long releaseTime = ((Claim.StreamMetadata)streamMetadata).getReleaseTime();
-                            String claimValueType = ((Claim.StreamMetadata) streamMetadata).getStreamType();
-                            return (!(releaseTime > System.currentTimeMillis()) && claimValueType == null);
+                        Future<Page> claimSearchFuture = results.get(1);
+                        Page claimSearchPage = claimSearchFuture.get();
+                        boolean hasReachedEnd;
+                        if (claimSearchPage != null) {
+                            items.addAll(claimSearchPage.getClaims());
+                            hasReachedEnd = claimSearchPage.isLastPage();
                         } else {
-                            return false;
+                            hasReachedEnd = true;
                         }
-                    });
 
-                    items = Stream.concat(liveItems.stream(), regularItems.stream()).collect(Collectors.toList());
-                    items = Helper.sortingLivestreamingFirst(Helper.filterClaimsByOutpoint(items));
+                        List<Claim> liveItems = items.stream().filter(e -> e != null && e.isHighlightLive()).collect(Collectors.toList());
+                        List<Claim> regularItems = items.stream().filter(e -> e != null && !e.isHighlightLive()).collect(Collectors.toList());
 
-                    Activity a = getActivity();
+                        for (Claim c : regularItems) {
+                            liveItems.removeIf(e -> e.getClaimId().equalsIgnoreCase(c.getClaimId()));
+                        }
 
-                    if (a != null){
+                        regularItems.removeIf(c -> {
+                            Claim.GenericMetadata streamMetadata = c.getValue();
+                            if (streamMetadata instanceof Claim.StreamMetadata) {
+                                long releaseTime = ((Claim.StreamMetadata)streamMetadata).getReleaseTime();
+                                String claimValueType = ((Claim.StreamMetadata) streamMetadata).getStreamType();
+                                return (!(releaseTime > System.currentTimeMillis()) && claimValueType == null);
+                            } else {
+                                return false;
+                            }
+                        });
+
+                        items = Stream.concat(liveItems.stream(), regularItems.stream()).collect(Collectors.toList());
+                        items = Helper.sortingLivestreamingFirst(Helper.filterClaimsByOutpoint(items));
+
                         List<Claim> finalItems = items;
                         a.runOnUiThread(new Runnable() {
                             @Override
@@ -375,71 +370,69 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                 checkNoContent();
                             }
                         });
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
                     }
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
                 }
-            }
-        });
-        t.start();
+            });
+            t.start();
+        }
     }
 
     private List<Claim> findActiveStream() {
         List<Claim> mostRecentClaims = new ArrayList<>();
         Map<String, JSONObject> livestreamingChannels;
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         String livestreamUrl = null;
-        try {
-            Future<Map<String, JSONObject>> isLiveFuture = executor.submit(new ChannelLiveStatus(Collections.singletonList(channelId)));
 
-            livestreamingChannels = isLiveFuture.get();
+        Activity a = getActivity();
 
-            Map<String, Integer> viewersForClaim = new HashMap<>();
-            if (livestreamingChannels != null && livestreamingChannels.containsKey(channelId)) {
-                String activeClaimId = null;
-                JSONObject jsonData = livestreamingChannels.get(channelId);
-                if (jsonData != null && jsonData.has("ActiveClaim")) {
-                    livestreamUrl = jsonData.getString("VideoURL");
-                    JSONObject jsonActiveClaimID = jsonData.getJSONObject("ActiveClaim");
-                    activeClaimId = jsonActiveClaimID.getString("ClaimID");
-                    viewersForClaim.put(activeClaimId, jsonData.getInt("ViewerCount"));
-                }
+        if (a != null) {
+            try {
+                Future<Map<String, JSONObject>> isLiveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new ChannelLiveStatus(Collections.singletonList(channelId)));
 
-                if (activeClaimId != null && !activeClaimId.equalsIgnoreCase("Confirming")) {
-                    Map<String, Object> claimSearchOptions = buildContentOptions();
+                livestreamingChannels = isLiveFuture.get();
 
-                    claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
-                    claimSearchOptions.put("has_no_source", true);
-                    claimSearchOptions.put("claim_id", activeClaimId);
-                    Future<List<Claim>> mostRecentsFuture = executor.submit(new Search(claimSearchOptions));
-
-                    mostRecentClaims = mostRecentsFuture.get();
-                }
-            }
-
-            executor.shutdown();
-
-            if (mostRecentClaims.size() == 0) {
-                return null;
-            } else {
-                String finalLivestreamUrl = livestreamUrl;
-                mostRecentClaims.stream().forEach(c -> {
-                    c.setHighlightLive(true);
-                    c.setLivestreamUrl(finalLivestreamUrl);
-                    Integer viewers = viewersForClaim.get(c.getClaimId());
-                    if (viewers != null) {
-                        c.setLivestreamViewers(viewers);
+                Map<String, Integer> viewersForClaim = new HashMap<>();
+                if (livestreamingChannels != null && livestreamingChannels.containsKey(channelId)) {
+                    String activeClaimId = null;
+                    JSONObject jsonData = livestreamingChannels.get(channelId);
+                    if (jsonData != null && jsonData.has("ActiveClaim")) {
+                        livestreamUrl = jsonData.getString("VideoURL");
+                        JSONObject jsonActiveClaimID = jsonData.getJSONObject("ActiveClaim");
+                        activeClaimId = jsonActiveClaimID.getString("ClaimID");
+                        viewersForClaim.put(activeClaimId, jsonData.getInt("ViewerCount"));
                     }
-                });
-            }
-        } catch (InterruptedException | ExecutionException | JSONException e) {
-            Throwable cause = e.getCause();
-            if (cause != null) {
-                cause.printStackTrace();
-            }
-        } finally {
-            if (!executor.isShutdown()) {
-                executor.shutdown();
+
+                    if (activeClaimId != null && !activeClaimId.equalsIgnoreCase("Confirming")) {
+                        Map<String, Object> claimSearchOptions = buildContentOptions();
+
+                        claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                        claimSearchOptions.put("has_no_source", true);
+                        claimSearchOptions.put("claim_id", activeClaimId);
+                        Future<List<Claim>> mostRecentsFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
+
+                        mostRecentClaims = mostRecentsFuture.get();
+                    }
+                }
+
+                if (mostRecentClaims.size() == 0) {
+                    return null;
+                } else {
+                    String finalLivestreamUrl = livestreamUrl;
+                    mostRecentClaims.stream().forEach(c -> {
+                        c.setHighlightLive(true);
+                        c.setLivestreamUrl(finalLivestreamUrl);
+                        Integer viewers = viewersForClaim.get(c.getClaimId());
+                        if (viewers != null) {
+                            c.setLivestreamViewers(viewers);
+                        }
+                    });
+                }
+            } catch (InterruptedException | ExecutionException | JSONException e) {
+                Throwable cause = e.getCause();
+                if (cause != null) {
+                    cause.printStackTrace();
+                }
             }
         }
 

@@ -6,6 +6,10 @@ import android.os.Build;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class OdyseeApp extends Application {
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_DARK_MODE_SETTING = "com.odysee.app.preference.userinterface.DarkModeSetting";
@@ -14,6 +18,9 @@ public class OdyseeApp extends Application {
     public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
 
+    private int numberOfCores = 1;
+    private ExecutorService executor;
+    private ScheduledExecutorService scheduledExecutor;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -43,5 +50,25 @@ public class OdyseeApp extends Application {
                 return APP_SETTING_DARK_MODE_NOTNIGHT;
             }
         }
+    }
+
+    public ExecutorService getExecutor() {
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        if (executor == null || availableCores != numberOfCores) {
+            executor = Executors.newFixedThreadPool(Math.max(availableCores, 4));
+            numberOfCores = availableCores;
+        }
+
+        return executor;
+    }
+
+    public ScheduledExecutorService getScheduledExecutor() {
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        if (scheduledExecutor == null || availableCores != numberOfCores) {
+            scheduledExecutor = Executors.newScheduledThreadPool(Math.max(availableCores, 4));
+            numberOfCores = availableCores;
+        }
+
+        return scheduledExecutor;
     }
 }
