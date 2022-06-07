@@ -1098,10 +1098,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.global_now_playing_card).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (nowPlayingClaim != null && !Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
+                if (nowPlayingClaim != null && (!Helper.isNullOrEmpty(nowPlayingClaimUrl) || !Helper.isNullOrEmpty(nowPlayingClaim.getCanonicalUrl()))) {
                     hideNotifications();
                     hideGlobalNowPlaying();
-                    openFileUrl(nowPlayingClaimUrl);
+
+                    String urlParam;
+
+                    if (!Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
+                        urlParam = nowPlayingClaimUrl;
+                    } else {
+                        urlParam = nowPlayingClaim.getCanonicalUrl();
+                    }
+                    openFileUrl(urlParam);
                 }
             }
         });
@@ -2238,8 +2246,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void checkNowPlaying() {
         // Don't show the toolbar when returning from the Share Activity
-        if (getSupportFragmentManager().findFragmentByTag(FILE_VIEW_TAG) == null)
+        if (getSupportFragmentManager().findFragmentByTag(FILE_VIEW_TAG) == null) {
             findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
+        }
         if (nowPlayingClaim != null) {
             findViewById(R.id.miniplayer).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
