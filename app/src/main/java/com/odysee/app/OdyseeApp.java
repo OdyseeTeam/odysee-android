@@ -18,6 +18,7 @@ public class OdyseeApp extends Application {
     public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
 
+    private int numberOfCores = 1;
     private ExecutorService executor;
     private ScheduledExecutorService scheduledExecutor;
     @Override
@@ -52,16 +53,20 @@ public class OdyseeApp extends Application {
     }
 
     public ExecutorService getExecutor() {
-        if (executor == null) {
-            executor = Executors.newFixedThreadPool(4);
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        if (executor == null || availableCores != numberOfCores) {
+            executor = Executors.newFixedThreadPool(Math.max(availableCores, 4));
+            numberOfCores = availableCores;
         }
 
         return executor;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
-        if (scheduledExecutor == null) {
-            scheduledExecutor = Executors.newScheduledThreadPool(4);
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        if (scheduledExecutor == null || availableCores != numberOfCores) {
+            scheduledExecutor = Executors.newScheduledThreadPool(Math.max(availableCores, 4));
+            numberOfCores = availableCores;
         }
 
         return scheduledExecutor;
