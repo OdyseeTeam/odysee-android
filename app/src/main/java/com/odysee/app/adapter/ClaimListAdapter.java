@@ -350,6 +350,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final TextView vanityUrlView;
         protected final TextView durationView;
         protected final TextView titleView;
+        protected final ImageView publisherThumbnailView;
         protected final TextView publisherView;
         protected final TextView publishTimeView;
         protected final TextView pendingTextView;
@@ -375,6 +376,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             vanityUrlView = v.findViewById(R.id.claim_vanity_url);
             durationView = v.findViewById(R.id.claim_duration);
             titleView = v.findViewById(R.id.claim_title);
+            publisherThumbnailView = v.findViewById(R.id.claim_publisher_thumbnail);
             publisherView = v.findViewById(R.id.claim_publisher);
             publishTimeView = v.findViewById(R.id.claim_publish_time);
             pendingTextView = v.findViewById(R.id.claim_pending_text);
@@ -669,6 +671,20 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         vh.thumbnailView.setVisibility(View.VISIBLE);
                     } else {
                         vh.thumbnailView.setVisibility(View.GONE);
+                    }
+
+                    if (vh.publisherThumbnailView != null) {
+                        String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
+                        if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
+                            Glide.with(context.getApplicationContext())
+                                    .load(publisherThumbnailUrl)
+                                    .centerCrop()
+                                    .placeholder(R.drawable.bg_thumbnail_placeholder)
+                                    .apply(RequestOptions.circleCropTransform())
+                                    .into(vh.publisherThumbnailView);
+                        } else {
+                            vh.publisherThumbnailView.setVisibility(View.GONE);
+                        }
                     }
 
                     BigDecimal cost = item.getActualCost(Lbryio.LBCUSDRate);
