@@ -448,9 +448,10 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
     }
 
     private void checkChannelStep() {
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, null, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 onRequestInProgress(false);
                 if (claims.size() == 0) {
                     // no channels, move to first run step: channel

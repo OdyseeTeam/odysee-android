@@ -25,6 +25,7 @@ import com.google.android.material.snackbar.Snackbar;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -49,9 +50,11 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
     private View emptyView;
     private View layoutSdkInitializing;
     private ProgressBar loading;
-    private ProgressBar bigLoading;
     private RecyclerView contentList;
     private ClaimListAdapter adapter;
+    private boolean contentLoading;
+    private boolean contentHasReachedEnd;
+    private int contentCurrentPage = 1;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -61,13 +64,32 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
         fabNewPublish = root.findViewById(R.id.publishes_fab_new_publish);
         buttonNewPublish.setOnClickListener(newPublishClickListener);
         fabNewPublish.setOnClickListener(newPublishClickListener);
-
         emptyView = root.findViewById(R.id.publishes_empty_container);
+        loading = root.findViewById(R.id.publishes_list_loading);
+
         contentList = root.findViewById(R.id.publishes_list);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         contentList.setLayoutManager(llm);
-        loading = root.findViewById(R.id.publishes_list_loading);
-        bigLoading = root.findViewById(R.id.publishes_list_big_loading);
+        contentList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (contentLoading) {
+                    return;
+                }
+
+                LinearLayoutManager lm = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (lm != null) {
+                    int visibleItemCount = lm.getChildCount();
+                    int totalItemCount = lm.getItemCount();
+                    int pastVisibleItems = lm.findFirstVisibleItemPosition();
+                    if (pastVisibleItems + visibleItemCount >= totalItemCount && !contentHasReachedEnd) {
+                        // load more
+                        contentCurrentPage++;
+                        fetchPublishes();
+                    }
+                }
+            }
+        });
 
         return root;
     }
@@ -106,20 +128,18 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
         fetchPublishes();
     }
 
-    public View getLoading() {
-        return (adapter == null || adapter.getItemCount() == 0) ? bigLoading : loading;
-    }
-
     private void checkNoPublishes() {
         Helper.setViewVisibility(emptyView, adapter == null || adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 
     private void fetchPublishes() {
+        contentLoading = true;
         Helper.setViewVisibility(emptyView, View.GONE);
-        ClaimListTask task = new ClaimListTask(Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST),
-                getLoading(), Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(
+                Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), contentCurrentPage, 5, true);
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, loading, new ClaimListResultHandler() {
                     @Override
-                    public void onSuccess(List<Claim> claims) {
+                    public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                         Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
                         if (adapter == null) {
                             Context context = getContext();
@@ -145,9 +165,11 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
                                 }
                             }
                         } else {
-                            adapter.setItems(claims);
+                            adapter.addItems(claims);
                         }
 
+                        contentHasReachedEnd = hasReachedEnd;
+                        contentLoading = false;
                         checkNoPublishes();
                     }
 
@@ -251,7 +273,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
 
         Helper.setViewVisibility(contentList, View.INVISIBLE);
         Helper.setViewVisibility(fabNewPublish, View.INVISIBLE);
-        AbandonStreamTask task = new AbandonStreamTask(claimIds, bigLoading, new AbandonHandler() {
+        AbandonStreamTask task = new AbandonStreamTask(claimIds, loading, new AbandonHandler() {
             @Override
             public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                 View root = getView();

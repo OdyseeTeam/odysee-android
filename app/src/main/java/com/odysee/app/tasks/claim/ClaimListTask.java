@@ -15,70 +15,50 @@ import java.util.Map;
 
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.Page;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Lbryio;
 
-public class ClaimListTask extends AsyncTask<Void, Void, List<Claim>> {
-    private final List<String> types;
+public class ClaimListTask extends AsyncTask<Void, Void, Page> {
+    private final Map<String, Object> options;
     private final View progressView;
     private final ClaimListResultHandler handler;
     private Exception error;
     private String authToken;
 
-    public ClaimListTask(String type, View progressView, String token, ClaimListResultHandler handler) {
-        this(Arrays.asList(type), progressView, token, handler);
-    }
-    public ClaimListTask(List<String> types, View progressView, String token, ClaimListResultHandler handler) {
-        this(types, progressView, handler);
+    public ClaimListTask(Map<String, Object> options, String token, View progressView, ClaimListResultHandler handler) {
+        this(options, progressView, handler);
         this.authToken = token;
     }
-    public ClaimListTask(String type, View progressView, ClaimListResultHandler handler) {
-        this(Arrays.asList(type), progressView, handler);
-    }
-    public ClaimListTask(List<String> types, View progressView, ClaimListResultHandler handler) {
-        this.types = types;
+    public ClaimListTask(Map<String, Object> options, View progressView, ClaimListResultHandler handler) {
+        this.options = options;
         this.progressView = progressView;
         this.handler = handler;
     }
+
+    @Override
     protected void onPreExecute() {
         Helper.setViewVisibility(progressView, View.VISIBLE);
     }
-    protected List<Claim> doInBackground(Void... params) {
-        List<Claim> claims = null;
 
+    @Override
+    protected Page doInBackground(Void... params) {
         try {
-            Map<String, Object> options = new HashMap<>();
-            if (types != null && types.size() > 0) {
-                options.put("claim_type", types);
-            }
-            options.put("page", 1);
-            options.put("page_size", 999);
-            options.put("resolve", true);
-
-            JSONObject result;
-            if (!Helper.isNullOrEmpty(authToken)) {
-                result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_CLAIM_LIST, options, authToken);
-            } else {
-                result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_CLAIM_LIST, options);
-            }
-
-            JSONArray items = result.getJSONArray("items");
-            claims = new ArrayList<>();
-            for (int i = 0; i < items.length(); i++) {
-                claims.add(Claim.fromJSONObject(items.getJSONObject(i)));
-            }
-        } catch (ApiCallException | JSONException ex) {
+            return Lbry.claimList(options, authToken);
+        } catch (ApiCallException ex) {
             error = ex;
+            return null;
         }
-        return claims;
     }
-    protected void onPostExecute(List<Claim> claims) {
+
+    @Override
+    protected void onPostExecute(Page claimsPage) {
         Helper.setViewVisibility(progressView, View.GONE);
         if (handler != null) {
-            if (claims != null) {
+            if (claimsPage != null) {
                 // TODO: Add fix for handling invalid reposts in ClaimListAdapter
-                handler.onSuccess(Helper.filterInvalidReposts(claims));
+                handler.onSuccess(Helper.filterInvalidReposts(claimsPage.getClaims()), claimsPage.isLastPage());
             } else {
                 handler.onError(error);
             }

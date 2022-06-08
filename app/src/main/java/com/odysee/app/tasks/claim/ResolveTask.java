@@ -14,15 +14,15 @@ import com.odysee.app.utils.Lbry;
 public class ResolveTask extends AsyncTask<Void, Void, List<Claim>> {
     private final List<String> urls;
     private final String connectionString;
-    private final ClaimListResultHandler handler;
+    private final ResolveResultHandler handler;
     private final View progressView;
     private ApiCallException error;
 
-    public ResolveTask(String url, String connectionString, View progressView, ClaimListResultHandler handler) {
+    public ResolveTask(String url, String connectionString, View progressView, ResolveResultHandler handler) {
         this(Arrays.asList(url), connectionString, progressView, handler);
     }
 
-    public ResolveTask(List<String> urls, String connectionString, View progressView, ClaimListResultHandler handler) {
+    public ResolveTask(List<String> urls, String connectionString, View progressView, ResolveResultHandler handler) {
         this.urls = urls;
         this.connectionString = connectionString;
         this.progressView = progressView;

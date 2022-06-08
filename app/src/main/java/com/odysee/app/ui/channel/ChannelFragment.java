@@ -45,8 +45,8 @@ import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.tasks.claim.AbandonChannelTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
-import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.ui.BaseFragment;
@@ -538,7 +538,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private void resolveUrl() {
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
-        ResolveTask task = new ResolveTask(currentUrl, Lbry.API_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(currentUrl, Lbry.API_CONNECTION_STRING, layoutResolving, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {

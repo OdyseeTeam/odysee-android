@@ -124,6 +124,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -2063,7 +2064,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void resolveUrlSuggestions(List<String> urls) {
-        ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (findViewById(R.id.url_suggestions_container).getVisibility() == View.VISIBLE) {
@@ -4205,9 +4206,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         channelCreationBottomSheet = null;
     }
     public void fetchOwnChannels() {
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, null, Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, null, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(claims));
                 for (FetchChannelsListener listener : fetchChannelsListeners) {
                     listener.onChannelsFetched(claims);
@@ -4223,9 +4225,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void fetchOwnClaims() {
-        ClaimListTask task = new ClaimListTask(Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), null, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(
+                Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, null, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
                 for (FetchClaimsListener listener : fetchClaimsListeners) {
                     listener.onClaimsFetched(claims);
@@ -4622,7 +4626,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private void resolveCommentAuthors(List<String> urls) {
         if (urls != null && !urls.isEmpty()) {
-            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
+            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     if (notificationListAdapter != null) {
