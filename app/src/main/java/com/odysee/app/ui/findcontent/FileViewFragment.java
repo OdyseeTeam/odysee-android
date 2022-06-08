@@ -2609,8 +2609,9 @@ public class FileViewFragment extends BaseFragment implements
             FetchStatCountTask task = new FetchStatCountTask(
                     FetchStatCountTask.STAT_VIEW_COUNT, actualClaim.getClaimId(), null, new FetchStatCountTask.FetchStatCountHandler() {
                 @Override
-                public void onSuccess(int count) {
+                public void onSuccess(List<Integer> counts) {
                     try {
+                        int count = counts.get(0);
                         String displayText = getResources().getQuantityString(R.plurals.view_count, count, NumberFormat.getInstance().format(count));
                         View root = getView();
                         if (root != null) {

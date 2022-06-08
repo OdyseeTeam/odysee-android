@@ -103,6 +103,7 @@ public class Claim {
 
     private boolean highlightLive;
     private int livestreamViewers;
+    private Integer views;
 
     // Collections
     private List<String> claimIds;

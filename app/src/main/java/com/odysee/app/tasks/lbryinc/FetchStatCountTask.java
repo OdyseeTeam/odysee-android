@@ -11,19 +11,26 @@ import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbryio;
 
-public class FetchStatCountTask extends AsyncTask<Void, Void, Integer> {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class FetchStatCountTask extends AsyncTask<Void, Void, List<Integer>> {
     public static final int STAT_VIEW_COUNT = 1;
     public static final int STAT_SUB_COUNT = 2;
 
-    private final String claimId;
+    private final List<String> claimIds;
     private final int stat;
     private final FetchStatCountHandler handler;
     private final View progressView;
     private Exception error;
 
     public FetchStatCountTask(int stat, String claimId, View progressView, FetchStatCountHandler handler) {
+        this(stat, Collections.singletonList(claimId), progressView, handler);
+    }
+    public FetchStatCountTask(int stat, List<String> claimIds, View progressView, FetchStatCountHandler handler) {
         this.stat = stat;
-        this.claimId = claimId;
+        this.claimIds = claimIds;
         this.progressView = progressView;
         this.handler = handler;
     }
@@ -32,8 +39,8 @@ public class FetchStatCountTask extends AsyncTask<Void, Void, Integer> {
         Helper.setViewVisibility(progressView, View.VISIBLE);
     }
 
-    protected Integer doInBackground(Void... params) {
-        int count = -1;
+    protected List<Integer> doInBackground(Void... params) {
+        List<Integer> counts = new ArrayList<>();
         try {
             if (stat != STAT_VIEW_COUNT && stat != STAT_SUB_COUNT) {
                 throw new LbryioRequestException("Invalid stat count specified.");
@@ -43,23 +50,23 @@ public class FetchStatCountTask extends AsyncTask<Void, Void, Integer> {
                     Lbryio.parseResponse(Lbryio.call(
                             stat == STAT_VIEW_COUNT ? "file" : "subscription",
                             stat == STAT_VIEW_COUNT ? "view_count" : "sub_count",
-                            Lbryio.buildSingleParam("claim_id", claimId),
+                            Lbryio.buildSingleListParam("claim_id", claimIds),
                             Helper.METHOD_GET, null));
-            if (results.length() > 0) {
-                count = results.getInt(0);
+            for (int i = 0; i < results.length(); i++) {
+                counts.add(results.getInt(i));
             }
         } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
             error = ex;
         }
 
-        return count;
+        return counts;
     }
 
-    protected void onPostExecute(Integer count) {
+    protected void onPostExecute(List<Integer> counts) {
         Helper.setViewVisibility(progressView, View.GONE);
         if (handler != null) {
-            if (count > -1) {
-                handler.onSuccess(count);
+            if (counts.size() > 0) {
+                handler.onSuccess(counts);
             } else {
                 handler.onError(error);
             }
@@ -67,7 +74,7 @@ public class FetchStatCountTask extends AsyncTask<Void, Void, Integer> {
     }
 
     public interface FetchStatCountHandler {
-        void onSuccess(int count);
+        void onSuccess(List<Integer> counts);
         void onError(Exception error);
     }
 }

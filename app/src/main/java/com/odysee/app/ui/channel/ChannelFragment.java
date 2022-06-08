@@ -717,8 +717,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             FetchStatCountTask task = new FetchStatCountTask(
                     FetchStatCountTask.STAT_SUB_COUNT, claim.getClaimId(), null, new FetchStatCountTask.FetchStatCountHandler() {
                 @Override
-                public void onSuccess(int count) {
+                public void onSuccess(List<Integer> counts) {
                     try {
+                        int count = counts.get(0);
                         String displayText = getResources().getQuantityString(R.plurals.follower_count, count, NumberFormat.getInstance().format(count));
                         Helper.setViewText(textFollowerCount, displayText);
                         Helper.setViewVisibility(textFollowerCount, View.VISIBLE);
