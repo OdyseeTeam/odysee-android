@@ -351,9 +351,10 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
 
         fetchingChannels = true;
         disableChannelSpinner();
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, progressLoadingChannels, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
                 updateChannelList(Lbry.ownChannels);
                 enableChannelSpinner();

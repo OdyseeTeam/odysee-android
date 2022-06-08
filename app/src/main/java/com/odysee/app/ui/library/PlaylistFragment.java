@@ -30,7 +30,7 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
-import com.odysee.app.tasks.claim.ClaimListResultHandler;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
@@ -138,7 +138,7 @@ public class PlaylistFragment extends BaseFragment implements
         Helper.setViewText(textVideoCount, getResources().getQuantityString(R.plurals.video_count, collection.getItems().size(), collection.getItems().size()));
 
         // load the claims
-        ResolveTask task = new ResolveTask(collection.getItems(), Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(collection.getItems(), Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 // reorder the claims based on the order in the playlist collection, TODO: find a more efficient way to do this

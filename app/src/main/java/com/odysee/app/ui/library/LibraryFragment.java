@@ -58,6 +58,7 @@ import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.PurchaseListTask;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.file.BulkDeleteFilesTask;
 import com.odysee.app.tasks.file.FileListTask;
@@ -113,7 +114,7 @@ public class LibraryFragment extends BaseFragment implements
     private View legendAudio;
     private View legendImage;
     private View legendOther;
-    
+
     private long totalBytes;
     private long totalVideoBytes;
     private long totalAudioBytes;
@@ -189,7 +190,7 @@ public class LibraryFragment extends BaseFragment implements
                 }
             }
         });*/
-        
+
         // stats
         linkStats = root.findViewById(R.id.library_show_stats);
         linkHide = root.findViewById(R.id.library_hide_stats);
@@ -406,9 +407,11 @@ public class LibraryFragment extends BaseFragment implements
         }
 
         linkStats.setVisibility(View.INVISIBLE);
-        ClaimListTask task = new ClaimListTask(Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), listLoading, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(
+                Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, listLoading, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
                 initialOwnClaimsFetched = true;
                 if (currentFilter == FILTER_DOWNLOADS) {
@@ -728,7 +731,7 @@ public class LibraryFragment extends BaseFragment implements
         }
         return Double.valueOf(Math.floor(value)).intValue();
     }
-    
+
     private void checkStatsLink() {
         linkStats.setVisibility(cardStats.getVisibility() == View.VISIBLE ||
                         listLoading.getVisibility() == View.VISIBLE ||
@@ -871,7 +874,7 @@ public class LibraryFragment extends BaseFragment implements
 
     private void resolveMissingChannelNames(List<String> urls) {
         if (urls.size() > 0) {
-            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
+            ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     boolean updated = false;

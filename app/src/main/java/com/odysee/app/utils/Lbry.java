@@ -483,6 +483,57 @@ public final class Lbry {
         return claimsPage;
     }
 
+    public static Map<String, Object> buildClaimListOptions(
+            String claimType,
+            int page,
+            int pageSize,
+            boolean resolve) {
+        return buildClaimListOptions(
+                Collections.singletonList(claimType),
+                page,
+                pageSize,
+                resolve);
+    }
+
+    public static Map<String, Object> buildClaimListOptions(
+            List<String> claimType,
+            int page,
+            int pageSize,
+            boolean resolve) {
+        Map<String, Object> options = new HashMap<>();
+        if (claimType != null && claimType.size() > 0) {
+            options.put("claim_type", claimType);
+        }
+        options.put("page", page);
+        options.put("page_size", pageSize);
+        options.put("resolve", resolve);
+        return options;
+    }
+
+    public static Page claimList(Map<String, Object> options, String authToken) throws ApiCallException {
+        Page claimsPage = null;
+        try {
+            JSONObject result = (JSONObject) authenticatedGenericApiCall(METHOD_CLAIM_LIST, options, authToken);
+            JSONArray items;
+            if (result != null) {
+                items = result.getJSONArray("items");
+
+                List<Claim> claims = new ArrayList<>(items.length());
+                for (int i = 0; i < items.length(); i++) {
+                    Claim claim = Claim.fromJSONObject(items.getJSONObject(i));
+                    claims.add(claim);
+                }
+
+                boolean isLastPage = Helper.parseInt(options.get("page"), 0) >= result.getInt("total_pages");
+                claimsPage = new Page(claims, isLastPage);
+            }
+        } catch (ApiCallException | JSONException ex) {
+            throw new ApiCallException("Could not execute claim_list call", ex);
+        }
+
+        return claimsPage;
+    }
+
     public static Map<String, Object> buildSingleParam(String key, Object value) {
         Map<String, Object> params = new HashMap<>();
         params.put(key, value);

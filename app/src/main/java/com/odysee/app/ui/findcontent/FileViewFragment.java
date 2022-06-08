@@ -202,6 +202,7 @@ import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.tasks.claim.PurchaseListTask;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.file.DeleteFileTask;
 import com.odysee.app.tasks.file.FileListTask;
@@ -1159,7 +1160,7 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
-        ResolveTask task = new ResolveTask(url, Lbry.API_CONNECTION_STRING, layoutResolving, new ClaimListResultHandler() {
+        ResolveTask task = new ResolveTask(url, Lbry.API_CONNECTION_STRING, layoutResolving, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 if (!claims.isEmpty() && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
@@ -3768,7 +3769,7 @@ public class FileViewFragment extends BaseFragment implements
             long st = System.currentTimeMillis();
             List<String> urlsToResolve = new ArrayList<>(commentListAdapter.getClaimUrlsToResolve());
             if (urlsToResolve.size() > 0) {
-                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
+                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
                     @Override
                     public void onSuccess(List<Claim> claims) {
                         if (commentListAdapter != null) {
@@ -4371,9 +4372,10 @@ public class FileViewFragment extends BaseFragment implements
 
         fetchingChannels = true;
         disableChannelSpinner();
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, progressLoadingChannels, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
                 updateChannelList(Lbry.ownChannels);
                 enableChannelSpinner();

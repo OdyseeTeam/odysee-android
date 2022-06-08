@@ -23,6 +23,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -170,9 +171,10 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
     private void fetchChannels() {
         if (Lbry.ownChannels == null || Lbry.ownChannels.size() == 0) {
             startLoading();
-            ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, repostProgress, new ClaimListResultHandler() {
+            Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+            ClaimListTask task = new ClaimListTask(options, repostProgress, new ClaimListResultHandler() {
                 @Override
-                public void onSuccess(List<Claim> claims) {
+                public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                     Lbry.ownChannels = new ArrayList<>(claims);
                     loadChannels(claims);
                     finishLoading();

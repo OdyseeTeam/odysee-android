@@ -26,6 +26,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -367,9 +368,10 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
 
         fetchingChannels = true;
         disableChannelSpinner();
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, progressLoadingChannels, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
                 updateChannelList(Lbry.ownChannels);
                 if (Lbry.ownChannels == null || Lbry.ownChannels.size() == 0) {

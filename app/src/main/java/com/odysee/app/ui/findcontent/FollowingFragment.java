@@ -55,8 +55,8 @@ import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
-import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.listener.ChannelItemSelectionListener;
@@ -562,7 +562,7 @@ public class FollowingFragment extends BaseFragment implements
     private void fetchAndResolveChannelList() {
         buildChannelIdsAndUrls();
         if (!channelIds.isEmpty()) {
-            ResolveTask resolveSubscribedTask = new ResolveTask(channelUrls, Lbry.API_CONNECTION_STRING, channelListLoading, new ClaimListResultHandler() {
+            ResolveTask resolveSubscribedTask = new ResolveTask(channelUrls, Lbry.API_CONNECTION_STRING, channelListLoading, new ResolveResultHandler() {
                 @Override
                 public void onSuccess(List<Claim> claims) {
                     updateChannelFilterListAdapter(claims, true);

@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
@@ -282,7 +283,7 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
         if (commentListAdapter != null) {
             List<String> urlsToResolve = new ArrayList<>(commentListAdapter.getClaimUrlsToResolve());
             if (urlsToResolve.size() > 0) {
-                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ClaimListResultHandler() {
+                ResolveTask task = new ResolveTask(urlsToResolve, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
                     @Override
                     public void onSuccess(List<Claim> claims) {
                         if (commentListAdapter != null) {
@@ -316,9 +317,10 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
 
         fetchingChannels = true;
         disableChannelSpinner();
-        ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, progressLoadingChannels, new ClaimListResultHandler() {
+        Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
-            public void onSuccess(List<Claim> claims) {
+            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
                 updateChannelList(Lbry.ownChannels);
                 enableChannelSpinner();

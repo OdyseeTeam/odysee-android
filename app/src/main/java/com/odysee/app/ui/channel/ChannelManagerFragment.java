@@ -192,9 +192,10 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
                     });
             });
         } else {
-            ClaimListTask task = new ClaimListTask(Claim.TYPE_CHANNEL, getLoading(), Lbryio.AUTH_TOKEN, new ClaimListResultHandler() {
+            Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
+            ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, getLoading(), new ClaimListResultHandler() {
                 @Override
-                public void onSuccess(List<Claim> claims) {
+                public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                     Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(claims));
                     if (adapter == null) {
                         Context context = getContext();
