@@ -347,6 +347,12 @@ public final class Lbryio {
         return params;
     }
 
+    public static Map<String, String> buildSingleListParam(String key, List<String> values) {
+        Map<String, String> params = new HashMap<>();
+        params.put(key, String.join(",", values));
+        return params;
+    }
+
     public static void setLastWalletSync(WalletSync walletSync) {
         synchronized (lock) {
             lastWalletSync = walletSync;

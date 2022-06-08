@@ -3,6 +3,7 @@ package com.odysee.app.ui.channel;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,6 +43,7 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Page;
+import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Predefined;
@@ -329,6 +331,8 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                             }
                         });
 
+                        loadViewCounts(regularItems);
+
                         items = Stream.concat(liveItems.stream(), regularItems.stream()).collect(Collectors.toList());
                         items = Helper.sortingLivestreamingFirst(Helper.filterClaimsByOutpoint(items));
 
@@ -442,6 +446,26 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     private void checkNoContent() {
         boolean noContent = contentListAdapter == null || contentListAdapter.getItemCount() == 0;
         Helper.setViewVisibility(noContentView, noContent ? View.VISIBLE : View.GONE);
+    }
+
+    private void loadViewCounts(List<Claim> claims) {
+        List<String> claimIds = claims.stream().map(Claim::getClaimId).collect(Collectors.toList());
+        FetchStatCountTask task = new FetchStatCountTask(
+                FetchStatCountTask.STAT_VIEW_COUNT, claimIds, null, new FetchStatCountTask.FetchStatCountHandler() {
+            @Override
+            public void onSuccess(List<Integer> counts) {
+                for (int i = 0; i < counts.size(); i++) {
+                    claims.get(i).setViews(counts.get(i));
+                    contentListAdapter.notifyItemChanged(i);
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                // pass
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
