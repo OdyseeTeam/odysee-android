@@ -644,6 +644,8 @@ public class FileViewFragment extends BaseFragment implements
                 }
                 if (fileClaim == null) {
                     resolveUrl(currentUrl);
+                } else {
+                    Lbry.addClaimToCache(fileClaim);
                 }
             } else {
                 checkAndResetNowPlayingClaim();

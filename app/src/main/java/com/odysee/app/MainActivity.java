@@ -2746,7 +2746,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 launchIntent.setAction(Intent.ACTION_VIEW);
                 launchIntent.setData(Uri.parse(nowPlayingClaimUrl));
                 launchIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                return PendingIntent.getActivity(MainActivity.this, 0, launchIntent, 0);
+                return PendingIntent.getActivity(MainActivity.this, 0, launchIntent, PendingIntent.FLAG_IMMUTABLE);
             }
             return null;
         }

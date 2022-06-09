@@ -43,6 +43,17 @@ public class ClaimCacheKey {
         return key;
     }
 
+    public static ClaimCacheKey fromClaimCanonicalUrl(Claim claim) {
+        ClaimCacheKey key = new ClaimCacheKey();
+        if (claim != null) {
+            LbryUri url = LbryUri.tryParse(claim.getCanonicalUrl());
+            if (url != null) {
+                key.setUrl(url.toString());
+            }
+        }
+        return key;
+    }
+
     public static ClaimCacheKey fromClaim(Claim claim) {
         ClaimCacheKey key = new ClaimCacheKey();
         if (claim != null) {

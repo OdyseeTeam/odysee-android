@@ -625,6 +625,7 @@ public final class Lbry {
         ClaimCacheKey fullKey = ClaimCacheKey.fromClaim(claim);
         ClaimCacheKey shortUrlKey = ClaimCacheKey.fromClaimShortUrl(claim);
         ClaimCacheKey permanentUrlKey = ClaimCacheKey.fromClaimPermanentUrl(claim);
+        ClaimCacheKey canonicalUrlKey = ClaimCacheKey.fromClaimCanonicalUrl(claim);
 
         if (!Helper.isNullOrEmpty(fullKey.getUrl())) {
             claimCache.put(fullKey, claim);
@@ -634,6 +635,9 @@ public final class Lbry {
         }
         if (!Helper.isNullOrEmpty(shortUrlKey.getUrl())) {
             claimCache.put(shortUrlKey, claim);
+        }
+        if (!Helper.isNullOrEmpty(canonicalUrlKey.getUrl())) {
+            claimCache.put(canonicalUrlKey, claim);
         }
     }
 
