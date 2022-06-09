@@ -2640,7 +2640,9 @@ public class FileViewFragment extends BaseFragment implements
                 public void onSuccess(List<Integer> counts) {
                     try {
                         int count = counts.get(0);
-                        String displayText = getResources().getQuantityString(R.plurals.view_count, count, NumberFormat.getInstance().format(count));
+                        String displayText = count != 0
+                                ? getResources().getQuantityString(R.plurals.view_count, count, NumberFormat.getInstance().format(count))
+                                : getResources().getString(R.string.no_views_count);
                         View root = getView();
                         if (root != null) {
                             TextView textViewCount = root.findViewById(R.id.file_view_view_count);

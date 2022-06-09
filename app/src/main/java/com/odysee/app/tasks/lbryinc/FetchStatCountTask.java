@@ -52,8 +52,12 @@ public class FetchStatCountTask extends AsyncTask<Void, Void, List<Integer>> {
                             stat == STAT_VIEW_COUNT ? "view_count" : "sub_count",
                             Lbryio.buildSingleListParam("claim_id", claimIds),
                             Helper.METHOD_GET, null));
-            for (int i = 0; i < results.length(); i++) {
-                counts.add(results.getInt(i));
+            if (results != null) {
+                for (int i = 0; i < results.length(); i++) {
+                    counts.add(results.getInt(i));
+                }
+            } else {
+                throw new LbryioResponseException("Could not get stat count results");
             }
         } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
             error = ex;
