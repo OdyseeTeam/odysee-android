@@ -697,6 +697,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
                             publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
                     if (vh.viewCountView != null) {
+                        vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
                         vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
                                 R.plurals.view_count, item.getViews(), item.getViews()) + " •" : null);
                     }
