@@ -218,7 +218,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                             int positionToInsert = position > 0 ? position - 1 : 0;
                             items.add(positionToInsert, claim);
                             notifyItemInserted(positionToInsert);
-                        } else if (items.size() > 0) {
+                        } else {
                             // There is no item on the list of items which is not a livestream
                             items.add(claim);
                             notifyItemInserted(items.size());
