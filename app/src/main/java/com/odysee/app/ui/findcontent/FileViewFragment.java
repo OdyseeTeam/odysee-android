@@ -1016,6 +1016,7 @@ public class FileViewFragment extends BaseFragment implements
         }
         if (futureElapsedPlayback != null) {
             futureElapsedPlayback.cancel(true);
+            elapsedPlaybackScheduled = false;
         }
 
         if (futureReactions != null && futureReactions.isDone()) {
@@ -1025,7 +1026,7 @@ public class FileViewFragment extends BaseFragment implements
             futureViewersCount = null;
         }
         if (futureElapsedPlayback != null && futureElapsedPlayback.isDone()) {
-            futureViewersCount = null;
+            futureElapsedPlayback = null;
         }
     }
 
