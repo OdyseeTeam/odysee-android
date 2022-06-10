@@ -20,6 +20,8 @@ import com.odysee.app.OdyseeApp;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -397,6 +399,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                 livestreamingChannels = isLiveFuture.get();
 
                 Map<String, Integer> viewersForClaim = new HashMap<>();
+                Map<String, Long> releaseTimeForClaim = new HashMap<>();
                 if (livestreamingChannels != null && livestreamingChannels.containsKey(channelId)) {
                     String activeClaimId = null;
                     JSONObject jsonData = livestreamingChannels.get(channelId);
@@ -405,6 +408,12 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                         JSONObject jsonActiveClaimID = jsonData.getJSONObject("ActiveClaim");
                         activeClaimId = jsonActiveClaimID.getString("ClaimID");
                         viewersForClaim.put(activeClaimId, jsonData.getInt("ViewerCount"));
+                        try {
+                            releaseTimeForClaim.put(activeClaimId, ZonedDateTime.parse(
+                                    jsonData.getString("Start")).toInstant().getEpochSecond());
+                        } catch (DateTimeParseException ex) {
+                            ex.printStackTrace();
+                        }
                     }
 
                     if (activeClaimId != null && !activeClaimId.equalsIgnoreCase("Confirming")) {
@@ -429,6 +438,10 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                         Integer viewers = viewersForClaim.get(c.getClaimId());
                         if (viewers != null) {
                             c.setLivestreamViewers(viewers);
+                        }
+                        Long releaseTime = releaseTimeForClaim.get(c.getClaimId());
+                        if (releaseTime != null) {
+                            ((Claim.StreamMetadata) c.getValue()).setReleaseTime(releaseTime);
                         }
                     });
                 }
