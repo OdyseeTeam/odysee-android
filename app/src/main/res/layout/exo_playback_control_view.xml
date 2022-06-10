@@ -95,50 +95,34 @@
             app:tint="@color/white" />
     </RelativeLayout>
 
-    <RelativeLayout
+    <TextView
         android:id="@+id/player_playback_speed"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_alignParentBottom="true"
-        android:layout_width="40dp"
-        android:layout_height="48dp"
-        android:layout_toStartOf="@id/player_toggle_fullscreen">
-        <TextView
-            android:id="@+id/player_playback_speed_label"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter"
-            android:letterSpacing="0.05"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="11sp" />
-    </RelativeLayout>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:fontFamily="@font/inter"
+        android:letterSpacing="0.05"
+        android:padding="16dp"
+        android:singleLine="true"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
-    <RelativeLayout
+    <TextView
         android:id="@+id/player_quality"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_alignParentBottom="true"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_toStartOf="@id/player_playback_speed">
-
-        <TextView
-            android:id="@+id/player_quality_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:fontFamily="@font/inter"
-            android:letterSpacing="0.05"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="11sp" />
-    </RelativeLayout>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="false"
+        android:layout_toStartOf="@id/player_playback_speed"
+        android:fontFamily="@font/inter"
+        android:letterSpacing="0.05"
+        android:padding="16dp"
+        android:singleLine="true"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <RelativeLayout
         android:id="@+id/player_toggle_fullscreen"
@@ -163,12 +147,13 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@id/player_quality"
+        android:layout_toStartOf="@id/player_toggle_fullscreen"
         android:paddingStart="16dp"
         android:paddingEnd="4dp">
+
         <TextView
             android:id="@+id/player_duration_elapsed"
-            android:layout_width="64dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:fontFamily="@font/inter"
@@ -190,7 +175,7 @@
             app:buffered_color="@color/bufferedColor" />
         <TextView
             android:id="@+id/player_duration_total"
-            android:layout_width="64dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"

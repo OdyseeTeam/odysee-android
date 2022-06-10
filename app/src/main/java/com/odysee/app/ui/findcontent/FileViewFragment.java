@@ -1439,30 +1439,28 @@ public class FileViewFragment extends BaseFragment implements
 
         MediaRelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
         PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-        View playbackSpeedContainer = playerView.findViewById(R.id.player_playback_speed);
-        TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
-        View qualityContainer = playerView.findViewById(R.id.player_quality);
-        TextView textQuality = playerView.findViewById(R.id.player_quality_label);
-        textPlaybackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
-        textQuality.setText(AUTO_QUALITY_STRING);
+        TextView playbackSpeed = playerView.findViewById(R.id.player_playback_speed);
+        TextView playbackQuality = playerView.findViewById(R.id.player_quality);
+        playbackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
+        playbackQuality.setText(AUTO_QUALITY_STRING);
 
-        playbackSpeedContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+        playbackSpeed.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
                 Helper.buildPlaybackSpeedMenu(contextMenu);
             }
         });
-        playbackSpeedContainer.setOnClickListener(new View.OnClickListener() {
+        playbackSpeed.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openContextMenu(playbackSpeedContainer);
+                    ((MainActivity) context).openContextMenu(playbackSpeed);
                 }
             }
         });
 
-        qualityContainer.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+        playbackQuality.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
                 if (MainActivity.appPlayer != null) {
@@ -1470,12 +1468,12 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
         });
-        qualityContainer.setOnClickListener(new View.OnClickListener() {
+        playbackQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openContextMenu(qualityContainer);
+                    ((MainActivity) context).openContextMenu(playbackQuality);
                 }
             }
         });
@@ -1730,7 +1728,7 @@ public class FileViewFragment extends BaseFragment implements
     private void updatePlaybackSpeedView(View root) {
         if (root != null) {
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed_label);
+            TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed);
             textPlaybackSpeed.setText(MainActivity.appPlayer != null && MainActivity.appPlayer.getPlaybackParameters() != null ?
                     Helper.getDisplayValueForPlaybackSpeed((double) MainActivity.appPlayer.getPlaybackParameters().speed) :
                     DEFAULT_PLAYBACK_SPEED);
@@ -1740,7 +1738,7 @@ public class FileViewFragment extends BaseFragment implements
     private void updateQualityView(View root) {
         if (root != null) {
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            TextView textQuality = playerView.findViewById(R.id.player_quality_label);
+            TextView textQuality = playerView.findViewById(R.id.player_quality);
             if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
                 textQuality.setText(AUTO_QUALITY_STRING);
             } else {
@@ -2367,6 +2365,11 @@ public class FileViewFragment extends BaseFragment implements
                             boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
                             MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
                             currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
+                            View root = getView();
+                            if (root != null) {
+                                root.findViewById(R.id.player_quality).setVisibility(
+                                        MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
+                            }
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
