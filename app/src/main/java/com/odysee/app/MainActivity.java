@@ -3495,6 +3495,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
     }
 
+
+    public void driveUserSignIn() {
+        if (MainActivity.appPlayer != null && MainActivity.appPlayer.isPlaying()) {
+            MainActivity.appPlayer.pause();
+        }
+        Intent intent = new Intent(this, SignInActivity.class);
+        startActivity(intent);
+        overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
+    }
+
     public void walletSyncSignIn() {
         Intent intent = new Intent(this, VerificationActivity.class);
         intent.putExtra("flow", VerificationActivity.VERIFICATION_FLOW_WALLET);

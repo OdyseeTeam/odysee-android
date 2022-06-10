@@ -1265,8 +1265,13 @@ public class FileViewFragment extends BaseFragment implements
                 AccountManager am = AccountManager.get(root.getContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                if (actualClaim != null && odyseeAccount != null) {
+                if (odyseeAccount != null) {
                     react(actualClaim, true);
+                } else {
+                    MainActivity a = (MainActivity) getActivity();
+                    if (a != null) {
+                        a.driveUserSignIn();
+                    }
                 }
             }
         });
@@ -1276,8 +1281,13 @@ public class FileViewFragment extends BaseFragment implements
                 AccountManager am = AccountManager.get(root.getContext());
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                if (actualClaim != null && odyseeAccount != null) {
+                if (odyseeAccount != null) {
                     react(actualClaim, false);
+                } else {
+                    MainActivity a = (MainActivity) getActivity();
+                    if (a != null) {
+                        a.driveUserSignIn();
+                    }
                 }
             }
         });
@@ -3691,7 +3701,18 @@ public class FileViewFragment extends BaseFragment implements
 
                 @Override
                 public void onCommentReactClicked(Comment c, boolean liked) {
-                    react(c, liked);
+                    if (root != null) {
+                        AccountManager am = AccountManager.get(root.getContext());
+                        Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
+                        if (odyseeAccount != null) {
+                            react(c, liked);
+                        } else {
+                            MainActivity a = (MainActivity) getActivity();
+                            if (a != null) {
+                                a.driveUserSignIn();
+                            }
+                        }
+                    }
                 }
 
                 @Override
@@ -4809,6 +4830,9 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void react(Claim claim, boolean like) {
+        if (claim == null) {
+            return;
+        }
         Runnable runnable = () -> {
             if (futureReactions != null && futureReactions.isCancelled()) {
                 futureReactions.cancel(true);
