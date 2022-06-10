@@ -146,9 +146,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -277,7 +275,6 @@ public class FileViewFragment extends BaseFragment implements
     private long elapsedDuration = 0;
     private long totalDuration = 0;
     private boolean elapsedPlaybackScheduled;
-    private ScheduledExecutorService elapsedPlaybackScheduler;
     private boolean playbackStarted;
     private long startTimeMillis;
     private GetFileTask getFileTask;
@@ -312,10 +309,10 @@ public class FileViewFragment extends BaseFragment implements
     private TextView dislikeReactionAmount;
     private ImageView likeReactionIcon;
     private ImageView dislikeReactionIcon;
-    private ScheduledExecutorService scheduledExecutor;
     ScheduledFuture<?> futureReactions;
     Reactions reactions;
     ScheduledFuture<?> futureViewersCount;
+    ScheduledFuture<?> futureElapsedPlayback;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -1008,23 +1005,27 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     /**
-     * Cancels scheduled futures and then removes them from the queue so they are no longer run
+     * Cancels scheduled futures
      */
     private void purgeScheduledTasks() {
-        try {
-            if (futureReactions != null) {
-                futureReactions.cancel(true);
-            }
-            if (futureViewersCount != null) {
-                futureViewersCount.cancel(true);
-            }
-            if (scheduledExecutor != null) {
-                // .cancel() will not remove the task, so it is needed to .purge()
-                ((ScheduledThreadPoolExecutor) scheduledExecutor).purge();
-                scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (futureReactions != null) {
+            futureReactions.cancel(true);
+        }
+        if (futureViewersCount != null) {
+            futureViewersCount.cancel(true);
+        }
+        if (futureElapsedPlayback != null) {
+            futureElapsedPlayback.cancel(true);
+        }
+
+        if (futureReactions != null && futureReactions.isDone()) {
+            futureReactions = null;
+        }
+        if (futureViewersCount != null && futureViewersCount.isDone()) {
+            futureViewersCount = null;
+        }
+        if (futureElapsedPlayback != null && futureElapsedPlayback.isDone()) {
+            futureViewersCount = null;
         }
     }
 
@@ -2634,18 +2635,22 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void loadLiveViewersCount(Claim claim) {
-        if (scheduledExecutor == null) {
-            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
-        }
-
         if (futureViewersCount != null) {
             futureViewersCount.cancel(true);
         }
 
-        Runnable r = () -> {
-            updateLiveViewersCount(claim);
-        };
-        futureViewersCount = scheduledExecutor.scheduleAtFixedRate(r, 10, 5, TimeUnit.SECONDS);
+        Activity a = getActivity();
+
+        if (a != null) {
+            Runnable r = () -> {
+                updateLiveViewersCount(claim);
+            };
+            try {
+                futureViewersCount = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleWithFixedDelay(r, 10, 5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void updateLiveViewersCount(Claim claim) {
@@ -2745,60 +2750,65 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void loadReactions(Claim c) {
-        if (scheduledExecutor == null) {
-            scheduledExecutor = new ScheduledThreadPoolExecutor(2);
-        }
         if (futureReactions != null) {
             futureReactions.cancel(true);
         }
 
-        if (reactions == null) {
-            reactions = new Reactions();
-        }
+        Activity a = getActivity();
 
-        Runnable runnable = () -> {
-            MainActivity activity = (MainActivity) getActivity();
-            if ((activity != null && !activity.isBatterySaverMode()) || reactions.getLastUpdateTimestamp() == 0) {
-                Map<String, String> options = new HashMap<>();
-                options.put("claim_ids", c.getClaimId());
-
-                JSONObject data;
-                try {
-                    data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
-
-                    if (data != null && data.has("others_reactions")) {
-                        JSONObject othersReactions = (JSONObject) data.get("others_reactions");
-                        if (othersReactions.has(c.getClaimId())) {
-                            int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                            int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                            reactions.setOthersLikes(likesFromOthers);
-                            reactions.setOthersDislikes(dislikesFromOthers);
-                        }
-                    }
-                    if (data != null && data.has("my_reactions")) {
-                        JSONObject othersReactions = (JSONObject) data.get("my_reactions");
-                        if (othersReactions.has(c.getClaimId())) {
-                            int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
-                            reactions.setLiked(likes > 0);
-                            c.setLiked(likes > 0);
-                            int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
-                            reactions.setDisliked(dislikes > 0);
-                            c.setDisliked(dislikes > 0);
-                        }
-
-                        Calendar cal = Calendar.getInstance();
-                        cal.setTime(new Date());
-                        reactions.setLastUpdateTimestamp(cal.getTimeInMillis());
-
-                        updateContentReactions();
-                    }
-                } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
-                    e.printStackTrace();
-                }
+        if (a != null) {
+            if (reactions == null) {
+                reactions = new Reactions();
             }
-        };
 
-        futureReactions = scheduledExecutor.scheduleAtFixedRate(runnable, 0, 5, TimeUnit.SECONDS);
+            Runnable runnable = () -> {
+                MainActivity activity = (MainActivity) getActivity();
+                if ((activity != null && !activity.isBatterySaverMode()) || reactions.getLastUpdateTimestamp() == 0) {
+                    Map<String, String> options = new HashMap<>();
+                    options.put("claim_ids", c.getClaimId());
+
+                    JSONObject data;
+                    try {
+                        data = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "list", options, Helper.METHOD_POST, getContext()));
+
+                        if (data != null && data.has("others_reactions")) {
+                            JSONObject othersReactions = (JSONObject) data.get("others_reactions");
+                            if (othersReactions.has(c.getClaimId())) {
+                                int likesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                                int dislikesFromOthers = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                                reactions.setOthersLikes(likesFromOthers);
+                                reactions.setOthersDislikes(dislikesFromOthers);
+                            }
+                        }
+                        if (data != null && data.has("my_reactions")) {
+                            JSONObject othersReactions = (JSONObject) data.get("my_reactions");
+                            if (othersReactions.has(c.getClaimId())) {
+                                int likes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("like");
+                                reactions.setLiked(likes > 0);
+                                c.setLiked(likes > 0);
+                                int dislikes = ((JSONObject) othersReactions.get(c.getClaimId())).getInt("dislike");
+                                reactions.setDisliked(dislikes > 0);
+                                c.setDisliked(dislikes > 0);
+                            }
+
+                            Calendar cal = Calendar.getInstance();
+                            cal.setTime(new Date());
+                            reactions.setLastUpdateTimestamp(cal.getTimeInMillis());
+
+                            updateContentReactions();
+                        }
+                    } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            try {
+                futureReactions = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleWithFixedDelay(runnable, 0, 5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void updateContentReactions() {
@@ -3894,23 +3904,24 @@ public class FileViewFragment extends BaseFragment implements
 
     private void scheduleElapsedPlayback() {
         if (!elapsedPlaybackScheduled) {
-            elapsedPlaybackScheduler = Executors.newSingleThreadScheduledExecutor();
-            elapsedPlaybackScheduler.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        ((MainActivity) context).runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (MainActivity.appPlayer != null) {
-                                    elapsedDuration = MainActivity.appPlayer.getCurrentPosition();
-                                    int elapsedSeconds = Double.valueOf(elapsedDuration / 1000.0).intValue();
-                                    if (elapsedDuration > 0 && elapsedSeconds % 5 == 0 && elapsedSeconds != lastPositionSaved) {
-                                        // save playback position every 5 seconds
-                                        savePlaybackPosition();
-                                        lastPositionSaved = elapsedSeconds;
-                                    }
+            Activity a = getActivity();
+            if (a != null) {
+                futureElapsedPlayback = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (MainActivity.appPlayer != null) {
+                                        elapsedDuration = MainActivity.appPlayer.getCurrentPosition();
+                                        int elapsedSeconds = Double.valueOf(elapsedDuration / 1000.0).intValue();
+                                        if (elapsedDuration > 0 && elapsedSeconds % 5 == 0 && elapsedSeconds != lastPositionSaved) {
+                                            // save playback position every 5 seconds
+                                            savePlaybackPosition();
+                                            lastPositionSaved = elapsedSeconds;
+                                        }
 
                                     renderElapsedDuration();
                                 }
@@ -3930,11 +3941,6 @@ public class FileViewFragment extends BaseFragment implements
         renderTotalDuration();
 
         elapsedPlaybackScheduled = false;
-        if (elapsedPlaybackScheduler != null) {
-            elapsedPlaybackScheduler.shutdownNow();
-            elapsedPlaybackScheduler = null;
-        }
-
         if (seekOverlayHandler != null) {
             seekOverlayHandler.removeCallbacksAndMessages(null);
             seekOverlayHandler = null;

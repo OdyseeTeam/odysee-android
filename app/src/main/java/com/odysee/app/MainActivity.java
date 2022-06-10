@@ -2783,18 +2783,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private void scheduleWalletBalanceUpdate() {
         if (isSignedIn() && (scheduledWalletUpdater == null || scheduledWalletUpdater.isDone() || scheduledWalletUpdater.isCancelled())) {
             MainActivity a = this;
-            scheduledWalletUpdater = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    if (!a.isBatterySaverMode()) {
-                        try {
+            try {
+                scheduledWalletUpdater = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!a.isBatterySaverMode()) {
                             updateWalletBalance();
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
-                }
-            }, 0, 5, TimeUnit.SECONDS);
+                }, 0, 5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
