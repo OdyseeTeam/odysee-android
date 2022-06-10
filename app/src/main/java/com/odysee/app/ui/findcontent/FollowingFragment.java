@@ -783,9 +783,10 @@ public class FollowingFragment extends BaseFragment implements
                         activeClaimId = activeJson.getString("ClaimID");
                         String livestreamUrl = j.getString("VideoURL");
                         int viewersCount = j.getInt("ViewerCount");
+                        String startTime = j.getString("Start");
                         System.out.println(pair.getKey() + " = " + pair.getValue());
                         if (!activeClaimId.equalsIgnoreCase("Confirming")) {
-                            activeClaims.add(Claim.fromLiveStatus(activeClaimId, livestreamUrl, viewersCount));
+                            activeClaims.add(Claim.fromLiveStatus(activeClaimId, livestreamUrl, viewersCount, startTime));
                             activeClaimIds.add(activeClaimId);
                         }
                     }
@@ -808,7 +809,7 @@ public class FollowingFragment extends BaseFragment implements
                 return null;
             } else {
                 mostRecentClaims.stream().forEach(c -> {
-                    Claim p = activeClaims.stream().filter(g -> g.getClaimId().equalsIgnoreCase(c.getClaimId())).findFirst().orElse(null);
+                    Claim p = activeClaims.stream().filter(g -> g != null && g.getClaimId().equalsIgnoreCase(c.getClaimId())).findFirst().orElse(null);
 
                     if (p != null) {
                         Claim ac = activeClaims.get(activeClaims.indexOf(p));
@@ -816,6 +817,8 @@ public class FollowingFragment extends BaseFragment implements
                         c.setLive(true);
                         c.setLivestreamUrl(ac.getLivestreamUrl());
                         c.setLivestreamViewers(ac.getLivestreamViewers());
+                        ((Claim.StreamMetadata) c.getValue()).setReleaseTime(
+                                ((Claim.StreamMetadata) ac.getValue()).getReleaseTime());
                     }
                 });
             }

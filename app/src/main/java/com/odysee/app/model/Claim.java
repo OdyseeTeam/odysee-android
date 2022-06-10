@@ -18,6 +18,8 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -444,13 +446,22 @@ public class Claim {
      * @param claimId - The claimId to used for the claim
      * @param liveUrl - The url which should be used for connecting to the livestream
      * @param livestreamViewers - The amount of viewers currently watching the stream
+     * @param startTime - The start time of the stream in ISO 8601 UTC format
      * @return A new Claim object
      */
-    public static Claim fromLiveStatus(String claimId, String liveUrl, int livestreamViewers) {
+    public static Claim fromLiveStatus(String claimId, String liveUrl, int livestreamViewers, String startTime) {
         Claim claim = new Claim();
         claim.setClaimId(claimId);
         claim.setLivestreamUrl(liveUrl);
         claim.setLivestreamViewers(livestreamViewers);
+        StreamMetadata value = new StreamMetadata();
+        try {
+            value.setReleaseTime(ZonedDateTime.parse(startTime).toInstant().getEpochSecond());
+        } catch (DateTimeParseException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        claim.setValue(value);
         return claim;
     }
 
