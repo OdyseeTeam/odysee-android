@@ -90,6 +90,7 @@
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>
     <string name="live">Live</string>
+    <string name="live_duration">LIVE</string>
     <string name="soon">Soon</string>
     <string name="tags">Tags</string>
     <string name="like_desc">Fire icon</string>

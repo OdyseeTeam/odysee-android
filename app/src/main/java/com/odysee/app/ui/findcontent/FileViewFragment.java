@@ -350,6 +350,8 @@ public class FileViewFragment extends BaseFragment implements
     private String commentHash;
     private String claimLivestreamUrl;
 
+    private boolean isLivestream;
+
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1931,6 +1933,7 @@ public class FileViewFragment extends BaseFragment implements
 
             // livestream, so we load up the messages and initialise the websocket
             initLivestreamChat();
+            isLivestream = true;
         }
         if (claimToRender.isPlayable() && MainActivity.appPlayer != null
                 && ((!claimToRender.isLive() && claimLivestreamUrl == null) || (claimToRender.isLive() && claimToRender.getLivestreamUrl() != null))) {
@@ -3985,7 +3988,9 @@ public class FileViewFragment extends BaseFragment implements
     private void renderTotalDuration() {
         View view = getView();
         if (view != null) {
-            Helper.setViewText(view.findViewById(R.id.player_duration_total), Helper.formatDuration(Double.valueOf(totalDuration / 1000.0).longValue()));
+            Helper.setViewText(view.findViewById(R.id.player_duration_total), isLivestream
+                    ? getResources().getString(R.string.live_duration)
+                    : Helper.formatDuration(Double.valueOf(totalDuration / 1000.0).longValue()));
         }
     }
 
