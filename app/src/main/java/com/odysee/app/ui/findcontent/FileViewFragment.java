@@ -2754,6 +2754,10 @@ public class FileViewFragment extends BaseFragment implements
             futureReactions.cancel(true);
         }
 
+        if (c.isLive()) {
+            return;
+        }
+
         Activity a = getActivity();
 
         if (a != null) {
@@ -3923,14 +3927,15 @@ public class FileViewFragment extends BaseFragment implements
                                             lastPositionSaved = elapsedSeconds;
                                         }
 
-                                    renderElapsedDuration();
+                                        renderElapsedDuration();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                }
-            }, 0, 500, TimeUnit.MILLISECONDS);
-            elapsedPlaybackScheduled = true;
+                }, 0, 500, TimeUnit.MILLISECONDS);
+                elapsedPlaybackScheduled = true;
+            }
         }
     }
 
