@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,6 +73,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private Claim claim;
     private boolean subscribing;
     private String currentUrl;
+    private int currentTab;
 
     private View layoutResolving;
     private View layoutDisplayArea;
@@ -104,6 +106,13 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
     // if this is set, scroll to the specific comment on load
     private String commentHash;
+
+    // Tab names
+    public static final int CONTENT = 0;
+    public static final int SCHEDULED_LIVESTREAMS = 1;
+    public static final int PLAYLISTS = 2;
+    public static final int ABOUT = 3;
+    public static final int COMMENTS = 4;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -460,6 +469,10 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             activity.updateMiniPlayerMargins(true);
             activity.removeFetchChannelsListener(this);
         }
+        if (tabPager != null && tabPager.getAdapter() != null) {
+            currentTab = tabFromPosition(tabPager.getCurrentItem(),
+                    ((ChannelPagerAdapter) tabPager.getAdapter()).hasScheduledLivestreams);
+        }
         super.onPause();
     }
 
@@ -665,21 +678,26 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                                 tabPager.setCurrentItem(hasScheduledStreams ? 4 : 3);
                                             }
                                         }, 500);
+                                    } else {
+                                        // switch to the previously shown fragment (i.e. before navigating away and back)
+                                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                tabPager.setCurrentItem(positionFromTab(currentTab, hasScheduledStreams), false);
+                                            }
+                                        }, 500);
                                     }
                                 }
                                 new TabLayoutMediator(tabLayout, tabPager, new TabLayoutMediator.TabConfigurationStrategy() {
                                     @Override
                                     public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                                        if (position == 0) {
-                                            tab.setText(R.string.content);
-                                        } else if (position == 1 && hasScheduledStreams) {
-                                            tab.setText(R.string.scheduled_livestreams);
-                                        } else if (position == 1 || (position == 2 && hasScheduledStreams)) {
-                                            tab.setText(R.string.playlists);
-                                        } else if (position == 2 || (position == 3 && hasScheduledStreams)) {
-                                            tab.setText(R.string.about);
-                                        } else if (position == 3 || (position == 4 && hasScheduledStreams)) {
-                                            tab.setText(R.string.comments);
+                                        int tabNum = tabFromPosition(position, hasScheduledStreams);
+                                        switch (tabNum) {
+                                            case CONTENT: tab.setText(R.string.content); break;
+                                            case SCHEDULED_LIVESTREAMS: tab.setText(R.string.scheduled_livestreams); break;
+                                            case PLAYLISTS: tab.setText(R.string.playlists); break;
+                                            case ABOUT: tab.setText(R.string.about); break;
+                                            case COMMENTS: tab.setText(R.string.comments);
                                         }
                                     }
                                 }).attach();
@@ -752,7 +770,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         private final Claim channelClaim;
         private final String commentHash;
         private Fragment commentsFragmentInstance;
-        private final boolean hasScheduledLivestreams;
+        public final boolean hasScheduledLivestreams;
 
         public ChannelPagerAdapter(Claim channelClaim, String commentHash, boolean hasScheduled, FragmentActivity activity) {
             super(activity);
@@ -764,50 +782,51 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         @SneakyThrows
         @Override
         public Fragment createFragment(int position) {
-            if (position == 0) {
-                ChannelContentFragment contentFragment = ChannelContentFragment.class.newInstance();
-                if (channelClaim != null) {
-                    contentFragment.setChannelId(channelClaim.getClaimId());
-                }
-                return contentFragment;
-            } else if (position == 1 && hasScheduledLivestreams) {
-                ChannelScheduledLivestreamsFragment livestreamsFragment = ChannelScheduledLivestreamsFragment.class.newInstance();
-                if (channelClaim != null) {
-                    livestreamsFragment.setChannelId(channelClaim.getClaimId());
-                }
-                return livestreamsFragment;
-            } else if (position == 1 || (position == 2 && hasScheduledLivestreams)) {
-                ChannelPlaylistsFragment playlistsFragment = ChannelPlaylistsFragment.class.newInstance();
-                if (channelClaim != null) {
-                    playlistsFragment.setChannelId(channelClaim.getClaimId());
-                }
-                return playlistsFragment;
-            } else if (position == 2 || (position == 3 && hasScheduledLivestreams)) {
-                ChannelAboutFragment aboutFragment = ChannelAboutFragment.class.newInstance();
-                try {
-                    Claim.ChannelMetadata metadata = (Claim.ChannelMetadata) channelClaim.getValue();
-                    if (metadata != null) {
-                        aboutFragment.setDescription(metadata.getDescription());
-                        aboutFragment.setEmail(metadata.getEmail());
-                        aboutFragment.setWebsite(metadata.getWebsiteUrl());
+            int tab = ChannelFragment.tabFromPosition(position, hasScheduledLivestreams);
+            switch (tab) {
+                case CONTENT:
+                    ChannelContentFragment contentFragment = ChannelContentFragment.class.newInstance();
+                    if (channelClaim != null) {
+                        contentFragment.setChannelId(channelClaim.getClaimId());
                     }
-                } catch (ClassCastException ex) {
-                    // pass
-                }
-                return aboutFragment;
-            } else if (position == 3 || (position == 4 && hasScheduledLivestreams)) {
-                ChannelCommentsFragment commentsFragment = ChannelCommentsFragment.class.newInstance();
-                if (channelClaim != null) {
-                    commentsFragment.setClaim(channelClaim);
-                }
-                if (!Helper.isNullOrEmpty(commentHash)) {
-                    commentsFragment.setCommentHash(commentHash);
-                }
-                commentsFragmentInstance = commentsFragment;
-                return commentsFragment;
-            } else {
-                return null;
+                    return contentFragment;
+                case SCHEDULED_LIVESTREAMS:
+                    ChannelScheduledLivestreamsFragment livestreamsFragment = ChannelScheduledLivestreamsFragment.class.newInstance();
+                    if (channelClaim != null) {
+                        livestreamsFragment.setChannelId(channelClaim.getClaimId());
+                    }
+                    return livestreamsFragment;
+                case PLAYLISTS:
+                    ChannelPlaylistsFragment playlistsFragment = ChannelPlaylistsFragment.class.newInstance();
+                    if (channelClaim != null) {
+                        playlistsFragment.setChannelId(channelClaim.getClaimId());
+                    }
+                    return playlistsFragment;
+                case ABOUT:
+                    ChannelAboutFragment aboutFragment = ChannelAboutFragment.class.newInstance();
+                    try {
+                        Claim.ChannelMetadata metadata = (Claim.ChannelMetadata) channelClaim.getValue();
+                        if (metadata != null) {
+                            aboutFragment.setDescription(metadata.getDescription());
+                            aboutFragment.setEmail(metadata.getEmail());
+                            aboutFragment.setWebsite(metadata.getWebsiteUrl());
+                        }
+                    } catch (ClassCastException ex) {
+                        // pass
+                    }
+                    return aboutFragment;
+                case COMMENTS:
+                    ChannelCommentsFragment commentsFragment = ChannelCommentsFragment.class.newInstance();
+                    if (channelClaim != null) {
+                        commentsFragment.setClaim(channelClaim);
+                    }
+                    if (!Helper.isNullOrEmpty(commentHash)) {
+                        commentsFragment.setCommentHash(commentHash);
+                    }
+                    commentsFragmentInstance = commentsFragment;
+                    return commentsFragment;
             }
+            return null;
         }
 
         public Fragment getCommentsFragment() {
@@ -821,6 +840,34 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         @Override
         public int getItemCount() {
             return hasScheduledLivestreams ? 5 : 4;
+        }
+    }
+
+    // Converting from tab number to position
+    public static int tabFromPosition(final int position, final boolean hasScheduledStreams) {
+        if (position == 0) {
+            return CONTENT;
+        } else if (position == 1 && hasScheduledStreams) {
+            return SCHEDULED_LIVESTREAMS;
+        } else if (position == 1 || (position == 2 && hasScheduledStreams)) {
+            return PLAYLISTS;
+        } else if (position == 2 || (position == 3 && hasScheduledStreams)) {
+            return ABOUT;
+        } else if (position == 3 || (position == 4 && hasScheduledStreams)) {
+            return COMMENTS;
+        } else {
+            return -1;
+        }
+    }
+    public static int positionFromTab(final int tab, final boolean hasScheduledStreams) {
+        if (tab == CONTENT) {
+            return 0;
+        } else if (tab == SCHEDULED_LIVESTREAMS && hasScheduledStreams) {
+            return 1;
+        } else if (tab == PLAYLISTS || tab == ABOUT || tab == COMMENTS) {
+            return hasScheduledStreams ? tab : tab - 1; // Tab constants match up with positions
+        } else {
+            return -1;
         }
     }
 }
