@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             if (result != null) {
                 MainActivity activity =  null;
                 if (context instanceof MainActivity) {
+                    android.util.Log.d("OdyseeSignIn", "Activity initialised. Getting writable database.");
                     activity = (MainActivity) context;
                     db = activity.getDbHelper().getWritableDatabase();
                 }
@@ -76,6 +78,12 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     allCollections = DatabaseHelper.loadAllCollections(db);
                     favoritesPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                }
+
+                // check for null and fix this check
+                if (allCollections == null) {
+                    android.util.Log.d("OdyseeSignIn", "DB was null. Setting allCollections to empty map.");
+                    allCollections = new HashMap<>();
                 }
 
                 JSONObject shared = result.getJSONObject("shared");
@@ -180,6 +188,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             return true;
         } catch (ApiCallException | JSONException ex) {
             // failed
+            android.util.Log.e("OdyseeSignIn", String.format("LoadSharedUserStateTask error: %s", ex.getMessage()), ex);
             error = ex;
         }
         return false;
