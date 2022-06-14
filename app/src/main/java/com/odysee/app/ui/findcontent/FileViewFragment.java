@@ -78,6 +78,7 @@ import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.TracksInfo;
 import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
 import com.google.android.exoplayer2.audio.AudioAttributes;
@@ -463,6 +464,14 @@ public class FileViewFragment extends BaseFragment implements
                     loadingQualityChanged = false;
 
                     showBuffering();
+
+                    Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
+                            .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
+                    long currentPosition = MainActivity.appPlayer.getCurrentPosition();
+                    long defaultPosition = window.getDefaultPositionMs();
+                    if (currentPosition >= defaultPosition) {
+                        setPlaybackSpeed(MainActivity.appPlayer, 100);
+                    }
                 } else if (playbackState == Player.STATE_ENDED) {
                     playNextItemInPlaylist();
                 } else {
@@ -2516,8 +2525,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void setPlaybackSpeed(Player player, int speedId) {
         float speed = speedId / 100.0f;
-        PlaybackParameters params = new PlaybackParameters(speed);
-        player.setPlaybackParameters(params);
+        player.setPlaybackSpeed(speed);
 
         updatePlaybackSpeedView(getView());
     }
