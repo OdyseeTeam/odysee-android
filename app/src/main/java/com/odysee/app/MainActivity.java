@@ -415,8 +415,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private SwipeRefreshLayout notificationsSwipeContainer;
     private SyncSetTask syncSetTask = null;
     private List<WalletSync> pendingSyncSetQueue;
-    @Getter
-    private DatabaseHelper dbHelper;
+    private static DatabaseHelper dbHelper;
     private List<CameraPermissionListener> cameraPermissionListeners;
     private List<DownloadActionListener> downloadActionListeners;
     private List<FilePickerListener> filePickerListeners;
@@ -451,6 +450,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private static final int DEFAULT_MINI_PLAYER_MARGIN = 4;
 
     private boolean readyToDraw = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
@@ -1118,6 +1118,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         accountManager = AccountManager.get(this);
+    }
+
+    public static DatabaseHelper getDatabaseHelper() {
+        return dbHelper;
     }
 
     /**

@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -59,15 +60,9 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         // current subscriptions
         // Get the previous saved state
         try {
-            SQLiteDatabase db = null;
+            SQLiteDatabase db = MainActivity.getDatabaseHelper().getWritableDatabase();
             JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
-                MainActivity activity =  null;
-                if (context instanceof MainActivity) {
-                    activity = (MainActivity) context;
-                    db = activity.getDbHelper().getWritableDatabase();
-                }
-
                 // get the built in collections
                 Map<String, OdyseeCollection> allCollections = null;
                 OdyseeCollection favoritesPlaylist = null;
@@ -93,7 +88,8 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                             OdyseeCollection.BUILT_IN_ID_WATCHLATER,
                             OdyseeCollection.VISIBILITY_PRIVATE,
                             Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
-                    if (activity != null)  {
+
+                    if (db != null) {
                         if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
                             // only replace the locally saved collections if there are items
                             DatabaseHelper.saveCollection(favoritesCollection, db);
@@ -115,7 +111,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         );
                         boolean shouldSave = true;
 
-                        if (allCollections.containsKey(collectionId)) {
+                        if (allCollections != null && allCollections.containsKey(collectionId)) {
                             OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
                             shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
                         }
@@ -180,6 +176,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
             return true;
         } catch (ApiCallException | JSONException ex) {
             // failed
+            android.util.Log.e("OdyseeSignIn", String.format("LoadSharedUserStateTask error: %s", ex.getMessage()), ex);
             error = ex;
         }
         return false;

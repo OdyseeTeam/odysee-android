@@ -56,7 +56,7 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
 
         SQLiteDatabase db = null;
         if (context instanceof MainActivity) {
-            db = ((MainActivity) context).getDbHelper().getReadableDatabase();
+            db = MainActivity.getDatabaseHelper().getReadableDatabase();
         }
 
         // data to save

@@ -293,9 +293,7 @@ public class LibraryFragment extends BaseFragment implements
             public void run() {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) context;
-
-                    SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
+                    SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
                     Map<String, OdyseeCollection> collectionsMap = DatabaseHelper.loadAllCollections(db);
                     collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_WATCHLATER);

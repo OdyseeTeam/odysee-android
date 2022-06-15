@@ -45,7 +45,7 @@ public class FetchSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
         SQLiteDatabase db = null;
         try {
             if (context instanceof MainActivity) {
-                db = ((MainActivity) context).getDbHelper().getWritableDatabase();
+                db = MainActivity.getDatabaseHelper().getWritableDatabase();
                 if (db != null) {
                     subscriptions = new ArrayList<>(DatabaseHelper.getSubscriptions(db));
                 }

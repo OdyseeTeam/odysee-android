@@ -25,7 +25,7 @@ public class LoadTagsTask extends AsyncTask<Void, Void, List<Tag>> {
         SQLiteDatabase db = null;
         try {
             if (context instanceof MainActivity) {
-                db = ((MainActivity) context).getDbHelper().getReadableDatabase();
+                db = MainActivity.getDatabaseHelper().getReadableDatabase();
                 if (db != null) {
                     tags = DatabaseHelper.getTags(db);
                 }

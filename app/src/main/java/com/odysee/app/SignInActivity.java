@@ -75,6 +75,8 @@ public class SignInActivity extends Activity {
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
     public final static String ARG_AUTH_TYPE = "auth_token_type";
 
+    private static final String TAG = "OdyseeSignIn";
+
     private boolean walletSyncStarted;
     private WalletSync currentWalletSync;
     private ScheduledFuture<?> emailVerifyFuture = null;
@@ -664,9 +666,12 @@ public class SignInActivity extends Activity {
             public void onSyncGetSuccess(WalletSync walletSync) {
                 currentWalletSync = walletSync;
                 Lbryio.lastRemoteHash = walletSync.getHash();
+
                 if (Helper.isNullOrEmpty(actual)) {
+                    Log.d(TAG, "SyncGetSuccess with existing wallet.");
                     processExistingWallet(walletSync);
                 } else {
+                    Log.d(TAG, "SyncGetSuccess with existing wallet with password.");
                     processExistingWalletWithPassword(actual);
                 }
             }
@@ -674,10 +679,12 @@ public class SignInActivity extends Activity {
             @Override
             public void onSyncGetWalletNotFound() {
                 // no wallet found, get sync apply data and run the process
+                Log.d(TAG, "SyncGet with wallet not found. New wallet.");
                 processNewWallet();
             }
             @Override
             public void onSyncGetError(Exception error) {
+                Log.e(TAG, String.format("SyncGet Error with message: %s", error.getMessage()), error);
                 // try again
                 Helper.setViewVisibility(walletSyncProgress, View.GONE);
                 //Helper.setViewText(textWalletSyncLoading, error.getMessage());
@@ -694,6 +701,7 @@ public class SignInActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "Running wallet sync with blank password.");
                 runWalletSync("");
             }
         });
@@ -708,6 +716,7 @@ public class SignInActivity extends Activity {
             bundle.putString("email", currentEmail);
             accountManager.addAccountExplicitly(account, "", bundle);
         } catch (Exception e) {
+            Log.e(TAG, String.format("AddAccount Error: %s", e.getMessage()), e);
             e.printStackTrace();
         }
         Account act = Helper.getOdyseeAccount(accountManager.getAccounts());
@@ -715,6 +724,7 @@ public class SignInActivity extends Activity {
     }
 
     private void finishSignInActivity() {
+        Log.d(TAG, "Finishing sign in activity.");
         finish();
         overridePendingTransition(R.anim.abc_fade_in, R.anim.abc_fade_out);
     }
@@ -735,6 +745,7 @@ public class SignInActivity extends Activity {
 
     public void processExistingWallet(WalletSync walletSync) {
         // Try first sync apply
+        Log.d(TAG, "[Existing Wallet] Running sync apply.");
         SyncApplyTask applyTask = new SyncApplyTask("", walletSync.getData(), null, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncApplySuccess(String hash, String data) {
@@ -746,11 +757,13 @@ public class SignInActivity extends Activity {
                 /*if (listener != null) {
                     listener.onWalletSyncEnabled();
                 }*/
+                Log.d(TAG, "[Existing Wallet] Sync apply successful.");
                 loadSharedUserStateAndFinish();
             }
 
             @Override
             public void onSyncApplyError(Exception error) {
+                Log.d(TAG, String.format("[Existing Wallet] Sync apply error: %s", error.getMessage()), error);
                 // failed, request the user to enter a password
                 Helper.setViewVisibility(walletSyncProgress, View.GONE);
                 Helper.setViewVisibility(textWalletSyncLoading, View.GONE);
@@ -768,10 +781,12 @@ public class SignInActivity extends Activity {
     }
 
     private void loadSharedUserStateAndFinish() {
+        Log.d(TAG, "Loading user state before completion.");
         // load the shared user state after wallet sync is done
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(SignInActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
             public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+                Log.d(TAG, "Loaded user state successfully.");
                 Lbryio.subscriptions = new ArrayList<>(subscriptions);
                 Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
                 finishSignInActivity();
@@ -779,6 +794,7 @@ public class SignInActivity extends Activity {
 
             @Override
             public void onError(Exception error) {
+                Log.e(TAG, String.format("User state failed to load: %s", error.getMessage()), error);
                 // shouldn't happen, but if it does, finish anyway
                 finishSignInActivity();
             }

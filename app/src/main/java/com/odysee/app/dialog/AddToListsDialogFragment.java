@@ -95,13 +95,12 @@ public class AddToListsDialogFragment extends BottomSheetDialogFragment {
     private void loadPlaylists(){
         Context context = getContext();
         if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
             Helper.setViewVisibility(loadProgress, View.VISIBLE);
 
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
-                    SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
+                    SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
                     List<OdyseeCollection> privateCollections = DatabaseHelper.getSimpleCollections(db);
                     List<OdyseeCollection> publicCollections = new ArrayList<>();
                     try {
