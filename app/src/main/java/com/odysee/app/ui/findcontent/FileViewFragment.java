@@ -2331,6 +2331,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
+                            MainActivity.videoIsTranscoded = true;
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
                             defaultRequestProperties.put("Referer", "https://bitwave.tv");
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
