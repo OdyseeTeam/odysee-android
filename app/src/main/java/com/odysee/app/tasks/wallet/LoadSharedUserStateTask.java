@@ -60,16 +60,9 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
         // current subscriptions
         // Get the previous saved state
         try {
-            SQLiteDatabase db = null;
+            SQLiteDatabase db = MainActivity.getDatabaseHelper().getWritableDatabase();
             JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_PREFERENCE_GET, Lbry.buildSingleParam("key", KEY), authToken);
             if (result != null) {
-                MainActivity activity =  null;
-                if (context instanceof MainActivity) {
-                    android.util.Log.d("OdyseeSignIn", "Activity initialised. Getting writable database.");
-                    activity = (MainActivity) context;
-                    db = activity.getDbHelper().getWritableDatabase();
-                }
-
                 // get the built in collections
                 Map<String, OdyseeCollection> allCollections = null;
                 OdyseeCollection favoritesPlaylist = null;
@@ -101,7 +94,8 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                             OdyseeCollection.BUILT_IN_ID_WATCHLATER,
                             OdyseeCollection.VISIBILITY_PRIVATE,
                             Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
-                    if (activity != null)  {
+
+                    if (db != null) {
                         if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
                             // only replace the locally saved collections if there are items
                             DatabaseHelper.saveCollection(favoritesCollection, db);

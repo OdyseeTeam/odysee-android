@@ -35,7 +35,7 @@ public class ChannelSubscribeTask extends AsyncTask<Void, Void, Boolean> {
         try {
             // Save to (or delete from) local store
             if (context instanceof MainActivity) {
-                db = ((MainActivity) context).getDbHelper().getWritableDatabase();
+                db = MainActivity.getDatabaseHelper().getWritableDatabase();
             }
             if (db != null) {
                 if (!isUnsubscribing) {

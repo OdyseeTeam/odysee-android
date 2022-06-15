@@ -104,13 +104,11 @@ public class PlaylistFragment extends BaseFragment implements
         } else {
             Context context = getContext();
             if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
-
                 Executors.newSingleThreadExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            SQLiteDatabase db = activity.getDbHelper().getReadableDatabase();
+                            SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
                             OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
 
                             new Handler(Looper.getMainLooper()).post(new Runnable() {

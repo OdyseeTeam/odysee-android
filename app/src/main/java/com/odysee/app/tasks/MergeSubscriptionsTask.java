@@ -47,7 +47,7 @@ public class MergeSubscriptionsTask extends AsyncTask<Void, Void, List<Subscript
         try {
             // fetch local subscriptions
             if (context instanceof MainActivity) {
-                db = ((MainActivity) context).getDbHelper().getWritableDatabase();
+                db = MainActivity.getDatabaseHelper().getWritableDatabase();
             }
             if (db != null) {
                 if (replaceLocal) {

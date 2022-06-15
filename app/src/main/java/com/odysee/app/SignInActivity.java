@@ -661,13 +661,12 @@ public class SignInActivity extends Activity {
         }
 
         final String actual = password;
-        Log.d(TAG, "SyncGet.");
         SyncGetTask task = new SyncGetTask(password,false,null, new DefaultSyncTaskHandler() {
             @Override
             public void onSyncGetSuccess(WalletSync walletSync) {
                 currentWalletSync = walletSync;
                 Lbryio.lastRemoteHash = walletSync.getHash();
-                Log.d(TAG, String.format("Last Hash: %s", Lbryio.lastRemoteHash));
+
                 if (Helper.isNullOrEmpty(actual)) {
                     Log.d(TAG, "SyncGetSuccess with existing wallet.");
                     processExistingWallet(walletSync);

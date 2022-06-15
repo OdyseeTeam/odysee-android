@@ -26,7 +26,7 @@ public class FollowUnfollowTagTask extends AsyncTask<Void, Void, Boolean> {
         try {
             SQLiteDatabase db = null;
             if (context instanceof MainActivity) {
-                db = ((MainActivity) context).getDbHelper().getWritableDatabase();
+                db = MainActivity.getDatabaseHelper().getWritableDatabase();
                 if (db != null) {
                     if (!Lbry.knownTags.contains(tag)) {
                         DatabaseHelper.createOrUpdateTag(tag, db);
