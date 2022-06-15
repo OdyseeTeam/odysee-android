@@ -73,12 +73,6 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     watchlaterPlaylist = allCollections.get(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
                 }
 
-                // check for null and fix this check
-                if (allCollections == null) {
-                    android.util.Log.d("OdyseeSignIn", "DB was null. Setting allCollections to empty map.");
-                    allCollections = new HashMap<>();
-                }
-
                 JSONObject shared = result.getJSONObject("shared");
                 if (shared.has("type") && "object".equalsIgnoreCase(shared.getString("type")) && shared.has("value")) {
                     JSONObject value = shared.getJSONObject("value");
@@ -117,7 +111,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         );
                         boolean shouldSave = true;
 
-                        if (allCollections.containsKey(collectionId)) {
+                        if (allCollections != null && allCollections.containsKey(collectionId)) {
                             OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
                             shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
                         }
