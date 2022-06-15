@@ -131,8 +131,9 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
     public List<String> getAuthorUrls() {
         List<String> urls = new ArrayList<>();
         for (LbryNotification item : items) {
-            if (!Helper.isNullOrEmpty(item.getAuthorThumbnailUrl())) {
-                urls.add(item.getAuthorThumbnailUrl());
+            if (item.getCommentAuthor() != null) {
+                String authorUrl = item.getCommentAuthor().getPermanentUrl();
+                urls.add(authorUrl);
             }
         }
         return urls;
