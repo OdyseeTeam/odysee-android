@@ -614,7 +614,6 @@ public class FileViewFragment extends BaseFragment implements
             if (updateRequired) {
                 resetViewCount();
                 resetFee();
-                checkNewClaimAndUrl(newClaim, newUrl);
 
                 // This is required to recycle current fragment with new claim from related content
                 fileClaim = null;
@@ -717,35 +716,6 @@ public class FileViewFragment extends BaseFragment implements
         if (textNothingAtLocation != null) {
             textNothingAtLocation.setMovementMethod(LinkMovementMethod.getInstance());
             textNothingAtLocation.setText(HtmlCompat.fromHtml(getString(R.string.dmca_complaint_blocked), HtmlCompat.FROM_HTML_MODE_LEGACY));
-        }
-    }
-
-    private void checkNewClaimAndUrl(Claim newClaim, String newUrl) {
-        boolean shouldResetNowPlaying = false;
-        if (newClaim != null &&
-                MainActivity.nowPlayingClaim != null &&
-                !MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(newClaim.getClaimId())) {
-            shouldResetNowPlaying = true;
-        }
-        if (!shouldResetNowPlaying &&
-                newUrl != null &&
-                MainActivity.nowPlayingClaim != null &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaimUrl) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getShortUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getCanonicalUrl())) {
-            shouldResetNowPlaying = true;
-        }
-
-        if (shouldResetNowPlaying) {
-            if (MainActivity.appPlayer != null) {
-                MainActivity.appPlayer.setPlayWhenReady(false);
-            }
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).clearNowPlayingClaim();
-                resetPlayer();
-            }
         }
     }
 
@@ -1210,8 +1180,6 @@ public class FileViewFragment extends BaseFragment implements
                         // also save view history
                         Helper.saveViewHistory(url, fileClaim);
                     }
-
-                    checkAndResetNowPlayingClaim();
 
                     if (Helper.isClaimBlocked(fileClaim)) {
                         renderClaimBlocked();
@@ -1956,10 +1924,6 @@ public class FileViewFragment extends BaseFragment implements
             initLivestreamChat();
             isLivestream = true;
         }
-        if (claimToRender.isPlayable() && MainActivity.appPlayer != null
-                && ((!claimToRender.isLive() && claimLivestreamUrl == null) || (claimToRender.isLive() && claimToRender.getLivestreamUrl() != null))) {
-            MainActivity.appPlayer.setPlayWhenReady(isPlaying);
-        }
 
         Helper.setViewVisibility(layoutLoadingState, View.GONE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
@@ -2052,6 +2016,9 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_media_meta_container).setVisibility(View.VISIBLE);
 
+            root.findViewById(R.id.file_view_main_action_loading).setVisibility(View.GONE);
+            root.findViewById(R.id.file_view_play).setVisibility(claimToRender.isPlayable() ? View.VISIBLE : View.INVISIBLE);
+
             Claim.GenericMetadata metadata = claimToRender.getValue();
             if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl()) && context != null) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
@@ -2124,8 +2091,10 @@ public class FileViewFragment extends BaseFragment implements
                     // claim already playing
                     showExoplayerView();
                     playMedia();
-                } else {
+                } else if (MainActivity.nowPlayingClaim == null) {
                     onMainActionButtonClicked();
+                } else if (claimToRender.isViewable()) {
+                    restoreMainActionButton();
                 }
             } else if (claimToRender.isViewable() && Lbry.SDK_READY) {
                 onMainActionButtonClicked();
@@ -2997,6 +2966,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void onMainActionButtonClicked() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        checkAndResetNowPlayingClaim();
 
         // Check if the claim is free
         Claim.GenericMetadata metadata = actualClaim.getValue();
