@@ -354,6 +354,16 @@
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
     <string name="send_buffering_events">Send buffering events to LBRY servers</string>
 
+    <string-array name="media_autoplay">
+        <item>Never</item>
+        <item>Only when nothing is playing</item>
+        <item>Always</item>
+    </string-array>
+    <string-array name="media_autoplay_values">
+        <item>never</item>
+        <item>nothing_playing</item>
+        <item>always</item>
+    </string-array>
     <string-array name="available_qualities">
         <item>@string/auto_quality</item>
         <item>1080p</item>

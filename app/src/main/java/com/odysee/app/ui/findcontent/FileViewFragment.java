@@ -2091,10 +2091,23 @@ public class FileViewFragment extends BaseFragment implements
                     // claim already playing
                     showExoplayerView();
                     playMedia();
-                } else if (MainActivity.nowPlayingClaim == null) {
-                    onMainActionButtonClicked();
-                } else if (claimToRender.isViewable()) {
-                    restoreMainActionButton();
+                } else {
+                    String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
+                    if (MainActivity.nowPlayingClaim == null) {
+                        if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
+                            onMainActionButtonClicked();
+                        } else if (claimToRender.isPlayable()) {
+                            if (root != null) {
+                                root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
+                            }
+                        }
+                    } else {
+                        if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
+                            onMainActionButtonClicked();
+                        } else if (claimToRender.isViewable()) {
+                            restoreMainActionButton();
+                        }
+                    }
                 }
             } else if (claimToRender.isViewable() && Lbry.SDK_READY) {
                 onMainActionButtonClicked();
@@ -2284,7 +2297,7 @@ public class FileViewFragment extends BaseFragment implements
                     ((MainActivity) context).setNowPlayingClaim(claimToPlay, currentUrl);
                 }
 
-                MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
+                MainActivity.appPlayer.setPlayWhenReady(true);
 
                 if (claimToPlay.hasSource()) {
                     getStreamingUrlAndInitializePlayer(claimToPlay);
