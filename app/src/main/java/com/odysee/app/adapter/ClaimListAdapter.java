@@ -404,9 +404,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-            contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
-            contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
-            contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+            RecyclerView.Adapter<? extends RecyclerView.ViewHolder> adapter = getBindingAdapter();
+            if (adapter instanceof ClaimListAdapter) {
+                ClaimListAdapter claimListAdapter = ((ClaimListAdapter) adapter);
+                final Claim original = claimListAdapter.getItems().get(getAbsoluteAdapterPosition());
+                final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
+                        (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
+                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+                }
+            }
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
