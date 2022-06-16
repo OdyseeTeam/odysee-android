@@ -360,7 +360,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
-    public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_AUTOPLAY_MEDIA = "com.odysee.app.preference.userinterface.AutoplayMedia";
     public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED = "com.odysee.app.preference.userinterface.PlaybackDefaultSpeed";
@@ -396,6 +396,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String APP_SETTING_DARK_MODE_NIGHT = "night";
     public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
+
+    public static final String APP_SETTING_AUTOPLAY_NEVER = "never";
+    public static final String APP_SETTING_AUTOPLAY_NOTHING_PLAYING = "nothing_playing";
+    public static final String APP_SETTING_AUTOPLAY_ALWAYS = "always";
 
     private static final String TAG = "OdyseeMain";
     private static final String FILE_VIEW_TAG = "FileView";
@@ -1200,9 +1204,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE, false);
     }
 
-    public boolean isMediaAutoplayEnabled() {
+    public String mediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
+        return sp.getString(PREFERENCE_KEY_INTERNAL_AUTOPLAY_MEDIA, APP_SETTING_AUTOPLAY_NOTHING_PLAYING);
     }
 
     public int wifiDefaultQuality() {

@@ -18,12 +18,15 @@
             app:title="@string/enable_background_playback_pip_mode"
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
-        <SwitchPreferenceCompat
-            app:key="com.odysee.app.preference.userinterface.MediaAutoplay"
-            app:defaultValue="true"
+        <DropDownPreference
+            app:key="com.odysee.app.preference.userinterface.AutoplayMedia"
+            app:entries="@array/media_autoplay"
+            app:entryValues="@array/media_autoplay_values"
+            app:defaultValue="nothing_playing"
             app:title="@string/enable_autoplay"
             app:singleLineTitle="false"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false"
+            app:summary="%s" />
         <DropDownPreference
             app:key="com.odysee.app.preference.userinterface.WifiDefaultQuality"
             app:entries="@array/available_qualities"
