@@ -429,6 +429,7 @@ public class FileViewFragment extends BaseFragment implements
                     renderTotalDuration();
                     scheduleElapsedPlayback();
                     hideBuffering();
+                    setPlayerSurfaceVisibility(View.VISIBLE);
 
                     if (loadingNewClaim) {
                         setPlaybackSpeedToDefault();
@@ -773,6 +774,7 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.stopExoplayer();
                 }
             }
+            setPlayerSurfaceVisibility(View.INVISIBLE);
         }
     }
 
@@ -1021,6 +1023,17 @@ public class FileViewFragment extends BaseFragment implements
             view.setVisibility(View.VISIBLE);
             view.setPlayer(null);
             view.setPlayer(MainActivity.appPlayer);
+        }
+    }
+
+    private void setPlayerSurfaceVisibility(int visibility) {
+        View root = getView();
+        if (root != null) {
+            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
+            View surfaceView = view.getVideoSurfaceView();
+            if (surfaceView != null) {
+                surfaceView.setVisibility(visibility);
+            }
         }
     }
 
