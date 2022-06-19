@@ -457,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (Build.VERSION.SDK_INT < 31) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
         } else {
@@ -2703,7 +2703,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void hideLaunchScreen() {
-        if (Build.VERSION.SDK_INT < 31) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             // Animate?
             View launchSplash = findViewById(R.id.launch_splash);
             if (launchSplash.getVisibility() == View.VISIBLE) {
