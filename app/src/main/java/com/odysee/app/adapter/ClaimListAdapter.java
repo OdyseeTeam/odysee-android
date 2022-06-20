@@ -3,6 +3,8 @@ package com.odysee.app.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.icu.text.CompactDecimalFormat;
+import android.os.Build;
 import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -25,12 +27,15 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.odysee.app.R;
@@ -703,7 +708,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     if (vh.viewCountView != null) {
                         vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
                         vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
-                                R.plurals.view_count, item.getViews(), item.getViews()) + " •" : null);
+                                R.plurals.view_count, item.getViews(), compactNumber(item.getViews())) + " •" : null);
                     }
                     long duration = item.getDuration();
                     vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
@@ -878,6 +883,37 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             ex.printStackTrace();
         }
         return position;
+    }
+
+    /**
+     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
+     */
+    private String compactNumber(long number) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
+        }
+
+        double value =  (double) number;
+        NumberFormat numberFormat = NumberFormat.getInstance();
+        if (number >= 1000000000) {
+            return numberFormat.format(round(value / 1000000000, 1))
+                    + context.getString(R.string.short_billion);
+        } else if (number >= 1000000) {
+            return numberFormat.format(round(value / 1000000, 1))
+                    + context.getString(R.string.short_million);
+        } else if (number >= 1000) {
+            return numberFormat.format(round(value / 1000, 1))
+                    + context.getString(R.string.short_thousand);
+        } else {
+            return numberFormat.format(value);
+        }
+    }
+
+    /**
+     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
+     */
+    private double round(double value, int places) {
+        return new BigDecimal(value).setScale(places, RoundingMode.HALF_UP).doubleValue();
     }
 
     public interface ClaimListItemListener {
