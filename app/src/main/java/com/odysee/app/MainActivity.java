@@ -953,14 +953,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         popupWindow.dismiss();
                         hideNotifications();
-
-                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
-                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
-                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
-
-                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
-                        CustomTabsIntent intent = builder.build();
-                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b/Community-Guidelines:c"));
+                        openFileUrl(getResources().getString(R.string.community_guidelines_url));
                     }
                 });
 
@@ -969,14 +962,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(View view) {
                         popupWindow.dismiss();
                         hideNotifications();
-
-                        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
-                        ctcspb.setToolbarColor(ContextCompat.getColor(MainActivity.this, R.color.colorPrimary));
-                        CustomTabColorSchemeParams ctcsp = ctcspb.build();
-
-                        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
-                        CustomTabsIntent intent = builder.build();
-                        intent.launchUrl(MainActivity.this, Uri.parse("https://odysee.com/@OdyseeHelp:b?view=about"));
+                        openChannelUrl(getResources().getString(R.string.help_and_support_url));
                     }
                 });
 
@@ -1435,6 +1421,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
         }
+        openFragment(ChannelFragment.class, true, params);
     }
     public void openChannelUrl(String url) {
         openChannelUrl(url, null);

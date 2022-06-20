@@ -29,6 +29,8 @@
     <string name="sign_up_log_in">Sign Up or Log In</string>
     <string name="community_guidelines">Community Guidelines</string>
     <string name="help_and_support">Help &amp; Support</string>
+    <string name="community_guidelines_url" translatable="false">lbry://@OdyseeHelp:b/Community-Guidelines:c</string>
+    <string name="help_and_support_url" translatable="false">lbry://@OdyseeHelp:b</string>
     <string name="no_current_email">No current email. Please try to sign in again.</string>
     <string name="startup_failed">App startup failed. Please check your data connection and try again. If this problem persists, please email hello@lbry.com</string>
     <string name="no_claim_search_content">No content to display at this time. Please refine your selection or check back later.</string>
