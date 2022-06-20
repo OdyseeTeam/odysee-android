@@ -466,12 +466,14 @@ public class FileViewFragment extends BaseFragment implements
 
                     showBuffering();
 
-                    Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
-                            .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
-                    long currentPosition = MainActivity.appPlayer.getCurrentPosition();
-                    long defaultPosition = window.getDefaultPositionMs();
-                    if (currentPosition >= defaultPosition) {
-                        setPlaybackSpeed(MainActivity.appPlayer, 100);
+                    if (isLivestream) {
+                        Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
+                                .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
+                        long currentPosition = MainActivity.appPlayer.getCurrentPosition();
+                        long defaultPosition = window.getDefaultPositionMs();
+                        if (currentPosition >= defaultPosition) {
+                            setPlaybackSpeed(MainActivity.appPlayer, 100);
+                        }
                     }
                 } else if (playbackState == Player.STATE_ENDED) {
                     playNextItemInPlaylist();
