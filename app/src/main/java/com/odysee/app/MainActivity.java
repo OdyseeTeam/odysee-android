@@ -2745,10 +2745,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         @Nullable
         @Override
         public PendingIntent createCurrentContentIntent(Player player) {
-            if (nowPlayingClaimUrl != null) {
+            if (nowPlayingClaimUrl != null || (nowPlayingClaim != null && !Helper.isNullOrEmpty(nowPlayingClaim.getCanonicalUrl()))) {
                 Intent launchIntent = new Intent(MainActivity.this, MainActivity.class);
                 launchIntent.setAction(Intent.ACTION_VIEW);
-                launchIntent.setData(Uri.parse(nowPlayingClaimUrl));
+                if (!Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
+                    launchIntent.setData(Uri.parse(nowPlayingClaimUrl));
+                } else {
+                    launchIntent.setData(Uri.parse(nowPlayingClaim.getCanonicalUrl()));
+                }
                 launchIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 return PendingIntent.getActivity(MainActivity.this, 0, launchIntent, PendingIntent.FLAG_IMMUTABLE);
             }
