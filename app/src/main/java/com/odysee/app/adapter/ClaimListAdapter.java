@@ -676,14 +676,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     }
 
                     if (vh.publisherThumbnailView != null) {
-                        String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
-                        if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
-                            Glide.with(context.getApplicationContext())
-                                    .load(publisherThumbnailUrl)
-                                    .centerCrop()
-                                    .placeholder(R.drawable.bg_thumbnail_placeholder)
-                                    .apply(RequestOptions.circleCropTransform())
-                                    .into(vh.publisherThumbnailView);
+                        if (item.getSigningChannel() != null) {
+                            String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
+                            if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
+                                Glide.with(context.getApplicationContext())
+                                        .load(publisherThumbnailUrl)
+                                        .centerCrop()
+                                        .placeholder(R.drawable.bg_thumbnail_placeholder)
+                                        .apply(RequestOptions.circleCropTransform())
+                                        .into(vh.publisherThumbnailView);
+                            } else {
+                                vh.publisherThumbnailView.setVisibility(View.GONE);
+                            }
                         } else {
                             vh.publisherThumbnailView.setVisibility(View.GONE);
                         }
