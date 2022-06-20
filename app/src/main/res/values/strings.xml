@@ -86,6 +86,9 @@
     <string name="enter_title">Please specify a title for the playlist.</string>
     <string name="could_not_load_playlist">The playlist could not be loaded at this time. Please try again later.</string>
     <string name="playlist_position_tracker">%1$s • %2$s / %3$s</string>
+    <string name="short_thousand">K</string>
+    <string name="short_million">M</string>
+    <string name="short_billion">B</string>
 
     <!-- File view -->
     <string name="user_not_live_yet">%1$s isn\'t live right now. Check back later to watch the stream.</string>
