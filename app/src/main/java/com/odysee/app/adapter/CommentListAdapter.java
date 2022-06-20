@@ -5,7 +5,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -33,6 +32,7 @@ import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.Comment;
 import com.odysee.app.model.Reactions;
+import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
@@ -375,8 +375,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         }
 
         holder.channelName.setText(comment.getChannelName());
-        holder.commentTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                (comment.getTimestamp() * 1000), System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+        holder.commentTimeView.setText(FormatTime.fromEpochMillis(comment.getTimestamp() * 1000));
         holder.commentText.setText(comment.getText());
 
         Reactions commentReactions = comment.getReactions();

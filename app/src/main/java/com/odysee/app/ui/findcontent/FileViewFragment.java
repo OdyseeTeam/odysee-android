@@ -24,7 +24,6 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
 import android.util.DisplayMetrics;
@@ -129,6 +128,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -2066,8 +2069,8 @@ public class FileViewFragment extends BaseFragment implements
             if (metadata instanceof Claim.StreamMetadata) {
                 Claim.StreamMetadata streamMetadata = (Claim.StreamMetadata) metadata;
                 long publishTime = streamMetadata.getReleaseTime() > 0 ? streamMetadata.getReleaseTime() * 1000 : claimToRender.getTimestamp() * 1000;
-                ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateUtils.getRelativeTimeSpanString(
-                        publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateTimeFormatter.ofLocalizedDate(
+                        FormatStyle.MEDIUM).format(Instant.ofEpochMilli(publishTime).atZone(ZoneId.systemDefault())));
 
                 Fee fee = streamMetadata.getFee();
                 if (fee != null && Helper.parseDouble(fee.getAmount(), 0) > 0) {

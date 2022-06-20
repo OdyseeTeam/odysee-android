@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.icu.text.CompactDecimalFormat;
 import android.os.Build;
-import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -43,6 +42,7 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
@@ -703,8 +703,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
                     vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
                     vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
                     if (vh.viewCountView != null) {
                         vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
                         vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
@@ -809,8 +808,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     }
                     vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
                     vh.publisherView.setText(item.getName());
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
