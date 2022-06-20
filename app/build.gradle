@@ -138,6 +138,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 
+    implementation 'org.ocpsoft.prettytime:prettytime:5.0.2.Final'
+
     testImplementation 'junit:junit:4.12'
 //    androidTestImplementation 'androidx.test:runner:1.3.0'
 //    androidTestImplementation 'androidx.test:rules:1.3.0'
