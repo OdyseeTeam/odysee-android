@@ -18,7 +18,7 @@
             app:title="@string/enable_background_playback_pip_mode"
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
-        <DropDownPreference
+        <com.takisoft.preferencex.SimpleMenuPreference
             app:key="com.odysee.app.preference.userinterface.AutoplayMedia"
             app:entries="@array/media_autoplay"
             app:entryValues="@array/media_autoplay_values"
@@ -27,25 +27,25 @@
             app:summary="%s"
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
-        <DropDownPreference
+        <com.takisoft.preferencex.SimpleMenuPreference
             app:key="com.odysee.app.preference.userinterface.WifiDefaultQuality"
             app:entries="@array/available_qualities"
             app:entryValues="@array/available_qualities_values"
-            app:defaultValue="@string/auto_quality"
+            app:defaultValue="0"
             app:title="@string/wifi_default_quality"
             app:singleLineTitle="false"
             app:summary="%s"
             app:iconSpaceReserved="false" />
-        <DropDownPreference
+        <com.takisoft.preferencex.SimpleMenuPreference
             app:key="com.odysee.app.preference.userinterface.MobileDefaultQuality"
             app:entries="@array/available_qualities"
             app:entryValues="@array/available_qualities_values"
-            app:defaultValue="@string/auto_quality"
+            app:defaultValue="0"
             app:title="@string/mobile_default_quality"
             app:singleLineTitle="false"
             app:summary="%s"
             app:iconSpaceReserved="false" />
-        <DropDownPreference
+        <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="100"
             app:entries="@array/available_speeds"
             app:entryValues="@array/available_speeds_values"
@@ -54,7 +54,7 @@
             app:singleLineTitle="false"
             app:summary="%s"
             app:title="@string/playback_default_speed" />
-        <DropDownPreference
+        <com.takisoft.preferencex.SimpleMenuPreference
             app:key="com.odysee.app.preference.userinterface.DarkModeSetting"
             app:defaultValue="system"
             app:entries="@array/darkmode_setting_labels"
