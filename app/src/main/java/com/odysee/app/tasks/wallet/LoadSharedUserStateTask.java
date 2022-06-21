@@ -102,24 +102,26 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     }
 
                     JSONObject unpublishedCollections = Helper.getJSONObject("unpublishedCollections", value);
-                    Iterator<String> pcIdsIterator = unpublishedCollections.keys();
-                    while (pcIdsIterator.hasNext()) {
-                        String collectionId = pcIdsIterator.next();
-                        JSONObject jsonCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
-                        OdyseeCollection thisCollection = OdyseeCollection.fromJSONObject(
-                                collectionId,
-                                OdyseeCollection.VISIBILITY_PRIVATE,
-                                jsonCollection
-                        );
-                        boolean shouldSave = true;
+                    if (unpublishedCollections != null) {
+                        Iterator<String> pcIdsIterator = unpublishedCollections.keys();
+                        while (pcIdsIterator.hasNext()) {
+                            String collectionId = pcIdsIterator.next();
+                            JSONObject jsonCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
+                            OdyseeCollection thisCollection = OdyseeCollection.fromJSONObject(
+                                    collectionId,
+                                    OdyseeCollection.VISIBILITY_PRIVATE,
+                                    jsonCollection
+                            );
+                            boolean shouldSave = true;
 
-                        if (allCollections != null && allCollections.containsKey(collectionId)) {
-                            OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
-                            shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
-                        }
+                            if (allCollections != null && allCollections.containsKey(collectionId)) {
+                                OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
+                                shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
+                            }
 
-                        if (shouldSave) {
-                            DatabaseHelper.saveCollection(thisCollection, db);
+                            if (shouldSave) {
+                                DatabaseHelper.saveCollection(thisCollection, db);
+                            }
                         }
                     }
 
