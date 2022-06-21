@@ -24,9 +24,9 @@
             app:entryValues="@array/media_autoplay_values"
             app:defaultValue="nothing_playing"
             app:title="@string/enable_autoplay"
+            app:summary="%s"
             app:singleLineTitle="false"
-            app:iconSpaceReserved="false"
-            app:summary="%s" />
+            app:iconSpaceReserved="false" />
         <DropDownPreference
             app:key="com.odysee.app.preference.userinterface.WifiDefaultQuality"
             app:entries="@array/available_qualities"
