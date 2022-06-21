@@ -80,22 +80,24 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     JSONArray blocked = value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
 
                     JSONObject builtInCollections = Helper.getJSONObject("builtinCollections", value);
-                    OdyseeCollection favoritesCollection = OdyseeCollection.fromJSONObject(
-                            OdyseeCollection.BUILT_IN_ID_FAVORITES,
-                            OdyseeCollection.VISIBILITY_PRIVATE,
-                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_FAVORITES, builtInCollections));
-                    OdyseeCollection watchLaterCollection = OdyseeCollection.fromJSONObject(
-                            OdyseeCollection.BUILT_IN_ID_WATCHLATER,
-                            OdyseeCollection.VISIBILITY_PRIVATE,
-                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
+                    if (builtInCollections != null) {
+                        OdyseeCollection favoritesCollection = OdyseeCollection.fromJSONObject(
+                                OdyseeCollection.BUILT_IN_ID_FAVORITES,
+                                OdyseeCollection.VISIBILITY_PRIVATE,
+                                Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_FAVORITES, builtInCollections));
+                        OdyseeCollection watchLaterCollection = OdyseeCollection.fromJSONObject(
+                                OdyseeCollection.BUILT_IN_ID_WATCHLATER,
+                                OdyseeCollection.VISIBILITY_PRIVATE,
+                                Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
 
-                    if (db != null) {
-                        if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
-                            // only replace the locally saved collections if there are items
-                            DatabaseHelper.saveCollection(favoritesCollection, db);
-                        }
-                        if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
-                            DatabaseHelper.saveCollection(watchLaterCollection, db);
+                        if (db != null) {
+                            if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
+                                // only replace the locally saved collections if there are items
+                                DatabaseHelper.saveCollection(favoritesCollection, db);
+                            }
+                            if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
+                                DatabaseHelper.saveCollection(watchLaterCollection, db);
+                            }
                         }
                     }
 
