@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
@@ -382,8 +383,8 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
     }
 
     private void updateChannelList(List<Claim> channels) {
+        Context context = getContext();
         if (commentChannelSpinnerAdapter == null) {
-            Context context = getContext();
             if (context != null) {
                 commentChannelSpinnerAdapter = new InlineChannelSpinnerAdapter(context, R.layout.spinner_item_channel, new ArrayList<>(channels));
                 commentChannelSpinnerAdapter.addPlaceholder(false);
@@ -402,7 +403,15 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
 
         if (commentChannelSpinnerAdapter != null && commentChannelSpinner != null) {
             if (commentChannelSpinnerAdapter.getCount() > 1) {
-                commentChannelSpinner.setSelection(1);
+                String defaultChannelName = Helper.getDefaultChannelName(context);
+
+                List<Claim> defaultChannel = channels.stream().filter(c -> c != null && c.getName().equalsIgnoreCase(defaultChannelName)).collect(Collectors.toList());
+
+                if (defaultChannel.size() > 0) {
+                    commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getItemPosition(defaultChannel.get(0)));
+                } else {
+                    commentChannelSpinner.setSelection(1);
+                }
             }
         }
     }

@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -377,8 +378,8 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
     }
 
     private void updateChannelList(List<Claim> channels) {
+        Context context = getContext();
         if (channelSpinnerAdapter == null) {
-            Context context = getContext();
             if (context != null) {
                 channelSpinnerAdapter = new InlineChannelSpinnerAdapter(context, R.layout.spinner_item_channel, new ArrayList<>(channels));
                 channelSpinnerAdapter.addAnonymousPlaceholder();
@@ -397,7 +398,14 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (channelSpinnerAdapter.getCount() > 1) {
-                channelSpinner.setSelection(1);
+                String defaultChannelName = Helper.getDefaultChannelName(context);
+                List<Claim> defaultChannel = channels.stream().filter(c -> c != null && c.getName().equalsIgnoreCase(defaultChannelName)).collect(Collectors.toList());
+
+                if (defaultChannel.size() > 0) {
+                    channelSpinner.setSelection(channelSpinnerAdapter.getItemPosition(defaultChannel.get(0)));
+                } else {
+                    channelSpinner.setSelection(1);
+                }
             }
         }
     }
