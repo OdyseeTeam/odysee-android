@@ -943,11 +943,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     userIdText.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
+
+                    if (Lbry.ownChannels.size() > 0) {
+                        buttonChangeDefaultChannel.setVisibility(View.VISIBLE);
+                    } else {
+                        buttonChangeDefaultChannel.setVisibility(View.GONE);
+                    }
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
                     signUserButton.setVisibility(View.VISIBLE);
                     signUserButton.setText(getString(R.string.sign_up_log_in));
+                    buttonChangeDefaultChannel.setVisibility(View.GONE);
                 }
 
                 customView.findViewById(R.id.button_app_settings).setOnClickListener(new View.OnClickListener() {
