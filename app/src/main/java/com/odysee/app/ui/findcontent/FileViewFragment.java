@@ -2390,16 +2390,19 @@ public class FileViewFragment extends BaseFragment implements
                             boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
                             MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
                             currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(() -> {
                             View root = getView();
                             if (root != null) {
                                 root.findViewById(R.id.player_quality).setVisibility(
                                         MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
                             }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
 
-                        new Handler(Looper.getMainLooper()).post(() -> initializePlayer(currentMediaSourceUrl));
+                            initializePlayer(currentMediaSourceUrl);
+                        });
                     }
                 } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                     // TODO: How does error handling work here
