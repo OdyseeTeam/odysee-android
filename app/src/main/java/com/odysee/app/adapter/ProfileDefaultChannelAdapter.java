@@ -1,7 +1,6 @@
 package com.odysee.app.adapter;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,12 +8,11 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import com.odysee.app.R;
-import com.odysee.app.model.StartupStage;
 
 import java.util.List;
 
 public class ProfileDefaultChannelAdapter extends BaseAdapter {
-    private List<String> list;
+    private final List<String> list;
     private int defaultItem;
     private final LayoutInflater inflater;
 
