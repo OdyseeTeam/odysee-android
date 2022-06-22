@@ -8,6 +8,7 @@
     android:orientation="vertical">
 
     <RelativeLayout
+        android:id="@+id/reward_verification_brand_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="36dp"
@@ -15,6 +16,7 @@
         android:layout_marginBottom="36dp"
         android:layout_marginTop="8dp"
         android:orientation="horizontal">
+
         <ImageView
             android:layout_width="140dp"
             android:layout_height="wrap_content"

@@ -676,12 +676,12 @@ public class FirstRunActivity extends AppCompatActivity implements FirstRunStepH
 
     @Override
     public void onManualVerifyContinue() {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void onSkipQueueAction() {
-        verificationSkipQueue.onSkipQueueAction(FirstRunActivity.this);
+        verificationSkipQueue.onSkipQueueAction(this);
     }
 
     @Override

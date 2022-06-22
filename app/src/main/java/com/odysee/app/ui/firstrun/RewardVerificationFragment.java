@@ -17,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.odysee.app.FirstRunActivity;
+import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.lbryinc.User;
@@ -36,6 +37,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
     @Setter
     private FirstRunStepHandler firstRunStepHandler;
 
+    private View brandContainer;
     private TextView textSummary;
     private ViewPager2 optionsPager;
     private TabLayout optionsTabs;
@@ -44,12 +46,17 @@ public class RewardVerificationFragment extends Fragment implements Verification
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_reward_verification, container, false);
 
+        brandContainer = root.findViewById(R.id.reward_verification_brand_container);
         textSummary = root.findViewById(R.id.first_run_reward_verification_desc);
         optionsPager = root.findViewById(R.id.reward_verification_options_view_pager);
         optionsPager.setSaveEnabled(false);
         Context context = getContext();
         if (context instanceof FirstRunActivity) {
             optionsPager.setAdapter(new RewardVerificationPagerAdapter((FirstRunActivity) context, this));
+            brandContainer.setVisibility(View.VISIBLE);
+        } else if (context instanceof MainActivity) {
+            brandContainer.setVisibility(View.GONE);
+            optionsPager.setAdapter(new RewardVerificationPagerAdapter((MainActivity) context, this));
         }
 
         optionsTabs = root.findViewById(R.id.reward_verification_options_tabs);
@@ -72,6 +79,22 @@ public class RewardVerificationFragment extends Fragment implements Verification
     public void onResume() {
         super.onResume();
         checkRewardApproved(true);
+
+        Context context = getContext();
+        if (context instanceof MainActivity && firstRunStepHandler == null) {
+            // only set this as the current display fragment if we are not in first run mode
+            ((MainActivity) context).updateCurrentDisplayFragment(this);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Context context = getContext();
+        if (context instanceof MainActivity && firstRunStepHandler == null) {
+            // only set this as the current display fragment if we are not in first run mode
+            ((MainActivity) context).updateCurrentDisplayFragment(null);
+        }
     }
 
     @Override

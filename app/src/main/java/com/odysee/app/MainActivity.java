@@ -123,7 +123,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.lbryinc.RewardVerified;
+import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
@@ -225,6 +228,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
+import com.odysee.app.ui.firstrun.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
@@ -245,6 +249,7 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.PurchasedChecker;
 import com.odysee.app.utils.Utils;
+import com.odysee.app.utils.VerificationSkipQueue;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -252,7 +257,7 @@ import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
-        ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
+        ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener, VerificationListener {
     private static final String PLAYER_NOTIFICATION_CHANNEL_ID = "com.odysee.app.PLAYER_NOTIFICATION_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
     private static final String SPECIAL_URL_PREFIX = "lbry://?";
@@ -275,6 +280,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     // make tip unlock a global operation
     @Getter
     private boolean unlockingTips;
+
+    private VerificationSkipQueue verificationSkipQueue;
 
     public static ExoPlayer appPlayer;
     public static Cache playerCache;
@@ -306,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private String cameraOutputFilename;
     private Bitmap nowPlayingClaimBitmap;
     private Fragment currentDisplayFragment;
+    private boolean rewardVerificationActive;
 
     @Setter
     private BackPressInterceptor backPressInterceptor;
@@ -601,6 +609,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 insets.getSystemWindowInsetBottom()));
             }
         });
+
+        // verification skip queue
+        verificationSkipQueue = new VerificationSkipQueue(this, new VerificationSkipQueue.ShowInProgressListener() {
+            @Override
+            public void maybeShowRequestInProgress() {
+
+            }
+        }, new RewardVerifiedHandler() {
+            @Override
+            public void onSuccess(RewardVerified rewardVerified) {
+                if (Lbryio.currentUser != null) {
+                    Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
+                }
+
+                if (!rewardVerified.isRewardApproved()) {
+                    // show pending purchase message (possible slow card tx)
+                    showMessage(getString(R.string.purchase_request_pending));
+                } else  {
+                    showMessage(getString(R.string.reward_verification_successful));
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                showError(getString(R.string.purchase_request_failed_error));
+            }
+        });
+        verificationSkipQueue.createBillingClientAndEstablishConnection();
 
         // register receivers
         registerRequestsReceiver();
@@ -1402,6 +1438,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             params.put("claim", claim);
         }
         openFragment(ChannelFormFragment.class, true, params);
+    }
+
+    public void navigateBackToMain() {
+        getSupportFragmentManager().popBackStack();
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+        findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+        findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
     }
 
     public void openPublishesOnSuccessfulPublish() {
@@ -4624,6 +4667,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         t.start();
     }
 
+    public void showRewardsVerification() {
+        openFragment(RewardVerificationFragment.class, true, null);
+        rewardVerificationActive = true;
+    }
+
+    public void dismissRewardsVerification() {
+        if (rewardVerificationActive && (currentDisplayFragment instanceof RewardVerificationFragment)) {
+
+        }
+    }
+
     private void resolveCommentAuthors(List<String> urls) {
         if (urls != null && !urls.isEmpty()) {
             ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
@@ -4992,15 +5046,60 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED);
     }
 
-    public interface BackPressInterceptor {
-        boolean onBackPressed();
-    }
-
     public void updateCurrentDisplayFragment(Fragment fragment) {
         this.currentDisplayFragment = fragment;
     }
 
     public void resetCurrentDisplayFragment() {
         currentDisplayFragment = null;
+    }
+
+    @Override
+    public void onEmailAdded(String email) {
+
+    }
+
+    @Override
+    public void onEmailEdit() {
+
+    }
+
+    @Override
+    public void onEmailVerified() {
+
+    }
+
+    @Override
+    public void onPhoneAdded(String countryCode, String phoneNumber) {
+
+    }
+
+    @Override
+    public void onPhoneVerified() {
+
+    }
+
+    @Override
+    public void onManualVerifyContinue() {
+
+    }
+
+    @Override
+    public void onSkipQueueAction() {
+        verificationSkipQueue.onSkipQueueAction(this);
+    }
+
+    @Override
+    public void onTwitterVerified() {
+
+    }
+
+    @Override
+    public void onManualProgress(boolean progress) {
+
+    }
+
+    public interface BackPressInterceptor {
+        boolean onBackPressed();
     }
 }

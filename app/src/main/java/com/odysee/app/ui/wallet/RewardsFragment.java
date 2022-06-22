@@ -40,9 +40,11 @@ import com.odysee.app.adapter.RewardListAdapter;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.model.lbryinc.Reward;
+import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.supplier.ClaimRewardSupplier;
 import com.odysee.app.supplier.FetchRewardsSupplier;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
+import com.odysee.app.tasks.lbryinc.FetchCurrentUserTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
@@ -61,6 +63,8 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
     private RecyclerView rewardList;
     private TextView linkFilterUnclaimed;
     private TextView linkFilterAll;
+    private boolean isRewardsApproved;
+    private boolean hasFinishedRewardsApprovedCheck;
     private View root;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -85,18 +89,66 @@ public class RewardsFragment extends BaseFragment implements RewardListAdapter.R
         return root;
     }
 
+    private void checkRewardsApproved() {
+        View v = getView();
+        Helper.setViewVisibility(v, View.INVISIBLE);
+
+        FetchCurrentUserTask task = new FetchCurrentUserTask(getContext(), new FetchCurrentUserTask.FetchUserTaskHandler() {
+            @Override
+            public void onSuccess(User user) {
+                Lbryio.currentUser = user;
+                boolean isApproved = (user.isIdentityVerified() && user.isRewardApproved());
+                isRewardsApproved = isApproved;
+                onFinishRewardsApprovedCheck(isApproved);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                // if an error occurred, show rewards approval process anyway
+                onFinishRewardsApprovedCheck(false);
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void onFinishRewardsApprovedCheck(boolean isApproved) {
+        hasFinishedRewardsApprovedCheck = true;
+
+        if (isApproved) {
+            View v = getView();
+            Helper.setViewVisibility(v, View.VISIBLE);
+            return;
+        }
+
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.showRewardsVerification();
+        }
+    }
 
     public void onResume() {
         super.onResume();
-        fetchRewards();
 
         Context context = getContext();
+        if (hasFinishedRewardsApprovedCheck && !isRewardsApproved) {
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).navigateBackToMain();
+            }
+            return;
+        }
+
+        if (!hasFinishedRewardsApprovedCheck) {
+            checkRewardsApproved();
+        } else {
+            fetchRewards();
+        }
+
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Rewards", "Rewards");
             activity.updateMiniPlayerMargins(false);
             activity.updateCurrentDisplayFragment(this);
-
         }
     }
 
