@@ -320,7 +320,7 @@ public class FileViewFragment extends BaseFragment implements
     ScheduledFuture<?> futureElapsedPlayback;
     ScheduledFuture<?> scheduledStartPlaying;
     ScheduledFuture<?> scheduledStopPlaying;
-    private long livestreamStartingMillis = 0;
+    private long livestreamStartingMillis = 0; // Stores the time when livestream will start or when it started
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -723,7 +723,7 @@ public class FileViewFragment extends BaseFragment implements
                     load(claimToRender.getThumbnailUrl()).
                     into(thumbnailView);
         }
-        updatePublishTime(null, claimToRender);
+        updatePublishTime((Claim.StreamMetadata)claimToRender.getValue(), claimToRender);
     }
 
     private void renderPublisherBroadcasting() {
@@ -5006,7 +5006,11 @@ public class FileViewFragment extends BaseFragment implements
                                                     Helper.setViewText(textViewCount, displayText);
                                                     Helper.setViewVisibility(textViewCount, View.VISIBLE);
                                                 }
-                                                updatePublishTime(null, null);
+                                                if (livestreamStartingMillis != 0) {
+                                                    updatePublishTime(null, null);
+                                                } else { // Broadcast has not started or has finished
+                                                    updatePublishTime((Claim.StreamMetadata) actualClaim.getValue(), actualClaim);
+                                                }
                                             } catch (IllegalStateException ex) {
                                                 ex.printStackTrace();
                                             }
