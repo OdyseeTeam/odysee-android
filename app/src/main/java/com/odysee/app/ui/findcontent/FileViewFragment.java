@@ -129,7 +129,9 @@ import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
@@ -315,8 +317,10 @@ public class FileViewFragment extends BaseFragment implements
     private ImageView dislikeReactionIcon;
     ScheduledFuture<?> futureReactions;
     Reactions reactions;
-    ScheduledFuture<?> futureViewersCount;
     ScheduledFuture<?> futureElapsedPlayback;
+    ScheduledFuture<?> scheduledStartPlaying;
+    ScheduledFuture<?> scheduledStopPlaying;
+    private long livestreamStartingMillis = 0;
 
     private boolean postingComment;
     private boolean fetchingChannels;
@@ -352,6 +356,7 @@ public class FileViewFragment extends BaseFragment implements
     private String claimLivestreamUrl;
 
     private boolean isLivestream;
+    private Map<String, JSONObject> jsonData;
 
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -703,6 +708,36 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void renderPublisherNotBroadcasting(Claim claimToRender) {
+        View root = getView();
+        Context context = getContext();
+        if (root != null && context != null) {
+            root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
+            root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
+            TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
+            userNotStreaming.setText(context.getString(R.string.user_not_live_yet, claimToRender.getPublisherName()));
+            userNotStreaming.setVisibility(View.VISIBLE);
+            ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
+            Glide.with(context.getApplicationContext()).
+                    asBitmap().
+                    load(claimToRender.getThumbnailUrl()).
+                    into(thumbnailView);
+        }
+        updatePublishTime(null, claimToRender);
+    }
+
+    private void renderPublisherBroadcasting() {
+        View root = getView();
+        Context context = getContext();
+        if (root != null && context != null) {
+            root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.GONE);
+            root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.VISIBLE);
+            TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
+            userNotStreaming.setVisibility(View.GONE);
+        }
+        updatePublishTime(null, null);
+    }
+
     private void renderNothingAtLocation() {
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.VISIBLE);
@@ -723,6 +758,21 @@ public class FileViewFragment extends BaseFragment implements
         if (textNothingAtLocation != null) {
             textNothingAtLocation.setMovementMethod(LinkMovementMethod.getInstance());
             textNothingAtLocation.setText(HtmlCompat.fromHtml(getString(R.string.dmca_complaint_blocked), HtmlCompat.FROM_HTML_MODE_LEGACY));
+        }
+    }
+
+    private void updatePublishTime(@Nullable Claim.StreamMetadata metadata, @Nullable Claim claim) {
+        View root = getView();
+        if (root != null) {
+            long publishTime = 0;
+            if (metadata != null && claim != null) {
+                publishTime = metadata.getReleaseTime() > 0 ? metadata.getReleaseTime() * 1000 : claim.getTimestamp() * 1000;
+            } else if (claim == null && livestreamStartingMillis != 0){
+                publishTime = livestreamStartingMillis;
+            }
+
+            ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateTimeFormatter.ofLocalizedDate(
+                    FormatStyle.MEDIUM).format(Instant.ofEpochMilli(publishTime).atZone(ZoneId.systemDefault())));
         }
     }
 
@@ -1002,22 +1052,28 @@ public class FileViewFragment extends BaseFragment implements
         if (futureReactions != null) {
             futureReactions.cancel(true);
         }
-        if (futureViewersCount != null) {
-            futureViewersCount.cancel(true);
-        }
         if (futureElapsedPlayback != null) {
             futureElapsedPlayback.cancel(true);
             elapsedPlaybackScheduled = false;
+        }
+        if (scheduledStartPlaying != null) {
+            scheduledStartPlaying.cancel(true);
+        }
+        if (scheduledStopPlaying != null) {
+            scheduledStopPlaying.cancel(true);
         }
 
         if (futureReactions != null && futureReactions.isDone()) {
             futureReactions = null;
         }
-        if (futureViewersCount != null && futureViewersCount.isDone()) {
-            futureViewersCount = null;
-        }
         if (futureElapsedPlayback != null && futureElapsedPlayback.isDone()) {
             futureElapsedPlayback = null;
+        }
+        if (scheduledStartPlaying != null && scheduledStartPlaying.isDone()) {
+            scheduledStartPlaying = null;
+        }
+        if (scheduledStopPlaying != null && scheduledStopPlaying.isDone()) {
+            scheduledStopPlaying = null;
         }
     }
 
@@ -1920,25 +1976,31 @@ public class FileViewFragment extends BaseFragment implements
         if (!claimToRender.hasSource()) {
             Context context = getContext();
             View root = getView();
+            String urlResult = getLivestreamUrl();
             if (claimToRender.getThumbnailUrl() != null && context != null && root != null && !claimToRender.isLive()) {
-                String urlResult = getLivestreamUrl();
                 if (urlResult != null && urlResult.equalsIgnoreCase("notlive")) {
-                    root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
-                    root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
-                    TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
-                    userNotStreaming.setText(context.getString(R.string.user_not_live_yet, claimToRender.getPublisherName()));
-                    userNotStreaming.setVisibility(View.VISIBLE);
-                    ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
-                    Glide.with(context.getApplicationContext()).
-                            asBitmap().
-                            load(claimToRender.getThumbnailUrl()).
-                            into(thumbnailView);
+                    renderPublisherNotBroadcasting(claimToRender);
                 } else {
                     fileClaim.setLive(true);
                     fileClaim.setLivestreamUrl(urlResult);
                 }
             }
 
+            if (jsonData != null) {
+                JSONObject j = jsonData.get(fileClaim.getSigningChannel().getClaimId());
+
+                if (j != null && j.has("Start")) {
+                    try {
+                        String livestreamStart = j.getString("Start");
+                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+                        ZonedDateTime zonedStart = ZonedDateTime.parse(livestreamStart, dtf);
+
+                        livestreamStartingMillis = zonedStart.toInstant().toEpochMilli();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
             // livestream, so we load up the messages and initialise the websocket
             initLivestreamChat();
             isLivestream = true;
@@ -1954,9 +2016,7 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(tipButton, View.VISIBLE);
 */
 
-        if (fileClaim != null && fileClaim.isLive()) {
-            loadLiveViewersCount(fileClaim);
-        } else {
+        if (fileClaim != null && !fileClaim.isLive()) {
             loadViewCount();
         }
         loadReactions(claimToRender);
@@ -2068,9 +2128,7 @@ public class FileViewFragment extends BaseFragment implements
 
             if (metadata instanceof Claim.StreamMetadata) {
                 Claim.StreamMetadata streamMetadata = (Claim.StreamMetadata) metadata;
-                long publishTime = streamMetadata.getReleaseTime() > 0 ? streamMetadata.getReleaseTime() * 1000 : claimToRender.getTimestamp() * 1000;
-                ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateTimeFormatter.ofLocalizedDate(
-                        FormatStyle.MEDIUM).format(Instant.ofEpochMilli(publishTime).atZone(ZoneId.systemDefault())));
+                updatePublishTime(streamMetadata, claimToRender);
 
                 Fee fee = streamMetadata.getFee();
                 if (fee != null && Helper.parseDouble(fee.getAmount(), 0) > 0) {
@@ -2457,13 +2515,12 @@ public class FileViewFragment extends BaseFragment implements
                 ChannelLiveStatus callable = new ChannelLiveStatus(Collections.singletonList(fileClaim.getSigningChannel().getClaimId()));
                 Future<Map<String, JSONObject>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
-                Map<String, JSONObject> jsonData = future.get();
+                jsonData = future.get();
                 jsonDataUrl = getLivestreamUrl(jsonData.get(fileClaim.getSigningChannel().getClaimId()));
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
-
 
         return jsonDataUrl;
     }
@@ -2665,69 +2722,6 @@ public class FileViewFragment extends BaseFragment implements
                 }
             });
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
-    }
-
-    private void loadLiveViewersCount(Claim claim) {
-        if (futureViewersCount != null) {
-            futureViewersCount.cancel(true);
-        }
-
-        Activity a = getActivity();
-
-        if (a != null) {
-            Runnable r = () -> {
-                updateLiveViewersCount(claim);
-            };
-            try {
-                futureViewersCount = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleWithFixedDelay(r, 10, 5, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void updateLiveViewersCount(Claim claim) {
-        Activity a = getActivity();
-        if (a != null) {
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    String channelClaimId = claim.getSigningChannel().getClaimId();
-                    Future<Map<String, JSONObject>> futureViewersCount = ((OdyseeApp) a.getApplication()).getExecutor().submit(new ChannelLiveStatus(Collections.singletonList(channelClaimId), false));
-
-                    try {
-                        Map<String, JSONObject> channelStatus = futureViewersCount.get();
-
-                        if (channelStatus.containsKey(channelClaimId)) {
-                            JSONObject jsonData = channelStatus.get(channelClaimId);
-                            if (jsonData != null) {
-                                Integer count = jsonData.getInt("ViewerCount");
-                                a.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            String displayText = getResources().getString(R.string.livestream_view_count, String.valueOf(count));
-                                            View root = getView();
-                                            if (root != null) {
-                                                TextView textViewCount = root.findViewById(R.id.file_view_view_count);
-                                                Helper.setViewText(textViewCount, displayText);
-                                                Helper.setViewVisibility(textViewCount, View.VISIBLE);
-                                            }
-                                        } catch (IllegalStateException ex) {
-                                            ex.printStackTrace();
-                                        }
-                                    }
-                                });
-                            }
-
-                        }
-                    } catch (ExecutionException | InterruptedException | JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-            t.start();
         }
     }
 
@@ -4948,22 +4942,30 @@ public class FileViewFragment extends BaseFragment implements
     private void checkWebSocketClient() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if ((webSocketClient == null || webSocketClient.isClosed()) && actualClaim != null && !actualClaim.hasSource()) {
-            webSocketClient = new WebSocketClient(new URI(String.format("%s%s", Lbryio.WS_COMMENT_BASE_URL, actualClaim.getClaimId()))) {
+            String signingChannelShort = String.valueOf(LbryUri.parse(actualClaim.getSigningChannel().getCanonicalUrl()).getClaimId());
+            String livechatUrl = String.format("%s%s", Lbryio.WS_COMMENT_BASE_URL, actualClaim.getClaimId());
+            livechatUrl = livechatUrl.concat("&category=").concat(actualClaim.getSigningChannel().getNormalizedName())
+                                     .concat(":").concat(signingChannelShort)
+                                     .concat("&sub_category=viewer");
+            webSocketClient = new WebSocketClient(new URI(livechatUrl)) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) { }
 
                 @Override
                 public void onMessage(String message) {
+                    Log.i(TAG, "onMessage: ".concat(message));
                     try {
                         JSONObject json = new JSONObject(message);
                         String type = Helper.getJSONString("type", null, json);
-                        if ("delta".equalsIgnoreCase(type)) {
+
+                        if ("delta".equalsIgnoreCase(type) || "viewers".equalsIgnoreCase(type) || "livestream".equalsIgnoreCase(type)) {
                             JSONObject data = Helper.getJSONObject("data", json);
-                            if (data != null) {
+
+                            Activity a = getActivity();
+                            if (data != null && "delta".equalsIgnoreCase(type)) {
                                 JSONObject commentJson = Helper.getJSONObject("comment", data);
                                 if (commentJson != null) {
                                     Comment comment = new Comment();
-                                    Activity a = getActivity();
                                     if (a != null) {
                                         a.runOnUiThread(new Runnable() {
                                             @Override
@@ -4988,10 +4990,95 @@ public class FileViewFragment extends BaseFragment implements
                                         });
                                     }
                                 }
+                            } else if (data != null && "viewers".equalsIgnoreCase(type)) {
+                                int connectedViewers = data.getInt("connected");
+
+                                if (a != null) {
+                                    a.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            try {
+                                                Context context = a.getApplicationContext();
+                                                String displayText = context.getResources().getString(R.string.livestream_view_count, String.valueOf(connectedViewers));
+                                                View root = getView();
+                                                if (root != null) {
+                                                    TextView textViewCount = root.findViewById(R.id.file_view_view_count);
+                                                    Helper.setViewText(textViewCount, displayText);
+                                                    Helper.setViewVisibility(textViewCount, View.VISIBLE);
+                                                }
+                                                updatePublishTime(null, null);
+                                            } catch (IllegalStateException ex) {
+                                                ex.printStackTrace();
+                                            }
+                                        }
+                                    });
+                                }
+                            } else if (data != null && "livestream".equalsIgnoreCase(type)) {
+                                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+                                String liveTime = data.getString("live_time");
+                                String endTime = data.getString("end_time");
+
+                                if (a != null) {
+                                    ZonedDateTime zonedEnd = ZonedDateTime.parse(endTime, dtf);
+                                    ZonedDateTime zonedStart = ZonedDateTime.parse(liveTime, dtf);
+
+                                    if (zonedEnd != null && zonedStart != null) {
+                                        OdyseeApp app = (OdyseeApp) a.getApplication();
+
+                                        Date timeNow = new Date();
+
+                                        long millisecondsEnd = zonedEnd.toInstant().toEpochMilli();
+                                        long deltaEnd = millisecondsEnd - timeNow.getTime();
+
+                                        if (deltaEnd > 0) {
+                                            scheduledStopPlaying = app.getScheduledExecutor().schedule(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    a.runOnUiThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            MainActivity.appPlayer.stop();
+                                                            livestreamStartingMillis = 0;
+                                                            renderPublisherNotBroadcasting(actualClaim);
+                                                        }
+                                                    });
+                                                }
+                                            }, deltaEnd, TimeUnit.MILLISECONDS);
+                                        }
+
+                                        long millisecondsStart = zonedStart.toInstant().toEpochMilli();
+                                        livestreamStartingMillis = millisecondsStart;
+                                        updatePublishTime(null, null);
+                                        long deltaStart = millisecondsStart - timeNow.getTime();
+
+                                        if (deltaStart > 0) {
+                                            scheduledStartPlaying = app.getScheduledExecutor().schedule(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    a.runOnUiThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            JSONObject jsonResult = jsonData.get(fileClaim.getSigningChannel().getClaimId());
+                                                            if (jsonResult != null && jsonResult.has("VideoURL")) {
+                                                                try {
+                                                                    claimLivestreamUrl = jsonResult.getString("VideoURL");
+                                                                    renderPublisherBroadcasting();
+                                                                    playMedia();
+                                                                } catch (JSONException e) {
+                                                                    e.printStackTrace();
+                                                                }
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                            }, deltaStart, TimeUnit.MILLISECONDS);
+                                        }
+                                    }
+                                }
                             }
                         }
                     } catch (JSONException ex) {
-                        // pass
+                        ex.printStackTrace();
                     }
                 }
 
