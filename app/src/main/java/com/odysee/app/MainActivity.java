@@ -123,7 +123,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.lbryinc.RewardVerified;
+import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
 import org.java_websocket.client.WebSocketClient;
@@ -225,6 +228,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
+import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;
@@ -245,6 +249,7 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.PurchasedChecker;
 import com.odysee.app.utils.Utils;
+import com.odysee.app.utils.VerificationSkipQueue;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -252,7 +257,7 @@ import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
-        ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener {
+        ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener, VerificationListener {
     private static final String PLAYER_NOTIFICATION_CHANNEL_ID = "com.odysee.app.PLAYER_NOTIFICATION_CHANNEL";
     private static final int PLAYBACK_NOTIFICATION_ID = 3;
     private static final String SPECIAL_URL_PREFIX = "lbry://?";
@@ -275,6 +280,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     // make tip unlock a global operation
     @Getter
     private boolean unlockingTips;
+
+    private VerificationSkipQueue verificationSkipQueue;
 
     public static ExoPlayer appPlayer;
     public static Cache playerCache;
@@ -306,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private String cameraOutputFilename;
     private Bitmap nowPlayingClaimBitmap;
     private Fragment currentDisplayFragment;
+    private boolean rewardVerificationActive;
 
     @Setter
     private BackPressInterceptor backPressInterceptor;
@@ -360,7 +368,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INSTALL_ID = "com.odysee.app.InstallId";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK = "com.odysee.app.preference.userinterface.BackgroundPlayback";
     public static final String PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE = "com.odysee.app.preference.userinterface.BackgroundPlaybackPIPMode";
-    public static final String PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY = "com.odysee.app.preference.userinterface.MediaAutoplay";
+    public static final String PREFERENCE_KEY_INTERNAL_AUTOPLAY_MEDIA = "com.odysee.app.preference.userinterface.AutoplayMedia";
     public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED = "com.odysee.app.preference.userinterface.PlaybackDefaultSpeed";
@@ -396,6 +404,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String APP_SETTING_DARK_MODE_NIGHT = "night";
     public static final String APP_SETTING_DARK_MODE_NOTNIGHT = "notnight";
     public static final String APP_SETTING_DARK_MODE_SYSTEM = "system";
+
+    public static final String APP_SETTING_AUTOPLAY_NEVER = "never";
+    public static final String APP_SETTING_AUTOPLAY_NOTHING_PLAYING = "nothing_playing";
+    public static final String APP_SETTING_AUTOPLAY_ALWAYS = "always";
 
     private static final String TAG = "OdyseeMain";
     private static final String FILE_VIEW_TAG = "FileView";
@@ -457,7 +469,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (Build.VERSION.SDK_INT < 31) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
         } else {
@@ -597,6 +609,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 insets.getSystemWindowInsetBottom()));
             }
         });
+
+        // verification skip queue
+        verificationSkipQueue = new VerificationSkipQueue(this, new VerificationSkipQueue.ShowInProgressListener() {
+            @Override
+            public void maybeShowRequestInProgress() {
+
+            }
+        }, new RewardVerifiedHandler() {
+            @Override
+            public void onSuccess(RewardVerified rewardVerified) {
+                if (Lbryio.currentUser != null) {
+                    Lbryio.currentUser.setRewardApproved(rewardVerified.isRewardApproved());
+                }
+
+                if (!rewardVerified.isRewardApproved()) {
+                    // show pending purchase message (possible slow card tx)
+                    showMessage(getString(R.string.purchase_request_pending));
+                } else  {
+                    showMessage(getString(R.string.reward_verification_successful));
+                }
+            }
+
+            @Override
+            public void onError(Exception error) {
+                showError(getString(R.string.purchase_request_failed_error));
+            }
+        });
+        verificationSkipQueue.createBillingClientAndEstablishConnection();
 
         // register receivers
         registerRequestsReceiver();
@@ -1204,9 +1244,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_BACKGROUND_PLAYBACK_PIP_MODE, false);
     }
 
-    public boolean isMediaAutoplayEnabled() {
+    public String mediaAutoplayEnabled() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_MEDIA_AUTOPLAY, true);
+        return sp.getString(PREFERENCE_KEY_INTERNAL_AUTOPLAY_MEDIA, APP_SETTING_AUTOPLAY_NOTHING_PLAYING);
     }
 
     public int wifiDefaultQuality() {
@@ -1398,6 +1438,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             params.put("claim", claim);
         }
         openFragment(ChannelFormFragment.class, true, params);
+    }
+
+    public void navigateBackToMain() {
+        getSupportFragmentManager().popBackStack();
+        findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
+        findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+        findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
     }
 
     public void openPublishesOnSuccessfulPublish() {
@@ -2703,7 +2750,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void hideLaunchScreen() {
-        if (Build.VERSION.SDK_INT < 31) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             // Animate?
             View launchSplash = findViewById(R.id.launch_splash);
             if (launchSplash.getVisibility() == View.VISIBLE) {
@@ -2745,10 +2792,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         @Nullable
         @Override
         public PendingIntent createCurrentContentIntent(Player player) {
-            if (nowPlayingClaimUrl != null) {
+            if (nowPlayingClaimUrl != null || (nowPlayingClaim != null && !Helper.isNullOrEmpty(nowPlayingClaim.getCanonicalUrl()))) {
                 Intent launchIntent = new Intent(MainActivity.this, MainActivity.class);
                 launchIntent.setAction(Intent.ACTION_VIEW);
-                launchIntent.setData(Uri.parse(nowPlayingClaimUrl));
+                if (!Helper.isNullOrEmpty(nowPlayingClaimUrl)) {
+                    launchIntent.setData(Uri.parse(nowPlayingClaimUrl));
+                } else {
+                    launchIntent.setData(Uri.parse(nowPlayingClaim.getCanonicalUrl()));
+                }
                 launchIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 return PendingIntent.getActivity(MainActivity.this, 0, launchIntent, PendingIntent.FLAG_IMMUTABLE);
             }
@@ -4616,6 +4667,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         t.start();
     }
 
+    public void showRewardsVerification() {
+        openFragment(RewardVerificationFragment.class, true, null);
+        rewardVerificationActive = true;
+    }
+
+    public void dismissRewardsVerification() {
+        if (rewardVerificationActive && (currentDisplayFragment instanceof RewardVerificationFragment)) {
+
+        }
+    }
+
     private void resolveCommentAuthors(List<String> urls) {
         if (urls != null && !urls.isEmpty()) {
             ResolveTask task = new ResolveTask(urls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
@@ -4984,15 +5046,60 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED);
     }
 
-    public interface BackPressInterceptor {
-        boolean onBackPressed();
-    }
-
     public void updateCurrentDisplayFragment(Fragment fragment) {
         this.currentDisplayFragment = fragment;
     }
 
     public void resetCurrentDisplayFragment() {
         currentDisplayFragment = null;
+    }
+
+    @Override
+    public void onEmailAdded(String email) {
+
+    }
+
+    @Override
+    public void onEmailEdit() {
+
+    }
+
+    @Override
+    public void onEmailVerified() {
+
+    }
+
+    @Override
+    public void onPhoneAdded(String countryCode, String phoneNumber) {
+
+    }
+
+    @Override
+    public void onPhoneVerified() {
+
+    }
+
+    @Override
+    public void onManualVerifyContinue() {
+
+    }
+
+    @Override
+    public void onSkipQueueAction() {
+        verificationSkipQueue.onSkipQueueAction(this);
+    }
+
+    @Override
+    public void onTwitterVerified() {
+
+    }
+
+    @Override
+    public void onManualProgress(boolean progress) {
+
+    }
+
+    public interface BackPressInterceptor {
+        boolean onBackPressed();
     }
 }

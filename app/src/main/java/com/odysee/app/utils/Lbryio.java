@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.exceptions.AuthTokenInvalidatedException;
@@ -349,7 +350,12 @@ public final class Lbryio {
 
     public static Map<String, String> buildSingleListParam(String key, List<String> values) {
         Map<String, String> params = new HashMap<>();
-        params.put(key, String.join(",", values));
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
+            params.put(key, String.join(",", values));
+        } else {
+            String joined = values.stream().collect(Collectors.joining(","));
+            params.put(key, joined);
+        }
         return params;
     }
 

@@ -3,7 +3,6 @@ package com.odysee.app.adapter;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +28,7 @@ import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.lbryinc.LbryNotification;
 import com.odysee.app.ui.controls.SolidIconView;
+import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -202,8 +202,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         vh.titleView.setVisibility(!Helper.isNullOrEmpty(notification.getTitle()) ? View.VISIBLE : View.GONE);
         vh.titleView.setText(notification.getTitle());
         vh.bodyView.setText(notification.getDescription());
-        vh.timeView.setText(DateUtils.getRelativeTimeSpanString(
-                getLocalNotificationTime(notification), System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+        vh.timeView.setText(FormatTime.fromEpochMillis(notification.getTimestamp().getTime()));
 
         vh.authorThumbnailView.setVisibility(notification.getCommentAuthor() == null || notification.getAuthorThumbnailUrl() == null ? View.INVISIBLE : View.VISIBLE);
         if (notification.getAuthorThumbnailUrl() != null)
@@ -300,17 +299,6 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         }
 
         notifyDataSetChanged();
-    }
-
-    private long getLocalNotificationTime(LbryNotification notification) {
-        TimeZone utcTZ = TimeZone.getTimeZone("UTC");
-        TimeZone targetTZ = TimeZone.getDefault();
-        Calendar cal = new GregorianCalendar(utcTZ);
-        cal.setTimeInMillis(notification.getTimestamp().getTime());
-
-        cal.add(Calendar.MILLISECOND, utcTZ.getRawOffset() * -1);
-        cal.add(Calendar.MILLISECOND, targetTZ.getRawOffset());
-        return cal.getTimeInMillis();
     }
 
     public interface NotificationClickListener {

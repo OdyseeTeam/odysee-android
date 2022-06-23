@@ -24,7 +24,6 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
 import android.util.DisplayMetrics;
@@ -129,9 +128,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -436,6 +438,7 @@ public class FileViewFragment extends BaseFragment implements
                     renderTotalDuration();
                     scheduleElapsedPlayback();
                     hideBuffering();
+                    setPlayerSurfaceVisibility(View.VISIBLE);
 
                     if (loadingNewClaim) {
                         setPlaybackSpeedToDefault();
@@ -471,12 +474,14 @@ public class FileViewFragment extends BaseFragment implements
 
                     showBuffering();
 
-                    Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
-                            .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
-                    long currentPosition = MainActivity.appPlayer.getCurrentPosition();
-                    long defaultPosition = window.getDefaultPositionMs();
-                    if (currentPosition >= defaultPosition) {
-                        setPlaybackSpeed(MainActivity.appPlayer, 100);
+                    if (isLivestream) {
+                        Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
+                                .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
+                        long currentPosition = MainActivity.appPlayer.getCurrentPosition();
+                        long defaultPosition = window.getDefaultPositionMs();
+                        if (currentPosition >= defaultPosition) {
+                            setPlaybackSpeed(MainActivity.appPlayer, 100);
+                        }
                     }
                 } else if (playbackState == Player.STATE_ENDED) {
                     playNextItemInPlaylist();
@@ -620,7 +625,6 @@ public class FileViewFragment extends BaseFragment implements
             if (updateRequired) {
                 resetViewCount();
                 resetFee();
-                checkNewClaimAndUrl(newClaim, newUrl);
 
                 // This is required to recycle current fragment with new claim from related content
                 fileClaim = null;
@@ -660,6 +664,7 @@ public class FileViewFragment extends BaseFragment implements
                     resolveUrl(currentUrl);
                 } else {
                     Lbry.addClaimToCache(fileClaim);
+                    loadingNewClaim = true;
                 }
             } else {
                 checkAndResetNowPlayingClaim();
@@ -765,37 +770,9 @@ public class FileViewFragment extends BaseFragment implements
             } else if (claim == null && livestreamStartingMillis != 0){
                 publishTime = livestreamStartingMillis;
             }
-            ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateUtils.getRelativeTimeSpanString(
-                    publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
-        }
-    }
 
-    private void checkNewClaimAndUrl(Claim newClaim, String newUrl) {
-        boolean shouldResetNowPlaying = false;
-        if (newClaim != null &&
-                MainActivity.nowPlayingClaim != null &&
-                !MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(newClaim.getClaimId())) {
-            shouldResetNowPlaying = true;
-        }
-        if (!shouldResetNowPlaying &&
-                newUrl != null &&
-                MainActivity.nowPlayingClaim != null &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaimUrl) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getShortUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getPermanentUrl()) &&
-                !newUrl.equalsIgnoreCase(MainActivity.nowPlayingClaim.getCanonicalUrl())) {
-            shouldResetNowPlaying = true;
-        }
-
-        if (shouldResetNowPlaying) {
-            if (MainActivity.appPlayer != null) {
-                MainActivity.appPlayer.setPlayWhenReady(false);
-            }
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).clearNowPlayingClaim();
-                resetPlayer();
-            }
+            ((TextView) root.findViewById(R.id.file_view_publish_time)).setText(DateTimeFormatter.ofLocalizedDate(
+                    FormatStyle.MEDIUM).format(Instant.ofEpochMilli(publishTime).atZone(ZoneId.systemDefault())));
         }
     }
 
@@ -862,6 +839,7 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.stopExoplayer();
                 }
             }
+            setPlayerSurfaceVisibility(View.INVISIBLE);
         }
     }
 
@@ -1119,6 +1097,17 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void setPlayerSurfaceVisibility(int visibility) {
+        View root = getView();
+        if (root != null) {
+            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
+            View surfaceView = view.getVideoSurfaceView();
+            if (surfaceView != null) {
+                surfaceView.setVisibility(visibility);
+            }
+        }
+    }
+
     private final View.OnClickListener bellIconListener = new View.OnClickListener()  {
         @Override
         public void onClick(View view) {
@@ -1266,8 +1255,6 @@ public class FileViewFragment extends BaseFragment implements
                         // also save view history
                         Helper.saveViewHistory(url, fileClaim);
                     }
-
-                    checkAndResetNowPlayingClaim();
 
                     if (Helper.isClaimBlocked(fileClaim)) {
                         renderClaimBlocked();
@@ -2018,10 +2005,6 @@ public class FileViewFragment extends BaseFragment implements
             initLivestreamChat();
             isLivestream = true;
         }
-        if (claimToRender.isPlayable() && MainActivity.appPlayer != null
-                && ((!claimToRender.isLive() && claimLivestreamUrl == null) || (claimToRender.isLive() && claimToRender.getLivestreamUrl() != null))) {
-            MainActivity.appPlayer.setPlayWhenReady(isPlaying);
-        }
 
         Helper.setViewVisibility(layoutLoadingState, View.GONE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
@@ -2112,6 +2095,9 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_media_meta_container).setVisibility(View.VISIBLE);
 
+            root.findViewById(R.id.file_view_main_action_loading).setVisibility(View.GONE);
+            root.findViewById(R.id.file_view_play).setVisibility(claimToRender.isPlayable() ? View.VISIBLE : View.INVISIBLE);
+
             Claim.GenericMetadata metadata = claimToRender.getValue();
             if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl()) && context != null) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
@@ -2183,7 +2169,22 @@ public class FileViewFragment extends BaseFragment implements
                     showExoplayerView();
                     playMedia();
                 } else {
-                    onMainActionButtonClicked();
+                    String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
+                    if (MainActivity.nowPlayingClaim == null) {
+                        if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
+                            onMainActionButtonClicked();
+                        } else if (claimToRender.isPlayable()) {
+                            if (root != null) {
+                                root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
+                            }
+                        }
+                    } else {
+                        if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
+                            onMainActionButtonClicked();
+                        } else if (claimToRender.isViewable()) {
+                            restoreMainActionButton();
+                        }
+                    }
                 }
             } else if (claimToRender.isViewable() && Lbry.SDK_READY) {
                 onMainActionButtonClicked();
@@ -2373,7 +2374,7 @@ public class FileViewFragment extends BaseFragment implements
                     ((MainActivity) context).setNowPlayingClaim(claimToPlay, currentUrl);
                 }
 
-                MainActivity.appPlayer.setPlayWhenReady(Objects.requireNonNull((MainActivity) (getActivity())).isMediaAutoplayEnabled());
+                MainActivity.appPlayer.setPlayWhenReady(true);
 
                 if (claimToPlay.hasSource()) {
                     getStreamingUrlAndInitializePlayer(claimToPlay);
@@ -2394,6 +2395,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     if (mediaSourceUrl != null) {
                         if (!mediaSourceUrl.equals("notlive")) {
+                            MainActivity.videoIsTranscoded = true;
                             Map<String, String> defaultRequestProperties = new HashMap<>(1);
                             defaultRequestProperties.put("Referer", "https://bitwave.tv");
                             dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
@@ -2449,16 +2451,19 @@ public class FileViewFragment extends BaseFragment implements
                             boolean requestRedirected = response.priorResponse() != null && response.priorResponse().isRedirect();
                             MainActivity.videoIsTranscoded = requestRedirected && response.isSuccessful() && requestUrl.endsWith("m3u8");
                             currentMediaSourceUrl = MainActivity.videoIsTranscoded ? requestUrl : sourceUrl;
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(() -> {
                             View root = getView();
                             if (root != null) {
                                 root.findViewById(R.id.player_quality).setVisibility(
                                         MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
                             }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
 
-                        new Handler(Looper.getMainLooper()).post(() -> initializePlayer(currentMediaSourceUrl));
+                            initializePlayer(currentMediaSourceUrl);
+                        });
                     }
                 } catch (LbryRequestException | LbryResponseException | JSONException ex) {
                     // TODO: How does error handling work here
@@ -2991,6 +2996,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void onMainActionButtonClicked() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        checkAndResetNowPlayingClaim();
 
         // Check if the claim is free
         Claim.GenericMetadata metadata = actualClaim.getValue();
@@ -4004,6 +4010,7 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.player_buffering_progress).setVisibility(View.VISIBLE);
 
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            playerView.findViewById(R.id.player_play_pause).setVisibility(View.INVISIBLE);
             playerView.findViewById(R.id.player_skip_back_10).setVisibility(View.INVISIBLE);
             playerView.findViewById(R.id.player_skip_forward_10).setVisibility(View.INVISIBLE);
         }
@@ -4015,6 +4022,7 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.player_buffering_progress).setVisibility(View.INVISIBLE);
 
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            playerView.findViewById(R.id.player_play_pause).setVisibility(View.VISIBLE);
             playerView.findViewById(R.id.player_skip_back_10).setVisibility(View.VISIBLE);
             playerView.findViewById(R.id.player_skip_forward_10).setVisibility(View.VISIBLE);
         }

@@ -44,18 +44,18 @@
                 android:id="@+id/reward_item_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
+                android:fontFamily="@font/inter"
                 style="@style/TextView_Light"
-                android:singleLine="true"
                 android:textColor="@color/odyseePink"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
             <TextView
                 android:id="@+id/reward_item_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:fontFamily="@font/inter"
                 style="@style/TextView_Light"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
             <TextView
                 android:id="@+id/reward_item_tx_link"
                 android:background="?attr/selectableItemBackground"
@@ -63,15 +63,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:fontFamily="@font/inter"
                 style="@style/TextView_Light"
                 android:textColor="@color/odyseePink"
-                android:visibility="gone" android:focusable="true"/>
+                android:focusable="true"
+                android:visibility="gone" />
             <EditText
                 android:id="@+id/reward_item_custom_code_input"
                 android:background="@android:color/transparent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:fontFamily="@font/inter"
                 style="@style/TextView_Light"
                 android:letterSpacing="1.1"
                 android:hint="@string/reward_code_placeholder"
@@ -85,6 +88,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/claim"
+                android:fontFamily="@font/inter"
                 style="@style/TextView_Light"
                 android:layout_gravity="end"
                 android:visibility="gone" />
@@ -100,9 +104,10 @@
                 android:id="@+id/reward_item_up_to"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
+                android:layout_gravity="end"
                 android:text="@string/up_to"
                 style="@style/TextView_Light"
+                android:fontFamily="@font/inter"
                 android:textSize="11sp"
                 android:visibility="gone" />
             <com.odysee.app.views.CreditsBalanceView
@@ -110,7 +115,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                app:textSize="14sp"
+                android:fontFamily="@font/inter"
+                android:textFontWeight="300"
+                android:textSize="14sp"
                 app:iconSize="20dp"/>
         </LinearLayout>
     </LinearLayout>

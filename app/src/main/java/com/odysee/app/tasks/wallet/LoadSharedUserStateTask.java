@@ -80,44 +80,48 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     JSONArray blocked = value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
 
                     JSONObject builtInCollections = Helper.getJSONObject("builtinCollections", value);
-                    OdyseeCollection favoritesCollection = OdyseeCollection.fromJSONObject(
-                            OdyseeCollection.BUILT_IN_ID_FAVORITES,
-                            OdyseeCollection.VISIBILITY_PRIVATE,
-                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_FAVORITES, builtInCollections));
-                    OdyseeCollection watchLaterCollection = OdyseeCollection.fromJSONObject(
-                            OdyseeCollection.BUILT_IN_ID_WATCHLATER,
-                            OdyseeCollection.VISIBILITY_PRIVATE,
-                            Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
+                    if (builtInCollections != null) {
+                        OdyseeCollection favoritesCollection = OdyseeCollection.fromJSONObject(
+                                OdyseeCollection.BUILT_IN_ID_FAVORITES,
+                                OdyseeCollection.VISIBILITY_PRIVATE,
+                                Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_FAVORITES, builtInCollections));
+                        OdyseeCollection watchLaterCollection = OdyseeCollection.fromJSONObject(
+                                OdyseeCollection.BUILT_IN_ID_WATCHLATER,
+                                OdyseeCollection.VISIBILITY_PRIVATE,
+                                Helper.getJSONObject(OdyseeCollection.BUILT_IN_ID_WATCHLATER, builtInCollections));
 
-                    if (db != null) {
-                        if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
-                            // only replace the locally saved collections if there are items
-                            DatabaseHelper.saveCollection(favoritesCollection, db);
-                        }
-                        if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
-                            DatabaseHelper.saveCollection(watchLaterCollection, db);
+                        if (db != null) {
+                            if (favoritesPlaylist == null || favoritesCollection.getUpdatedAtTimestamp() > favoritesPlaylist.getUpdatedAtTimestamp()) {
+                                // only replace the locally saved collections if there are items
+                                DatabaseHelper.saveCollection(favoritesCollection, db);
+                            }
+                            if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
+                                DatabaseHelper.saveCollection(watchLaterCollection, db);
+                            }
                         }
                     }
 
                     JSONObject unpublishedCollections = Helper.getJSONObject("unpublishedCollections", value);
-                    Iterator<String> pcIdsIterator = unpublishedCollections.keys();
-                    while (pcIdsIterator.hasNext()) {
-                        String collectionId = pcIdsIterator.next();
-                        JSONObject jsonCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
-                        OdyseeCollection thisCollection = OdyseeCollection.fromJSONObject(
-                                collectionId,
-                                OdyseeCollection.VISIBILITY_PRIVATE,
-                                jsonCollection
-                        );
-                        boolean shouldSave = true;
+                    if (unpublishedCollections != null) {
+                        Iterator<String> pcIdsIterator = unpublishedCollections.keys();
+                        while (pcIdsIterator.hasNext()) {
+                            String collectionId = pcIdsIterator.next();
+                            JSONObject jsonCollection = Helper.getJSONObject(collectionId, unpublishedCollections);
+                            OdyseeCollection thisCollection = OdyseeCollection.fromJSONObject(
+                                    collectionId,
+                                    OdyseeCollection.VISIBILITY_PRIVATE,
+                                    jsonCollection
+                            );
+                            boolean shouldSave = true;
 
-                        if (allCollections != null && allCollections.containsKey(collectionId)) {
-                            OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
-                            shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
-                        }
+                            if (allCollections != null && allCollections.containsKey(collectionId)) {
+                                OdyseeCollection priorLocalCollection = allCollections.get(collectionId);
+                                shouldSave = thisCollection.getUpdatedAtTimestamp() > priorLocalCollection.getUpdatedAtTimestamp();
+                            }
 
-                        if (shouldSave) {
-                            DatabaseHelper.saveCollection(thisCollection, db);
+                            if (shouldSave) {
+                                DatabaseHelper.saveCollection(thisCollection, db);
+                            }
                         }
                     }
 

@@ -3,7 +3,8 @@ package com.odysee.app.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.text.format.DateUtils;
+import android.icu.text.CompactDecimalFormat;
+import android.os.Build;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,12 +26,15 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.odysee.app.R;
@@ -38,6 +42,7 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
@@ -399,9 +404,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-            contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
-            contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
-            contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+            RecyclerView.Adapter<? extends RecyclerView.ViewHolder> adapter = getBindingAdapter();
+            if (adapter instanceof ClaimListAdapter) {
+                ClaimListAdapter claimListAdapter = ((ClaimListAdapter) adapter);
+                final Claim original = claimListAdapter.getItems().get(getAbsoluteAdapterPosition());
+                final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
+                        (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
+                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+                }
+            }
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
@@ -676,14 +690,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     }
 
                     if (vh.publisherThumbnailView != null) {
-                        String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
-                        if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
-                            Glide.with(context.getApplicationContext())
-                                    .load(publisherThumbnailUrl)
-                                    .centerCrop()
-                                    .placeholder(R.drawable.bg_thumbnail_placeholder)
-                                    .apply(RequestOptions.circleCropTransform())
-                                    .into(vh.publisherThumbnailView);
+                        if (item.getSigningChannel() != null) {
+                            String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
+                            if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
+                                Glide.with(context.getApplicationContext())
+                                        .load(publisherThumbnailUrl)
+                                        .centerCrop()
+                                        .placeholder(R.drawable.bg_thumbnail_placeholder)
+                                        .apply(RequestOptions.circleCropTransform())
+                                        .into(vh.publisherThumbnailView);
+                            } else {
+                                vh.publisherThumbnailView.setVisibility(View.GONE);
+                            }
                         } else {
                             vh.publisherThumbnailView.setVisibility(View.GONE);
                         }
@@ -694,12 +712,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
                     vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
                     vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
                     if (vh.viewCountView != null) {
                         vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
                         vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
-                                R.plurals.view_count, item.getViews(), item.getViews()) + " •" : null);
+                                R.plurals.view_count, item.getViews(), compactNumber(item.getViews())) + " •" : null);
                     }
                     long duration = item.getDuration();
                     vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
@@ -800,8 +817,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     }
                     vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
                     vh.publisherView.setText(item.getName());
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
@@ -874,6 +890,37 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             ex.printStackTrace();
         }
         return position;
+    }
+
+    /**
+     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
+     */
+    private String compactNumber(long number) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
+        }
+
+        double value =  (double) number;
+        NumberFormat numberFormat = NumberFormat.getInstance();
+        if (number >= 1000000000) {
+            return numberFormat.format(round(value / 1000000000, 1))
+                    + context.getString(R.string.short_billion);
+        } else if (number >= 1000000) {
+            return numberFormat.format(round(value / 1000000, 1))
+                    + context.getString(R.string.short_million);
+        } else if (number >= 1000) {
+            return numberFormat.format(round(value / 1000, 1))
+                    + context.getString(R.string.short_thousand);
+        } else {
+            return numberFormat.format(value);
+        }
+    }
+
+    /**
+     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
+     */
+    private double round(double value, int places) {
+        return new BigDecimal(value).setScale(places, RoundingMode.HALF_UP).doubleValue();
     }
 
     public interface ClaimListItemListener {
