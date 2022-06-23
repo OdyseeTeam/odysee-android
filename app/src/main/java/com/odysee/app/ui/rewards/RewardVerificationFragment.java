@@ -1,8 +1,10 @@
-package com.odysee.app.ui.firstrun;
+package com.odysee.app.ui.rewards;
 
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +29,7 @@ import com.odysee.app.ui.rewards.RewardVerificationPaidFragment;
 import com.odysee.app.ui.rewards.RewardVerificationPhoneFragment;
 import com.odysee.app.ui.rewards.RewardVerificationTwitterFragment;
 import com.odysee.app.utils.FirstRunStepHandler;
+import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.Lbryio;
 
@@ -156,6 +159,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
             firstRunStepHandler.onRequestInProgress(true);
         }
 
+        Helper.setViewVisibility(textSummary, View.INVISIBLE);
         optionsPager.setVisibility(View.INVISIBLE);
         optionsTabs.setVisibility(View.INVISIBLE);
 
@@ -171,6 +175,14 @@ public class RewardVerificationFragment extends Fragment implements Verification
                     // verified for rewards
                     LbryAnalytics.logEvent(LbryAnalytics.EVENT_REWARD_ELIGIBILITY_COMPLETED);
                     textSummary.setText(R.string.reward_eligible);
+                    Helper.setViewVisibility(textSummary, View.VISIBLE);
+                    return;
+                }
+
+                if (user.isIdentityVerified()) {
+                    textSummary.setMovementMethod(new LinkMovementMethod());
+                    textSummary.setText(Html.fromHtml(getString(R.string.identify_verified_not_reward_eligible), Html.FROM_HTML_MODE_LEGACY));
+                    Helper.setViewVisibility(textSummary, View.VISIBLE);
                     return;
                 }
 
@@ -179,6 +191,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
                     // and this is not the check when the page loads
                     optionsPager.setCurrentItem(3);
                 }
+                Helper.setViewVisibility(textSummary, View.VISIBLE);
                 optionsPager.setVisibility(View.VISIBLE);
                 optionsTabs.setVisibility(View.VISIBLE);
             }

@@ -627,7 +627,7 @@
     <string name="skip_queue_manual_check">If you previously completed a purchase successfully and you still see this screen, please tap the verify purchase button below.</string>
     <string name="skip_queue_purchase_not_found">No purchase was found for this account.</string>
     <string name="verify_purchase">Verify Purchase</string>
-    <string name="request_to_be_verified">Please request to be verified on the &lt;a href="https://discordapp.com/invite/Z3bERWA"&gt;LBRY Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to several days.</string>
+    <string name="request_to_be_verified">Please request to be verified on the &lt;a href=" https://chat.odysee.com"&gt;official Odysee Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to several days.</string>
     <string name="enjoy_free_content">Please enjoy free content in the meantime!</string>
     <string name="verify_phone_number">Verify Phone Number</string>
     <string name="enter_phone_verify_code">Please enter the verification code sent to %1$s</string>
@@ -751,6 +751,7 @@
     </plurals>
     <string name="not_reward_eligible">You are not reward eligible. Join the Odysee Rewards program today using one of these options.</string>
     <string name="reward_eligible">You are now reward eligible. Watch content on Odysee to claim your rewards!</string>
+    <string name="identify_verified_not_reward_eligible">Your identity has been verified but your account still requires additional checks in order to become reward eligible. Please request to be verified on the &lt;a href=" https://chat.odysee.com"&gt;official Odysee Discord server&lt;/a&gt;. A manual review can take anywhere from several minutes to several days.</string>
 
     <!-- Reward drivers -->
     <string name="publishing_requires_credits">Publishing requires credits.</string>

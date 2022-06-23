@@ -228,7 +228,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
-import com.odysee.app.ui.firstrun.RewardVerificationFragment;
+import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
 import com.odysee.app.ui.other.SettingsFragment;

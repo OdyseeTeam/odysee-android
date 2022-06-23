@@ -59,7 +59,7 @@ import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.ui.firstrun.CreateChannelFragment;
-import com.odysee.app.ui.firstrun.RewardVerificationFragment;
+import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.firstrun.SignInFragment;
 import com.odysee.app.utils.FirstRunStepHandler;
 import com.odysee.app.utils.Helper;
