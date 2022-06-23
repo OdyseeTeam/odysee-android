@@ -701,7 +701,6 @@ public class SignInActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "Running wallet sync with blank password.");
                 runWalletSync("");
             }
         });
