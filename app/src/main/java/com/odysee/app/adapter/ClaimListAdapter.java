@@ -542,11 +542,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
             vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
         } else if (style == STYLE_SMALL_LIST_HORIZONTAL) {
-            int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            /*int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
             int paddingEnd = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
             int paddingStartScaled = Helper.getScaledValue(paddingStart, scale);
-            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);
-            vh.itemView.setPadding(paddingStartScaled, vh.itemView.getPaddingTop(), paddingEndScaled, vh.itemView.getPaddingBottom());
+            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);*/
+            vh.itemView.setPadding(vh.itemView.getPaddingStart(), vh.itemView.getPaddingTop(), vh.itemView.getPaddingEnd(), vh.itemView.getPaddingBottom());
         }
 
         Claim original = items.get(vh.getAbsoluteAdapterPosition());

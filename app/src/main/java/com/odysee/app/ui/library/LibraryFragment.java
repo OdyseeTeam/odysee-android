@@ -230,6 +230,7 @@ public class LibraryFragment extends BaseFragment implements
         LinearLayoutManager recentLLM = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         recentList = root.findViewById(R.id.library_recent_list);
         recentList.setLayoutManager(recentLLM);
+        recentList.setClipToPadding(false);
 
         LinearLayoutManager playlistsLLM = new LinearLayoutManager(getContext());
         playlistsList = root.findViewById(R.id.library_playlists_list);
