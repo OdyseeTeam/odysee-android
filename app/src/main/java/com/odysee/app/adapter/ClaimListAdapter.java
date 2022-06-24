@@ -102,6 +102,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
+        this.style = style;
         List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
         for (Claim item : sortedItems) {

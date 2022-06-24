@@ -465,7 +465,6 @@ public class LibraryFragment extends BaseFragment implements
         Context context = getContext();
         if (context != null) {
             contentListAdapter = new ClaimListAdapter(claims, ClaimListAdapter.STYLE_SMALL_LIST_HORIZONTAL, context);
-//          contentListAdapter.setCanEnterSelectionMode(currentFilter == FILTER_DOWNLOADS);
             contentListAdapter.setCanEnterSelectionMode(true);
             contentListAdapter.setSelectionModeListener(this);
             contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
