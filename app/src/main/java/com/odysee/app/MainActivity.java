@@ -1482,6 +1482,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!Helper.isNullOrEmpty(source)) {
             params.put("source", source);
         }
+        openFragment(ChannelFragment.class, true, params);
     }
     public void openChannelUrl(String url) {
         openChannelUrl(url, null);

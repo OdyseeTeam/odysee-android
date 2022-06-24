@@ -350,6 +350,8 @@ public class FileViewFragment extends BaseFragment implements
 
     private boolean isLivestream;
 
+    private Comment.CommenterClickHandler chatMemberClickHandler;
+
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -411,6 +413,17 @@ public class FileViewFragment extends BaseFragment implements
         dividerRelatedContentArea = root.findViewById(R.id.file_view_divider_related_content_area);
 
         initUi(root);
+
+        chatMemberClickHandler = new Comment.CommenterClickHandler() {
+            @Override
+            public void onCommenterClick(String commenter, String commenterClaimId) {
+                Context context = getContext();
+                LbryUri url = LbryUri.tryParse(String.format("lbry://%s:%s", commenter, commenterClaimId));
+                if (context instanceof MainActivity && url != null) {
+                    ((MainActivity) context).openChannelUrl(url.toString());
+                }
+            }
+        };
 
         fileViewPlayerListener = new Player.Listener() {
             @Override
@@ -4926,6 +4939,10 @@ public class FileViewFragment extends BaseFragment implements
             public void onSuccess(List<Comment> comments, boolean hasReachedEnd) {
                 initialChatLoaded = true;
                 Collections.reverse(comments);
+                for (Comment comment : comments) {
+                    comment.setHandler(chatMemberClickHandler);
+                }
+
                 chatMessageListAdapter = new ChatMessageListAdapter(comments, getContext());
                 chatMessageList.setAdapter(chatMessageListAdapter);
                 chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
@@ -4960,6 +4977,7 @@ public class FileViewFragment extends BaseFragment implements
                                 JSONObject commentJson = Helper.getJSONObject("comment", data);
                                 if (commentJson != null) {
                                     Comment comment = new Comment();
+                                    comment.setHandler(chatMemberClickHandler);
                                     Activity a = getActivity();
                                     if (a != null) {
                                         a.runOnUiThread(new Runnable() {

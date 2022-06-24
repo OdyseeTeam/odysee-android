@@ -1,6 +1,7 @@
 package com.odysee.app.adapter;
 
 import android.content.Context;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,8 +10,10 @@ import android.widget.TextView;
 import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.model.Comment;
+import com.odysee.app.utils.LbryUri;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,7 @@ public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageList
         public ViewHolder(View v) {
             super(v);
             textMessage = v.findViewById(R.id.chat_message_text);
+            textMessage.setMovementMethod(LinkMovementMethod.getInstance());
         }
     }
 
@@ -55,7 +59,6 @@ public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageList
     @Override
     public void onBindViewHolder(ChatMessageListAdapter.ViewHolder vh, int position) {
         Comment message = items.get(position);
-        String text = String.format("<strong>%s</strong> %s", message.getChannelName(), message.getText());
-        vh.textMessage.setText(HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_LEGACY));
+        vh.textMessage.setText(message.getChatLine(context));
     }
 }
