@@ -10,7 +10,7 @@
     android:clickable="true"
     android:focusable="true"
     android:orientation="vertical"
-    android:background="@android:color/black">
+    android:background="@color/odyseePinkSemiTransparent">
     <LinearLayout
         android:id="@+id/claim_repost_info"
         android:layout_width="match_parent"
@@ -138,7 +138,7 @@
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 style="@style/TextView_SemiBold"
                 android:textSize="18sp" />
             <TextView
@@ -148,7 +148,7 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 style="@style/TextView_SemiBold"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="14sp" />
             <TextView
                 android:id="@+id/claim_publisher"
@@ -162,7 +162,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 style="@style/TextView_Light"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/claim_pending_text"
@@ -170,7 +170,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/pending"
                 style="@style/TextView_Light"
-                android:textColor="@color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="11sp"
                 android:textStyle="italic"
                 android:visibility="gone" />
