@@ -27,6 +27,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ public class SearchFragment extends BaseFragment implements
     private String currentQuery;
     private boolean searchLoading;
     private boolean contentHasReachedEnd;
+    private boolean didResolveFeatured;
     private int currentFrom;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -330,67 +332,60 @@ public class SearchFragment extends BaseFragment implements
         return claim;
     }
 
-    private String buildVanityUrl(String query) {
-        LbryUri url = new LbryUri();
-        url.setClaimName(query);
-        return url.toString();
-    }
+    private void resolveFeaturedItem(String query) {
+        String sanitizedQuery = query.trim();
+        sanitizedQuery = sanitizedQuery.replaceAll(LbryUri.REGEX_INVALID_URI, "");
 
-    private void resolveFeaturedItem(String vanityUrl) {
-        final ClaimCacheKey key = new ClaimCacheKey();
-        key.setUrl(vanityUrl);
-        if (Lbry.claimCache.containsKey(key)) {
-            Claim cachedClaim = Lbry.claimCache.get(key);
-            updateFeaturedItemFromResolvedClaim(cachedClaim);
-            return;
+        List<String> possibleUrls = new ArrayList<>();
+        possibleUrls.add("lbry://" + sanitizedQuery);
+        if (!sanitizedQuery.startsWith("@")) {
+            possibleUrls.add("lbry://@" + sanitizedQuery);
         }
 
-        ResolveTask task = new ResolveTask(vanityUrl, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
+        ResolveTask task = new ResolveTask(possibleUrls, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
-                if (claims.size() > 0 && !Helper.isNullOrEmpty(claims.get(0).getClaimId())) {
-                    Claim resolved = claims.get(0);
-                    Lbry.claimCache.put(key, resolved);
-                    updateFeaturedItemFromResolvedClaim(resolved);
+                // Add resolved claim(s) to cache
+                for (Claim claim : claims) {
+                    final ClaimCacheKey key = ClaimCacheKey.fromClaim(claim);
+                    Lbry.claimCache.put(key, claim);
                 }
+
+                if (claims.size() > 0) {
+                    Collections.sort(claims, (c1, c2) ->
+                            (int) (Double.parseDouble(c1.getMeta().getEffectiveAmount()) -
+                                    Double.parseDouble(c2.getMeta().getEffectiveAmount())));
+                    Claim featuredItem = claims.get(0);
+                    featuredItem.setFeatured(true);
+
+                    Context context = getContext();
+                    boolean canShowMatureContent = false;
+                    if (context != null) {
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+                        canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
+                    }
+                    if (!featuredItem.isMature() || canShowMatureContent) {
+                        List<Claim> items = resultListAdapter.getItems();
+                        items.removeIf(c -> !c.getClaimId().equals(featuredItem.getClaimId()));
+                        resultListAdapter.removeItems(items);
+                        resultListAdapter.addFeaturedItem(featuredItem);
+                    }
+
+                    loadingView.setVisibility(View.GONE);
+                    didResolveFeatured = true;
+                } else {
+                    resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
+                }
+                checkNothingToBeShown();
             }
 
             @Override
             public void onError(Exception error) {
-
+                loadingView.setVisibility(View.GONE);
+                error.printStackTrace();
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    private void updateFeaturedItemFromResolvedClaim(Claim resolved) {
-        if (resultListAdapter != null) {
-            Claim unresolved = resultListAdapter.getFeaturedItem();
-
-            Context context = getContext();
-            boolean canShowMatureContent = false;
-            if (context != null) {
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-                canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
-            }
-            if (resolved.isMature() && !canShowMatureContent) {
-                resultListAdapter.removeFeaturedItem();
-            } else if (unresolved != null) {
-                // only set the values we need
-                unresolved.setClaimId(resolved.getClaimId());
-                unresolved.setName(resolved.getName());
-                unresolved.setTimestamp(resolved.getTimestamp());
-                unresolved.setValueType(resolved.getValueType());
-                unresolved.setPermanentUrl(resolved.getPermanentUrl());
-                unresolved.setValue(resolved.getValue());
-                unresolved.setSigningChannel(resolved.getSigningChannel());
-                unresolved.setRepostedClaim(resolved.getRepostedClaim());
-                unresolved.setUnresolved(false);
-                unresolved.setConfirmations(resolved.getConfirmations());
-                unresolved.setClaimIds(resolved.getClaimIds());
-                resultListAdapter.notifyDataSetChanged();
-            }
-        }
     }
 
     private void logSearch(String query) {
@@ -410,6 +405,7 @@ public class SearchFragment extends BaseFragment implements
         }
 
         if (queryChanged) {
+            didResolveFeatured = false;
             logSearch(query);
         }
 
@@ -465,8 +461,6 @@ public class SearchFragment extends BaseFragment implements
                                     if (resultListAdapter == null) {
                                         resultListAdapter = new ClaimListAdapter(sanitizedClaims, context);
                                         resultListAdapter.setContextGroupId(SEARCH_CONTEXT_GROUP_ID);
-                                        resultListAdapter.addFeaturedItem(buildFeaturedItem(query));
-                                        resolveFeaturedItem(buildVanityUrl(query));
                                         resultListAdapter.setListener(SearchFragment.this);
                                         if (resultList != null) {
                                             resultList.setAdapter(resultListAdapter);
@@ -529,10 +523,15 @@ public class SearchFragment extends BaseFragment implements
                         contentHasReachedEnd = results.size() < PAGE_SIZE;
                         searchLoading = false;
 
+                        if (didResolveFeatured) {
+                            a.runOnUiThread(() -> loadingView.setVisibility(View.GONE));
+                        } else {
+                            resolveFeaturedItem(query);
+                        }
+
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                loadingView.setVisibility(View.GONE);
                                 int itemCount = resultListAdapter == null ? 0 : resultListAdapter.getItemCount();
 
                                 if (itemCount == 0) {

@@ -138,29 +138,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return selectedItems.contains(claim);
     }
 
-    public Claim getFeaturedItem() {
-        for (Claim claim : items) {
-            if (claim.isFeatured()) {
-                return claim;
-            }
-        }
-        return null;
-    }
-
-    public void removeFeaturedItem() {
-        int featuredIndex = -1;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).isFeatured()) {
-                featuredIndex = i;
-                break;
-            }
-        }
-        if (featuredIndex > -1) {
-            items.remove(featuredIndex);
-            notifyItemRemoved(featuredIndex);
-        }
-    }
-
     public List<Claim> getItems() {
         return new ArrayList<>(this.items);
     }
@@ -683,6 +660,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         if (type == VIEW_TYPE_FEATURED && item.isUnresolved()) {
             vh.durationView.setVisibility(View.GONE);
+            vh.publisherView.setVisibility(View.GONE);
+            vh.publishTimeView.setVisibility(View.GONE);
+            vh.thumbnailView.setVisibility(View.GONE);
             vh.titleView.setText("Nothing here. Publish something!");
             String name = item.getName();
             if (!Helper.isNullOrEmpty(name)) {
@@ -832,6 +812,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
                     vh.publisherView.setText(item.getName());
                     vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
+                    if (vh.getItemViewType() == VIEW_TYPE_FEATURED) {
+                        vh.durationView.setVisibility(View.GONE);
+                    }
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
