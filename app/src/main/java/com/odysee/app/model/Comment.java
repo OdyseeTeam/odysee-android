@@ -1,6 +1,9 @@
 package com.odysee.app.model;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -9,6 +12,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.view.View;
 
@@ -54,7 +58,7 @@ public class Comment implements Comparable<Comment> {
      * @param context the context
      * @return the spannable to be displayed
      */
-    public Spannable getChatLine(Context context) {
+    public Spannable getChatLine(String streamerClaimId, Context context) {
         SpannableStringBuilder ssb = new SpannableStringBuilder();
         SpannableString commenterSpan = new SpannableString(channelName);
         ClickableSpan cs = new ClickableSpan() {
@@ -73,8 +77,14 @@ public class Comment implements Comparable<Comment> {
         int cmSpanEnd = commenterSpan.length();
         int flag = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
         commenterSpan.setSpan(cs, 0, cmSpanEnd, flag);
-        commenterSpan.setSpan(new ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorPrimary)), 0, cmSpanEnd, flag);
+
         commenterSpan.setSpan(new StyleSpan(Typeface.BOLD), 0, cmSpanEnd, flag);
+        if (streamerClaimId != null && streamerClaimId.equalsIgnoreCase(channelId)) {
+            commenterSpan.setSpan(new StreamerChannelSpan(ContextCompat.getColor(context, R.color.white),
+                    ContextCompat.getColor(context, R.color.colorPrimary)), 0, cmSpanEnd, flag);
+        } else {
+            commenterSpan.setSpan(new ForegroundColorSpan(ContextCompat.getColor(context, R.color.darkForeground)), 0, cmSpanEnd, flag);
+        }
 
         ssb.append(commenterSpan).append(" ");
         ssb.append(text);
@@ -111,5 +121,34 @@ public class Comment implements Comparable<Comment> {
 
     public interface CommenterClickHandler {
         void onCommenterClick(String commenter, String commenterClaimId);
+    }
+
+    public static class StreamerChannelSpan extends ReplacementSpan
+    {
+        private static final float PADDING = 20.0f;
+        private RectF rect;
+        private int foregroundColour;
+        private int backgroundColour;
+        public StreamerChannelSpan(int foregroundColour, int backgroundColour) {
+            rect = new RectF();
+            this.foregroundColour = foregroundColour;
+            this.backgroundColour = backgroundColour;
+        }
+        @Override
+        public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+            rect.set(x, top, x + paint.measureText(text, start, end) + PADDING, bottom);
+            paint.setColor(backgroundColour);
+            canvas.drawRect(rect, paint);
+
+
+            paint.setColor(foregroundColour);
+            int xPos = Math.round(x + (PADDING / 2));
+            canvas.drawText(text, start, end, xPos, y, paint);
+        }
+
+        @Override
+        public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
+            return Math.round(paint.measureText(text, start, end) + PADDING);
+        }
     }
 }

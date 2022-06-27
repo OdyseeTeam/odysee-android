@@ -4944,6 +4944,9 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 chatMessageListAdapter = new ChatMessageListAdapter(comments, getContext());
+                if (actualClaim.getSigningChannel() != null) {
+                    chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
+                }
                 chatMessageList.setAdapter(chatMessageListAdapter);
                 chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
 
@@ -4988,6 +4991,9 @@ public class FileViewFragment extends BaseFragment implements
                                                 if (!Helper.isNullOrEmpty(comment.getChannelName())) {
                                                     if (chatMessageListAdapter == null) {
                                                         chatMessageListAdapter = new ChatMessageListAdapter(Collections.singletonList(comment), getContext());
+                                                        if (actualClaim.getSigningChannel() != null) {
+                                                            chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
+                                                        }
                                                         chatMessageList.setAdapter(chatMessageListAdapter);
                                                     } else {
                                                         chatMessageListAdapter.addMessage(comment);

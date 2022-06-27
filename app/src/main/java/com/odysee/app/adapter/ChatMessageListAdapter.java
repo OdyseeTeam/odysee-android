@@ -19,9 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageListAdapter.ViewHolder> {
     protected final List<Comment> items;
+    @Setter
+    private String streamerClaimId;
 
     @Getter
     private final Context context;
@@ -59,6 +62,6 @@ public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageList
     @Override
     public void onBindViewHolder(ChatMessageListAdapter.ViewHolder vh, int position) {
         Comment message = items.get(position);
-        vh.textMessage.setText(message.getChatLine(context));
+        vh.textMessage.setText(message.getChatLine(streamerClaimId, context));
     }
 }
