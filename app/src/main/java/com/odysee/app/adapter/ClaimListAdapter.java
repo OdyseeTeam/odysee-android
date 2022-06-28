@@ -340,6 +340,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final TextView pendingTextView;
         protected final View repostInfoView;
         protected final TextView repostChannelView;
+        protected final View repostedLabel;
         protected final View selectedOverlayView;
         protected final TextView viewCountView;
         protected final TextView fileSizeView;
@@ -367,6 +368,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             pendingTextView = v.findViewById(R.id.claim_pending_text);
             repostInfoView = v.findViewById(R.id.claim_repost_info);
             repostChannelView = v.findViewById(R.id.claim_repost_channel);
+            repostedLabel = v.findViewById(R.id.reposted_label);
             selectedOverlayView = v.findViewById(R.id.claim_selected_overlay);
             viewCountView = v.findViewById(R.id.claim_view_count);
             fileSizeView = v.findViewById(R.id.claim_file_size);
@@ -619,16 +621,21 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         vh.publishTimeView.setVisibility(!isPending && style != STYLE_SMALL_LIST_HORIZONTAL ? View.VISIBLE : View.GONE);
         vh.pendingTextView.setVisibility(isPending && !item.isLoadingPlaceholder() ? View.VISIBLE : View.GONE);
-        vh.repostInfoView.setVisibility(isRepost && type != VIEW_TYPE_FEATURED ? View.VISIBLE : View.GONE);
-        vh.repostChannelView.setText(isRepost && original.getSigningChannel() != null ? original.getSigningChannel().getName() : null);
-        vh.repostChannelView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (listener != null) {
-                    listener.onClaimClicked(original.getSigningChannel(), vh.getAbsoluteAdapterPosition());
+        vh.repostInfoView.setVisibility(isRepost ? View.VISIBLE : View.GONE);
+        if (type != VIEW_TYPE_FEATURED) {
+            vh.repostChannelView.setText(isRepost && original.getSigningChannel() != null ? original.getSigningChannel().getName() : null);
+            vh.repostChannelView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (listener != null) {
+                        listener.onClaimClicked(original.getSigningChannel(), vh.getAbsoluteAdapterPosition());
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            vh.repostedLabel.setVisibility(View.GONE);
+            vh.repostChannelView.setText(original.getShortUrl());
+        }
 
         if (vh.optionsMenuView != null) {
             vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
