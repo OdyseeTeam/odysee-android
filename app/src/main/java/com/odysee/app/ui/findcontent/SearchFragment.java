@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.common.collect.Ordering;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.LighthouseSearch;
 import org.json.JSONException;
@@ -28,17 +29,16 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
-import com.odysee.app.callable.Search;
+import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
@@ -397,7 +397,7 @@ public class SearchFragment extends BaseFragment implements
     public void search(String query, int from) {
         boolean queryChanged = checkQuery(query);
 
-        if (query.equals("")) {
+        if (query.equals("") || searchLoading) {
             return;
         }
         if (!queryChanged && from > 0) {
@@ -428,7 +428,7 @@ public class SearchFragment extends BaseFragment implements
 
         Activity a = getActivity();
 
-        Callable<List<Claim>> c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
+        LighthouseSearch c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
         if (a != null) {
             a.runOnUiThread(new Runnable() {
                 @Override
@@ -440,18 +440,33 @@ public class SearchFragment extends BaseFragment implements
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(c);
+                    Future<List<String>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(c);
 
                     try {
-                        List<Claim> results = future.get();
+                        List<String> urls = future.get();
 
-                        List<Claim> sanitizedClaims = new ArrayList<>(results.size());
+                        Callable<List<Claim>> resolveCallable = () -> Lbry.resolve(urls, Lbry.API_CONNECTION_STRING);
+                        Future<List<Claim>> resolveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(resolveCallable);
 
-                        for (Claim item : results) {
-                            if (!item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                                sanitizedClaims.add(item);
-                            }
+                        List<Claim> results = resolveFuture.get();
+                        int size = results.size();
+                        results.removeIf(Objects::isNull);
+                        int removedCount = size - results.size();
+
+                        if (!urls.contains("")) {
+                            urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
                         }
+                        Collections.sort(results, Ordering.explicit(urls).onResultOf(claim -> {
+                            try {
+                                return LbryUri.normalize(claim.getPermanentUrl());
+                            } catch (LbryUriException ex) {
+                                ex.printStackTrace();
+                            }
+                            return "";
+                        }));
+
+                        List<Claim> sanitizedClaims = results.stream().filter(item -> !item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST))
+                                .collect(Collectors.toList());
 
                         a.runOnUiThread(new Runnable() {
                             @Override
@@ -476,51 +491,7 @@ public class SearchFragment extends BaseFragment implements
                             }
                         });
 
-                        // Lighthouse doesn't return "valueType" of the claim, so another request is needed
-                        // to determine if an item is a playlist and get the items on the playlist.
-                        List<String> claimIds = new ArrayList<>();
-
-                        for (Claim sanitizedClaim : sanitizedClaims) {
-                            if (!sanitizedClaim.getValueType().equalsIgnoreCase(Claim.TYPE_CHANNEL)) {
-                                claimIds.add(sanitizedClaim.getClaimId());
-                            }
-                        }
-
-                        Map<String, Object> claimSearchOptions = new HashMap<>(2);
-
-                        claimSearchOptions.put("claim_ids", claimIds);
-                        claimSearchOptions.put("page_size", claimIds.size());
-
-                        Future<List<Claim>> futureSearch = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
-                        List<Claim> totalResults = futureSearch.get();
-
-                        // For each claim returned from Lighthouse, replace it by the one using Search API
-                        for (int i = 0; i < sanitizedClaims.size(); i++) {
-                            if (!Claim.TYPE_CHANNEL.equalsIgnoreCase(sanitizedClaims.get(i).getValueType())) {
-                                int finalI = i;
-                                Claim found = totalResults.stream().filter(filteredClaim -> {
-                                    return sanitizedClaims.get(finalI).getClaimId().equalsIgnoreCase(filteredClaim.getClaimId());
-                                }).findAny().orElse(null);
-
-                                if (found != null) {
-                                    sanitizedClaims.set(i, found);
-
-                                    if (resultListAdapter != null) {
-                                        a.runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                if (!found.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST)) {
-                                                    resultListAdapter.setItem(found.getClaimId(), found);
-                                                } else {
-                                                    resultListAdapter.removeItem(found);
-                                                }
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        contentHasReachedEnd = results.size() < PAGE_SIZE;
+                        contentHasReachedEnd = results.size() < PAGE_SIZE - removedCount;
                         searchLoading = false;
 
                         if (didResolveFeatured) {
@@ -542,6 +513,7 @@ public class SearchFragment extends BaseFragment implements
                             }
                         });
                     } catch (ExecutionException | InterruptedException e) {
+                        searchLoading = false;
                         e.printStackTrace();
                     }
                 }

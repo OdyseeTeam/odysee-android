@@ -101,6 +101,7 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.google.common.collect.Ordering;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
 import org.commonmark.Extension;
@@ -3455,10 +3456,26 @@ public class FileViewFragment extends BaseFragment implements
                     @Override
                     public void run() {
                         LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0, nsfw, claimId);
-                        Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                        Future<List<String>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
                         try {
-                            List<Claim> result = future.get();
+                            List<String> urls = future.get();
+
+                            Callable<List<Claim>> resolveCallable = () -> Lbry.resolve(urls, Lbry.API_CONNECTION_STRING);
+                            Future<List<Claim>> resolveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(resolveCallable);
+
+                            List<Claim> result = resolveFuture.get();
+                            if (!urls.contains("")) {
+                                urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
+                            }
+                            Collections.sort(result, Ordering.explicit(urls).onResultOf(claim -> {
+                                try {
+                                    return LbryUri.normalize(claim.getPermanentUrl());
+                                } catch (LbryUriException ex) {
+                                    ex.printStackTrace();
+                                }
+                                return "";
+                            }));
 
                             a.runOnUiThread(new Runnable() {
                                 @Override

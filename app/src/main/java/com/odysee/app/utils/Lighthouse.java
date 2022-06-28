@@ -4,6 +4,7 @@ import android.net.Uri;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
-import com.odysee.app.model.Claim;
+import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.model.UrlSuggestion;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,7 +25,7 @@ import okhttp3.ResponseBody;
 public class Lighthouse {
     public static final String CONNECTION_STRING = "https://lighthouse.odysee.com";
     public static final Map<String, List<UrlSuggestion>> autocompleteCache = new HashMap<>();
-    public static final Map<Map<String, Object>, List<Claim>> searchCache = new HashMap<>();
+    public static final Map<Map<String, Object>, List<String>> searchCache = new HashMap<>();
 
     private static Map<String, Object> buildSearchOptionsKey(String rawQuery, int size, int from, boolean nsfw, String relatedTo) {
         Map<String, Object> options = new HashMap<>();
@@ -38,10 +39,9 @@ public class Lighthouse {
         return options;
     }
 
-    public static List<Claim> search(String rawQuery, int size, int from, boolean nsfw, String relatedTo) throws LbryRequestException, LbryResponseException {
+    public static List<String> search(String rawQuery, int size, int from, boolean nsfw, String relatedTo) throws LbryRequestException, LbryResponseException {
         Uri.Builder uriBuilder = Uri.parse(String.format("%s/search", CONNECTION_STRING)).buildUpon().
                 appendQueryParameter("s", rawQuery).
-                appendQueryParameter("resolve", "true").
                 appendQueryParameter("size", String.valueOf(size)).
                 appendQueryParameter("from", String.valueOf(from));
         if (!nsfw) {
@@ -53,10 +53,10 @@ public class Lighthouse {
 
         Map<String, Object> cacheKey = buildSearchOptionsKey(rawQuery, size, from, nsfw, relatedTo);
         if (searchCache.containsKey(cacheKey)) {
-            return searchCache.get(cacheKey);
+            return new ArrayList<>(searchCache.get(cacheKey));
         }
 
-        List<Claim> results = new ArrayList<>();
+        List<String> results = new ArrayList<>();
         Request request = new Request.Builder().url(uriBuilder.toString()).build();
         OkHttpClient client = new OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build();
         ResponseBody responseBody = null;
@@ -68,11 +68,11 @@ public class Lighthouse {
                 if (responseBody != null) {
                     JSONArray array = new JSONArray(responseBody.string());
                     for (int i = 0; i < array.length(); i++) {
-                        Claim claim = Claim.fromSearchJSONObject(array.getJSONObject(i));
-                        results.add(claim);
+                        JSONObject result = array.getJSONObject(i);
+                        results.add(LbryUri.normalize(result.getString("name") + "#" + result.getString("claimId")));
                     }
                 }
-                searchCache.put(cacheKey, results);
+                searchCache.put(cacheKey, new ArrayList<>(results));
             } else {
                 throw new LbryResponseException(response.message());
             }
@@ -80,6 +80,8 @@ public class Lighthouse {
             throw new LbryRequestException(String.format("search request for '%s' failed", rawQuery), ex);
         } catch (JSONException ex) {
             throw new LbryResponseException(String.format("the search response for '%s' could not be parsed", rawQuery), ex);
+        } catch (LbryUriException ex) {
+            throw new LbryResponseException(String.format("could not create search result uri for '%s'", rawQuery), ex);
         } finally {
             if (responseBody != null) {
                 response.close();
