@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.model.Comment;
+import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.LbryUri;
 
 import java.util.ArrayList;
@@ -62,6 +63,13 @@ public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageList
     @Override
     public void onBindViewHolder(ChatMessageListAdapter.ViewHolder vh, int position) {
         Comment message = items.get(position);
-        vh.textMessage.setText(message.getChatLine(streamerClaimId, context));
+        vh.textMessage.setText(Comments.getChatLine(
+                message.getChannelName(),
+                message.getChannelId(),
+                message.getText(),
+                streamerClaimId,
+                message.getHandler(),
+                vh.textMessage,
+                context));
     }
 }
