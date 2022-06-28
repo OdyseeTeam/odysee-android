@@ -192,14 +192,14 @@ public class Comments {
         StringBuilder imageName = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             if (text.charAt(i) == ':') {
-                if (!inSticker) {
+                if (!inSticker && (i + 1 < text.length() && text.substring(i + 1).contains(":"))) {
                     inSticker = true;
                     imageName = new StringBuilder();
 
                     // reset plainText
                     ssb.append(plainText.toString());
                     plainText = new StringBuilder();
-                } else {
+                } else if (inSticker) {
                     inSticker = false;
                     String name = imageName.toString();
                     if (isValidEmojiOrSticker(name)) {
@@ -230,14 +230,20 @@ public class Comments {
                         ssb.append(String.format(":%s:", name));
                     }
                 }
-                continue;
             }
 
             if (inSticker) {
+                if (text.charAt(i) == ':') {
+                    continue;
+                }
                 imageName.append(text.charAt(i));
             } else {
                 plainText.append(text.charAt(i));
             }
+        }
+
+        if (plainText.length() > 0) {
+            ssb.append(plainText.toString());
         }
 
         return ssb;
