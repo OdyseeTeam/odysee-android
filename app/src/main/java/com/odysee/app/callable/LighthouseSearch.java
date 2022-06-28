@@ -1,12 +1,11 @@
 package com.odysee.app.callable;
 
-import com.odysee.app.model.Claim;
 import com.odysee.app.utils.Lighthouse;
 
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class LighthouseSearch implements Callable<List<Claim>> {
+public class LighthouseSearch implements Callable<List<String>> {
     private final String query;
     private final String relatedToClaimId;
     private final int size;
@@ -22,7 +21,7 @@ public class LighthouseSearch implements Callable<List<Claim>> {
     }
 
     @Override
-    public List<Claim> call() throws Exception {
+    public List<String> call() throws Exception {
         return Lighthouse.search(query, size, from, nsfw, relatedToClaimId);
     }
 }
