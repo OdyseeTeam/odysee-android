@@ -89,7 +89,7 @@ public class ChatMessageListAdapter extends RecyclerView.Adapter<ChatMessageList
 
         int containerPadding = Helper.getScaledValue(isHyperchat ? CONTAINER_PADDING_HYPERCHAT : CONTAINER_PADDING_REGULAR,  scale);
         vh.highlightContainer.setPadding(containerPadding, containerPadding, containerPadding, containerPadding);
-        vh.textContainer.setPadding(0, containerPadding, containerPadding, 0);
+        vh.textContainer.setPadding(0, containerPadding, 0, containerPadding);
 
         Helper.setViewVisibility(vh.creditsIcon, message.isFiat() ? View.GONE : View.VISIBLE);
         vh.hyperchatValue.setText(message.getHyperchatValue());
