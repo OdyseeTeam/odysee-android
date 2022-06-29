@@ -57,6 +57,7 @@ public class CommentListTask extends AsyncTask<Void, Void, List<Comment>> {
             options.put("is_channel_signature_valid", true);
             options.put("skip_validation", true);
             options.put("visible", true);
+            android.util.Log.d("#HELP", options.toString());
 
             JSONObject result = (JSONObject) Lbry.parseResponse(Comments.performRequest(Lbry.buildJsonParams(options), "comment.List"));
 

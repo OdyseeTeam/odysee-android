@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="pageBackground">#101010</color>
+    <color name="semiTransparentPageBackground">#CC101010</color>
     <color name="actionBarBackground">#000000</color>
     <color name="statusBarColor">#000000</color>
     <color name="actionBarForeground">#CCCCCC</color>

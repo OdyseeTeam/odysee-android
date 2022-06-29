@@ -1,32 +1,11 @@
 package com.odysee.app.model;
 
-import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.Typeface;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.ImageSpan;
-import android.text.style.ReplacementSpan;
-import android.text.style.StyleSpan;
-import android.view.View;
-
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
 
-import com.odysee.app.R;
+import com.odysee.app.utils.Currency;
 import com.odysee.app.utils.Helper;
 import lombok.Data;
 
@@ -40,7 +19,14 @@ public class Comment implements Comparable<Comment> {
     private long timestamp;
     private String channelId;
     private String channelName, text, id, parentId;
+    private boolean hidden;
+    private boolean pinned;
     private Reactions reactions;
+
+    // Hyperchat fields
+    private String currency;
+    private BigDecimal supportAmount; // any comment with supportAmount > 0 will be treated as a hyperchat
+    private boolean fiat;
 
     public Comment(String channelId, String channelName, String text, String id, String parentId) {
         this.channelId = channelId;
@@ -52,6 +38,10 @@ public class Comment implements Comparable<Comment> {
 
     public Comment() {
 
+    }
+
+    public boolean isHyperchat() {
+        return supportAmount != null && supportAmount.doubleValue() > 0;
     }
 
     public static Comment fromJSONObject(JSONObject jsonObject) {
@@ -70,10 +60,39 @@ public class Comment implements Comparable<Comment> {
             );
             comment.setClaimId(Helper.getJSONString("claim_id", null, jsonObject));
             comment.setTimestamp(Helper.getJSONLong("timestamp", 0, jsonObject));
+            comment.setHidden(Helper.getJSONBoolean("is_hidden", false, jsonObject));
+            comment.setPinned(Helper.getJSONBoolean("is_pinned", false, jsonObject));
+
+            // hyperchat fields
+            comment.setSupportAmount(new BigDecimal(Helper.getJSONDouble("support_amount", 0, jsonObject)));
+            comment.setCurrency(Helper.getJSONString("currency", "", jsonObject));
+            comment.setFiat(Helper.getJSONBoolean("is_fiat", false, jsonObject));
+
             return comment;
         } catch (JSONException ex) {
             return null;
         }
+    }
+
+    public String getHyperchatValue() {
+        if (supportAmount != null && supportAmount.doubleValue() > 0) {
+            String value = Helper.SIMPLE_CURRENCY_FORMAT.format(supportAmount.doubleValue());
+            if (fiat) {
+                String currencyCode = currency.toUpperCase();
+                if (Currency.isCurrency(currencyCode)) {
+                    Currency curr = Currency.valueOf(currencyCode);
+                    return String.format("%s%s",
+                            curr.isSuffix() ? curr.getSymbol() : value,
+                            curr.isSuffix() ? value : curr.getSymbol());
+                }
+
+                return String.format("%s %s", currencyCode, value);
+            } else {
+                return value;
+            }
+        }
+
+        return "";
     }
 
     @Override
@@ -83,35 +102,5 @@ public class Comment implements Comparable<Comment> {
 
     public interface CommenterClickHandler {
         void onCommenterClick(String commenter, String commenterClaimId);
-    }
-
-    public static class StreamerChannelSpan extends ReplacementSpan
-    {
-        private float padding;
-        private RectF rect;
-        private int foregroundColour;
-        private int backgroundColour;
-        public StreamerChannelSpan(int foregroundColour, int backgroundColour, float padding) {
-            rect = new RectF();
-            this.foregroundColour = foregroundColour;
-            this.backgroundColour = backgroundColour;
-            this.padding = padding;
-        }
-        @Override
-        public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
-            rect.set(x, top, x + paint.measureText(text, start, end) + padding, bottom);
-            paint.setColor(backgroundColour);
-            canvas.drawRect(rect, paint);
-
-
-            paint.setColor(foregroundColour);
-            int xPos = Math.round(x + (padding / 2));
-            canvas.drawText(text, start, end, xPos, y, paint);
-        }
-
-        @Override
-        public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
-            return Math.round(paint.measureText(text, start, end) + padding);
-        }
     }
 }

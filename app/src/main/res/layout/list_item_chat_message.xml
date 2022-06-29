@@ -6,11 +6,65 @@
     android:paddingLeft="2dp"
     android:paddingRight="2dp"
     android:layout_marginBottom="4dp">
-    <TextView
-        android:id="@+id/chat_message_text"
-        android:layout_width="wrap_content"
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/hyperchat_message_header"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:fontFamily="@font/inter"
-        android:textSize="12sp" />
+        android:background="@color/colorPrimary"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:paddingTop="3dp"
+        android:paddingBottom="1dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/hyperchat_value_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/channelCoverBackground"
+            android:paddingStart="4dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="2dp">
+            <ImageView
+                android:id="@+id/hyperchat_credits_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_credits"
+                android:layout_gravity="center_vertical" />
+            <TextView
+                android:id="@+id/hyperchat_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp"
+                android:layout_gravity="center_vertical"
+                android:fontFamily="@font/inter"
+                android:textSize="12sp"
+                android:textColor="@color/white" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/chat_message_text_container_highlight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:padding="2dp">
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/chat_message_text_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/semiTransparentPageBackground"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp">
+        <TextView
+            android:id="@+id/chat_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/inter"
+            android:textSize="12sp" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>
