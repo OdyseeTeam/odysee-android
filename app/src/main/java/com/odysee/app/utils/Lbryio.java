@@ -58,7 +58,7 @@ public final class Lbryio {
     public static final String TAG = "OdyseeUA";
     public static final String CONNECTION_STRING = "https://api.lbry.com";
     public static final String WS_CONNECTION_BASE_URL = "wss://api.odysee.com/subscribe?auth_token=";
-    public static final String WS_COMMENT_BASE_URL = "wss://comments.odysee.com/api/v2/live-chat/subscribe?subscription_id=";
+    public static final String WS_COMMENT_BASE_URL = "wss://sockety.odysee.tv/ws/commentron?id=";
     public static final String AUTH_TOKEN_PARAM = "auth_token";
     public static List<Subscription> subscriptions = new ArrayList<>();
     public static List<Claim> cacheResolvedSubscriptions = new ArrayList<>();

@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
+    android:layout_width="176dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:clickable="true"
     android:focusable="true"
     android:paddingTop="8dp"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp"
-    android:background="@drawable/bg_selected_list_item">
+    android:background="@drawable/bg_selected_list_item"
+    android:clipToPadding="false">
     <LinearLayout
         android:id="@+id/claim_repost_info"
         android:layout_width="160dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
         android:orientation="horizontal"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal">
         <com.odysee.app.ui.controls.SolidIconView
             android:layout_width="16dp"
             android:layout_height="12dp"
@@ -45,7 +45,8 @@
     </LinearLayout>
     <RelativeLayout
         android:layout_width="160dp"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
         <RelativeLayout
             android:id="@+id/claim_media_container"
             android:layout_width="160dp"
@@ -150,7 +151,8 @@
     <LinearLayout
         android:layout_width="160dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_gravity="center_horizontal">
         <LinearLayout
             android:id="@+id/claim_text_loading_placeholder_1"
             android:background="@color/lighterGrey"
@@ -242,4 +244,4 @@
             android:textSize="10sp"
             android:visibility="gone" />
     </LinearLayout>
-</LinearLayout>
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -34,7 +34,9 @@
                         android:id="@+id/library_recent_list"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp" />
+                        android:layout_marginTop="4dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"/>
                     <TextView
                         android:id="@+id/library_no_history_text"
                         android:layout_width="wrap_content"

@@ -10,12 +10,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -78,9 +77,9 @@ public class NotificationListSupplier implements Supplier<List<LbryNotification>
                         notification.setSeen(Helper.getJSONBoolean("is_seen", false, item));
 
                         try {
-                            SimpleDateFormat dateFormat = new SimpleDateFormat(Helper.ISO_DATE_FORMAT_JSON, Locale.US);
-                            notification.setTimestamp(dateFormat.parse(Helper.getJSONString("created_at", dateFormat.format(new Date()), item)));
-                        } catch (ParseException ex) {
+                            String created = Helper.getJSONString("created_at", null, item);
+                            notification.setTimestamp(created == null ? new Date() : Date.from(Instant.parse(created)));
+                        } catch (DateTimeParseException ex) {
                             notification.setTimestamp(new Date());
                         }
 

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.icu.text.CompactDecimalFormat;
 import android.os.Build;
-import android.text.format.DateUtils;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -43,6 +42,7 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
@@ -102,6 +102,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
+        this.style = style;
         List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
         for (Claim item : sortedItems) {
@@ -404,9 +405,18 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-            contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
-            contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
-            contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+            RecyclerView.Adapter<? extends RecyclerView.ViewHolder> adapter = getBindingAdapter();
+            if (adapter instanceof ClaimListAdapter) {
+                ClaimListAdapter claimListAdapter = ((ClaimListAdapter) adapter);
+                final Claim original = claimListAdapter.getItems().get(getAbsoluteAdapterPosition());
+                final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
+                        (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
+                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
+                    contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+                }
+            }
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
         }
     }
@@ -532,11 +542,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             int paddingBottomScaled = Helper.getScaledValue(paddingBottom, scale);
             vh.itemView.setPadding(vh.itemView.getPaddingStart(), paddingTopScaled, vh.itemView.getPaddingEnd(), paddingBottomScaled);
         } else if (style == STYLE_SMALL_LIST_HORIZONTAL) {
-            int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
+            /*int paddingStart = vh.getAbsoluteAdapterPosition() == 0 ? 16 : 8;
             int paddingEnd = vh.getAbsoluteAdapterPosition() == getItemCount() - 1 ? 16 : 8;
             int paddingStartScaled = Helper.getScaledValue(paddingStart, scale);
-            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);
-            vh.itemView.setPadding(paddingStartScaled, vh.itemView.getPaddingTop(), paddingEndScaled, vh.itemView.getPaddingBottom());
+            int paddingEndScaled = Helper.getScaledValue(paddingEnd, scale);*/
+            vh.itemView.setPadding(vh.itemView.getPaddingStart(), vh.itemView.getPaddingTop(), vh.itemView.getPaddingEnd(), vh.itemView.getPaddingBottom());
         }
 
         Claim original = items.get(vh.getAbsoluteAdapterPosition());
@@ -703,8 +713,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
                     vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
                     vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
                     if (vh.viewCountView != null) {
                         vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
                         vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
@@ -809,8 +818,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     }
                     vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
                     vh.publisherView.setText(item.getName());
-                    vh.publishTimeView.setText(DateUtils.getRelativeTimeSpanString(
-                            publishTime, System.currentTimeMillis(), 0, DateUtils.FORMAT_ABBREV_RELATIVE));
+                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT;

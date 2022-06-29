@@ -777,7 +777,7 @@ public class FollowingFragment extends BaseFragment implements
                 while (it.hasNext()) {
                     Map.Entry<String, JSONObject> pair = it.next();
                     JSONObject j = pair.getValue();
-                    String activeClaimId = null;
+                    String activeClaimId;
                     if (j.has("ActiveClaim")) {
                         JSONObject activeJson = (JSONObject) j.get("ActiveClaim");
                         activeClaimId = activeJson.getString("ClaimID");
