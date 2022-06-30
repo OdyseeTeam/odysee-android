@@ -1025,13 +1025,31 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             params.height = listHeight + (defaultChannelList.getCount() + 1) * defaultChannelList.getDividerHeight();
                             defaultChannelList.setLayoutParams(params);
                             defaultChannelList.setVerticalScrollBarEnabled(false);
+                            TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
                             defaultChannelList.requestLayout();
 
-                            TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
+                            buttonChannels.setVisibility(View.GONE);
+                            buttonGoLive.setVisibility(View.GONE);
+                            buttonPublishes.setVisibility(View.GONE);
+                            buttonShowRewards.setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_help_support).setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_app_settings).setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_community_guidelines).setVisibility(View.GONE);
+                            buttonSignOut.setVisibility(View.GONE);
+                            buttonYouTubeSync.setVisibility(View.GONE);
                             defaultChannelListParent.setVisibility(View.VISIBLE);
                             ((ImageView) buttonChangeDefaultChannel.findViewById(R.id.expandable)).setImageDrawable(ctx.getResources().getDrawable(R.drawable.ic_arrow_dropup, getTheme()));
                         } else {
                             TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
+                            buttonChannels.setVisibility(View.VISIBLE);
+                            buttonGoLive.setVisibility(View.VISIBLE);
+                            buttonPublishes.setVisibility(View.VISIBLE);
+                            buttonShowRewards.setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_help_support).setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_app_settings).setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_community_guidelines).setVisibility(View.VISIBLE);
+                            buttonSignOut.setVisibility(View.VISIBLE);
+                            buttonYouTubeSync.setVisibility(View.VISIBLE);
                             defaultChannelListParent.setVisibility(View.GONE);
                             ((ImageView) buttonChangeDefaultChannel.findViewById(R.id.expandable)).setImageDrawable(ctx.getResources().getDrawable(R.drawable.ic_arrow_dropdown, getTheme()));
                         }
