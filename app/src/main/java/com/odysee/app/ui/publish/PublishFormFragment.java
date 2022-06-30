@@ -83,6 +83,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Predefined;
+import com.odysee.app.utils.Utils;
 import lombok.Data;
 import lombok.Getter;
 
@@ -540,7 +541,7 @@ public class PublishFormFragment extends BaseFragment implements
             try {
                 Claim.StreamMetadata metadata = (Claim.StreamMetadata) currentClaim.getValue();
                 if (context != null) {
-                    uploadedThumbnailUrl = currentClaim.getThumbnailUrl(imageThumbnail.getLayoutParams().width, imageThumbnail.getLayoutParams().height, 85);
+                    uploadedThumbnailUrl = currentClaim.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils. STREAM_THUMBNAIL_HEIGHT, 85);
                 }
                 if (context != null && !Helper.isNullOrEmpty(uploadedThumbnailUrl)) {
                     Glide.with(context.getApplicationContext()).load(uploadedThumbnailUrl).centerCrop().into(imageThumbnail);

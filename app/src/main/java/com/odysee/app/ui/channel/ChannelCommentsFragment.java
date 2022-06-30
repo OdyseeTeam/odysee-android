@@ -56,6 +56,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 import com.odysee.app.checkers.CommentEnabledCheck;
 
 import lombok.Getter;
@@ -523,7 +524,7 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
         if (hasThumbnail && context != null) {
             Glide.with(context.getApplicationContext()).
                     asBitmap().
-                    load(channel.getThumbnailUrl(commentPostAsThumbnail.getLayoutParams().width, commentPostAsThumbnail.getLayoutParams().height, 85)).
+                    load(channel.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q)).
                     apply(RequestOptions.circleCropTransform()).
                     into(commentPostAsThumbnail);
         }

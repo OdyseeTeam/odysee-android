@@ -19,6 +19,7 @@ import com.odysee.app.R;
 import com.odysee.app.model.Claim;
 import com.odysee.app.listener.ChannelItemSelectionListener;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Utils;
 import lombok.Setter;
 
 public class SuggestedChannelGridAdapter extends RecyclerView.Adapter<SuggestedChannelGridAdapter.ViewHolder> {
@@ -90,7 +91,7 @@ public class SuggestedChannelGridAdapter extends RecyclerView.Adapter<SuggestedC
     public void onBindViewHolder(SuggestedChannelGridAdapter.ViewHolder vh, int position) {
         Claim claim = items.get(position);
         ViewGroup.LayoutParams lp = vh.thumbnailView.getLayoutParams();
-        String thumbnailUrl = claim.getThumbnailUrl(lp.width, lp.height, 85);
+        String thumbnailUrl = claim.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
 
         int bgColor = Helper.generateRandomColorForValue(claim.getClaimId());
         Helper.setIconViewBackgroundColor(vh.noThumbnailView, bgColor, false, context);

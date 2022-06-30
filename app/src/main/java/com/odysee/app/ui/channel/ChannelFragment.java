@@ -65,6 +65,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 import lombok.SneakyThrows;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -613,20 +614,20 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             buttonTip.setVisibility(View.VISIBLE);
         }
 
-        String thumbnailUrl = "";
+        String channelProfilePictureUrl = "";
         String coverUrl = claim.getCoverUrl();
         textTitle.setText(Helper.isNullOrEmpty(claim.getTitle()) ? claim.getName() : claim.getTitle());
 
         Context context = getContext();
 
         if (context != null) {
-            thumbnailUrl = claim.getThumbnailUrl(imageThumbnail.getLayoutParams().width, imageThumbnail.getLayoutParams().height, 85);
+            channelProfilePictureUrl = claim.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, 85);
         }
         if (context != null && !Helper.isNullOrEmpty(coverUrl)) {
-            Glide.with(context.getApplicationContext()).load(coverUrl).centerCrop().into(imageCover);
+            Glide.with(context.getApplicationContext()).load(claim.getCDNCoverUrl()).centerCrop().into(imageCover);
         }
-        if (context != null && !Helper.isNullOrEmpty(thumbnailUrl)) {
-            Glide.with(context.getApplicationContext()).load(thumbnailUrl).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
+        if (context != null && !Helper.isNullOrEmpty(channelProfilePictureUrl)) {
+            Glide.with(context.getApplicationContext()).load(channelProfilePictureUrl).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
             noThumbnailView.setVisibility(View.GONE);
         } else {
             imageThumbnail.setVisibility(View.GONE);

@@ -46,6 +46,7 @@ import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -560,7 +561,19 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             streamMetadata = (Claim.StreamMetadata) metadata;
         }
 
-        String thumbnailUrl = item.getThumbnailUrl(vh.thumbnailView.getLayoutParams().width, vh.thumbnailView.getLayoutParams().height, 85);
+        int thumbnailWidth;
+        int thumbnailHeight;
+        int thumbnailQ;
+        if (Claim.TYPE_CHANNEL.equalsIgnoreCase(item.getValueType())) {
+            thumbnailWidth = Utils.CHANNEL_THUMBNAIL_WIDTH;
+            thumbnailHeight = Utils.CHANNEL_THUMBNAIL_HEIGHT;
+            thumbnailQ = Utils.CHANNEL_THUMBNAIL_Q;
+        } else {
+            thumbnailWidth = Utils.STREAM_THUMBNAIL_WIDTH;
+            thumbnailHeight = Utils.STREAM_THUMBNAIL_HEIGHT;
+            thumbnailQ = Utils.STREAM_THUMBNAIL_Q;
+        }
+        String thumbnailUrl = item.getThumbnailUrl(thumbnailWidth, thumbnailHeight, thumbnailQ);
         long publishTime = (streamMetadata != null && streamMetadata.getReleaseTime() > 0) ? streamMetadata.getReleaseTime() * 1000 : item.getTimestamp() * 1000;
         int bgColor = Helper.generateRandomColorForValue(item.getClaimId());
         if (bgColor == 0) {
