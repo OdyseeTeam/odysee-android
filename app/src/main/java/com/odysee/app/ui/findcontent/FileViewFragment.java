@@ -101,6 +101,7 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.google.common.collect.Ordering;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
 import org.commonmark.Extension;
@@ -139,12 +140,12 @@ import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -207,7 +208,6 @@ import com.odysee.app.tasks.claim.AbandonStreamTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
-import com.odysee.app.tasks.claim.ClaimSearchTask;
 import com.odysee.app.tasks.claim.PurchaseListTask;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
@@ -3256,49 +3256,66 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
         Helper.setViewVisibility(layoutDisplayArea, View.GONE);
 
+        Activity a = getActivity();
+        OdyseeApp app = (OdyseeApp) a.getApplication();
+
         Map<String, Object> options = new HashMap<>();
         options.put("claim_type", "stream");
-        options.put("page", 1);
-        options.put("page_size", 999);
+        options.put("page_size", 50);
         options.put("claim_ids", fileClaim.getClaimIds());
-        ClaimSearchTask task = new ClaimSearchTask(options, Lbry.API_CONNECTION_STRING, null, new ClaimSearchResultHandler() {
-            @Override
-            public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                playlistResolved = true;
+        options.put("order_by", "release_time");
 
-                // reorder the claims based on the order in the list, TODO: find a more efficient way to do this
-                Map<String, Claim> playlistClaimMap = new LinkedHashMap<>();
-                List<String> claimIds = fileClaim.getClaimIds();
-                for (String id : claimIds) {
-                    for (Claim claim : claims) {
-                        if (id.equalsIgnoreCase(claim.getClaimId())) {
-                            playlistClaimMap.put(id, claim);
-                            break;
+        int pages = (int) Math.ceil(fileClaim.getClaimIds().size() / 50.0);
+        Collection<Callable<List<Claim>>> callables = new ArrayList<>(pages);
+        for (int i = 1; i <= pages; i++) {
+            options.put("page", i);
+            Map<String, Object> optionsClone = new HashMap<>(options);
+            callables.add(() -> Lbry.claimSearch(optionsClone, Lbry.API_CONNECTION_STRING).getClaims());
+        }
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    List<Future<List<Claim>>> results = app.getExecutor().invokeAll(callables);
+                    List<Claim> claims = new ArrayList<>();
+                    for (Future<List<Claim>> f : results) {
+                        if (!f.isCancelled()) {
+                            List<Claim> items = f.get();
+                            if (items != null) {
+                                claims.addAll(items);
+                            }
                         }
                     }
+
+                    playlistResolved = true;
+
+                    Collections.sort(claims, Ordering.explicit(fileClaim.getClaimIds()).onResultOf(Claim::getClaimId));
+
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            playlistClaims = claims;
+                            if (playlistClaims.size() > 0) {
+                                playClaimFromCollection(playlistClaims.get(0), 0);
+                            }
+
+                            relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
+                            relatedContentAdapter.setListener(FileViewFragment.this);
+
+                            View root = getView();
+                            if (root != null) {
+                                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
+                                relatedContentList.setAdapter(relatedContentAdapter);
+                            }
+                        }
+                    });
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
                 }
-
-                playlistClaims = new ArrayList<>(playlistClaimMap.values());
-                if (playlistClaims.size() > 0) {
-                    playClaimFromCollection(playlistClaims.get(0), 0);
-                }
-
-                relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
-                relatedContentAdapter.setListener(FileViewFragment.this);
-
-                View root = getView();
-                if (root != null) {
-                    RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
-                    relatedContentList.setAdapter(relatedContentAdapter);
-                }
-            }
-
-            @Override
-            public void onError(Exception error) {
-                showError(getString(R.string.comment_error));
             }
         });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     private void handleMainActionForClaim() {
