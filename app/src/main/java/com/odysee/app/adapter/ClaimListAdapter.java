@@ -705,7 +705,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
                     if (vh.publisherThumbnailView != null) {
                         if (item.getSigningChannel() != null) {
-                            String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(vh.publisherThumbnailView.getLayoutParams().width, vh.publisherThumbnailView.getLayoutParams().height, 85);
+                            String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
                             if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
                                 Glide.with(context.getApplicationContext())
                                         .load(publisherThumbnailUrl)

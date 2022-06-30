@@ -72,7 +72,7 @@ public class YouTubeSyncItemAdapter extends RecyclerView.Adapter<YouTubeSyncItem
 
         String thumbnailUrl = null;
         if (item.getClaim() != null) {
-            thumbnailUrl = item.getClaim().getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils. STREAM_THUMBNAIL_HEIGHT, 85);
+            thumbnailUrl = item.getClaim().getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q);
         }
 
         boolean completed = YouTubeSyncStatusFragment.TRANSFER_STATE_COMPLETED_TRANSFER.equalsIgnoreCase(channel.getTransferState());

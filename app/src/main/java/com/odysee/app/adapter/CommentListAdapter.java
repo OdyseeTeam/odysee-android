@@ -473,7 +473,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         int bgColor = Helper.generateRandomColorForValue(comment.getChannelId());
         Helper.setIconViewBackgroundColor(holder.noThumbnailView, bgColor, false, context);
         if (hasThumbnail) {
-            Glide.with(context.getApplicationContext()).asBitmap().load(comment.getPoster().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, 85)).
+            Glide.with(context.getApplicationContext()).asBitmap().load(comment.getPoster().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q)).
                     apply(RequestOptions.circleCropTransform()).into(holder.thumbnailView);
         }
         holder.alphaView.setText(comment.getChannelName() != null ? comment.getChannelName().substring(1, 2).toUpperCase() : null);

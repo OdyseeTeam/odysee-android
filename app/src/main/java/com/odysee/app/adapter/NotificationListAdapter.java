@@ -227,7 +227,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             vh.bodyView.getLayoutParams().width = (int) (200 * context.getApplicationContext().getResources().getDisplayMetrics().density);
             Configuration config = context.getApplicationContext().getResources().getConfiguration();
             if (config.smallestScreenWidthDp > 359) {
-                ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils. STREAM_THUMBNAIL_HEIGHT, 85, null, notification.getClaimThumbnailUrl());
+                ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q, null, notification.getClaimThumbnailUrl());
 
                 String turl = imageCDNUrl.toString();;
 

@@ -621,7 +621,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         Context context = getContext();
 
         if (context != null) {
-            channelProfilePictureUrl = claim.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, 85);
+            channelProfilePictureUrl = claim.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
         }
         if (context != null && !Helper.isNullOrEmpty(coverUrl)) {
             Glide.with(context.getApplicationContext()).load(claim.getCDNCoverUrl()).centerCrop().into(imageCover);

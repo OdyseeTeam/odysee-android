@@ -284,7 +284,7 @@ public class ChannelFormFragment extends BaseFragment implements
                     coverUrl = currentClaim.getCoverUrl();
                 }
                 if (!Helper.isNullOrEmpty(currentClaim.getThumbnailUrl())) {
-                    Glide.with(context.getApplicationContext()).load(currentClaim.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils. STREAM_THUMBNAIL_HEIGHT, 85)).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
+                    Glide.with(context.getApplicationContext()).load(currentClaim.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q)).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
                     thumbnailUrl = currentClaim.getThumbnailUrl();
                 }
             }

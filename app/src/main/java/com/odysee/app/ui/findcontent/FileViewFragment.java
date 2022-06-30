@@ -2059,7 +2059,7 @@ public class FileViewFragment extends BaseFragment implements
                 Helper.setIconViewBackgroundColor(root.findViewById(R.id.file_view_publisher_no_thumbnail), bgColor, false, context);
                 if (hasPublisherThumbnail && context != null) {
                     ViewGroup.LayoutParams lp = root.findViewById(R.id.file_view_publisher_thumbnail).getLayoutParams();
-                    Glide.with(context.getApplicationContext()).load(signingChannel.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, 85)).
+                    Glide.with(context.getApplicationContext()).load(signingChannel.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q)).
                             apply(RequestOptions.circleCropTransform()).into((ImageView) root.findViewById(R.id.file_view_publisher_thumbnail));
                 }
                 ((TextView) root.findViewById(R.id.file_view_publisher_thumbnail_alpha)).
@@ -2103,7 +2103,7 @@ public class FileViewFragment extends BaseFragment implements
             if (!Helper.isNullOrEmpty(claimToRender.getThumbnailUrl()) && context != null) {
                 ImageView thumbnailView = root.findViewById(R.id.file_view_thumbnail);
                 Glide.with(context.getApplicationContext()).asBitmap().load(
-                        claimToRender.getThumbnailUrl(390, 200, 85)).centerCrop().into(thumbnailView);
+                        claimToRender.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q)).centerCrop().into(thumbnailView);
             } else {
                 // display first x letters of claim name, with random background
             }
@@ -4636,7 +4636,7 @@ public class FileViewFragment extends BaseFragment implements
         if (hasThumbnail && context != null) {
             Glide.with(context.getApplicationContext()).
                     asBitmap().
-                    load(channel.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, 85)).
+                    load(channel.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q)).
                     apply(RequestOptions.circleCropTransform()).
                     into(commentPostAsThumbnail);
         }
