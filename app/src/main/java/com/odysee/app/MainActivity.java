@@ -4888,7 +4888,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void run() {
                 try {
                     SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    // DatabaseHelper.removeCollectionItem(collection.getId(), url, db);
+                    DatabaseHelper.removeCollectionItem(collection.getId(), url, db);
 
                     // initiate sync afterwards
                     saveSharedUserState();

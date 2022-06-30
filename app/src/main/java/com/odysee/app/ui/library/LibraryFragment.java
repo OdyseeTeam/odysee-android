@@ -287,7 +287,7 @@ public class LibraryFragment extends BaseFragment implements
         loadPlaylists();
     }
 
-    private void loadPlaylists() {
+    public void loadPlaylists() {
         Helper.setViewVisibility(playlistsLoading, View.VISIBLE);
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
