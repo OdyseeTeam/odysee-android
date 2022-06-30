@@ -205,6 +205,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_BUILTIN_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
     private static final String SQL_CREATE_COLLECTION = "REPLACE INTO collections (id, name, type, visibility, updated_at) VALUES (?, ?, ?, ?, ?)";
     private static final String SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION = "DELETE FROM collection_items WHERE collection_id = ?";
+    private static final String SQL_REMOVE_COLLECTION_ITEM_FOR_COLLECTION = "DELETE FROM collection_items WHERE collection_id = ? AND url = ?";
     private static final String SQL_UPDATE_COLLECTION_UPDATED_AT = "UPDATE collections SET updated_at = ? WHERE id = ?";
     private static final String SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION = "INSERT INTO collection_items (collection_id, url, item_order) VALUES  (?, ?, ?)";
     private static final String SQL_GET_EXISTING_COLLECTION_ITEM_COUNT = "SELECT COUNT(url) FROM collection_items WHERE collection_id = ? AND url = ?";
@@ -763,6 +764,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         return collection;
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    public static void removeCollectionItem(String id, String url, SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL(SQL_REMOVE_COLLECTION_ITEM_FOR_COLLECTION, new Object[] { id, url });
+            db.execSQL(SQL_UPDATE_COLLECTION_UPDATED_AT, new Object[] {
+                    new SimpleDateFormat(Helper.ISO_DATE_FORMAT_PATTERN).format(new Date()), id
+            });
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     @SuppressLint("SimpleDateFormat")

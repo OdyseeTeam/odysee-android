@@ -91,6 +91,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Getter
     @Setter
     private int position;
+    @Setter
+    private boolean isOwnCollection;
 
     private boolean filterByChannel;
     private boolean filterByFile;
@@ -412,7 +414,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 final Claim original = claimListAdapter.getItems().get(getAbsoluteAdapterPosition());
                 final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
                         (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
-                if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                if (claimListAdapter.isOwnCollection) {
+                    contextMenu.add(contextGroupId, R.id.action_remove_from_list, Menu.NONE, R.string.remove_from_list);
+                } else if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
                     contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
                     contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
                     contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);

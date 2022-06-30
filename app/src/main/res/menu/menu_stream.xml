@@ -20,6 +20,12 @@
         app:iconTint="@color/actionBarForeground"
         app:showAsAction="always" />
     <item
+        android:id="@+id/action_remove_from_list"
+        android:icon="@drawable/ic_add_to_list"
+        android:title="@string/remove_from_list"
+        app:iconTint="@color/actionBarForeground"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_block"
         android:icon="@drawable/ic_block"
         android:title="@string/block_channel"
