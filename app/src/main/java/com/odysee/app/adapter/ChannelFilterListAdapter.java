@@ -19,6 +19,7 @@ import com.odysee.app.R;
 import com.odysee.app.model.Claim;
 import com.odysee.app.listener.ChannelItemSelectionListener;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.Utils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -95,7 +96,7 @@ public class ChannelFilterListAdapter extends RecyclerView.Adapter<ChannelFilter
         vh.allView.setVisibility(claim.isPlaceholder() ? View.VISIBLE : View.GONE);
 
         vh.titleView.setText(Helper.isNullOrEmpty(claim.getTitle()) ? claim.getName() : claim.getTitle());
-        String thumbnailUrl = claim.getThumbnailUrl(vh.thumbnailView.getLayoutParams().width, vh.thumbnailView.getLayoutParams().height, 85);
+        String thumbnailUrl = claim.getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
         if (!Helper.isNullOrEmpty(thumbnailUrl) && context != null) {
             Glide.with(context.getApplicationContext()).load(thumbnailUrl).apply(RequestOptions.circleCropTransform()).into(vh.thumbnailView);
         }

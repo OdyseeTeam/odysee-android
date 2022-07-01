@@ -52,6 +52,16 @@ public final class Utils {
     private static final String SP_ENCRYPTION_KEY = "key";
     private static final String SP_API_SECRET_KEY = "api_secret";
 
+    public static final int CHANNEL_THUMBNAIL_WIDTH = 200;
+    public static final int CHANNEL_THUMBNAIL_HEIGHT = 200;
+    public static final int CHANNEL_THUMBNAIL_Q = 95;
+    public static final int STREAM_THUMBNAIL_WIDTH = 1280;
+    public static final int STREAM_THUMBNAIL_HEIGHT = 720;
+    public static final int STREAM_THUMBNAIL_Q = 85;
+    public static final int CHANNEL_COVER_PICTURE_WIDTH = 0;
+    public static final int CHANNEL_COVER_PICTURE_HEIGHT = 0;
+    public static final int CHANNEL_COVER_PICTURE_Q = 95;
+
     public static String getAndroidRelease() {
         return android.os.Build.VERSION.RELEASE;
     }

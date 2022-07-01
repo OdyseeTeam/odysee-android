@@ -2887,7 +2887,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             if (nowPlayingClaimBitmap == null &&
                     nowPlayingClaim != null &&
                     !Helper.isNullOrEmpty(nowPlayingClaim.getThumbnailUrl())) {
-                Glide.with(getApplicationContext()).asBitmap().load(nowPlayingClaim.getThumbnailUrl(0, 0, 75)).into(new CustomTarget<Bitmap>() {
+                Glide.with(getApplicationContext()).asBitmap().load(nowPlayingClaim.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q)).into(new CustomTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                         nowPlayingClaimBitmap = resource;

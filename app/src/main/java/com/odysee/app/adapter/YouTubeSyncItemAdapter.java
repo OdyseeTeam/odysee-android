@@ -15,7 +15,7 @@ import com.odysee.app.R;
 import com.odysee.app.model.YouTubeSyncItem;
 import com.odysee.app.ui.ytsync.YouTubeSyncStatusFragment;
 import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,7 +72,7 @@ public class YouTubeSyncItemAdapter extends RecyclerView.Adapter<YouTubeSyncItem
 
         String thumbnailUrl = null;
         if (item.getClaim() != null) {
-            thumbnailUrl = item.getClaim().getThumbnailUrl(holder.thumbnailView.getLayoutParams().width, holder.thumbnailView.getLayoutParams().height, 80);
+            thumbnailUrl = item.getClaim().getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q);
         }
 
         boolean completed = YouTubeSyncStatusFragment.TRANSFER_STATE_COMPLETED_TRANSFER.equalsIgnoreCase(channel.getTransferState());

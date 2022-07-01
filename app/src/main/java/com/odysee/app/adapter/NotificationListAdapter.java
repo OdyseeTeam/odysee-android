@@ -30,6 +30,8 @@ import com.odysee.app.model.lbryinc.LbryNotification;
 import com.odysee.app.ui.controls.SolidIconView;
 import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.ImageCDNUrl;
+import com.odysee.app.utils.Utils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -205,15 +207,17 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         vh.timeView.setText(FormatTime.fromEpochMillis(notification.getTimestamp().getTime()));
 
         vh.authorThumbnailView.setVisibility(notification.getCommentAuthor() == null || notification.getAuthorThumbnailUrl() == null ? View.INVISIBLE : View.VISIBLE);
-        if (notification.getAuthorThumbnailUrl() != null)
+        if (notification.getAuthorThumbnailUrl() != null) {
             vh.authorThumbnailView.setVisibility(View.VISIBLE);
+        }
         if (notification.getCommentAuthor() != null || notification.getAuthorThumbnailUrl() != null) {
             String turl;
 
-            if (notification.getCommentAuthor() != null)
-                turl = notification.getCommentAuthor().getThumbnailUrl(vh.authorThumbnailView.getLayoutParams().width, vh.authorThumbnailView.getLayoutParams().height, 85);
-            else {
-                turl = getThumbnailUrl(vh.authorThumbnailView, notification.getAuthorThumbnailUrl());
+            if (notification.getCommentAuthor() != null) {
+                turl = notification.getCommentAuthor().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
+            } else {
+                ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q, null, notification.getAuthorThumbnailUrl());
+                turl = imageCDNUrl.toString();
             }
 
             Glide.with(context.getApplicationContext()).load(turl).apply(RequestOptions.circleCropTransform()).into(vh.authorThumbnailView);
@@ -223,7 +227,9 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             vh.bodyView.getLayoutParams().width = (int) (200 * context.getApplicationContext().getResources().getDisplayMetrics().density);
             Configuration config = context.getApplicationContext().getResources().getConfiguration();
             if (config.smallestScreenWidthDp > 359) {
-                String turl = getThumbnailUrl(vh.claimThumbnailView, notification.getClaimThumbnailUrl());
+                ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q, null, notification.getClaimThumbnailUrl());
+
+                String turl = imageCDNUrl.toString();;
 
                 Glide.with(context.getApplicationContext()).asBitmap().load(turl).into(vh.claimThumbnailView);
                 vh.claimThumbnailView.setVisibility(View.VISIBLE);
@@ -267,17 +273,6 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
                 return true;
             }
         });
-    }
-
-    private String getThumbnailUrl(View v, String url) {
-        String appendedPath;
-
-        appendedPath = "s:".concat(String.valueOf(v.getLayoutParams().width))
-                .concat(":").concat(String.valueOf(v.getLayoutParams().height)).concat("/")
-                .concat("quality:").concat(String.valueOf(85)).concat("/")
-                .concat("plain/").concat(url);
-
-        return "https://image-processor.vanwanet.com/optimize/".concat(appendedPath);
     }
 
     private void toggleSelectedNotification(LbryNotification notification) {

@@ -51,6 +51,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Utils;
 import com.odysee.app.views.CreditsBalanceView;
 
 import lombok.Getter;
@@ -283,7 +284,7 @@ public class ChannelFormFragment extends BaseFragment implements
                     coverUrl = currentClaim.getCoverUrl();
                 }
                 if (!Helper.isNullOrEmpty(currentClaim.getThumbnailUrl())) {
-                    Glide.with(context.getApplicationContext()).load(currentClaim.getThumbnailUrl(imageThumbnail.getLayoutParams().width, imageThumbnail.getLayoutParams().height, 85)).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
+                    Glide.with(context.getApplicationContext()).load(currentClaim.getThumbnailUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q)).apply(RequestOptions.circleCropTransform()).into(imageThumbnail);
                     thumbnailUrl = currentClaim.getThumbnailUrl();
                 }
             }

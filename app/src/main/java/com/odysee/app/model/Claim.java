@@ -1,7 +1,6 @@
 package com.odysee.app.model;
 
 import android.util.Log;
-import androidx.annotation.Nullable;
 import android.annotation.SuppressLint;
 
 import com.google.gson.FieldNamingPolicy;
@@ -15,7 +14,6 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -26,8 +24,10 @@ import java.util.Date;
 import java.util.List;
 
 import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.ImageCDNUrl;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Predefined;
+import com.odysee.app.utils.Utils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -256,6 +256,11 @@ public class Claim {
             return ((ChannelMetadata) value).getCover().getUrl();
         }
         return null;
+    }
+
+    public String getCDNCoverUrl() {
+        ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.CHANNEL_COVER_PICTURE_WIDTH, Utils.CHANNEL_COVER_PICTURE_HEIGHT, Utils.CHANNEL_COVER_PICTURE_Q, null, getCoverUrl());
+        return imageCDNUrl.toString();
     }
 
     public String getFirstCharacter() {
@@ -629,28 +634,6 @@ public class Claim {
     /**
      * Object to be instantiated. In order to get the URL to the CDN, call toString() on it
      */
-    static class ImageCDNUrl {
-        private String appendedPath = "";
-
-        public ImageCDNUrl(int width, int height, int quality, @Nullable String format, String thumbnailUrl) {
-            if (width != 0 && height != 0)
-                appendedPath = "s:".concat(String.valueOf(width)).concat(":").concat(String.valueOf(height)).concat("/");
-
-            appendedPath = appendedPath.concat("quality:").concat(String.valueOf(quality)).concat("/");
-
-            appendedPath = appendedPath.concat("plain/").concat(thumbnailUrl);
-
-            if (format != null) {
-                appendedPath = appendedPath.concat("@").concat(format);
-            }
-        }
-
-        @Override
-        public String toString() {
-            String url = "https://thumbnails.odysee.com/optimize/";
-            return url.concat(appendedPath);
-        }
-    }
     @Data
     public static class StreamInfo {
         private long duration; // video / audio
