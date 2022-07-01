@@ -1,8 +1,8 @@
 package com.odysee.app.utils;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
-import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -41,7 +41,6 @@ import org.json.JSONObject;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -974,6 +973,18 @@ public final class Helper {
             }
         }
         return null;
+    }
+
+    /**
+     * Get the channel name which current user set as its default
+     * @param ctx Android context
+     * @return a string with the channel name including the '@'. It could return null if not set
+     */
+    public static String getDefaultChannelName(Context ctx) {
+        AccountManager am = AccountManager.get(ctx);
+        String defaultChannelName = am.getUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name");
+
+        return defaultChannelName;
     }
 
     public static int getDimenAsPixels(Context context, final int dimenId) {

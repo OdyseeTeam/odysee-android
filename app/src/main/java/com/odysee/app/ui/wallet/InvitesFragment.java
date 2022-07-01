@@ -1,5 +1,6 @@
 package com.odysee.app.ui.wallet;
 
+import android.accounts.AccountManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -244,8 +246,8 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
     }
 
     private void updateChannelList(List<Claim> channels) {
+        Context context = getContext();
         if (channelSpinnerAdapter == null) {
-            Context context = getContext();
             channelSpinnerAdapter = new InlineChannelSpinnerAdapter(context, R.layout.spinner_item_channel, new ArrayList<>(channels));
         } else {
             channelSpinnerAdapter.clear();
@@ -260,7 +262,14 @@ public class InvitesFragment extends BaseFragment implements WalletBalanceListen
         }
 
         if (channelSpinnerAdapter.getCount() > 1) {
-            channelSpinner.setSelection(1);
+            String defaultChannelName = Helper.getDefaultChannelName(context);
+            List<Claim> defaultChannel = channels.stream().filter(c -> c != null && c.getName().equalsIgnoreCase(defaultChannelName)).collect(Collectors.toList());
+
+            if (defaultChannel.size() > 0) {
+                channelSpinner.setSelection(channelSpinnerAdapter.getItemPosition(defaultChannel.get(0)));
+            } else {
+                channelSpinner.setSelection(1);
+            }
         }
     }
 

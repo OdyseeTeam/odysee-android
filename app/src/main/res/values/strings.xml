@@ -12,6 +12,7 @@
     <string name="editors_choice">Editor\'s Choice</string>
     <string name="your_tags">Your Tags</string>
     <string name="all_content">All Content</string>
+    <string name="change_default_channel">Change default channel</string>
     <string name="go_live">Go Live</string>
     <string name="channels">Channels</string>
     <string name="library">Library</string>

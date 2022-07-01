@@ -15,12 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp"
             android:orientation="horizontal">
             <ImageButton
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:id="@+id/popup_user_close_button"
                 android:src="@drawable/ic_close"
                 android:background="@drawable/flag_transparent"
@@ -29,12 +27,12 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
                 android:id="@+id/user_id"
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:visibility="gone"
+                android:layout_gravity="center_vertical"
                 android:singleLine="true"
                 android:ellipsize="middle"
                 tools:text="user@example.com"
@@ -54,22 +52,61 @@
             android:text="@string/sign_up_log_in"/>
 
         <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:id="@+id/button_change_default_channel"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:background="?android:selectableItemBackground"
+            android:layout_marginTop="8dp"
+            android:paddingEnd="8dp">
+            <TextView
+                android:layout_marginStart="40dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="@string/change_default_channel"
+                android:textSize="14sp" />
+            <ImageView
+                android:id="@+id/expandable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_arrow_dropdown"
+                app:tint="@color/foreground" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/default_channel_list_layout"
+            android:layout_marginStart="40dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+            <ListView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/default_channel_list"
+                tools:listitem="@layout/list_item_profile_popup_channel"/>
+        </LinearLayout>
+
+        <RelativeLayout
             android:clickable="true"
             android:focusable="true"
             android:focusableInTouchMode="false"
             android:id="@+id/button_go_live"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="8dp">
+            android:layout_height="48dp">
             <TextView
-                android:layout_marginLeft="40dp"
-                android:layout_marginStart="40dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:layout_marginStart="40dp"
                 android:text="@string/go_live"
-                android:textSize="14sp" />
+                android:textSize="14sp"/>
         </RelativeLayout>
 
         <RelativeLayout
@@ -79,9 +116,8 @@
             android:id="@+id/button_channels"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
             <TextView
-                android:layout_marginLeft="40dp"
                 android:layout_marginStart="40dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -97,9 +133,8 @@
             android:id="@+id/button_publishes"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
             <TextView
-                android:layout_marginLeft="40dp"
                 android:layout_marginStart="40dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -115,13 +150,12 @@
             android:id="@+id/button_show_rewards"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="40dp"
-                android:layout_marginLeft="40dp"
                 android:text="@string/rewards"
                 android:textSize="14sp" />
         </RelativeLayout>
@@ -133,13 +167,12 @@
             android:id="@+id/button_youtube_sync"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="40dp"
-                android:layout_marginLeft="40dp"
                 android:text="@string/youtube_sync"
                 android:textSize="14sp" />
         </RelativeLayout>
@@ -151,14 +184,13 @@
             android:id="@+id/button_app_settings"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="40dp"
-                android:layout_marginLeft="40dp"
                 android:text="@string/app_settings"
                 android:textSize="14sp" />
         </RelativeLayout>
@@ -170,14 +202,13 @@
             android:id="@+id/button_community_guidelines"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="40dp"
-                android:layout_marginLeft="40dp"
                 android:text="@string/community_guidelines"
                 android:textSize="14sp" />
         </RelativeLayout>
@@ -189,13 +220,12 @@
             android:id="@+id/button_help_support"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="48dp">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="40dp"
-                android:layout_marginLeft="40dp"
                 android:text="@string/help_and_support"
                 android:textSize="14sp" />
         </RelativeLayout>
@@ -207,12 +237,10 @@
             android:id="@+id/button_sign_out"
             android:background="?android:selectableItemBackground"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginBottom="8dp">
+            android:layout_height="48dp">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="40dp"
                 android:layout_marginStart="40dp"
                 android:layout_centerVertical="true"
                 android:text="@string/sign_out"

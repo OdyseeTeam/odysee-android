@@ -51,6 +51,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
@@ -911,8 +912,8 @@ public class PublishFormFragment extends BaseFragment implements
     }
 
     private void updateChannelList(List<Claim> channels) {
+        Context context = getContext();
         if (channelSpinnerAdapter == null) {
-            Context context = getContext();
             if (context != null) {
                 channelSpinnerAdapter = new InlineChannelSpinnerAdapter(context, R.layout.spinner_item_channel, new ArrayList<>(channels));
                 channelSpinnerAdapter.addPlaceholder(true);
@@ -941,7 +942,15 @@ public class PublishFormFragment extends BaseFragment implements
             } else {
                 if (channelSpinnerAdapter.getCount() > 2) {
                     // if anonymous displayed, select first channel if available
-                    channelSpinner.setSelection(2);
+                    String defaultChannelName = Helper.getDefaultChannelName(context);
+
+                    List<Claim> defaultChannel = channels.stream().filter(c -> c != null && c.getName().equalsIgnoreCase(defaultChannelName)).collect(Collectors.toList());
+
+                    if (defaultChannel.size() > 0) {
+                        channelSpinner.setSelection(channelSpinnerAdapter.getItemPosition(defaultChannel.get(0)));
+                    } else {
+                        channelSpinner.setSelection(2);
+                    }
                 } else if (channelSpinnerAdapter.getCount() > 1) {
                     // select anonymous
                     channelSpinner.setSelection(1);

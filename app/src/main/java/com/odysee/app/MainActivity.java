@@ -43,6 +43,7 @@ import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.TypefaceSpan;
 import android.transition.Slide;
+import android.transition.TransitionManager;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -60,6 +61,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -121,6 +123,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
 import com.odysee.app.listener.VerificationListener;
@@ -170,6 +173,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -948,6 +952,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 });
                 MaterialButton signUserButton = customView.findViewById(R.id.button_sign_user);
 
+                View buttonChangeDefaultChannel = customView.findViewById(R.id.button_change_default_channel);
+                View defaultChannelListParent = customView.findViewById(R.id.default_channel_list_layout);
+                ListView defaultChannelList = customView.findViewById(R.id.default_channel_list);
                 View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonPublishes = customView.findViewById(R.id.button_publishes);
@@ -972,11 +979,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     userIdText.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
+
+                    if (Lbry.ownChannels.size() > 0) {
+                        buttonChangeDefaultChannel.setVisibility(View.VISIBLE);
+                    } else {
+                        buttonChangeDefaultChannel.setVisibility(View.GONE);
+                    }
                 } else {
                     userIdText.setVisibility(View.GONE);
                     userIdText.setText("");
                     signUserButton.setVisibility(View.VISIBLE);
                     signUserButton.setText(getString(R.string.sign_up_log_in));
+                    buttonChangeDefaultChannel.setVisibility(View.GONE);
                 }
 
                 customView.findViewById(R.id.button_app_settings).setOnClickListener(new View.OnClickListener() {
@@ -1003,6 +1017,74 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         popupWindow.dismiss();
                         hideNotifications();
                         openChannelUrl(getResources().getString(R.string.help_and_support_url));
+                    }
+                });
+
+                buttonChangeDefaultChannel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (defaultChannelListParent.getVisibility() == View.GONE) {
+                            int listHeight = Math.round(getResources().getDisplayMetrics().density);
+                            List<String> ownChannels = Lbry.ownChannels.stream().map(Claim::getName).filter(name -> name != null).collect(Collectors.toList());
+                            ProfileDefaultChannelAdapter adapter = new ProfileDefaultChannelAdapter(ctx, ownChannels);
+
+                            defaultChannelList.setAdapter(adapter);
+
+                            String defaultChannel = Helper.getDefaultChannelName(ctx);
+
+                            if (defaultChannel != null) {
+                                adapter.setDefaultChannelName(defaultChannel);
+                            }
+
+                            for (int i = 0; i < ownChannels.size(); i++) {
+                                View item = adapter.getView(i, null, defaultChannelList);
+                                item.measure(0, 0);
+                                listHeight += item.getMeasuredHeight();
+                            }
+
+                            // Avoid scroll bars being displayed
+                            ViewGroup.LayoutParams params = defaultChannelList.getLayoutParams();
+                            params.height = listHeight + (defaultChannelList.getCount() + 1) * defaultChannelList.getDividerHeight();
+                            defaultChannelList.setLayoutParams(params);
+                            defaultChannelList.setVerticalScrollBarEnabled(false);
+                            TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
+                            defaultChannelList.requestLayout();
+
+                            buttonChannels.setVisibility(View.GONE);
+                            buttonGoLive.setVisibility(View.GONE);
+                            buttonPublishes.setVisibility(View.GONE);
+                            buttonShowRewards.setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_help_support).setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_app_settings).setVisibility(View.GONE);
+                            customView.findViewById(R.id.button_community_guidelines).setVisibility(View.GONE);
+                            buttonSignOut.setVisibility(View.GONE);
+                            buttonYouTubeSync.setVisibility(View.GONE);
+                            defaultChannelListParent.setVisibility(View.VISIBLE);
+                            ((ImageView) buttonChangeDefaultChannel.findViewById(R.id.expandable)).setImageDrawable(ctx.getResources().getDrawable(R.drawable.ic_arrow_dropup, getTheme()));
+                        } else {
+                            TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
+                            buttonChannels.setVisibility(View.VISIBLE);
+                            buttonGoLive.setVisibility(View.VISIBLE);
+                            buttonPublishes.setVisibility(View.VISIBLE);
+                            buttonShowRewards.setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_help_support).setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_app_settings).setVisibility(View.VISIBLE);
+                            customView.findViewById(R.id.button_community_guidelines).setVisibility(View.VISIBLE);
+                            buttonSignOut.setVisibility(View.VISIBLE);
+                            buttonYouTubeSync.setVisibility(View.VISIBLE);
+                            defaultChannelListParent.setVisibility(View.GONE);
+                            ((ImageView) buttonChangeDefaultChannel.findViewById(R.id.expandable)).setImageDrawable(ctx.getResources().getDrawable(R.drawable.ic_arrow_dropdown, getTheme()));
+                        }
+                    }
+                });
+
+                defaultChannelList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        String defaultChannelName = (String) defaultChannelList.getAdapter().getItem(position);
+                        AccountManager am = AccountManager.get(ctx);
+                        am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", defaultChannelName);
+                        ((ProfileDefaultChannelAdapter)defaultChannelList.getAdapter()).setDefaultChannelName(defaultChannelName);
                     }
                 });
 
