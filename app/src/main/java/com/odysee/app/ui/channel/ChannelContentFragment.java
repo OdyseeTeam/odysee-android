@@ -318,8 +318,8 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                         List<Claim> liveItems = items.stream().filter(e -> e != null && e.isHighlightLive()).collect(Collectors.toList());
                         List<Claim> regularItems = items.stream().filter(e -> e != null && !e.isHighlightLive()).collect(Collectors.toList());
 
-                        for (Claim c : regularItems) {
-                            liveItems.removeIf(e -> e.getClaimId().equalsIgnoreCase(c.getClaimId()));
+                        for (Claim c : liveItems) {
+                            regularItems.removeIf(e -> e.getClaimId().equalsIgnoreCase(c.getClaimId()));
                         }
 
                         regularItems.removeIf(c -> {
