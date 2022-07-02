@@ -67,7 +67,8 @@
                 android:id="@+id/create_support_input_layout_amount"
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
-                android:hint="@string/amount">
+                android:hint="@string/amount"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/create_support_input_amount"
                     android:fontFamily="@font/inter"
@@ -79,12 +80,12 @@
 
             <TextView
                 android:id="@+id/create_support_input_currency"
-                android:layout_toEndOf="@id/create_support_input_layout_amount"
+                style="@style/TextView_Light"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="30dp"
-                style="@style/TextView_Light"
+                android:layout_toEndOf="@id/create_support_input_layout_amount"
                 android:text="@string/lbc"
                 android:textAllCaps="true"
                 android:textSize="11sp" />

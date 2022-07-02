@@ -125,8 +125,10 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -144,6 +146,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -339,6 +342,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private View layoutActionsArea;
     private View layoutLivestreamChat;
+    private View layoutLivestreamChatTip;
     private View layoutCommentsArea;
     private View layoutRelatedContentArea;
     private View dividerRelatedContentArea;
@@ -347,6 +351,10 @@ public class FileViewFragment extends BaseFragment implements
     private RecyclerView chatMessageList;
     private EditText inputChatMessage;
     private View buttonSendChatMessage;
+    private View buttonToggleTipArea;
+    private View buttonCloseTipArea;
+    private TextView labelTipCredits;
+    private TextInputEditText inputTipAmount;
 
     private boolean leavingFileView;
     private WebSocketClient webSocketClient;
@@ -412,15 +420,21 @@ public class FileViewFragment extends BaseFragment implements
         chatMessageList.setLayoutManager(new LinearLayoutManager(getContext()));
         inputChatMessage = root.findViewById(R.id.file_view_live_chat_text_input);
         buttonSendChatMessage = root.findViewById(R.id.file_view_live_chat_send_button);
+        buttonToggleTipArea = root.findViewById(R.id.file_view_live_chat_lbc_tip_button);
+        buttonCloseTipArea = root.findViewById(R.id.file_view_live_chat_close_tip_area_button);
+        labelTipCredits = root.findViewById(R.id.file_view_live_chat_tip_input_currency);
+        inputTipAmount = root.findViewById(R.id.file_view_live_chat_tip_input_amount);
 
         layoutActionsArea = root.findViewById(R.id.file_view_actions_area);
         layoutLivestreamChat = root.findViewById(R.id.file_view_live_chat_area);
+        layoutLivestreamChatTip = root.findViewById(R.id.file_view_live_chat_text_input_tip_area);
         layoutCommentsArea = root.findViewById(R.id.file_view_comments_area);
         layoutRelatedContentArea = root.findViewById(R.id.file_view_related_content_area);
         dividerDescriptionArea = root.findViewById(R.id.file_view_divider_description_area);
         dividerRelatedContentArea = root.findViewById(R.id.file_view_divider_related_content_area);
 
         initUi(root);
+        initLiveChatTippingArea();
 
         chatMemberClickHandler = new Comment.CommenterClickHandler() {
             @Override
@@ -1654,23 +1668,77 @@ public class FileViewFragment extends BaseFragment implements
                 if (!Helper.isNullOrEmpty(chatMessage) && Lbry.ownChannels.size() > 0) {
                     // send chat messages as the first created channel
                     Claim channel = Lbry.ownChannels.get(0);
-                    final Map<String, Object> params = new HashMap<>();
-                    params.put("claim_id", actualClaim.getClaimId());
-                    params.put("channel_id", channel.getClaimId());
-                    params.put("comment", chatMessage);
 
+                    // if the tip UI is open, then require a valid tip amount to be entered
+                    final boolean shouldTip = layoutLivestreamChatTip.getVisibility() == View.VISIBLE;
+                    BigDecimal tipAmount = new BigDecimal(0);
+                    if (shouldTip) {
+                        String amountString = Helper.getValue(inputTipAmount.getText());
+                        if (Helper.isNullOrEmpty(amountString)) {
+                            showError(getString(R.string.invalid_amount));
+                            return;
+                        }
+
+                        try {
+                            tipAmount = new BigDecimal(amountString);
+                        } catch (NumberFormatException nfex) {
+                            showError(getString(R.string.invalid_amount));
+                            return;
+                        }
+
+                        if (tipAmount.doubleValue() > Lbry.getAvailableBalance()) {
+                            showError(getString(R.string.insufficient_balance));
+                            return;
+                        }
+                        // TODO: Get the min_spend setting for this particular livestream channel
+                        if (tipAmount.doubleValue() < Helper.MIN_SPEND) {
+                            showError(getString(R.string.min_spend_required));
+                            return;
+                        }
+                    }
+
+                    if (shouldTip) {
+                        Helper.setViewEnabled(inputTipAmount, false);
+                        Helper.setViewEnabled(buttonCloseTipArea, false);
+                    }
                     Helper.setViewEnabled(inputChatMessage, false);
                     Helper.setViewEnabled(buttonSendChatMessage, false);
+                    Helper.setViewEnabled(buttonToggleTipArea, false);
 
+                    double dblTipAmount = shouldTip ? tipAmount.doubleValue() : 0;
                     Activity a = getActivity();
                     if (a != null) {
                         ((OdyseeApp) a.getApplication()).getExecutor().execute(new Runnable() {
                             @Override
                             public void run() {
                                 try {
+                                    // Start with the tip request
+                                    String supportTxId = null;
+                                    if (shouldTip) {
+                                        Map<String, Object> tipOptions = new HashMap<>();
+                                        tipOptions.put("blocking", true);
+                                        tipOptions.put("claim_id", actualClaim.getClaimId());
+                                        tipOptions.put("amount", new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US)).format(dblTipAmount));
+                                        tipOptions.put("tip", true);
+                                        tipOptions.put("channel_id", channel.getClaimId());
+
+                                        JSONObject response = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_SUPPORT_CREATE, tipOptions, Lbryio.AUTH_TOKEN);
+                                        supportTxId = Helper.getJSONString("txid", null, response);
+                                        // TODO: show a successful tip message or no?
+                                    }
+
+                                    // Then on to comment creation
+                                    Map<String, Object> params = new HashMap<>();
+                                    params.put("claim_id", actualClaim.getClaimId());
+                                    params.put("channel_id", channel.getClaimId());
+                                    params.put("comment", chatMessage);
+                                    if (!Helper.isNullOrEmpty(supportTxId)) {
+                                        params.put("support_tx_id", supportTxId);
+                                    }
+
                                     Lbry.authenticatedGenericApiCall(Lbry.METHOD_COMMENT_CREATE, params, Lbryio.AUTH_TOKEN);
                                     finishChatSend(true);
-                                } catch (ApiCallException ex) {
+                                } catch (ApiCallException | ClassCastException ex) {
                                     showError(getString(R.string.could_not_send_chat_message));
                                     finishChatSend(false);
                                 }
@@ -1776,15 +1844,61 @@ public class FileViewFragment extends BaseFragment implements
         mediaContainer.gestureDetector = new GestureDetector(getContext(), mediaContainerGestureListener);
     }
 
+    private void initLiveChatTippingArea() {
+        buttonToggleTipArea.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                layoutLivestreamChatTip.setVisibility(View.VISIBLE);
+                inputTipAmount.requestFocus();
+            }
+        });
+
+        buttonCloseTipArea.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                layoutLivestreamChatTip.setVisibility(View.GONE);
+                inputTipAmount.setText(null);
+            }
+        });
+
+        inputTipAmount.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                try {
+                    Double value = Double.parseDouble(charSequence.toString());
+                    labelTipCredits.setText(value == 1 ? R.string.lbc_singular : R.string.lbc);
+                } catch (NumberFormatException ex) {
+                    labelTipCredits.setText(R.string.lbc);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+    }
+
     private void finishChatSend(boolean clearInput) {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 if (clearInput) {
                     inputChatMessage.setText(null);
+                    inputTipAmount.setText(null);
+                    Helper.setViewVisibility(layoutLivestreamChatTip, View.GONE);
                 }
                 Helper.setViewEnabled(buttonSendChatMessage, inputChatMessage.getText().length() > 0);
                 Helper.setViewEnabled(inputChatMessage, true);
+                Helper.setViewEnabled(inputTipAmount, true);
+                Helper.setViewEnabled(buttonCloseTipArea, true);
+                Helper.setViewEnabled(buttonToggleTipArea, true);
+                labelTipCredits.setText(R.string.lbc);
             }
         });
     }
