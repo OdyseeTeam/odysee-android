@@ -5115,13 +5115,17 @@ public class FileViewFragment extends BaseFragment implements
                                                         }
                                                         chatMessageList.setAdapter(chatMessageListAdapter);
                                                     } else {
+                                                        final boolean wasAtBottom = isChatMessageListAtBottom();
                                                         chatMessageListAdapter.addMessage(comment);
-                                                        ((OdyseeApp) a.getApplication()).getScheduledExecutor().schedule(new Runnable() {
-                                                            @Override
-                                                            public void run() {
-                                                                smoothScrollToLastChatMessage();
-                                                            }
-                                                        }, 100, TimeUnit.MILLISECONDS);
+                                                        if (wasAtBottom) {
+                                                            // only scroll to the end if the scrollview was previously at the bottom
+                                                            ((OdyseeApp) a.getApplication()).getScheduledExecutor().schedule(new Runnable() {
+                                                                @Override
+                                                                public void run() {
+                                                                    smoothScrollToLastChatMessage();
+                                                                }
+                                                            }, 100, TimeUnit.MILLISECONDS);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -5244,6 +5248,18 @@ public class FileViewFragment extends BaseFragment implements
             };
             webSocketClient.connect();
         }
+    }
+
+    private boolean isChatMessageListAtBottom() {
+        LinearLayoutManager llm = (LinearLayoutManager) chatMessageList.getLayoutManager();
+        if (llm != null) {
+            int numVisibleItems = llm.getChildCount();
+            int numTotalItems = llm.getItemCount();
+            int visibleItems = llm.findFirstVisibleItemPosition();
+            return (visibleItems + numVisibleItems >= numTotalItems);
+        }
+
+        return false;
     }
 
     /**
