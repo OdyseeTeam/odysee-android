@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.exceptions.LbryUriException;
+import com.odysee.app.model.Claim;
 import com.odysee.app.model.UrlSuggestion;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -27,7 +28,15 @@ public class Lighthouse {
     public static final Map<String, List<UrlSuggestion>> autocompleteCache = new HashMap<>();
     public static final Map<Map<String, Object>, List<String>> searchCache = new HashMap<>();
 
-    private static Map<String, Object> buildSearchOptionsKey(String rawQuery, int size, int from, boolean nsfw, String relatedTo) {
+    private static Map<String, Object> buildSearchOptionsKey(String rawQuery,
+                                                             int size,
+                                                             int from,
+                                                             boolean nsfw,
+                                                             String relatedTo,
+                                                             String claimType,
+                                                             String mediaTypes,
+                                                             String timeFilter,
+                                                             String sortBy) {
         Map<String, Object> options = new HashMap<>();
         options.put("s", rawQuery);
         options.put("size", size);
@@ -36,10 +45,31 @@ public class Lighthouse {
         if (!Helper.isNullOrEmpty(relatedTo)) {
             options.put("related_to", relatedTo);
         }
+        if (!Helper.isNullOrEmpty(claimType)) {
+            options.put("claimType", claimType);
+
+            if (claimType.equalsIgnoreCase(Claim.TYPE_STREAM) && !Helper.isNullOrEmpty(mediaTypes)) {
+                options.put("mediaType", mediaTypes);
+            }
+        }
+        if (!Helper.isNullOrEmpty(timeFilter)) {
+            options.put("time_filter", timeFilter);
+        }
+        if (!Helper.isNullOrEmpty(sortBy)) {
+            options.put("sort_by", sortBy);
+        }
         return options;
     }
 
-    public static List<String> search(String rawQuery, int size, int from, boolean nsfw, String relatedTo) throws LbryRequestException, LbryResponseException {
+    public static List<String> search(String rawQuery,
+                                      int size,
+                                      int from,
+                                      boolean nsfw,
+                                      String relatedTo,
+                                      String claimType,
+                                      String mediaTypes,
+                                      String timeFilter,
+                                      String sortBy) throws LbryRequestException, LbryResponseException {
         Uri.Builder uriBuilder = Uri.parse(String.format("%s/search", CONNECTION_STRING)).buildUpon().
                 appendQueryParameter("s", rawQuery).
                 appendQueryParameter("size", String.valueOf(size)).
@@ -50,8 +80,21 @@ public class Lighthouse {
         if (!Helper.isNullOrEmpty(relatedTo)) {
             uriBuilder.appendQueryParameter("related_to", relatedTo);
         }
+        if (!Helper.isNullOrEmpty(claimType)) {
+            uriBuilder.appendQueryParameter("claimType", claimType);
 
-        Map<String, Object> cacheKey = buildSearchOptionsKey(rawQuery, size, from, nsfw, relatedTo);
+            if (claimType.equalsIgnoreCase(Claim.TYPE_STREAM) && !Helper.isNullOrEmpty(mediaTypes)) {
+                uriBuilder.appendQueryParameter("mediaType", mediaTypes);
+            }
+        }
+        if (!Helper.isNullOrEmpty(timeFilter)) {
+            uriBuilder.appendQueryParameter("time_filter", timeFilter);
+        }
+        if (!Helper.isNullOrEmpty(sortBy)) {
+            uriBuilder.appendQueryParameter("sort_by", sortBy);
+        }
+
+        Map<String, Object> cacheKey = buildSearchOptionsKey(rawQuery, size, from, nsfw, relatedTo, claimType, mediaTypes, timeFilter, sortBy);
         if (searchCache.containsKey(cacheKey)) {
             return new ArrayList<>(searchCache.get(cacheKey));
         }

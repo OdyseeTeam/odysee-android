@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.*;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
@@ -27,9 +28,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -73,6 +76,11 @@ public class SearchFragment extends BaseFragment implements
     private boolean contentHasReachedEnd;
     private boolean didResolveFeatured;
     private int currentFrom;
+    private String currentClaimType;
+    private List<String> currentMediaTypes = Arrays.asList(Claim.STREAM_TYPE_VIDEO,
+            Claim.STREAM_TYPE_AUDIO, Claim.STREAM_TYPE_IMAGE, Claim.STREAM_TYPE_TEXT);
+    private String currentTimeFilter;
+    private String currentSortBy;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -121,6 +129,8 @@ public class SearchFragment extends BaseFragment implements
                     root.findViewById(R.id.file_type_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.publish_time_filter_label).setVisibility(View.VISIBLE);
                     root.findViewById(R.id.time_filter_spinner).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.sort_by_filter_spinner).setVisibility(View.VISIBLE);
+                    root.findViewById(R.id.sort_by_filter_label).setVisibility(View.VISIBLE);
                     if (((Chip) root.findViewById(R.id.chipSearchFile)).isChecked()) {
                         root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
                     }
@@ -129,6 +139,8 @@ public class SearchFragment extends BaseFragment implements
                     root.findViewById(R.id.file_type_label).setVisibility(View.GONE);
                     root.findViewById(R.id.publish_time_filter_label).setVisibility(View.GONE);
                     root.findViewById(R.id.time_filter_spinner).setVisibility(View.GONE);
+                    root.findViewById(R.id.sort_by_filter_spinner).setVisibility(View.GONE);
+                    root.findViewById(R.id.sort_by_filter_label).setVisibility(View.GONE);
                     root.findViewById(R.id.file_type_filters).setVisibility(View.GONE);
                 }
             }
@@ -144,19 +156,13 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onCheckedChanged(ChipGroup group, int checkedId) {
                 checkNothingToBeShown();
-                if (checkedId == View.NO_ID) {
-                    if (resultListAdapter != null) {
-                        resultListAdapter.clearSearchFilters();
-                    }
-                } else if (checkedId == R.id.chipSearchFile) {
-                    if (resultListAdapter != null) {
-                        resultListAdapter.setFilterByFile(true);
-                    }
+                String claimType = null; // None selected
+                if (checkedId == R.id.chipSearchFile) {
+                    claimType = Claim.TYPE_STREAM;
                 } else if (checkedId == R.id.chipSearchChannel) {
-                    if (resultListAdapter != null) {
-                        resultListAdapter.setFilterByChannel(true);
-                    }
+                    claimType = Claim.TYPE_CHANNEL;
                 }
+                search(currentQuery, currentFrom, claimType, currentMediaTypes, currentTimeFilter, currentSortBy);
 
                 if (checkedId == R.id.chipSearchFile) {
                     root.findViewById(R.id.file_type_filters).setVisibility(View.VISIBLE);
@@ -169,33 +175,25 @@ public class SearchFragment extends BaseFragment implements
         ((CheckBox) root.findViewById(R.id.video_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(isChecked, null, null, null);
-                }
+                setMediaTypes(isChecked, null, null, null);
             }
         });
         ((CheckBox) root.findViewById(R.id.audio_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(null, isChecked, null, null);
-                }
+                setMediaTypes(null, isChecked, null, null);
             }
         });
         ((CheckBox) root.findViewById(R.id.image_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(null, null, isChecked, null);
-                }
+                setMediaTypes(null, null, isChecked, null);
             }
         });
         ((CheckBox) root.findViewById(R.id.text_filetype_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (resultListAdapter != null) {
-                    resultListAdapter.setFileTypeFilters(null, null, null, isChecked);
-                }
+                setMediaTypes(null, null, null, isChecked);
             }
         });
 
@@ -203,26 +201,25 @@ public class SearchFragment extends BaseFragment implements
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (resultListAdapter != null) {
-                    Calendar cal = Calendar.getInstance();
-                    if (position == 0) {
-                        resultListAdapter.clearTimeframeFilter();
-                    } else {
-                        switch (position) {
-                            case 1: // Last 24 hours
-                                cal.add(Calendar.HOUR_OF_DAY, -24);
-                                break;
-                            case 2: // This week
-                                cal.add(Calendar.DAY_OF_YEAR, -7);
-                                break;
-                            case 3: // This month
-                                cal.add(Calendar.MONTH, -1);
-                                break;
-                            case 4: // This year
-                                cal.add(Calendar.YEAR, -1);
-                                break;
-                        }
-                        resultListAdapter.setFilterTimeframeFrom(cal.getTimeInMillis());
+                    String timeFilter;
+                    switch (position) {
+                        case 1: // Last 24 hours
+                            timeFilter = "today";
+                            break;
+                        case 2: // This week
+                            timeFilter = "thisweek";
+                            break;
+                        case 3: // This month
+                            timeFilter = "thismonth";
+                            break;
+                        case 4: // This year
+                            timeFilter = "thisyear";
+                            break;
+                        case 0: // Anytime
+                        default:
+                            timeFilter = null;
                     }
+                    search(currentQuery, currentFrom, currentClaimType, currentMediaTypes, timeFilter, currentSortBy);
                 }
             }
 
@@ -231,6 +228,31 @@ public class SearchFragment extends BaseFragment implements
 
             }
         });
+
+        ((AppCompatSpinner) root.findViewById(R.id.sort_by_filter_spinner)).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                String sortBy;
+                switch (position) {
+                    case 1: // Newest first
+                        sortBy = "release_time";
+                        break;
+                    case 2: // Oldest first
+                        sortBy = "^release_time";
+                        break;
+                    case 0: // Relevance
+                    default:
+                        sortBy = null;
+                }
+                search(currentQuery, currentFrom, currentClaimType, currentMediaTypes, currentTimeFilter, sortBy);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
         return root;
     }
 
@@ -303,11 +325,23 @@ public class SearchFragment extends BaseFragment implements
         super.onStop();
     }
 
-    private boolean checkQuery(String query) {
-        if (!Helper.isNullOrEmpty(query) && !query.equalsIgnoreCase(currentQuery)) {
+    private boolean checkQuery(String query,
+                               @Nullable String claimType,
+                               @NonNull List<String> mediaTypes,
+                               @Nullable String timeFilter,
+                               @Nullable String sortBy) {
+        if ((!Helper.isNullOrEmpty(query) && !query.equalsIgnoreCase(currentQuery)) ||
+                (!Objects.equals(claimType, currentClaimType)) ||
+                (mediaTypes.size() != currentMediaTypes.size() && !mediaTypes.containsAll(currentMediaTypes)) ||
+                (!Objects.equals(timeFilter, currentTimeFilter)) ||
+                (!Objects.equals(sortBy, currentSortBy))) {
             // new query, reset values
             currentFrom = 0;
             currentQuery = query;
+            currentClaimType = claimType;
+            currentMediaTypes = mediaTypes;
+            currentTimeFilter = timeFilter;
+            currentSortBy = sortBy;
             if (resultListAdapter != null) {
                 resultListAdapter.clearItems();
             }
@@ -388,6 +422,41 @@ public class SearchFragment extends BaseFragment implements
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void setMediaTypes(
+            @Nullable Boolean showVideos,
+            @Nullable Boolean showAudios,
+            @Nullable Boolean showImages,
+            @Nullable Boolean showTexts
+    ) {
+        List<String> mediaTypes = new ArrayList<>(currentMediaTypes);
+
+        if (showVideos != null && showVideos && !mediaTypes.contains(Claim.STREAM_TYPE_VIDEO)) {
+            mediaTypes.add(Claim.STREAM_TYPE_VIDEO);
+        } else if (showVideos != null && !showVideos) {
+            mediaTypes.remove(Claim.STREAM_TYPE_VIDEO);
+        }
+
+        if (showAudios != null && showAudios && !mediaTypes.contains(Claim.STREAM_TYPE_AUDIO)) {
+            mediaTypes.add(Claim.STREAM_TYPE_AUDIO);
+        } else if (showAudios != null && !showAudios) {
+            mediaTypes.remove(Claim.STREAM_TYPE_AUDIO);
+        }
+
+        if (showImages != null && showImages && !mediaTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
+            mediaTypes.add(Claim.STREAM_TYPE_IMAGE);
+        } else if (showImages != null && !showImages) {
+            mediaTypes.remove(Claim.STREAM_TYPE_IMAGE);
+        }
+
+        if (showTexts != null && showTexts && !mediaTypes.contains(Claim.STREAM_TYPE_TEXT)) {
+            mediaTypes.add(Claim.STREAM_TYPE_TEXT);
+        } else if (showTexts != null && !showTexts) {
+            mediaTypes.remove(Claim.STREAM_TYPE_TEXT);
+        }
+
+        search(currentQuery, currentFrom, currentClaimType, mediaTypes, currentTimeFilter, currentSortBy);
+    }
+
     private void logSearch(String query) {
         Bundle bundle = new Bundle();
         bundle.putString("query", query);
@@ -395,7 +464,17 @@ public class SearchFragment extends BaseFragment implements
     }
 
     public void search(String query, int from) {
-        boolean queryChanged = checkQuery(query);
+        search(query, from, currentClaimType, currentMediaTypes, currentTimeFilter, currentSortBy);
+    }
+
+    public void search(
+            String query, int from,
+            @Nullable String claimType,
+            @NonNull List<String> mediaTypes,
+            @Nullable String timeFilter,
+            @Nullable String sortBy
+    ) {
+        boolean queryChanged = checkQuery(query, claimType, mediaTypes, timeFilter, sortBy);
 
         if (query.equals("") || searchLoading) {
             return;
@@ -428,7 +507,8 @@ public class SearchFragment extends BaseFragment implements
 
         Activity a = getActivity();
 
-        LighthouseSearch c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null);
+        LighthouseSearch c = new LighthouseSearch(currentQuery, PAGE_SIZE, currentFrom, canShowMatureContent, null,
+                currentClaimType, String.join(",", currentMediaTypes), currentTimeFilter, currentSortBy);
         if (a != null) {
             a.runOnUiThread(new Runnable() {
                 @Override

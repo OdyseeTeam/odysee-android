@@ -426,12 +426,18 @@
     <string name="search_filter_filetype_audio">Audio</string>
     <string name="search_filter_filetype_image">Image</string>
     <string name="search_filter_filetype_text">Text</string>
+    <string name="search_filter_sort_by_label">Sort by</string>
     <string-array name="publish_timeframe_filter">
         <item>Anytime</item>
         <item>Last 24 hours</item>
         <item>This week</item>
         <item>This month</item>
         <item>This year</item>
+    </string-array>
+    <string-array name="search_filter_sort_by">
+        <item>Relevance</item>
+        <item>Newest first</item>
+        <item>Oldest first</item>
     </string-array>
 
     <!-- Wallet -->
