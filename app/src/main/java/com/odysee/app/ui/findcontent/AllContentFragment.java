@@ -105,13 +105,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         View view = getView();
         if (context != null && view != null) {
             dynamicCategories = new ArrayList<>(ContentSources.DYNAMIC_CONTENT_CATEGORIES);
-            ContentSources.Category wildWest = new ContentSources.Category();
-            wildWest.setName("wildwest");
-            wildWest.setLabel(getString(R.string.wildwest_category));
-            wildWest.setChannelIds(null);
-            dynamicCategories.add(wildWest);
-
-            wildWestIndex = dynamicCategories.size() - 1;
 
             ChipGroup group = view.findViewById(R.id.category_selection_chipgroup);
             if (group.getChildCount() == 0) {
@@ -119,6 +112,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     ContentSources.Category category = dynamicCategories.get(i);
                     if ("movies".equalsIgnoreCase(category.getName())) {
                         moviesIndex = i;
+                    }
+                    if ("wildwest".equalsIgnoreCase(category.getName())) {
+                        wildWestIndex = i;
                     }
 
                     Chip chip = new Chip(context);
@@ -444,10 +440,11 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdsForCategory;
+        List<String> channelIdsForCategory = null;
+        List<String> excludedChannelIdsForCategory = null;
 
         if (currentCategoryId == wildWestIndex) {
-            channelIdsForCategory = Collections.emptyList();
+            excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
         } else if (currentChannelIdList != null) {
             channelIdsForCategory = Arrays.asList(currentChannelIdList);
         } else {
@@ -467,7 +464,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 null,
                 channelIdsForCategory,
-                null,
+                excludedChannelIdsForCategory,
                 getContentSortOrder(),
                 currentCategoryId == wildWestIndex ? Helper.buildReleaseTime(ContentFromDialogFragment.ITEM_FROM_PAST_WEEK) : contentReleaseTime,
                 0,

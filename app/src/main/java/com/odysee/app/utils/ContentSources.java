@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import lombok.Data;
@@ -40,7 +41,7 @@ public final class ContentSources {
     private static final String REGION_CODE_BR = "BR"; // special check for pt-BR
 
     private static final String CACHE_KEY = "ContentSourcesCache";
-    private static final String ENDPOINT = "https://odysee.com/$/api/content/v1/get";
+    private static final String ENDPOINT = "https://odysee.com/$/api/content/v2/get";
     private static final long TWENTY_FOUR_HOURS_MILLIS = 60 * 60 * 24 * 1000;
 
     public static List<Category> DYNAMIC_CONTENT_CATEGORIES = new ArrayList<>();
@@ -52,8 +53,12 @@ public final class ContentSources {
         private String name;
         private String label;
         private String[] channelIds;
+        private String[] excludedChannelIds;
         public boolean isValid() {
-            return !Helper.isNullOrEmpty(name) && channelIds != null && channelIds.length > 0;
+            return !Helper.isNullOrEmpty(name) &&
+                    ((channelIds != null && channelIds.length > 0) ||
+                            ("wildwest".equalsIgnoreCase(name) &&
+                                    (excludedChannelIds != null && excludedChannelIds.length > 0)));
         }
     }
 
@@ -61,6 +66,7 @@ public final class ContentSources {
     public static class ContentSourceCache {
          private List<Category> categories;
          private Date lastUpdated;
+         private String langKey;
          public ContentSourceCache() {
              categories = new ArrayList<>();
              lastUpdated = new Date();
@@ -88,7 +94,8 @@ public final class ContentSources {
                      try {
                          ContentSourceCache cache = gson.fromJson(cachedJsonString, type);
                          Date now = new Date();
-                         if (now.getTime() - cache.getLastUpdated().getTime() < TWENTY_FOUR_HOURS_MILLIS) {
+                         if (now.getTime() - cache.getLastUpdated().getTime() < TWENTY_FOUR_HOURS_MILLIS &&
+                                 Objects.equals(getLangKey(), cache.getLangKey())) {
                              if (handler != null) {
                                  Log.d(TAG, "Loaded local categories");
                                  DYNAMIC_CONTENT_CATEGORIES = new ArrayList<>(cache.getCategories());
@@ -192,6 +199,7 @@ public final class ContentSources {
                     ContentSourceCache cache = new ContentSourceCache();
                     cache.setCategories(new ArrayList<>(loadedCategories));
                     cache.setLastUpdated(new Date());
+                    cache.setLangKey(getLangKey());
 
                     if (context != null) {
                         Gson gson = new Gson();
@@ -209,32 +217,32 @@ public final class ContentSources {
 
             private List<Category> processJSONdata(JSONObject data) {
                 List<Category> lc = new ArrayList<>();
-                String langCode = Locale.getDefault().getLanguage();
-                String regionCode = Locale.getDefault().getCountry();
-                Log.d(TAG, "LangCode=" + langCode + ";RegionCode=" + regionCode);
-                String langKey = langCode;
-                if (!LANG_CODE_EN.equals(langCode) && REGION_CODE_BR.equals(regionCode)) {
-                    langKey = String.format("%s-%s", langCode, regionCode);
-                }
+                String langKey = getLangKey();
 
                 JSONObject langData = data.has(langKey) ? Helper.getJSONObject(langKey, data) : Helper.getJSONObject(LANG_CODE_EN, data);
                 if (langData != null) {
-                    Iterator<String> keys = langData.keys();
-                    while (keys.hasNext()) {
-                        String key = keys.next();
-                        JSONObject srcJson = Helper.getJSONObject(key, langData);
-                        if (srcJson != null) {
-                            Category category = new Category();
-                            category.setKey(key);
-                            category.setSortOrder(Helper.getJSONInt("sortOrder", 1, srcJson));
-                            category.setName(Helper.getJSONString("name", null, srcJson));
-                            category.setLabel(Helper.getJSONString("label", null, srcJson));
+                    JSONObject langCategories = Helper.getJSONObject("categories", langData);
+                    if (langCategories != null) {
+                        Iterator<String> keys = langCategories.keys();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            JSONObject srcJson = Helper.getJSONObject(key, langCategories);
+                            if (srcJson != null) {
+                                Category category = new Category();
+                                category.setKey(key);
+                                category.setSortOrder(Helper.getJSONInt("sortOrder", 1, srcJson));
+                                category.setName(Helper.getJSONString("name", null, srcJson));
+                                category.setLabel(Helper.getJSONString("label", null, srcJson));
 
-                            List<String> channelIdList = Helper.getJsonStringArrayAsList("channelIds", srcJson);
-                            category.setChannelIds(channelIdList.toArray(new String[channelIdList.size()]));
+                                List<String> channelIdList = Helper.getJsonStringArrayAsList("channelIds", srcJson);
+                                category.setChannelIds(channelIdList.toArray(new String[channelIdList.size()]));
 
-                            if (category.isValid()) {
-                                lc.add(category);
+                                List<String> excludedChannelIdList = Helper.getJsonStringArrayAsList("excludedChannelIds", srcJson);
+                                category.setExcludedChannelIds(excludedChannelIdList.toArray(new String[excludedChannelIdList.size()]));
+
+                                if (category.isValid()) {
+                                    lc.add(category);
+                                }
                             }
                         }
                     }
@@ -242,5 +250,15 @@ public final class ContentSources {
                 return lc;
             }
         });
+    }
+
+    private static String getLangKey() {
+        String langCode = Locale.getDefault().getLanguage();
+        String regionCode = Locale.getDefault().getCountry();
+        Log.d(TAG, "LangCode=" + langCode + ";RegionCode=" + regionCode);
+        if (!LANG_CODE_EN.equals(langCode) && REGION_CODE_BR.equals(regionCode)) {
+            return String.format("%s-%s", langCode, regionCode);
+        }
+        return langCode;
     }
 }
