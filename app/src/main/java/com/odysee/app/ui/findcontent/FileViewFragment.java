@@ -369,6 +369,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private Comment.CommenterClickHandler chatMemberClickHandler;
 
+    // Playlist items pseudo-pagination
+    int playlistPos = 0, oldPlaylistPos = 0;
+
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -3300,8 +3303,35 @@ public class FileViewFragment extends BaseFragment implements
                                 playClaimFromCollection(playlistClaims.get(0), 0);
                             }
 
-                            relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
+                            relatedContentAdapter = new ClaimListAdapter(playlistClaims.subList(playlistPos, playlistPos + 25), getContext());
                             relatedContentAdapter.setListener(FileViewFragment.this);
+                            scrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
+                                @Override
+                                public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                                    if (scrollY == 0) {
+                                        if (playlistPos == 0) return;
+                                        playlistPos -= 25;
+                                        oldPlaylistPos = playlistPos;
+                                        relatedContentAdapter.setItems(playlistClaims.subList(playlistPos, playlistPos + 25));
+                                        scrollView.postDelayed(() -> {
+                                            v.scrollTo(0, (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight() - 1));
+                                        }, 500);
+                                    }
+                                    if (scrollY == (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight())) {
+                                        if (playlistPos != oldPlaylistPos || playlistPos + 25 >= playlistClaims.size()) return;
+                                        playlistPos += 25;
+                                        if (playlistClaims.size() >= playlistPos + 25) {
+                                            relatedContentAdapter.setItems(playlistClaims.subList(playlistPos, playlistPos + 25));
+                                        } else {
+                                            relatedContentAdapter.setItems(playlistClaims.subList(playlistPos, playlistClaims.size() - 1));
+                                        }
+                                        scrollView.postDelayed(() -> {
+                                            v.scrollTo(0, 1);
+                                            oldPlaylistPos = playlistPos;
+                                        }, 500);
+                                    }
+                                }
+                            });
 
                             View root = getView();
                             if (root != null) {
@@ -3546,7 +3576,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void playClaimFromCollection(Claim theClaim, int index) {
-        updatePlaylistContentDisplay(index);
+        updatePlaylistContentDisplay(index + playlistPos);
         collectionClaimItem = theClaim;
         renderClaim();
 
