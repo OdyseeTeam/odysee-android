@@ -3455,7 +3455,8 @@ public class FileViewFragment extends BaseFragment implements
                 Thread t = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0, nsfw, claimId);
+                        LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0,
+                                nsfw, claimId, null, null, null, null);
                         Future<List<String>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
                         try {

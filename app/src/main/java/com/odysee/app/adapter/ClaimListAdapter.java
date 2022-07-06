@@ -92,11 +92,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Setter
     private int position;
 
-    private boolean filterByChannel;
-    private boolean filterByFile;
-    private List<String> claimFileTypes;
-    private long filterTimeframeFrom;
-
     public ClaimListAdapter(List<Claim> items, Context context) {
         this(items, STYLE_BIG_LIST, context);
     }
@@ -117,12 +112,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         quickClaimUrlMap = new HashMap<>();
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
-
-        claimFileTypes = new ArrayList<>(4);
-        claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
-        claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
-        claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
-        claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
     }
 
     public List<Claim> getSelectedItems() {
@@ -257,69 +246,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyItemRemoved(position);
     }
 
-    public void setFilterByChannel(boolean filterByChannel) {
-        this.filterByChannel = filterByChannel;
-        this.filterByFile = false;
-
-        notifyDataSetChanged();
-    }
-
-    public void setFilterByFile(boolean filterByFile) {
-        this.filterByFile = filterByFile;
-        this.filterByChannel = false;
-        notifyDataSetChanged();
-    }
-
-    public void setFileTypeFilters(
-            @Nullable Boolean showVideos,
-            @Nullable Boolean showAudios,
-            @Nullable Boolean showImages,
-            @Nullable Boolean showTexts
-    ) {
-        if (claimFileTypes != null) {
-            if (showVideos != null && showVideos && !claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO)) {
-                claimFileTypes.add(Claim.STREAM_TYPE_VIDEO);
-            } else if (showVideos != null && !showVideos && claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO)) {
-                claimFileTypes.remove(Claim.STREAM_TYPE_VIDEO);
-            }
-
-            if (showAudios != null && showAudios && !claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO)) {
-                claimFileTypes.add(Claim.STREAM_TYPE_AUDIO);
-            } else if (showAudios != null && !showAudios && claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO)) {
-                claimFileTypes.remove(Claim.STREAM_TYPE_AUDIO);
-            }
-
-            if (showImages != null && showImages && !claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
-                claimFileTypes.add(Claim.STREAM_TYPE_IMAGE);
-            } else if (showImages != null && !showImages && claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE)) {
-                claimFileTypes.remove(Claim.STREAM_TYPE_IMAGE);
-            }
-
-            if (showTexts != null && showTexts && !claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
-                claimFileTypes.add(Claim.STREAM_TYPE_TEXT);
-            } else if (showTexts != null && !showTexts && claimFileTypes.contains(Claim.STREAM_TYPE_TEXT)) {
-                claimFileTypes.remove(Claim.STREAM_TYPE_TEXT);
-            }
-        }
-        notifyDataSetChanged();
-    }
-
-    public void setFilterTimeframeFrom(long timeFrom) {
-        this.filterTimeframeFrom = timeFrom;
-        notifyDataSetChanged();
-    }
-
-    public void clearSearchFilters() {
-        this.filterByChannel = false;
-        this.filterByFile = false;
-
-        notifyItemRangeChanged(0, items.size());
-    }
-
-    public void clearTimeframeFilter() {
-        filterTimeframeFrom = 0;
-        notifyDataSetChanged();
-    }
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
         @Getter
         @Setter
@@ -678,188 +604,148 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         } else {
             ViewGroup.LayoutParams lp = vh.itemView.getLayoutParams();
             if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType()) || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
-                if ((filterTimeframeFrom == 0 || publishTime >= filterTimeframeFrom) && shouldDisplayClaim(item)) {
-                    if (!Helper.isNullOrEmpty(thumbnailUrl)) {
-                        Glide.with(context.getApplicationContext()).
-                                asBitmap().
-                                load(thumbnailUrl).
-                                placeholder(R.drawable.bg_thumbnail_placeholder).
-                                into(vh.thumbnailView);
-                        vh.thumbnailView.setVisibility(View.VISIBLE);
-                    } else {
-                        vh.thumbnailView.setVisibility(View.GONE);
-                    }
+                if (!Helper.isNullOrEmpty(thumbnailUrl)) {
+                    Glide.with(context.getApplicationContext()).
+                            asBitmap().
+                            load(thumbnailUrl).
+                            placeholder(R.drawable.bg_thumbnail_placeholder).
+                            into(vh.thumbnailView);
+                    vh.thumbnailView.setVisibility(View.VISIBLE);
+                } else {
+                    vh.thumbnailView.setVisibility(View.GONE);
+                }
 
-                    if (vh.publisherThumbnailView != null) {
-                        if (item.getSigningChannel() != null) {
-                            String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
-                            if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
-                                Glide.with(context.getApplicationContext())
-                                        .load(publisherThumbnailUrl)
-                                        .centerCrop()
-                                        .placeholder(R.drawable.bg_thumbnail_placeholder)
-                                        .apply(RequestOptions.circleCropTransform())
-                                        .into(vh.publisherThumbnailView);
-                            } else {
-                                vh.publisherThumbnailView.setVisibility(View.GONE);
-                            }
+                if (vh.publisherThumbnailView != null) {
+                    if (item.getSigningChannel() != null) {
+                        String publisherThumbnailUrl = item.getSigningChannel().getThumbnailUrl(Utils.CHANNEL_THUMBNAIL_WIDTH, Utils.CHANNEL_THUMBNAIL_HEIGHT, Utils.CHANNEL_THUMBNAIL_Q);
+                        if (!Helper.isNullOrEmpty(publisherThumbnailUrl)) {
+                            Glide.with(context.getApplicationContext())
+                                    .load(publisherThumbnailUrl)
+                                    .centerCrop()
+                                    .placeholder(R.drawable.bg_thumbnail_placeholder)
+                                    .apply(RequestOptions.circleCropTransform())
+                                    .into(vh.publisherThumbnailView);
                         } else {
                             vh.publisherThumbnailView.setVisibility(View.GONE);
                         }
-                    }
-
-                    BigDecimal cost = item.getActualCost(Lbryio.LBCUSDRate);
-                    vh.feeContainer.setVisibility(cost.doubleValue() > 0 && !hideFee ? View.VISIBLE : View.GONE);
-                    vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
-                    vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
-                    vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
-                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
-                    if (vh.viewCountView != null) {
-                        vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
-                        vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
-                                R.plurals.view_count, item.getViews(), compactNumber(item.getViews())) + " •" : null);
-                    }
-                    long duration = item.getDuration();
-                    vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
-                    long lastPlaybackPosition = loadLastPlaybackPosition(item);
-                    if (lastPlaybackPosition != -1 && duration > 0) {
-                        long lastPlaybackPositionSeconds = lastPlaybackPosition / 1000;
-                        vh.thumbnailView.getViewTreeObserver()
-                                .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-                                        int width = vh.thumbnailView.getMeasuredWidth();
-                                        if (width > 0) {
-                                            Helper.setViewWidth(vh.playbackProgressView,
-                                                    (int) (((double) lastPlaybackPositionSeconds / duration) * width));
-                                            vh.thumbnailView.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        }
-                                        return true;
-                                    }
-                                });
                     } else {
-                        Helper.setViewWidth(vh.playbackProgressView, 0);
+                        vh.publisherThumbnailView.setVisibility(View.GONE);
                     }
-                    if (type == VIEW_TYPE_LIVESTREAM) {
-                        vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-
-                        Date ct = new Date();
-                        Calendar cal = GregorianCalendar.getInstance(); // locale-specific
-                        cal.setTime(ct);
-
-                        long nowTime = cal.getTimeInMillis() / 1000L;
-                        String liveText;
-                        if (((Claim.StreamMetadata) item.getValue()).getReleaseTime() > nowTime) {
-                            liveText = context.getResources().getString(R.string.soon).toUpperCase();
-                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
-                        } else {
-                            liveText = String.valueOf(item.getLivestreamViewers());
-                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
-                            vh.durationView.setCompoundDrawablePadding(8);
-                        }
-
-                        vh.durationView.setText(liveText);
-                    } else {
-                        vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
-                        if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
-                            vh.durationView.setText(Helper.formatDuration(duration));
-                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
-                        } else {
-                            List<String> claimIds = item.getClaimIds() == null ? new ArrayList<>() : item.getClaimIds();
-                            vh.durationView.setText(String.valueOf(claimIds.size()));
-                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
-                            vh.durationView.setCompoundDrawablePadding(8);
-                        }
-
-                        LbryFile claimFile = item.getFile();
-                        boolean isDownloading = false;
-                        int progress = 0;
-                        String fileSizeString = claimFile == null ? null : Helper.formatBytes(claimFile.getTotalBytes(), false);
-                        if (claimFile != null &&
-                                !Helper.isNullOrEmpty(claimFile.getDownloadPath()) &&
-                                !claimFile.isCompleted() &&
-                                claimFile.getWrittenBytes() < claimFile.getTotalBytes()) {
-                            isDownloading = true;
-                            progress = claimFile.getTotalBytes() > 0 ?
-                                    Double.valueOf(((double) claimFile.getWrittenBytes() / (double) claimFile.getTotalBytes()) * 100.0).intValue() : 0;
-                            fileSizeString = String.format("%s / %s",
-                                    Helper.formatBytes(claimFile.getWrittenBytes(), false),
-                                    Helper.formatBytes(claimFile.getTotalBytes(), false));
-                        }
-
-                        Helper.setViewText(vh.fileSizeView, claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath()) ? fileSizeString : null);
-                        Helper.setViewVisibility(vh.downloadProgressView, isDownloading ? View.VISIBLE : View.INVISIBLE);
-                        Helper.setViewProgress(vh.downloadProgressView, progress);
-                        Helper.setViewText(vh.deviceView, item.getDevice());
-
-                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        vh.itemView.setLayoutParams(lp);
-                        vh.itemView.setVisibility(View.VISIBLE);
-                        if (style != STYLE_SMALL_LIST_HORIZONTAL) {
-                            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                        }
-                    }
-                } else {
-                    // This item should be filtered out -not displayed-
-                    vh.itemView.setVisibility(View.GONE);
-                    lp.height = 0;
-                    lp.width = 0;
-                    vh.itemView.setLayoutParams(lp);
                 }
-            } else if (Claim.TYPE_CHANNEL.equalsIgnoreCase(item.getValueType())) {
-                if ((this.filterByChannel || !this.filterByFile) && (filterTimeframeFrom == 0 || publishTime >= filterTimeframeFrom)) {
-                    if (!Helper.isNullOrEmpty(thumbnailUrl)) {
-                        Glide.with(context.getApplicationContext()).
-                                load(thumbnailUrl).
-                                centerCrop().
-                                placeholder(R.drawable.bg_thumbnail_placeholder).
-                                apply(RequestOptions.circleCropTransform()).
-                                into(vh.thumbnailView);
+
+                BigDecimal cost = item.getActualCost(Lbryio.LBCUSDRate);
+                vh.feeContainer.setVisibility(cost.doubleValue() > 0 && !hideFee ? View.VISIBLE : View.GONE);
+                vh.feeView.setText(cost.doubleValue() > 0 ? Helper.shortCurrencyFormat(cost.doubleValue()) : "Paid");
+                vh.alphaView.setText(item.getName().substring(0, Math.min(5, item.getName().length() - 1)));
+                vh.publisherView.setText(signingChannel != null ? signingChannel.getTitleOrName() : context.getString(R.string.anonymous));
+                vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
+                if (vh.viewCountView != null) {
+                    vh.viewCountView.setVisibility((item.getViews() != null && item.getViews() != 0) ? View.VISIBLE : View.GONE);
+                    vh.viewCountView.setText(item.getViews() != null ? context.getResources().getQuantityString(
+                                                                   R.plurals.view_count, item.getViews(), compactNumber(item.getViews())) + " •" : null);
+                }
+                long duration = item.getDuration();
+                vh.durationView.setVisibility((duration > 0 || item.isHighlightLive() || Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) ? View.VISIBLE : View.GONE);
+                long lastPlaybackPosition = loadLastPlaybackPosition(item);
+                if (lastPlaybackPosition != -1 && duration > 0) {
+                    long lastPlaybackPositionSeconds = lastPlaybackPosition / 1000;
+                    vh.thumbnailView.getViewTreeObserver()
+                            .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                @Override
+                                public boolean onPreDraw() {
+                                    int width = vh.thumbnailView.getMeasuredWidth();
+                                    if (width > 0) {
+                                        Helper.setViewWidth(vh.playbackProgressView,
+                                                (int) (((double) lastPlaybackPositionSeconds / duration) * width));
+                                        vh.thumbnailView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                    }
+                                    return true;
+                                }
+                            });
+                } else {
+                    Helper.setViewWidth(vh.playbackProgressView, 0);
+                }
+                if (type == VIEW_TYPE_LIVESTREAM) {
+                    vh.durationView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
+
+                    Date ct = new Date();
+                    Calendar cal = GregorianCalendar.getInstance(); // locale-specific
+                    cal.setTime(ct);
+
+                    long nowTime = cal.getTimeInMillis() / 1000L;
+                    String liveText;
+                    if (((Claim.StreamMetadata) item.getValue()).getReleaseTime() > nowTime) {
+                        liveText = context.getResources().getString(R.string.soon).toUpperCase();
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+                    } else {
+                        liveText = String.valueOf(item.getLivestreamViewers());
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
+                        vh.durationView.setCompoundDrawablePadding(8);
                     }
-                    vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
-                    vh.publisherView.setText(item.getName());
-                    vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
-                    if (vh.getItemViewType() == VIEW_TYPE_FEATURED) {
-                        vh.durationView.setVisibility(View.GONE);
+
+                    vh.durationView.setText(liveText);
+                } else {
+                    vh.durationView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.black));
+                    if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                        vh.durationView.setText(Helper.formatDuration(duration));
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+                    } else {
+                        List<String> claimIds = item.getClaimIds() == null ? new ArrayList<>() : item.getClaimIds();
+                        vh.durationView.setText(String.valueOf(claimIds.size()));
+                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_list_icon, 0, 0, 0);
+                        vh.durationView.setCompoundDrawablePadding(8);
                     }
+
+                    LbryFile claimFile = item.getFile();
+                    boolean isDownloading = false;
+                    int progress = 0;
+                    String fileSizeString = claimFile == null ? null : Helper.formatBytes(claimFile.getTotalBytes(), false);
+                    if (claimFile != null &&
+                            !Helper.isNullOrEmpty(claimFile.getDownloadPath()) &&
+                            !claimFile.isCompleted() &&
+                            claimFile.getWrittenBytes() < claimFile.getTotalBytes()) {
+                        isDownloading = true;
+                        progress = claimFile.getTotalBytes() > 0 ?
+                                Double.valueOf(((double) claimFile.getWrittenBytes() / (double) claimFile.getTotalBytes()) * 100.0).intValue() : 0;
+                        fileSizeString = String.format("%s / %s",
+                                Helper.formatBytes(claimFile.getWrittenBytes(), false),
+                                Helper.formatBytes(claimFile.getTotalBytes(), false));
+                    }
+
+                    Helper.setViewText(vh.fileSizeView, claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath()) ? fileSizeString : null);
+                    Helper.setViewVisibility(vh.downloadProgressView, isDownloading ? View.VISIBLE : View.INVISIBLE);
+                    Helper.setViewProgress(vh.downloadProgressView, progress);
+                    Helper.setViewText(vh.deviceView, item.getDevice());
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
                     vh.itemView.setLayoutParams(lp);
                     vh.itemView.setVisibility(View.VISIBLE);
-                } else {
-                    vh.itemView.setVisibility(View.GONE);
-                    lp.height = 0;
-                    lp.width = 0;
-                    vh.itemView.setLayoutParams(lp);
+                    if (style != STYLE_SMALL_LIST_HORIZONTAL) {
+                        lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    }
                 }
-            }
-        }
-    }
+            } else if (Claim.TYPE_CHANNEL.equalsIgnoreCase(item.getValueType())) {
+                if (!Helper.isNullOrEmpty(thumbnailUrl)) {
+                    Glide.with(context.getApplicationContext()).
+                            load(thumbnailUrl).
+                            centerCrop().
+                            placeholder(R.drawable.bg_thumbnail_placeholder).
+                            apply(RequestOptions.circleCropTransform()).
+                            into(vh.thumbnailView);
+                }
+                vh.alphaView.setText(item.getName().substring(1, 2).toUpperCase());
+                vh.publisherView.setText(item.getName());
+                vh.publishTimeView.setText(FormatTime.fromEpochMillis(publishTime));
+                if (vh.getItemViewType() == VIEW_TYPE_FEATURED) {
+                    vh.durationView.setVisibility(View.GONE);
+                }
 
-    private boolean shouldDisplayClaim(Claim claim) {
-        String mediaType;
-        boolean isVideo = false;
-        boolean isAudio = false;
-        boolean isImage = false;
-        boolean isText = false;
-        Claim.GenericMetadata metadata = claim.getValue();
-        if (metadata instanceof Claim.StreamMetadata) {
-            Claim.StreamMetadata.Source source = ((Claim.StreamMetadata) metadata).getSource();
-            mediaType = source != null ? source.getMediaType() : null;
-            if (mediaType != null) {
-                isVideo = mediaType.startsWith(Claim.STREAM_TYPE_VIDEO);
-                isAudio = mediaType.startsWith(Claim.STREAM_TYPE_AUDIO);
-                isImage = mediaType.startsWith(Claim.STREAM_TYPE_IMAGE);
-                isText = mediaType.startsWith(Claim.STREAM_TYPE_TEXT);
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                vh.itemView.setLayoutParams(lp);
+                vh.itemView.setVisibility(View.VISIBLE);
             }
         }
-        return (Claim.TYPE_COLLECTION.equalsIgnoreCase(claim.getValueType()) && !filterByChannel)
-                || (!filterByFile && !filterByChannel)
-                || (filterByFile && ((claimFileTypes.contains(Claim.STREAM_TYPE_VIDEO) && isVideo)
-                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_AUDIO) && isAudio)
-                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_IMAGE) && isImage)
-                                        || (claimFileTypes.contains(Claim.STREAM_TYPE_TEXT) && isText)));
     }
 
     private void toggleSelectedClaim(Claim claim) {
