@@ -1024,12 +1024,13 @@
             android:id="@+id/file_view_live_chat_area"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/file_view_live_chat_messages"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_alignParentTop="true"
-                android:layout_above="@id/file_view_live_chat_input_divider" />
+                android:layout_above="@id/file_view_live_chat_input_divider"
+                android:layout_alignParentTop="true" />
             <View
                 android:id="@+id/file_view_live_chat_input_divider"
                 android:layout_width="match_parent"
@@ -1043,41 +1044,130 @@
                 android:layout_height="wrap_content"
                 android:layout_above="@id/file_view_live_chat_text_input_area">
             </RelativeLayout>
-            <RelativeLayout
+
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/file_view_live_chat_text_input_area"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_alignParentBottom="true">
-                <EditText
-                    android:id="@+id/file_view_live_chat_text_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_toStartOf="@id/file_view_live_chat_send_button"
-                    android:background="@android:color/transparent"
-                    android:imeOptions="actionSend"
-                    android:importantForAutofill="no"
-                    android:inputType="textAutoComplete"
-                    android:maxLength="300"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp"
-                    android:singleLine="true"
-                    android:textSize="14sp" />
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical">
                 <RelativeLayout
-                    android:id="@+id/file_view_live_chat_send_button"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_width="48dp"
-                    android:layout_height="match_parent"
-                    android:layout_alignParentEnd="true">
-                    <ImageView
-                        android:contentDescription="@string/send"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_centerInParent="true"
-                        app:srcCompat="@drawable/ic_send"
-                        app:tint="?attr/colorPrimary" />
+                    android:id="@+id/file_view_live_chat_text_input_tip_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:visibility="gone">
+                    <RelativeLayout
+                        android:id="@+id/file_view_live_chat_close_tip_area_button"
+                        android:layout_width="48dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:background="?selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_centerInParent="true"
+                            android:contentDescription="@string/close"
+                            app:srcCompat="@drawable/ic_close"
+                            app:tint="@color/lightForeground" />
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="16dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/file_view_live_chat_tip_layout_amount"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="64dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_toStartOf="@id/file_view_live_chat_tip_input_currency"
+                            android:hint="@string/tip">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/file_view_live_chat_tip_input_amount"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:gravity="center_vertical|end"
+                                android:inputType="numberDecimal"
+                                android:textSize="18sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:id="@+id/file_view_live_chat_tip_input_currency"
+                            style="@style/TextView_Light"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="28dp"
+                            android:fontFamily="@font/inter"
+                            android:text="@string/lbc"
+                            android:textAllCaps="true"
+                            android:textSize="11sp" />
+                    </RelativeLayout>
                 </RelativeLayout>
-            </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/file_view_live_chat_text_input_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp">
+                    <EditText
+                        android:id="@+id/file_view_live_chat_text_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@id/file_view_live_chat_lbc_tip_button"
+                        android:background="@android:color/transparent"
+                        android:imeOptions="actionSend"
+                        android:importantForAutofill="no"
+                        android:inputType="textAutoComplete"
+                        android:maxLength="300"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp"
+                        android:singleLine="true"
+                        android:textSize="14sp" />
+
+                    <RelativeLayout
+                        android:id="@+id/file_view_live_chat_lbc_tip_button"
+                        android:layout_width="36dp"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@id/file_view_live_chat_send_button"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_centerInParent="true"
+                            android:contentDescription="@string/tip"
+                            app:srcCompat="@drawable/ic_credits" />
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/file_view_live_chat_send_button"
+                        android:layout_width="36dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentEnd="true"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_centerInParent="true"
+                            android:contentDescription="@string/send"
+                            app:srcCompat="@drawable/ic_send"
+                            app:tint="?attr/colorPrimary" />
+                    </RelativeLayout>
+                </RelativeLayout>
+            </androidx.appcompat.widget.LinearLayoutCompat>
         </RelativeLayout>
     </LinearLayout>
 
