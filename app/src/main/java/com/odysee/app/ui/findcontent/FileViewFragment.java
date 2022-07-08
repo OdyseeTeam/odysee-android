@@ -5093,6 +5093,10 @@ public class FileViewFragment extends BaseFragment implements
                 futureReactions.cancel(true);
             }
 
+            reactions.setLiked(like && !reactions.isLiked());
+            reactions.setDisliked(!like && !reactions.isDisliked());
+            updateContentReactions();
+
             Map<String, String> options = new HashMap<>();
             options.put("claim_ids", claim.getClaimId());
             options.put("type", like ? "like" : "dislike");
@@ -5103,15 +5107,14 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             try {
-                JSONObject jsonResponse = (JSONObject) Lbryio.parseResponse(Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext()));
-
-                if (jsonResponse != null && jsonResponse.has(claim.getClaimId())) {
-                    reactions.setLiked(jsonResponse.getJSONObject(claim.getClaimId()).has("like") && !reactions.isLiked());
-                    reactions.setDisliked(jsonResponse.getJSONObject(claim.getClaimId()).has("dislike") && !reactions.isDisliked());
-                    updateContentReactions();
-                }
-            } catch (LbryioRequestException | LbryioResponseException | JSONException e) {
+                Lbryio.call("reaction", "react", options, Helper.METHOD_POST, getContext());
+            } catch (LbryioRequestException | LbryioResponseException e) {
                 e.printStackTrace();
+
+                // Reset reactions to original values on error
+                reactions.setLiked(like && !reactions.isLiked());
+                reactions.setDisliked(!like && !reactions.isDisliked());
+                updateContentReactions();
             } finally {
                 loadReactions(claim);
             }
