@@ -101,8 +101,6 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
-import androidx.browser.customtabs.CustomTabColorSchemeParams;
-import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -128,10 +126,13 @@ import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.lbryinc.CustomBlockRule;
+import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -160,6 +161,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -306,6 +308,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private boolean userInstallInitialised;
     @Getter
     private boolean initialCategoriesLoaded;
+    @Getter
+    private boolean customBlockingLoaded;
     private boolean initialBlockedChannelsLoaded;
     private ActionMode actionMode;
     @Getter
@@ -447,10 +451,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     ScheduledFuture<?> scheduledSearchFuture;
     private boolean autoSearchEnabled = false;
-
     ChannelCreateDialogFragment channelCreationBottomSheet;
-
     AccountManager accountManager;
+
+    @Getter
+    private OdyseeLocale odyseeLocale;
+    @Getter
+    private Map<String, List<CustomBlockRule>> customBlockingRulesMap = new HashMap<>();
+
+    private static final String KEY_BLOCKING_LIVESTREAMS = "livestreams";
+    private static final String KEY_BLOCKING_VIDEOS = "videos";
+
+    private static final String KEY_SCOPE_COUNTRIES = "countries";
+    private static final String KEY_SCOPE_CONTINENTS = "continents";
+    private static final String KEY_SCOPE_SPECIALS = "specials";
 
     // startup stages (to be able to determine how far a user made it if startup fails)
     // and display a more useful message for troubleshooting
@@ -1934,6 +1948,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             pendingSourceTabId = 0;
         }
 
+        /**
+         * Note initial flow steps before displaying user interface elements to interact with
+         * 1. Initialise user install (initialiseUserInstall)
+         * 2. Load custom blocking rules (loadCustomBlocking)
+         * 3. Load initial categories (loadInitialCategories)
+         */
         initialiseUserInstall();
         // checkPendingOpens();
     }
@@ -2696,7 +2716,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             updateWalletBalance();
         }
 
-        if (initialCategoriesLoaded && userInstallInitialised) {
+        if (initialCategoriesLoaded && userInstallInitialised && customBlockingLoaded) {
             hideLaunchScreen();
         }
     }
@@ -2745,8 +2765,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         loadBlockedChannels();
                     }
 
-                    if (!initialCategoriesLoaded) {
-                        loadInitialCategories();
+                    if (!customBlockingLoaded) {
+                        loadCustomBlocking();
                         return;
                     }
 
@@ -2783,6 +2803,119 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     });
                 }
             });
+        }
+    }
+
+    private void loadCustomBlocking() {
+        if (!customBlockingLoaded) {
+            ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    final Map<String, List<CustomBlockRule>> rulesMap = new HashMap<>();
+                    try {
+                        // get the odysee locale
+                        JSONObject localeObject = (JSONObject) Lbryio.parseResponse(Lbryio.call("locale", "get", null));
+                        OdyseeLocale locale = new OdyseeLocale(
+                                Helper.getJSONString("country", "", localeObject),
+                                Helper.getJSONString("continent", "", localeObject),
+                                Helper.getJSONBoolean("is_eu_member", false, localeObject)
+                        );
+
+                        // load custom blocking rules
+                        JSONObject rulesObject = (JSONObject) Lbryio.parseResponse(Lbryio.call("geo", "blocked_list", null));
+                        if (rulesObject.has(KEY_BLOCKING_LIVESTREAMS)) {
+                            JSONObject baseObject = Helper.getJSONObject(KEY_BLOCKING_LIVESTREAMS, rulesObject);
+                            Iterator<String> claimIds = baseObject.keys();
+                            while (claimIds.hasNext()) {
+                                String claimId = claimIds.next();
+                                List<CustomBlockRule> rules = new ArrayList<>();
+                                JSONObject baseRulesObject = Helper.getJSONObject(claimId, baseObject);
+
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_COUNTRIES, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.country));
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_CONTINENTS, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.continent));
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_SPECIALS, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.special));
+
+                                rulesMap.put(claimId, rules);
+                            }
+                        }
+
+                        if (rulesObject.has(KEY_BLOCKING_VIDEOS)) {
+                            JSONObject baseObject = Helper.getJSONObject(KEY_BLOCKING_VIDEOS, rulesObject);
+                            Iterator<String> claimIds = baseObject.keys();
+                            while (claimIds.hasNext()) {
+                                String claimId = claimIds.next();
+                                List<CustomBlockRule> rules = new ArrayList<>();
+                                JSONObject baseRulesObject = Helper.getJSONObject(claimId, baseObject);
+
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_COUNTRIES, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.country));
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_CONTINENTS, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.continent));
+                                rules.addAll(parseCustomBlockRules(Helper.getJSONArray(KEY_SCOPE_SPECIALS, baseRulesObject),
+                                        CustomBlockRule.ContentType.livestreams, CustomBlockRule.Scope.special));
+
+                                rulesMap.put(claimId, rules);
+                            }
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                finishedLoadingCustomBlockRules(locale, rulesMap);
+                            }
+                        });
+                    } catch (LbryioRequestException | LbryioResponseException ex) {
+                        // failed to load, so we keep trying (or do we want to fail silently?)
+                        loadCustomBlocking();
+                    }
+                }
+            });
+        }
+    }
+
+    private static List<CustomBlockRule> parseCustomBlockRules(
+            JSONArray rulesList, CustomBlockRule.ContentType type, CustomBlockRule.Scope scope) {
+        List<CustomBlockRule> rules = new ArrayList<>();
+        if (rulesList != null) {
+            for (int i = 0; i < rulesList.length(); i++) {
+                try {
+                    JSONObject ruleObject = rulesList.getJSONObject(i);
+                    CustomBlockRule rule = new CustomBlockRule();
+                    rule.setType(type);
+                    rule.setScope(scope);
+                    rule.setId(Helper.getJSONString("id", null, ruleObject));
+                    rule.setTrigger(Helper.getJSONString("trigger", null, ruleObject));
+                    rule.setMessage(Helper.getJSONString("message", null, ruleObject));
+                    rule.setReason(Helper.getJSONString("reason", null, ruleObject));
+                    rules.add(rule);
+                } catch (JSONException ex) {
+                    // pass
+                }
+            }
+        }
+        return rules;
+    }
+
+    private void finishedLoadingCustomBlockRules(OdyseeLocale locale, Map<String, List<CustomBlockRule>> rulesMap) {
+        if (!Helper.isNullOrEmpty(locale.getCountry()) && !Helper.isNullOrEmpty(locale.getContinent())) {
+            // make sure the country and continent at least loaded before setting the locale property
+            odyseeLocale = locale;
+        }
+
+        customBlockingRulesMap = new HashMap<>(rulesMap);
+        customBlockingLoaded = true;
+
+        if (!initialCategoriesLoaded) {
+            loadInitialCategories();
+            return;
+        }
+
+        if (initialCategoriesLoaded && userInstallInitialised) {
+            // if other initial loads are done, hide the launch screen
+            hideLaunchScreen();
         }
     }
 

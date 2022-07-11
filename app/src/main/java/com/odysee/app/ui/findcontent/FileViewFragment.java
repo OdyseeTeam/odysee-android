@@ -174,6 +174,7 @@ import com.odysee.app.callable.BuildCommentReactOptions;
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
@@ -719,8 +720,17 @@ public class FileViewFragment extends BaseFragment implements
                     Helper.saveViewHistory(currentUrl, actualClaim);
                 }
 
-                if (Helper.isClaimBlocked(actualClaim)) {
-                    renderClaimBlocked();
+                CustomBlockRule.CustomBlockStatus status = null;
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    status = Helper.getCustomBlockedStatus(
+                            actualClaim.getClaimId(),
+                            activity.getCustomBlockingRulesMap(),
+                            activity.getOdyseeLocale());
+                }
+
+                if ((status != null && status.isBlocked()) || Helper.isClaimBlocked(actualClaim)) {
+                    renderClaimBlocked(status.getMessage());
                 } else {
                     checkAndLoadRelatedContent();
                     checkAndLoadComments();
@@ -780,7 +790,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void renderClaimBlocked() {
+    private void renderClaimBlocked(String blockedMessage) {
         Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
         Helper.setViewVisibility(layoutNothingAtLocation, View.VISIBLE);
         Helper.setViewVisibility(buttonPublishSomething, View.INVISIBLE);
@@ -788,7 +798,9 @@ public class FileViewFragment extends BaseFragment implements
         Helper.setViewVisibility(layoutDisplayArea, View.INVISIBLE);
         if (textNothingAtLocation != null) {
             textNothingAtLocation.setMovementMethod(LinkMovementMethod.getInstance());
-            textNothingAtLocation.setText(HtmlCompat.fromHtml(getString(R.string.dmca_complaint_blocked), HtmlCompat.FROM_HTML_MODE_LEGACY));
+            textNothingAtLocation.setText(
+                    !Helper.isNullOrEmpty(blockedMessage) ? blockedMessage :
+                    HtmlCompat.fromHtml(getString(R.string.dmca_complaint_blocked), HtmlCompat.FROM_HTML_MODE_LEGACY));
         }
     }
 
@@ -1287,8 +1299,18 @@ public class FileViewFragment extends BaseFragment implements
                         Helper.saveViewHistory(url, fileClaim);
                     }
 
-                    if (Helper.isClaimBlocked(fileClaim)) {
-                        renderClaimBlocked();
+                    CustomBlockRule.CustomBlockStatus status = null;
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        MainActivity activity = (MainActivity) context;
+                        status = Helper.getCustomBlockedStatus(
+                                fileClaim.getClaimId(),
+                                activity.getCustomBlockingRulesMap(),
+                                activity.getOdyseeLocale());
+                    }
+
+                    if ((status != null && status.isBlocked()) || Helper.isClaimBlocked(fileClaim)) {
+                        renderClaimBlocked(status.getMessage());
                     } else {
                         loadFile();
                         checkAndLoadRelatedContent();

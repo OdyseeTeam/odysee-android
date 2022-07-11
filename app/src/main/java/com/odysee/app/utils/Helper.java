@@ -70,6 +70,8 @@ import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.ViewHistory;
+import com.odysee.app.model.lbryinc.CustomBlockRule;
+import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.tasks.localdata.SaveUrlHistoryTask;
 import com.odysee.app.tasks.localdata.SaveViewHistoryTask;
 import okhttp3.MediaType;
@@ -377,6 +379,13 @@ public final class Helper {
             return object.has(name) && !object.isNull(name) ? object.getInt(name) : defaultValue;
         } catch (JSONException ex) {
             return defaultValue;
+        }
+    }
+    public static JSONArray getJSONArray(String name, JSONObject object) {
+        try {
+            return object.has(name) && !object.isNull(name) ? object.getJSONArray(name) : null;
+        } catch (JSONException ex) {
+            return null;
         }
     }
     public static void setViewEnabled(View view, boolean enabled) {
@@ -1003,5 +1012,41 @@ public final class Helper {
         }
 
         return hexString;
+    }
+
+    public static CustomBlockRule.CustomBlockStatus getCustomBlockedStatus(
+            String claimId, Map<String, List<CustomBlockRule>> rules, OdyseeLocale locale) {
+        if (rules == null || locale == null) {
+            return null;
+        }
+
+        CustomBlockRule.CustomBlockStatus status = new CustomBlockRule.CustomBlockStatus();
+        if (rules.containsKey(claimId)) {
+            List<CustomBlockRule> ruleList = rules.get(claimId);
+            if (ruleList != null) {
+                for (CustomBlockRule rule : ruleList) {
+                    if (CustomBlockRule.Scope.special == rule.getScope() &&
+                            "eu-only".equalsIgnoreCase(rule.getId()) && locale.isEuMember()) {
+                        status.setBlocked(true);
+                        status.setMessage(rule.getMessage());
+                        break;
+                    }
+                    if (CustomBlockRule.Scope.continent == rule.getScope() &&
+                            rule.getId().equalsIgnoreCase(locale.getContinent())) {
+                        status.setBlocked(true);
+                        status.setMessage(rule.getMessage());
+                        break;
+                    }
+                    if (CustomBlockRule.Scope.country == rule.getScope() &&
+                            rule.getId().equalsIgnoreCase(locale.getContinent())) {
+                        status.setBlocked(true);
+                        status.setMessage(rule.getMessage());
+                        break;
+                    }
+                }
+            }
+        }
+
+        return status;
     }
 }
