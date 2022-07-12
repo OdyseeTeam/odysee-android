@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingLeft="2dp"
-    android:paddingRight="2dp"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp"
     android:layout_marginBottom="4dp">
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/hyperchat_message_header"
@@ -58,13 +58,13 @@
             android:background="@color/semiTransparentPageBackground"
             android:paddingTop="2dp"
             android:paddingBottom="2dp">
-        <TextView
-            android:id="@+id/chat_message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:fontFamily="@font/inter"
-            android:textSize="12sp" />
+            <TextView
+                android:id="@+id/chat_message_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/inter"
+                android:textSize="12sp" />
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>

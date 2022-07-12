@@ -46,6 +46,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -350,6 +351,9 @@ public class FileViewFragment extends BaseFragment implements
     private View dividerRelatedContentArea;
     private View dividerDescriptionArea;
 
+    private View chatHeaderSection;
+    private View buttonChatSettings;
+    private View buttonChatHeaderClose;
     private RecyclerView chatMessageList;
     private EditText inputChatMessage;
     private View buttonSendChatMessage;
@@ -421,8 +425,11 @@ public class FileViewFragment extends BaseFragment implements
         likeReactionIcon = root.findViewById(R.id.like_icon);
         dislikeReactionIcon = root.findViewById(R.id.dislike_icon);
 
+        chatHeaderSection = root.findViewById(R.id.file_view_chat_header_section);
+        buttonChatHeaderClose = root.findViewById(R.id.chat_header_close_button);
         chatMessageList = root.findViewById(R.id.file_view_live_chat_messages);
         chatMessageList.setLayoutManager(new LinearLayoutManager(getContext()));
+        buttonChatSettings = root.findViewById(R.id.file_view_live_chat_settings_button);
         inputChatMessage = root.findViewById(R.id.file_view_live_chat_text_input);
         buttonSendChatMessage = root.findViewById(R.id.file_view_live_chat_send_button);
         buttonToggleTipArea = root.findViewById(R.id.file_view_live_chat_lbc_tip_button);
@@ -1673,6 +1680,56 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
+        buttonChatHeaderClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Context context = getContext();
+                if (context != null) {
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    sp.edit().putBoolean("com.odysee.app.force_display_chat_messages", false).commit();
+                }
+
+                chatMessageListAdapter.setDisplayMessages(false);
+                root.findViewById(R.id.chat_header_close_button).setVisibility(View.GONE);
+                buttonChatSettings.setVisibility(View.VISIBLE);
+
+                displayChatMessages(false, true);
+            }
+        });
+
+        buttonChatSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    LayoutInflater layoutInflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    // Linter warns this, but for dialogs and popup windows it is ok to pass 'null' as root
+                    @SuppressLint("InflateParams") View popupView = layoutInflater.inflate(R.layout.popup_chat_settings,null);
+                    int scaledValue = activity.getScaledValue(240);
+                    PopupWindow popupWindow = new PopupWindow(popupView, scaledValue, WindowManager.LayoutParams.WRAP_CONTENT);
+                    popupWindow.setFocusable(true);
+                    popupWindow.showAsDropDown(buttonChatSettings);
+
+                    // FIXME When more options are added, this options button will be displayed all time, so the visibility change button will need to be always displayed and its functionality be accordingly changed depending on the current state
+                    popupView.findViewById(R.id.button_change_chat_visibility).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Context context = getContext();
+                            if (context != null) {
+                                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                                sp.edit().putBoolean("com.odysee.app.force_display_chat_messages", true).commit();
+                            }
+                            popupWindow.dismiss();
+                            displayChatMessages(true, true);
+                            buttonChatHeaderClose.setVisibility(View.VISIBLE);
+                            buttonChatSettings.setVisibility(View.GONE);
+                            chatMessageListAdapter.setDisplayMessages(true);
+                        }
+                    });
+                }
+            }
+        });
+
         buttonSendChatMessage.setEnabled(false);
         buttonSendChatMessage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -2095,7 +2152,7 @@ public class FileViewFragment extends BaseFragment implements
                     Helper.setViewEnabled(actionDelete, true);
 
                     actualClaim.setFile(null);
-                    Lbry.unsetFilesForCachedClaims(Arrays.asList(actualClaim.getClaimId()));
+                    Lbry.unsetFilesForCachedClaims(Collections.singletonList(actualClaim.getClaimId()));
 
                     restoreMainActionButton();
                 }
@@ -2113,12 +2170,34 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void setLivestreamChatEnabled(boolean enabled) {
-        Helper.setViewVisibility(layoutLivestreamChat, enabled ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(layoutActionsArea, !enabled ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(layoutCommentsArea, !enabled ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(layoutRelatedContentArea, !enabled ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(dividerDescriptionArea, !enabled ? View.VISIBLE : View.GONE);
-        Helper.setViewVisibility(dividerRelatedContentArea, !enabled ? View.VISIBLE : View.GONE);
+        displayChatMessages(enabled, enabled);
+    }
+
+    /**
+     *
+     * @param display false to hide messages list
+     * @param chatEnabled
+     */
+    private void displayChatMessages(boolean display, boolean chatEnabled) {
+        Context ctx = getContext();
+
+        boolean forceDisplay = false;
+        if (ctx != null) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+            forceDisplay = sp.getBoolean("com.odysee.app.force_display_chat_messages", false);
+        }
+
+        boolean shouldDisplay = display && forceDisplay;
+        chatHeaderSection.setVisibility(chatEnabled ? View.VISIBLE : View.GONE);
+        buttonChatSettings.setVisibility(!shouldDisplay ? View.VISIBLE : View.GONE);
+        buttonChatHeaderClose.setVisibility(shouldDisplay ? View.VISIBLE : View.GONE);
+
+        Helper.setViewVisibility(layoutLivestreamChat, shouldDisplay && chatEnabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutActionsArea, !shouldDisplay ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutCommentsArea, !shouldDisplay && !chatEnabled ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(layoutRelatedContentArea, !shouldDisplay ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(dividerDescriptionArea, !shouldDisplay ? View.VISIBLE : View.GONE);
+        Helper.setViewVisibility(dividerRelatedContentArea, !shouldDisplay ? View.VISIBLE : View.GONE);
     }
 
     private void renderClaim() {
@@ -5148,12 +5227,19 @@ public class FileViewFragment extends BaseFragment implements
                     comment.setHandler(chatMemberClickHandler);
                 }
 
-                chatMessageListAdapter = new ChatMessageListAdapter(comments, getContext());
-                if (actualClaim.getSigningChannel() != null) {
-                    chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
+                Context context = getContext();
+                if (context != null) {
+                    chatMessageListAdapter = new ChatMessageListAdapter(comments, context);
+                    if (actualClaim.getSigningChannel() != null) {
+                        chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
+                    }
+                    chatMessageList.setAdapter(chatMessageListAdapter);
+                    chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
+
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+                    boolean forceDisplay = sp.getBoolean("com.odysee.app.force_display_chat_messages", false);
+                    chatMessageListAdapter.setDisplayMessages(forceDisplay);
                 }
-                chatMessageList.setAdapter(chatMessageListAdapter);
-                chatMessageList.scrollToPosition(chatMessageListAdapter.getItemCount() - 1);
 
                 checkWebSocketClient();
             }

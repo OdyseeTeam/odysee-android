@@ -169,6 +169,8 @@
     <string name="wait_while_channels_loaded">Please wait while we load your channels.</string>
     <string name="create_channel_for_chat">Please create a channel before sending chat messages.</string>
     <string name="could_not_send_chat_message">Your chat message could not be sent at this time. Please try again later.</string>
+    <string name="live_chat">Live Chat</string>
+    <string name="show_chat_messages">Show chat messages</string>
 
     <string name="no_views_count">No views</string>
     <plurals name="view_count">
