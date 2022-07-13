@@ -21,6 +21,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class UploadImageTask extends AsyncTask<Void, Void, String> {
+    private static final String UPLOAD_CDN_ENDPOINT = "https://thumbs.odycdn.com/upload";
     private final String filePath;
     private final View progressView;
     private final UploadThumbnailHandler handler;
@@ -50,7 +51,7 @@ public class UploadImageTask extends AsyncTask<Void, Void, String> {
                     addFormDataPart("name", Helper.makeid(24)).
                     addFormDataPart("file", fileName, RequestBody.create(file, MediaType.parse(fileType))).
                     build();
-            Request request = new Request.Builder().url("https://spee.ch/api/claim/publish").post(body).build();
+            Request request = new Request.Builder().url(UPLOAD_CDN_ENDPOINT).post(body).build();
             OkHttpClient client = new OkHttpClient.Builder().
                     writeTimeout(300, TimeUnit.SECONDS).
                     readTimeout(300, TimeUnit.SECONDS).
