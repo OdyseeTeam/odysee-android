@@ -78,18 +78,14 @@ import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.TracksInfo;
-import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
+import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 //import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides;
-import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides.TrackSelectionOverride;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
@@ -2452,7 +2448,7 @@ public class FileViewFragment extends BaseFragment implements
         if (MainActivity.appPlayer == null && context != null) {
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.CONTENT_TYPE_MOVIE)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                     .build();
 
             MainActivity.appPlayer = new ExoPlayer.Builder(context).build();
@@ -2766,65 +2762,27 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void setPlayerQuality(Player player, int quality) {
-        TracksInfo tracksInfo = player.getCurrentTracksInfo();
-        int selectedQuality = 0;
+        for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
+            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
 
-        for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
-            if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
-            TrackGroup group = groupInfo.getTrackGroup();
-
-            TrackSelectionOverrides overrides;
             if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
-                overrides = new TrackSelectionOverrides.Builder()
-                        .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                        .build();
-                // Force it to AUTO_QUALITY_ID to override the default quality setting on non-transcoded videos
-                selectedQuality = AUTO_QUALITY_ID;
+                player.setTrackSelectionParameters(
+                        player.getTrackSelectionParameters()
+                                .buildUpon()
+                                .clearVideoSizeConstraints()
+                                .build()
+                );
             } else {
-                ArrayList<Integer> availableQualities = new ArrayList<>();
-                for (int i = 0; i < group.length; i++) {
-                    availableQualities.add(group.getFormat(i).height);
-                }
-                int selectedQualityIndex;
-                // Check if the chosen quality is lower than the lowest available quality
-                int lowestQuality = Collections.min(availableQualities);
-                if (quality <= lowestQuality) { // <= short path for when the quality matches the lowest
-                    selectedQuality = lowestQuality;
-                    selectedQualityIndex = availableQualities.indexOf(lowestQuality);
-                } else {
-                    // Otherwise, find the highest available quality that is less than the chosen quality
-                    for (int i = 0; i < availableQualities.size(); i++) {
-                        int q = availableQualities.get(i);
-                        if (q <= quality && groupInfo.isTrackSupported(i) && q > selectedQuality) {
-                            selectedQuality = q;
-                        }
-                    }
-                    selectedQualityIndex = availableQualities.indexOf(selectedQuality);
-                }
-
-                if (selectedQualityIndex != -1) {
-                    TrackSelectionOverride override = new TrackSelectionOverride(
-                            group, Collections.singletonList(selectedQualityIndex));
-                    overrides = new TrackSelectionOverrides.Builder()
-                            .addOverride(override)
-                            .build();
-                } else { // If quality can't be found use Auto quality
-                    overrides = new TrackSelectionOverrides.Builder()
-                            .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                            .build();
-                }
+                player.setTrackSelectionParameters(
+                        player.getTrackSelectionParameters()
+                                .buildUpon()
+                                .setMaxVideoSize(Integer.MAX_VALUE, quality+1)
+                                .build()
+                );
             }
-            player.setTrackSelectionParameters(
-                    player
-                            .getTrackSelectionParameters()
-                            .buildUpon()
-                            .setTrackSelectionOverrides(overrides)
-                            .build()
-            );
 
-            MainActivity.videoQuality = selectedQuality;
+            MainActivity.videoQuality = quality;
             updateQualityView(getView());
-
             break;
         }
     }
