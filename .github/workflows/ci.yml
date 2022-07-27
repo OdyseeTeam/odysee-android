@@ -37,6 +37,9 @@ jobs:
       - name: Copy sample google-services.json file
         run: cp app/google-services.sample.json app/google-services.json
 
+      - name: Install NDK version 21.0.6113669
+        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.0.6113669"
+
       - name: Build
         run: ./gradlew lintVitalFullRelease assembleFullDebug --stacktrace
 
@@ -73,6 +76,9 @@ jobs:
           echo "$PGP_PRIVATE_KEY" | gpg --batch --import
           git secret reveal
 
+      - name: Install NDK version 21.0.6113669
+        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.0.6113669"
+
       - name: Build
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }} 
@@ -108,6 +114,9 @@ jobs:
 
       - name: Remove Twitter properties resValue lines
         run: sed -i '/\s*Properties twitterProps/,/\s*resValue "string", "TWITTER_CONSUMER_SECRET"/d' app/build.gradle
+
+      - name: Install NDK version 21.0.6113669
+        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.0.6113669"
 
       - name: Build
         run: ./gradlew lintVitalFossRelease assembleFossDebug --stacktrace
