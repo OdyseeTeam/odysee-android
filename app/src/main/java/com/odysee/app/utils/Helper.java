@@ -56,9 +56,7 @@ import java.util.Random;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.TracksInfo;
-import com.google.android.exoplayer2.TracksInfo.TrackGroupInfo;
-import com.google.android.exoplayer2.source.TrackGroup;
+import com.google.android.exoplayer2.Tracks;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.data.DatabaseHelper;
@@ -127,14 +125,12 @@ public final class Helper {
         menu.add(QUALITIES_GROUP_ID, 0, ++order, R.string.auto_quality);
 
         if (isTranscoded) {
-            TracksInfo tracksInfo = player.getCurrentTracksInfo();
-            for (TrackGroupInfo groupInfo : tracksInfo.getTrackGroupInfos()) {
-                if (groupInfo.getTrackType() != C.TRACK_TYPE_VIDEO) continue;
-                TrackGroup group = groupInfo.getTrackGroup();
+            for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
+                if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
 
-                for (int i = 0; i < group.length; i++) {
-                    if (groupInfo.isTrackSupported(i)) {
-                        int quality = group.getFormat(i).height;
+                for (int i = 0; i < trackGroup.length; i++) {
+                    if (trackGroup.isTrackSupported(i)) {
+                        int quality = trackGroup.getTrackFormat(i).height;
                         menu.add(QUALITIES_GROUP_ID, quality, ++order, String.format("%sp", quality));
                     }
                 }
