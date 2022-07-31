@@ -48,8 +48,8 @@ public class UploadImageTask extends AsyncTask<Void, Void, String> {
             }
             String fileType = String.format("image/%s", extension);
             RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM).
-                    addFormDataPart("name", Helper.makeid(24)).
-                    addFormDataPart("file", fileName, RequestBody.create(file, MediaType.parse(fileType))).
+                    addFormDataPart("upload", Helper.makeid(24)).
+                    addFormDataPart("file-input", fileName, RequestBody.create(file, MediaType.parse(fileType))).
                     build();
             Request request = new Request.Builder().url(UPLOAD_CDN_ENDPOINT).post(body).build();
             OkHttpClient client = new OkHttpClient.Builder().
@@ -58,24 +58,19 @@ public class UploadImageTask extends AsyncTask<Void, Void, String> {
                     build();
             Response response = client.newCall(request).execute();
             JSONObject json = new JSONObject(response.body().string());
-            if (json.has("success") && Helper.getJSONBoolean("success", false, json)) {
-                JSONObject data = json.getJSONObject("data");
-                String url = Helper.getJSONString("url", null, data);
-                if (Helper.isNullOrEmpty(url)) {
+            if (json.has("type") && "success".equalsIgnoreCase(Helper.getJSONString("type", "", json))) {
+                String serveUrl = Helper.getJSONString("url", null, json);
+                if (Helper.isNullOrEmpty(serveUrl)) {
                     throw new LbryResponseException("Invalid thumbnail url returned after upload.");
                 }
 
-                thumbnailUrl = String.format("%s.%s", url, extension);
-            } else if (json.has("error") || json.has("message")) {
-                JSONObject error = Helper.getJSONObject("error", json);
-                String message = null;
-                if (error != null) {
-                    message = Helper.getJSONString("message", null, error);
-                }
-                if (Helper.isNullOrEmpty(message)) {
-                    message  = Helper.getJSONString("message", null, json);
-                }
+                thumbnailUrl = serveUrl; //String.format("%s.%s", url, extension);
+            } else if (json.has("message")) { // possible error message
+                String message = Helper.getJSONString("message", null, json);
                 throw new LbryResponseException(Helper.isNullOrEmpty(message) ? "The image failed to upload." : message);
+            } else {
+                // type is not success and no error message found
+                throw new LbryResponseException("An unknown error occurred during the image upload.");
             }
         } catch (IOException | JSONException | LbryResponseException ex) {
             error = ex;
