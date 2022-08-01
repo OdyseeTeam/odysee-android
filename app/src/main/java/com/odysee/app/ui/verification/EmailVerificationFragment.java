@@ -20,10 +20,11 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.tasks.GenericTaskHandler;
@@ -50,6 +51,7 @@ public class EmailVerificationFragment extends Fragment {
     private String currentEmail;
 
     private ScheduledExecutorService emailVerifyCheckScheduler;
+    private ScheduledFuture<?> emailVerifyCheckFuture;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -155,8 +157,12 @@ public class EmailVerificationFragment extends Fragment {
     }
 
     private void scheduleEmailVerify() {
-        emailVerifyCheckScheduler = Executors.newSingleThreadScheduledExecutor();
-        emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
+        Activity activity = getActivity();
+        if (activity != null && emailVerifyCheckScheduler == null) {
+            OdyseeApp app = (OdyseeApp) activity.getApplication();
+            emailVerifyCheckScheduler = app.getScheduledExecutor();
+        }
+        emailVerifyCheckFuture = emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 checkEmailVerified();
@@ -174,19 +180,15 @@ public class EmailVerificationFragment extends Fragment {
                 }
                 layoutCollect.setVisibility(View.GONE);
                 layoutVerify.setVisibility(View.GONE);
-                if (emailVerifyCheckScheduler != null) {
-                    emailVerifyCheckScheduler.shutdownNow();
-                    emailVerifyCheckScheduler = null;
-                }
             }
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private void editEmail() {
-        if (emailVerifyCheckScheduler != null) {
-            emailVerifyCheckScheduler.shutdownNow();
-            emailVerifyCheckScheduler = null;
+        if (emailVerifyCheckFuture != null) {
+            emailVerifyCheckFuture.cancel(true);
+            emailVerifyCheckFuture = null;
         }
 
         if (listener != null) {

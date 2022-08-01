@@ -68,8 +68,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.odysee.app.utils.Lbryio.TAG;
-
 public class SignInActivity extends Activity {
     public static final String ACTION_USER_FINISHED_SIGN_IN = "com.odysee.app.USER_SIGNED_IN_SUCCESSFULLY";
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
@@ -138,7 +136,7 @@ public class SignInActivity extends Activity {
 
         setContentView(R.layout.activity_sign_in);
 
-        executor = Executors.newSingleThreadExecutor();
+        executor = ((OdyseeApp) getApplication()).getExecutor();
 
         layoutCollect = findViewById(R.id.signin_form);
         textTitle = findViewById(R.id.signin_title);
@@ -604,7 +602,10 @@ public class SignInActivity extends Activity {
     }
 
     private void scheduleEmailVerify() {
-        emailVerifyCheckScheduler = Executors.newSingleThreadScheduledExecutor();
+        if (emailVerifyCheckScheduler == null) {
+            OdyseeApp app = (OdyseeApp) getApplication();
+            emailVerifyCheckScheduler = app.getScheduledExecutor();
+        }
         emailVerifyFuture = emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -622,10 +623,6 @@ public class SignInActivity extends Activity {
                 if (emailVerifyFuture != null) {
                     emailVerifyFuture.cancel(true);
                     emailVerifyFuture = null;
-                }
-                if (emailVerifyCheckScheduler != null) {
-                    emailVerifyCheckScheduler.shutdownNow();
-                    emailVerifyCheckScheduler = null;
                 }
 
                 addOdyseeAccountExplicitly(currentEmail);
@@ -729,9 +726,9 @@ public class SignInActivity extends Activity {
     }
 
     private void editEmail() {
-        if (emailVerifyCheckScheduler != null) {
-            emailVerifyCheckScheduler.shutdownNow();
-            emailVerifyCheckScheduler = null;
+        if (emailVerifyFuture != null) {
+            emailVerifyFuture.cancel(true);
+            emailVerifyFuture = null;
         }
 
         inputPassword.setText("");

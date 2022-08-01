@@ -37,6 +37,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.odysee.app.FirstRunActivity;
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.SignInActivity;
 import com.odysee.app.callable.UserExistsWithPassword;
@@ -114,7 +115,7 @@ public class SignInFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_sign_in, container, false);
 
-        executor = Executors.newSingleThreadExecutor();
+        executor = ((OdyseeApp) getActivity().getApplication()).getExecutor();
 
         layoutCollect = root.findViewById(R.id.signin_form);
         textTitle = root.findViewById(R.id.signin_title);
@@ -603,7 +604,11 @@ public class SignInFragment extends Fragment {
     }
 
     private void scheduleEmailVerify() {
-        emailVerifyCheckScheduler = Executors.newSingleThreadScheduledExecutor();
+        Activity activity = getActivity();
+        if (activity != null && emailVerifyCheckScheduler == null) {
+            OdyseeApp app = (OdyseeApp) activity.getApplication();
+            emailVerifyCheckScheduler = app.getScheduledExecutor();
+        }
         emailVerifyFuture = emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -621,10 +626,6 @@ public class SignInFragment extends Fragment {
                 if (emailVerifyFuture != null) {
                     emailVerifyFuture.cancel(true);
                     emailVerifyFuture = null;
-                }
-                if (emailVerifyCheckScheduler != null) {
-                    emailVerifyCheckScheduler.shutdownNow();
-                    emailVerifyCheckScheduler = null;
                 }
 
                 addOdyseeAccountExplicitly(currentEmail);
@@ -725,8 +726,8 @@ public class SignInFragment extends Fragment {
     }
 
     private void editEmail() {
-        if (emailVerifyCheckScheduler != null) {
-            emailVerifyCheckScheduler.shutdownNow();
+        if (emailVerifyFuture != null) {
+            emailVerifyFuture.cancel(true);
             emailVerifyCheckScheduler = null;
         }
 
