@@ -74,7 +74,6 @@
     <string name="delete_file">Elimina el fitxer</string>
     <string name="confirm_delete_file_message">Segur que vols esborrar aquest fitxer del teu dispositiu?</string>
     <string name="unable_to_view_url">Error en carregar %1$s. Sisplau, torna a intentar-ho més tard.</string>
-    <string name="no_cast_session_available">No hi ha cap sessió de cast disponible en aquest moment.</string>
     <string name="delete_content">Eliminar contingut?</string>
     <string name="confirm_delete_content_message">Segur que vols deixar de publicar aquest contingut? No s\'esborrarà cap fitxer del teu dispositiu.</string>
     <string name="content_deleted">El contingut s\'ha eliminat correctament de la cadena de blocs</string>

@@ -74,7 +74,6 @@
     <string name="delete_file">Deletar arquivo</string>
     <string name="confirm_delete_file_message">Tem certeza de que deseja remover este arquivo do seu dispositivo?</string>
     <string name="unable_to_view_url">Falha ao carregar %1$s. Por favor, tente novamente mais tarde.</string>
-    <string name="no_cast_session_available">Não há sessão de selecionados disponível no momento.</string>
     <string name="delete_content">Deletar conteúdo?</string>
     <string name="confirm_delete_content_message">Tem certeza de que deseja cancelar a publicação deste conteúdo? Nenhum arquivo será removido do seu dispositivo.</string>
     <string name="content_deleted">O conteúdo foi excluído com sucesso da blockchain.</string>

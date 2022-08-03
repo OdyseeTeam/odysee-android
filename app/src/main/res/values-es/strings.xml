@@ -74,7 +74,6 @@
     <string name="delete_file">Eliminar archivo</string>
     <string name="confirm_delete_file_message">¿Seguro que quieres eliminar este archivo de tu dispositivo?</string>
     <string name="unable_to_view_url">Falló al cargar %1$s. Por favor, inténtelo de nuevo más tarde.</string>
-    <string name="no_cast_session_available">No hay sesión de reparto disponible en este momento.</string>
     <string name="delete_content">¿Eliminar contenido?</string>
     <string name="confirm_delete_content_message">¿Estás seguro de que deseas publicar este contenido? No se eliminarán archivos de su dispositivo.</string>
     <string name="content_deleted">El contenido se eliminó con éxito de la cadena de bloques.</string>

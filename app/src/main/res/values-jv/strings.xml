@@ -74,7 +74,6 @@
     <string name="delete_file">Busak file</string>
     <string name="confirm_delete_file_message">Apa sampeyan pengin ngilangi file iki saka piranti sampeyan?</string>
     <string name="unable_to_view_url">Gagal mbukak %1$s. Coba maneh mengko.</string>
-    <string name="no_cast_session_available">Ora ana sesi cast ing wektu iki.</string>
     <string name="delete_content">Mbusak konten?</string>
     <string name="confirm_delete_content_message">Apa sampeyan pengin pengin nggawe konten iki? Ora ana file sing bakal dicopot saka piranti sampeyan.</string>
     <string name="content_deleted">Konten semalat bisa diilangi saka blockchain.</string>

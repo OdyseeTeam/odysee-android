@@ -73,7 +73,6 @@
     <string name="delete_file">Xóa file</string>
     <string name="confirm_delete_file_message">Bạn có chắc chắn muốn xóa tệp này khỏi thiết bị của mình không?</string>
     <string name="unable_to_view_url">Không thể tải %1$s. Vui lòng thử lại sau</string>
-    <string name="no_cast_session_available">Không có buổi biểu diễn có sẵn tại thời gian này</string>
     <string name="delete_content">Xóa nội dung này?</string>
     <string name="confirm_delete_content_message">Bạn có chắc chắn muốn không xuất bản nội dung này? Không có tập tin sẽ bị xóa khỏi thiết bị của bạn.</string>
     <string name="content_deleted">Nội dung đã được xóa thành công khỏi blockchain.</string>

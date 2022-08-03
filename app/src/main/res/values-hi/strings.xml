@@ -74,7 +74,6 @@
     <string name="delete_file">फाइल को हटाएं</string>
     <string name="confirm_delete_file_message">क्या आप यकीनन इस फाइल को अपनी डिवाइस से हटाना चाहते हैं?</string>
     <string name="unable_to_view_url">लोड करने में असफल %1$s. कृपया कुछ देर में प्रयास करें</string>
-    <string name="no_cast_session_available">इस समय कोई भी कास्ट सेशन उपलब्ध नहीं है</string>
     <string name="delete_content">सामग्री को हटाए?</string>
     <string name="confirm_delete_content_message">क्या आप वाकई इस सामग्री को अनपब्लिश करना चाहते हैं? कोई भी फाइल आपकी डिवाइस से नहीं हटेगी।</string>
     <string name="content_deleted">यह सामग्री सफलतापूर्वक ब्लॉकचेन से हटा दी गई है</string>

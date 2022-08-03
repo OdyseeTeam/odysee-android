@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Tracks;
 import com.odysee.app.MainActivity;
@@ -124,7 +125,7 @@ public final class Helper {
         int order = 0;
         menu.add(QUALITIES_GROUP_ID, 0, ++order, R.string.auto_quality);
 
-        if (isTranscoded) {
+        if (isTranscoded && player instanceof ExoPlayer /* Not CastPlayer */) {
             for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
                 if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
 

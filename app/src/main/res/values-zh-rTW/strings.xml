@@ -74,7 +74,6 @@
     <string name="delete_file">刪除檔案</string>
     <string name="confirm_delete_file_message">你確定要移除裝置上的這個檔案嗎？</string>
     <string name="unable_to_view_url">載入 %1$s 失敗。請稍後再試。</string>
-    <string name="no_cast_session_available"> 目前不支援cast session。</string>
     <string name="delete_content">刪除內容？</string>
     <string name="confirm_delete_content_message">你確定要取消發佈這內容嗎？這不會移除裝置上的檔案。</string>
     <string name="content_deleted">該內容已成功自區塊鏈移除。</string>

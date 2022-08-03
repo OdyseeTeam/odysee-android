@@ -198,6 +198,12 @@
                             app:tint="@color/actionBarForeground" />
                     </RelativeLayout>
 
+                    <androidx.mediarouter.app.MediaRouteButton
+                        android:id="@+id/app_bar_media_route_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
+
                     <RelativeLayout
                         android:id="@+id/profile_button"
                         android:clickable="true"
