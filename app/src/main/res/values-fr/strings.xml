@@ -74,7 +74,6 @@
     <string name="delete_file">Supprimer le fichier</string>
     <string name="confirm_delete_file_message">Êtes-vous sûr de vouloir supprimer ce fichier de votre appareil ?</string>
     <string name="unable_to_view_url">Échec du chargement %1$s. Veuillez réessayer plus tard.</string>
-    <string name="no_cast_session_available">Il n’y a pas de session de casting disponible pour le moment.</string>
     <string name="delete_content">Supprimer le contenu?</string>
     <string name="confirm_delete_content_message">Voulez-vous vraiment annuler la publication de ce contenu? Aucun fichier ne sera supprimé de votre appareil.</string>
     <string name="content_deleted">Le contenu a été supprimé avec succès de la blockchain.</string>

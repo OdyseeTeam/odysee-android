@@ -74,7 +74,6 @@
     <string name="delete_file">Usuń plik</string>
     <string name="confirm_delete_file_message">Czy na pewno chcesz usunąć ten plik ze swojego urządzenia?</string>
     <string name="unable_to_view_url">Nie udało się załadować %1$s. Spróbuj ponownie później.</string>
-    <string name="no_cast_session_available">W tej chwili nie ma dostępnej sesji przesyłania.</string>
     <string name="delete_content">Usunąć zawartość?</string>
     <string name="confirm_delete_content_message">Czy na pewno chcesz cofnąć publikację tej zawartości? Żadne pliki nie zostaną usunięte z Twojego urządzenia.</string>
     <string name="content_deleted">Treść została pomyślnie usunięta z blockchaina.</string>

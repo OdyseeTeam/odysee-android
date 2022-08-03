@@ -72,7 +72,6 @@
     <string name="delete_file">Lösche Datei</string>
     <string name="confirm_delete_file_message">Sind Sie sich sicher, dass sie diese Datei von Ihrem Gerät löschen möchten?</string>
     <string name="unable_to_view_url">Laden fehlgeschlagen %1$s. Bitte versuche es später erneut.</string>
-    <string name="no_cast_session_available">Derzeit ist keine Besetzungssitzung verfügbar.</string>
     <string name="delete_content">Inhalt löschen?</string>
     <string name="confirm_delete_content_message">Möchten Sie diesen Inhalt wirklich nicht veröffentlichen? Es werden keine Dateien von Ihrem Gerät entfernt.</string>
     <string name="content_deleted">Der Inhalt wurde erfolgreich aus der Blockchain gelöscht.</string>

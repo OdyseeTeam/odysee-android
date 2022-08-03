@@ -150,7 +150,7 @@
     <string name="delete_file">Delete file</string>
     <string name="confirm_delete_file_message">Are you sure you want to remove this file from your device?</string>
     <string name="unable_to_view_url">Failed to load %1$s. Please try again later.</string>
-    <string name="no_cast_session_available">There is no cast session available at this time.</string>
+    <string name="cast_introductory_overlay_text">Touch to cast media to your TV</string>
     <string name="delete_content">Delete content?</string>
     <string name="confirm_delete_content_message">Are you sure you want to unpublish this content? No files will be removed from your device.</string>
     <string name="content_deleted">The content was successfully deleted from the blockchain.</string>

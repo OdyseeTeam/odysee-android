@@ -77,7 +77,6 @@ import androidx.annotation.AnyThread;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
@@ -114,6 +113,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.media.session.MediaButtonReceiver;
+import androidx.mediarouter.app.MediaRouteButton;
 import androidx.preference.PreferenceManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -246,6 +246,7 @@ import com.odysee.app.ui.findcontent.SearchFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
+import com.odysee.app.utils.CastHelper;
 import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.FirebaseMessagingToken;
 import com.odysee.app.utils.Helper;
@@ -253,6 +254,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.PlayerManager;
 import com.odysee.app.utils.PurchasedChecker;
 import com.odysee.app.utils.Utils;
 import com.odysee.app.utils.VerificationSkipQueue;
@@ -289,11 +291,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private VerificationSkipQueue verificationSkipQueue;
 
-    public static ExoPlayer appPlayer;
+    public static PlayerManager playerManager;
     public static Cache playerCache;
     public static boolean playerReassigned;
-//    public CastContext castContext;
-//    public static CastPlayer castPlayer;
+    public boolean mediaRouteButtonVisible;
+    public MediaRouteButton appBarMediaRouteButton;
+    public MediaRouteButton playerMediaRouteButton;
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
     public static String nowPlayingClaimUrl;
@@ -332,6 +335,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Getter
     private String firebaseMessagingToken;
+
+    @Getter
+    private CastHelper castHelper;
 
     private NotificationListAdapter notificationListAdapter;
 
@@ -611,7 +617,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 .setMediaDescriptionAdapter(new PlayerNotificationDescriptionAdapter()).build();
 
         // TODO: Check Google Play Services availability
-        // castContext = CastContext.getSharedInstance(this);
+        // Listener here is not called in foss build
+        appBarMediaRouteButton = findViewById(R.id.app_bar_media_route_button);
+        castHelper = new CastHelper(this, appBarMediaRouteButton, new CastHelper.Listener() {
+            @Override
+            public void updateMediaRouteButtonVisibility(boolean isVisible) {
+                mediaRouteButtonVisible = isVisible;
+                appBarMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+                if (playerMediaRouteButton != null) {
+                    playerMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+                }
+            }
+        });
+        castHelper.setUpCastButton(appBarMediaRouteButton);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.content_main), new OnApplyWindowInsetsListener() {
             @Override
@@ -1250,8 +1268,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
      * Call this method when starting a new activity to avoid display glitches when user re-opens app from picture-in-picture
      */
     private void clearPlayingPlayer() {
-        if (appPlayer != null && appPlayer.isPlaying()) {
-            appPlayer.stop();
+        if (playerManager != null && playerManager.getCurrentPlayer().isPlaying()) {
+            playerManager.getCurrentPlayer().stop();
             clearNowPlayingClaim();
         }
     }
@@ -1687,7 +1705,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
         PlayerView pipPlayer = findViewById(R.id.pip_player);
-        pipPlayer.setPlayer(appPlayer);
+        pipPlayer.setPlayer(playerManager.getCurrentPlayer());
         pipPlayer.setUseController(false);
         pipPlayerContainer.setVisibility(View.VISIBLE);
         playerReassigned = true;
@@ -1745,7 +1763,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (view != null) {
             view.setVisibility(View.VISIBLE);
             view.setPlayer(null);
-            view.setPlayer(MainActivity.appPlayer);
+            view.setPlayer(playerManager.getCurrentPlayer());
         }
     }
 
@@ -1776,10 +1794,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public static void stopExoplayer() {
-        if (appPlayer != null) {
-            appPlayer.stop(true);
-            appPlayer.release();
-            appPlayer = null;
+        if (playerManager != null) {
+            playerManager.stopPlayers();
+            playerManager = null;
         }
         if (playerCache != null) {
             playerCache.release();
@@ -1924,6 +1941,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         updateMiniPlayerMargins(findViewById(R.id.bottom_navigation).getVisibility() == View.VISIBLE);
         enteringPIPMode = false;
 
+        castHelper.addCastStateListener();
         checkNowPlaying();
 
         if (isSignedIn())
@@ -1959,7 +1977,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void displayCurrentlyPlayingVideo() {
-        if (appPlayer != null && appPlayer.isPlaying() && !isMiniPlayerVisible()) {
+        if (playerManager != null && playerManager.getCurrentPlayer().isPlaying() && !isMiniPlayerVisible()) {
             Fragment fragment = getSupportFragmentManager().findFragmentByTag(FILE_VIEW_TAG);
             if (fragment != null) {
                 updateCurrentDisplayFragment(fragment);
@@ -2002,15 +2020,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     protected void onPause() {
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
-        if (!enteringPIPMode && !inPictureInPictureMode && appPlayer != null && !isBackgroundPlaybackEnabled()) {
-            appPlayer.setPlayWhenReady(false);
+        castHelper.removeCastStateListener();
+        if (!enteringPIPMode && !inPictureInPictureMode && playerManager != null && !isBackgroundPlaybackEnabled()) {
+            playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
         super.onPause();
     }
 
     public static void suspendGlobalPlayer(Context context) {
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.setPlayWhenReady(false);
+        if (playerManager != null) {
+            playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
         if (context instanceof MainActivity) {
             ((MainActivity) context).hideGlobalNowPlaying();
@@ -2389,10 +2408,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             ((TextView) findViewById(R.id.global_now_playing_title)).setText(nowPlayingClaim.getTitle());
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
-        if (appPlayer != null && !playerReassigned) {
+        if (playerManager != null && !playerReassigned) {
             PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
-            playerView.setPlayer(appPlayer);
+            playerView.setPlayer(playerManager.getCurrentPlayer());
             playerView.setUseController(false);
             playerReassigned = true;
 
@@ -2553,7 +2572,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(), MediaButtonReceiver.class);
         mediaSession = new MediaSessionCompat(this, "LBRYMediaSession", mediaButtonReceiver, null);
         MediaSessionConnector connector = new MediaSessionConnector(mediaSession);
-        connector.setPlayer(MainActivity.appPlayer);
+        connector.setPlayer(playerManager.getCurrentPlayer());
         mediaSession.setActive(true);
     }
 
@@ -2567,7 +2586,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void initPlaybackNotification() {
         if (isBackgroundPlaybackEnabled()) {
-            playerNotificationManager.setPlayer(MainActivity.appPlayer);
+            playerNotificationManager.setPlayer(playerManager.getCurrentPlayer());
             if (mediaSession != null) {
                 playerNotificationManager.setMediaSessionToken(mediaSession.getSessionToken());
             }
@@ -3754,8 +3773,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
 
     public void driveUserSignIn() {
-        if (MainActivity.appPlayer != null && MainActivity.appPlayer.isPlaying()) {
-            MainActivity.appPlayer.pause();
+        if (playerManager != null && playerManager.getCurrentPlayer().isPlaying()) {
+            playerManager.getCurrentPlayer().pause();
         }
         Intent intent = new Intent(this, SignInActivity.class);
         startActivity(intent);
@@ -4210,7 +4229,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (startingPermissionRequest) {
             return;
         }
-        if (appPlayer != null && appPlayer.isPlaying()) {
+        if (playerManager != null && playerManager.getCurrentPlayer().isPlaying()) {
             enterPIPMode();
         }
     }
@@ -4221,7 +4240,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                appPlayer != null &&
+                playerManager != null &&
                 !startingFilePickerActivity &&
                 !startingSignInFlowActivity) {
             enteringPIPMode = true;
@@ -4290,8 +4309,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.miniplayer).setVisibility(View.GONE);
         ((TextView) findViewById(R.id.global_now_playing_title)).setText(null);
         ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(null);
-        if (appPlayer != null) {
-            appPlayer.setPlayWhenReady(false);
+        if (playerManager != null) {
+            playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
     }
 
@@ -4318,9 +4337,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     protected void onStop() {
-        if (appPlayer != null && inPictureInPictureMode &&
+        if (playerManager != null && inPictureInPictureMode &&
                 (isBackgroundPlaybackEnabled() && !isContinueBackgroundPlaybackPIPModeEnabled())) {
-            appPlayer.setPlayWhenReady(false);
+            playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
         if (inPictureInPictureMode) {
             MainActivity.playerReassigned = true;

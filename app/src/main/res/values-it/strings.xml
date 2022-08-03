@@ -74,7 +74,6 @@
     <string name="delete_file">Cancella file</string>
     <string name="confirm_delete_file_message">Sei sicuro di voler rimuovere questo file dal tuo dispositivo?</string>
     <string name="unable_to_view_url">Impossibile caricare %1$s. Per favore riprovare più tardi.</string>
-    <string name="no_cast_session_available">Non c\'è una sessione disponibile al momento.</string>
     <string name="delete_content">Eliminare contenuto?</string>
     <string name="confirm_delete_content_message">Sei sicuro di ritirare questo contenuto? Nessun file verrà rimosso dal tuo dispositivo.</string>
     <string name="content_deleted">Il contenuto è stato eliminato dalla blockchain.</string>

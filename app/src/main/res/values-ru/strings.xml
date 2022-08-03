@@ -74,7 +74,6 @@
     <string name="delete_file">Удалить файл</string>
     <string name="confirm_delete_file_message">Вы уверены, что хотите удалить этот файл с Вашего устройства?</string>
     <string name="unable_to_view_url">Не удалось загрузить %1$s. Пожалуйста, попробуйте ещё раз позже. </string>
-    <string name="no_cast_session_available">Каст сессия недоступна сейчас.</string>
     <string name="delete_content">Удалить материал?</string>
     <string name="confirm_delete_content_message">Вы уверены, что хотите отменить публикацию? Это не затронет файлы на Вашем устройстве.</string>
     <string name="content_deleted">Контент был успешно удалён из блокчейна.</string>

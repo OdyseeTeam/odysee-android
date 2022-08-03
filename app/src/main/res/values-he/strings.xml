@@ -74,7 +74,6 @@
     <string name="delete_file">מחק קובץ</string>
     <string name="confirm_delete_file_message">האם אתה בטוח שברצונך למחוק את קובץ זה ממכשירך?</string>
     <string name="unable_to_view_url">טעינת %1$s נכשלה. אנא נסה שנית מאוחר יותר.</string>
-    <string name="no_cast_session_available">לא קיימים חיבורים זמינים להזרמה בזמן זה.</string>
     <string name="delete_content">מחק תוכן?</string>
     <string name="confirm_delete_content_message">האם אתה בטוח שברצונך להסיר תוכן זה מפרסום? קבצים לא ימחקו ממכשירך.</string>
     <string name="content_deleted">התוכן נמחק בהצלחה מהבלוקצ\'יין.</string>

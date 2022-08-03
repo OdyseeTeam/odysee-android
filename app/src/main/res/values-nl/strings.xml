@@ -72,7 +72,6 @@
     <string name="delete_file">Verwijder bestand</string>
     <string name="confirm_delete_file_message">Weet u zeker dat u dit bestand van uw apparaat wilt verwijderen?</string>
     <string name="unable_to_view_url">%1$s kan niet worden geladen. Probeer het later opnieuw.</string>
-    <string name="no_cast_session_available">Er is op dit moment geen castsessie beschikbaar.</string>
     <string name="delete_content">Verwijder inhoud?</string>
     <string name="confirm_delete_content_message">Weet u zeker dat u de publicatie van deze inhoud ongedaan wilt maken? Er worden geen bestanden van uw apparaat verwijderd.</string>
     <string name="content_deleted">De inhoud is met succes verwijderd van de blockchain.</string>

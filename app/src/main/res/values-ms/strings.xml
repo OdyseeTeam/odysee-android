@@ -74,7 +74,6 @@
     <string name="delete_file">Padam fail</string>
     <string name="confirm_delete_file_message">Adakah anda pasti ingin membuang fail ini dari peranti anda?</string>
     <string name="unable_to_view_url">%1$s gagal dimuatkan. Sila cuba sebentar lagi.</string>
-    <string name="no_cast_session_available">Tiada \'cast session\' yang tersedia buat masa ini.</string>
     <string name="delete_content">Padamkan kandungan?</string>
     <string name="confirm_delete_content_message">Adakah anda pasti ingin membatalkan penerbitan kandungan ini? Fail akan masih kekal dalam peranti anda.</string>
     <string name="content_deleted">Kandungan telah dipadamkan daripada blockchain.</string>

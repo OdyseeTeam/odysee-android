@@ -69,7 +69,6 @@
     <string name="delete_file">Kustuta fail</string>
     <string name="confirm_delete_file_message">Oled kindel, et soovid seda faili siit seadmest kustutada?</string>
     <string name="unable_to_view_url">Faili %1$s laadimine ebaõnnestus. Palun proovi hiljem uuesti.</string>
-    <string name="no_cast_session_available">Hetkel pole ühtegi saatesessiooni saadaval.</string>
     <string name="delete_content">Kustutan selle materjali?</string>
     <string name="confirm_delete_content_message">Kindel, et tahad selle postituse tühistada? Ühtegi faili selle käigus su seadmest ei kustutata.</string>
     <string name="content_deleted">Postitus sai edukalt plokiahelas tühistatud.</string>

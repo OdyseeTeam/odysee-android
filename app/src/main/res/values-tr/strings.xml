@@ -72,7 +72,6 @@
     <string name="delete_file">Bu dosyayı sil</string>
     <string name="confirm_delete_file_message">Bu dosyayı cihazınızdan kaldırmak istediğinizden emin misiniz?</string>
     <string name="unable_to_view_url">%1$s yüklenirken başarısız oldu. Lütfen sonra tekrar deneyin.</string>
-    <string name="no_cast_session_available">Şu anda mevcut bir çevirim oturumu bulunamadı.</string>
     <string name="delete_content">İçeriği sil?</string>
     <string name="confirm_delete_content_message">Bu içeriği yayından kaldırmak istediğinizden emin misiniz? Cihazınızdan hiçbir dosya kaldırılmayacak.</string>
     <string name="content_deleted">İçerik blok zincirinden başarıyla silindi.</string>

@@ -73,26 +73,15 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.Tracks;
-import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-//import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
-import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
-import com.google.android.exoplayer2.util.Util;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -223,6 +212,7 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
+import com.odysee.app.utils.PlayerManager;
 import com.odysee.app.utils.Predefined;
 import com.odysee.app.utils.Utils;
 import com.odysee.app.checkers.CommentEnabledCheck;
@@ -254,8 +244,6 @@ public class FileViewFragment extends BaseFragment implements
     private static final int AUTO_QUALITY_ID = 0;
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
 
-//    private PlayerControlView castControlView;
-    private Player currentPlayer;
     private boolean loadingNewClaim;
     private boolean loadingQualityChanged = false;
 //    private boolean startDownloadPending;
@@ -451,16 +439,18 @@ public class FileViewFragment extends BaseFragment implements
         fileViewPlayerListener = new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(@Player.State int playbackState) {
+                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+
                 if (playbackState == Player.STATE_READY) {
-                    elapsedDuration = MainActivity.appPlayer.getCurrentPosition();
-                    totalDuration = MainActivity.appPlayer.getDuration() < 0 ? 0 : MainActivity.appPlayer.getDuration();
+                    elapsedDuration = currentPlayer.getCurrentPosition();
+                    totalDuration = currentPlayer.getDuration() < 0 ? 0 : currentPlayer.getDuration();
                     if (!playbackStarted) {
                         logPlay(currentUrl, startTimeMillis);
                         playbackStarted = true;
 
                         long lastPosition = loadLastPlaybackPosition();
                         if (lastPosition > -1) {
-                            MainActivity.appPlayer.seekTo(lastPosition);
+                            currentPlayer.seekTo(lastPosition);
                         }
                     }
                     renderTotalDuration();
@@ -471,7 +461,7 @@ public class FileViewFragment extends BaseFragment implements
                     if (loadingNewClaim) {
                         setPlaybackSpeedToDefault();
                         setPlayerQualityToDefault();
-                        MainActivity.appPlayer.setPlayWhenReady(true);
+                        currentPlayer.setPlayWhenReady(true);
                         loadingNewClaim = false;
                     }
                 } else if (playbackState == Player.STATE_BUFFERING) {
@@ -484,11 +474,11 @@ public class FileViewFragment extends BaseFragment implements
                             sendBufferingEvents = sp.getBoolean(MainActivity.PREFERENCE_KEY_SEND_BUFFERING_EVENTS, true);
                         }
 
-                        if (MainActivity.appPlayer != null && MainActivity.appPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
+                        if (currentPlayer != null && currentPlayer.getCurrentPosition() > 0 && sendBufferingEvents) {
                             // we only want to log a buffer event after the media has already started playing
                             if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
-                                long duration = MainActivity.appPlayer.getDuration();
-                                long position = MainActivity.appPlayer.getCurrentPosition();
+                                long duration = currentPlayer.getDuration();
+                                long position = currentPlayer.getCurrentPosition();
                                 String userIdHash = Lbryio.currentUser != null ? String.valueOf(Lbryio.currentUser.getId()) : "0";
                                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
 
@@ -503,12 +493,12 @@ public class FileViewFragment extends BaseFragment implements
                     showBuffering();
 
                     if (isLivestream) {
-                        Timeline.Window window = MainActivity.appPlayer.getCurrentTimeline()
-                                .getWindow(MainActivity.appPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
-                        long currentPosition = MainActivity.appPlayer.getCurrentPosition();
+                        Timeline.Window window = currentPlayer.getCurrentTimeline()
+                                .getWindow(currentPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
+                        long currentPosition = currentPlayer.getCurrentPosition();
                         long defaultPosition = window.getDefaultPositionMs();
                         if (currentPosition >= defaultPosition) {
-                            setPlaybackSpeed(MainActivity.appPlayer, 100);
+                            setPlaybackSpeed(currentPlayer, 100);
                         }
                     }
                 } else if (playbackState == Player.STATE_ENDED) {
@@ -1019,7 +1009,7 @@ public class FileViewFragment extends BaseFragment implements
             activity.refreshChannelCreationRequired(getView());
         }
 
-        if (MainActivity.appPlayer != null) {
+        if (MainActivity.playerManager != null) {
             if (MainActivity.playerReassigned) {
                 setPlayerForPlayerView();
                 MainActivity.playerReassigned = false;
@@ -1029,7 +1019,7 @@ public class FileViewFragment extends BaseFragment implements
             if (root != null) {
                 PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
                 if (playerView.getPlayer() == null) {
-                    playerView.setPlayer(MainActivity.appPlayer);
+                    playerView.setPlayer(MainActivity.playerManager.getCurrentPlayer());
                 }
             }
 
@@ -1045,7 +1035,7 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public void onPause() {
-        if (MainActivity.appPlayer != null) {
+        if (MainActivity.playerManager != null) {
             MainActivity.nowPlayingSource = MainActivity.SOURCE_NOW_PLAYING_FILE;
         }
         Context context = getContext();
@@ -1131,8 +1121,13 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setVisibility(View.VISIBLE);
-            view.setPlayer(null);
-            view.setPlayer(MainActivity.appPlayer);
+            Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+            view.setPlayer(currentPlayer);
+            view.setControllerHideOnTouch(currentPlayer instanceof ExoPlayer);
+            view.setControllerShowTimeoutMs(currentPlayer instanceof ExoPlayer
+                    ? PlayerControlView.DEFAULT_SHOW_TIMEOUT_MS : 0);
+            // This hack shouldn't be needed (the code without it works in the ExoPlayer demo)
+            setPlayerSurfaceVisibility(currentPlayer instanceof ExoPlayer ? View.VISIBLE : View.INVISIBLE);
         }
     }
 
@@ -1547,19 +1542,22 @@ public class FileViewFragment extends BaseFragment implements
             }
         });
 
-        root.findViewById(R.id.player_toggle_cast).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                toggleCast();
-            }
-        });
-
         MediaRelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
         PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
         TextView playbackSpeed = playerView.findViewById(R.id.player_playback_speed);
         TextView playbackQuality = playerView.findViewById(R.id.player_quality);
         playbackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
         playbackQuality.setText(AUTO_QUALITY_STRING);
+
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.playerMediaRouteButton = playerView.findViewById(R.id.player_media_route_button);
+            if (activity.mediaRouteButtonVisible) {
+                activity.playerMediaRouteButton.setVisibility(View.VISIBLE);
+            }
+            activity.getCastHelper().setUpCastButton(activity.playerMediaRouteButton);
+        }
 
         playbackSpeed.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
@@ -1580,8 +1578,8 @@ public class FileViewFragment extends BaseFragment implements
         playbackQuality.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-                if (MainActivity.appPlayer != null) {
-                    Helper.buildQualityMenu(contextMenu, MainActivity.appPlayer, MainActivity.videoIsTranscoded);
+                if (MainActivity.playerManager != null) {
+                    Helper.buildQualityMenu(contextMenu, MainActivity.playerManager.getCurrentPlayer(), MainActivity.videoIsTranscoded);
                 }
             }
         });
@@ -1610,16 +1608,18 @@ public class FileViewFragment extends BaseFragment implements
         playerView.findViewById(R.id.player_skip_back_10).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.seekTo(Math.max(0, MainActivity.appPlayer.getCurrentPosition() - 10000));
+                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+                if (currentPlayer != null) {
+                    currentPlayer.seekTo(Math.max(0, currentPlayer.getCurrentPosition() - 10000));
                 }
             }
         });
         playerView.findViewById(R.id.player_skip_forward_10).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.seekTo(MainActivity.appPlayer.getCurrentPosition() + 10000);
+                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+                if (currentPlayer != null) {
+                    currentPlayer.seekTo(currentPlayer.getCurrentPosition() + 10000);
                 }
             }
         });
@@ -1801,19 +1801,20 @@ public class FileViewFragment extends BaseFragment implements
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 ImageView seekOverlay = root.findViewById(R.id.seek_overlay);
+                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
 
                 int width = playerView.getWidth();
                 float eventX = e.getX();
                 if (eventX < width / 3.0) {
-                    if (MainActivity.appPlayer != null) {
-                        MainActivity.appPlayer.seekTo(Math.max(0, MainActivity.appPlayer.getCurrentPosition() - 10000));
+                    if (currentPlayer != null) {
+                        currentPlayer.seekTo(Math.max(0, currentPlayer.getCurrentPosition() - 10000));
 
                         seekOverlay.setVisibility(View.VISIBLE);
                         seekOverlay.setImageResource(R.drawable.ic_rewind);
                     }
                 } else if (eventX > width * 2.0 / 3.0) {
-                    if (MainActivity.appPlayer != null) {
-                        MainActivity.appPlayer.seekTo(MainActivity.appPlayer.getCurrentPosition() + 10000);
+                    if (currentPlayer != null) {
+                        currentPlayer.seekTo(currentPlayer.getCurrentPosition() + 10000);
 
                         seekOverlay.setVisibility(View.VISIBLE);
                         seekOverlay.setImageResource(R.drawable.ic_forward);
@@ -1833,22 +1834,9 @@ public class FileViewFragment extends BaseFragment implements
 
                 return true;
             }
-
-            @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                if (playerView.isControllerVisible()) {
-                    playerView.hideController();
-                } else {
-                    playerView.showController();
-                }
-                return true;
-            }
         };
         GestureDetector playerGestureDetector = new GestureDetector(getContext(), playerGestureListener);
-        playerView.setOnTouchListener((view, motionEvent) -> {
-            playerGestureDetector.onTouchEvent(motionEvent);
-            return true;
-        });
+        playerView.setOnTouchListener((view, motionEvent) -> playerGestureDetector.onTouchEvent(motionEvent));
 
         GestureDetector.SimpleOnGestureListener mediaContainerGestureListener = new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -1946,8 +1934,9 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
             TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed);
-            textPlaybackSpeed.setText(MainActivity.appPlayer != null && MainActivity.appPlayer.getPlaybackParameters() != null ?
-                    Helper.getDisplayValueForPlaybackSpeed((double) MainActivity.appPlayer.getPlaybackParameters().speed) :
+            Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+            textPlaybackSpeed.setText(currentPlayer != null ?
+                    Helper.getDisplayValueForPlaybackSpeed((double) currentPlayer.getPlaybackParameters().speed) :
                     DEFAULT_PLAYBACK_SPEED);
         }
     }
@@ -2445,40 +2434,45 @@ public class FileViewFragment extends BaseFragment implements
         boolean newPlayerCreated = false;
 
         Context context = getContext();
-        if (MainActivity.appPlayer == null && context != null) {
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                    .build();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
 
-            MainActivity.appPlayer = new ExoPlayer.Builder(context).build();
-            MainActivity.appPlayer.setWakeMode(C.WAKE_MODE_NETWORK);
+            if (MainActivity.playerManager == null) {
+                MainActivity.playerManager = new PlayerManager(activity);
 
-            MainActivity.appPlayer.setAudioAttributes(audioAttributes, true);
-            MainActivity.playerCache =
-                    new SimpleCache(context.getCacheDir(),
-                            new LeastRecentlyUsedCacheEvictor(1024 * 1024 * 256), new ExoDatabaseProvider(context));
-            if (context instanceof MainActivity) {
-                MainActivity activity = (MainActivity) context;
+                MainActivity.playerCache =
+                        new SimpleCache(context.getCacheDir(),
+                                new LeastRecentlyUsedCacheEvictor(1024 * 1024 * 256), new ExoDatabaseProvider(context));
+
                 activity.initMediaSession();
                 activity.initPlaybackNotification();
             }
 
-            newPlayerCreated = true;
-        }
+            MainActivity.playerManager.setListener(new PlayerManager.Listener() {
+                @Override
+                public void onPlayerChanged(long previousPlaybackMs) {
+                    if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
+                        MainActivity.playerManager.initializeCurrentPlayer(
+                                currentMediaSourceUrl, previousPlaybackMs, fileClaim, context);
+                    }
+                    setPlayerForPlayerView();
+                    activity.initMediaSession();
+                    activity.initPlaybackNotification();
+                }
+            });
 
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.initPlaybackNotification();
+            newPlayerCreated = true;
         }
 
         Claim claimToPlay = collectionClaimItem != null ? collectionClaimItem : fileClaim;
 
         View root = getView();
         if (root != null) {
+            Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
-            view.setPlayer(MainActivity.appPlayer);
+            view.setPlayer(currentPlayer);
             view.getPlayer().addListener(new Player.Listener() {
                 @Override
                 public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
@@ -2495,8 +2489,8 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity.nowPlayingClaim.getClaimId().equalsIgnoreCase(claimToPlay.getClaimId()) &&
                     !newPlayerCreated) {
                 // if the claim is already playing, we don't need to reload the media source
-                if (MainActivity.appPlayer != null) {
-                    MainActivity.appPlayer.setPlayWhenReady(true);
+                if (currentPlayer != null) {
+                    currentPlayer.setPlayWhenReady(true);
                     playbackStarted = true;
 
                     if (context instanceof MainActivity) {
@@ -2506,7 +2500,7 @@ public class FileViewFragment extends BaseFragment implements
 
                     // reconnect the app player
                     if (fileViewPlayerListener != null) {
-                        MainActivity.appPlayer.addListener(fileViewPlayerListener);
+                        currentPlayer.addListener(fileViewPlayerListener);
                     }
                     setPlayerForPlayerView();
                     loadAndScheduleDurations();
@@ -2514,63 +2508,47 @@ public class FileViewFragment extends BaseFragment implements
                 return;
             }
 
-            if (MainActivity.appPlayer != null) {
+            if (currentPlayer != null) {
                 showBuffering();
                 if (fileViewPlayerListener != null) {
-                    MainActivity.appPlayer.addListener(fileViewPlayerListener);
+                    currentPlayer.addListener(fileViewPlayerListener);
                 }
                 if (context instanceof MainActivity) {
                     ((MainActivity) context).setNowPlayingClaim(claimToPlay, currentUrl);
                 }
 
-                MainActivity.appPlayer.setPlayWhenReady(true);
+                currentPlayer.setPlayWhenReady(true);
 
                 if (claimToPlay.hasSource()) {
                     getStreamingUrlAndInitializePlayer(claimToPlay);
                 } else {
-                    DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
-                    if (context != null) {
-                        dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
-                    }
-
-                    MediaSource mediaSource = null;
-                    String mediaSourceUrl;
-
                     if (!Helper.isNullOrEmpty(claimLivestreamUrl)) {
-                        mediaSourceUrl = claimLivestreamUrl;
+                        currentMediaSourceUrl = claimLivestreamUrl;
                     } else {
-                        mediaSourceUrl = getLivestreamUrl();
+                        currentMediaSourceUrl = getLivestreamUrl();
                     }
 
-                    if (mediaSourceUrl != null) {
-                        if (!mediaSourceUrl.equals("notlive")) {
-                            MainActivity.videoIsTranscoded = true;
-                            Map<String, String> defaultRequestProperties = new HashMap<>(1);
-                            defaultRequestProperties.put("Referer", "https://bitwave.tv");
-                            dataSourceFactory.setDefaultRequestProperties(defaultRequestProperties);
-                            mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(mediaSourceUrl));
-                        } else {
-                            if (claimToPlay.getThumbnailUrl() != null && context != null) {
-                                ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
-                                Glide.with(context.getApplicationContext()).
-                                        asBitmap().
-                                        load(claimToPlay.getThumbnailUrl()).
-                                        apply(RequestOptions.circleCropTransform()).
-                                        into(thumbnailView);
-                            }
-
-                            root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
-                            root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
-                            TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
-                            userNotStreaming.setText(getString(R.string.user_not_live_yet, claimToPlay.getPublisherName()));
-                            userNotStreaming.setVisibility(View.VISIBLE);
+                    if (currentMediaSourceUrl != null && currentMediaSourceUrl.equals("notlive")) {
+                        if (claimToPlay.getThumbnailUrl() != null && context != null) {
+                            ImageView thumbnailView = root.findViewById(R.id.file_view_livestream_thumbnail);
+                            Glide.with(context.getApplicationContext()).
+                                    asBitmap().
+                                    load(claimToPlay.getThumbnailUrl()).
+                                    apply(RequestOptions.circleCropTransform()).
+                                    into(thumbnailView);
                         }
+
+                        root.findViewById(R.id.file_view_livestream_not_live).setVisibility(View.VISIBLE);
+                        root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
+                        TextView userNotStreaming = root.findViewById(R.id.user_not_streaming);
+                        userNotStreaming.setText(getString(R.string.user_not_live_yet, claimToPlay.getPublisherName()));
+                        userNotStreaming.setVisibility(View.VISIBLE);
+                        return;
                     }
 
-                    if (mediaSource != null) {
-                        MainActivity.appPlayer.setMediaSource(mediaSource, true);
-                        MainActivity.appPlayer.prepare();
-                    }
+                    MainActivity.videoIsTranscoded = true;
+                    MainActivity.playerManager.initializeCurrentPlayer(
+                            currentMediaSourceUrl, C.TIME_UNSET, fileClaim, getContext());
                 }
             }
         }
@@ -2611,7 +2589,8 @@ public class FileViewFragment extends BaseFragment implements
                                         MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
                             }
 
-                            initializePlayer(currentMediaSourceUrl);
+                            MainActivity.playerManager.initializeCurrentPlayer(
+                                    currentMediaSourceUrl, C.TIME_UNSET, fileClaim, getContext());
                         });
                     }
                 } catch (LbryRequestException | LbryResponseException | JSONException ex) {
@@ -2620,31 +2599,6 @@ public class FileViewFragment extends BaseFragment implements
                 }
             });
         }
-    }
-    private void initializePlayer(String sourceUrl) {
-        Context context = getContext();
-        DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
-        if (context != null) {
-            dataSourceFactory.setUserAgent(Util.getUserAgent(context, getString(R.string.app_name)));
-        }
-
-        CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
-        cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
-        cacheDataSourceFactory.setCache(MainActivity.playerCache);
-
-        MediaSource mediaSource;
-        if (MainActivity.videoIsTranscoded) {
-            mediaSource = new HlsMediaSource.Factory(cacheDataSourceFactory)
-                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
-                    .createMediaSource(MediaItem.fromUri(sourceUrl));
-        } else {
-            mediaSource = new ProgressiveMediaSource.Factory(cacheDataSourceFactory, new DefaultExtractorsFactory())
-                    .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
-                    .createMediaSource(MediaItem.fromUri(sourceUrl));
-        }
-
-        MainActivity.appPlayer.setMediaSource(mediaSource, true);
-        MainActivity.appPlayer.prepare();
     }
 
     /**
@@ -2687,50 +2641,11 @@ public class FileViewFragment extends BaseFragment implements
         return "notlive";
     }
 
-    private void setCurrentPlayer(Player currentPlayer) {
-        if (this.currentPlayer == currentPlayer) {
-            return;
-        }
-
-        // View management.
-//        if (currentPlayer == MainActivity.appPlayer) {
-//            //localPlayerView.setVisibility(View.VISIBLE);
-//            castControlView.hide();
-//            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast);
-//        } else /* currentPlayer == castPlayer */ {
-//            castControlView.show();
-//            ((ImageView) getView().findViewById(R.id.player_image_cast_toggle)).setImageResource(R.drawable.ic_cast_connected);
-//        }
-
-        // Player state management.
-        long playbackPositionMs = C.TIME_UNSET;
-
-        Player previousPlayer = this.currentPlayer;
-        if (previousPlayer != null) {
-            // Save state from the previous player.
-            int playbackState = previousPlayer.getPlaybackState();
-            if (playbackState != Player.STATE_ENDED) {
-                playbackPositionMs = previousPlayer.getCurrentPosition();
-            }
-            previousPlayer.stop();
-            previousPlayer.clearMediaItems();
-        }
-
-        this.currentPlayer = currentPlayer;
-
-        // Media queue management.
-        /*if (currentPlayer == exoPlayer) {
-            exoPlayer.prepare(concatenatingMediaSource);
-        }*/
-        currentPlayer.seekTo(playbackPositionMs);
-        currentPlayer.setPlayWhenReady(true);
-    }
-
     private void setPlaybackSpeedToDefault() {
         Context context = getContext();
         if (context instanceof MainActivity) {
             int speed = ((MainActivity) context).playbackDefaultSpeed();
-            setPlaybackSpeed(MainActivity.appPlayer, speed);
+            setPlaybackSpeed(MainActivity.playerManager.getCurrentPlayer(), speed);
         }
     }
 
@@ -2748,7 +2663,7 @@ public class FileViewFragment extends BaseFragment implements
             int quality = isOnMobileNetwork ?
                     ((MainActivity) context).mobileDefaultQuality() :
                     ((MainActivity) context).wifiDefaultQuality();
-            setPlayerQuality(MainActivity.appPlayer, quality);
+            setPlayerQuality(MainActivity.playerManager.getCurrentPlayer(), quality);
         }
     }
 
@@ -3470,11 +3385,12 @@ public class FileViewFragment extends BaseFragment implements
 
     private void savePlaybackPosition() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        if (MainActivity.appPlayer != null && actualClaim != null) {
+        Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+        if (currentPlayer != null && actualClaim != null) {
             try {
                 String url = !Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl();
                 String key = String.format("PlayPos_%s", LbryUri.normalize(url));
-                long position = MainActivity.appPlayer.getCurrentPosition();
+                long position = currentPlayer.getCurrentPosition();
                 Context context = getContext();
                 if (context != null) {
                     SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
@@ -3645,9 +3561,11 @@ public class FileViewFragment extends BaseFragment implements
                 });
                 t.start();
             } else {
+                // TODO: This code is never reached (should be called in resolveUrl)
                 TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
                 relatedOrPlayList.setText(fileClaim.getTitle());
-                relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
+                // TODO: When this code path fixed check what this does
+//                relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
                 relatedOrPlayList.setPadding(0, 0, 0, 16);
                 relatedOrPlayList.setTypeface(null, Typeface.BOLD);
 
@@ -4130,8 +4048,9 @@ public class FileViewFragment extends BaseFragment implements
                             ((MainActivity) context).runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (MainActivity.appPlayer != null) {
-                                        elapsedDuration = MainActivity.appPlayer.getCurrentPosition();
+                                    Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+                                    if (currentPlayer != null) {
+                                        elapsedDuration = currentPlayer.getCurrentPosition();
                                         int elapsedSeconds = Double.valueOf(elapsedDuration / 1000.0).intValue();
                                         if (elapsedDuration > 0 && elapsedSeconds % 5 == 0 && elapsedSeconds != lastPositionSaved) {
                                             // save playback position every 5 seconds
@@ -4167,13 +4086,14 @@ public class FileViewFragment extends BaseFragment implements
         startTimeMillis = 0;
         isPlaying = false;
 
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.stop(true);
-            MainActivity.appPlayer.removeListener(fileViewPlayerListener);
-            PlaybackParameters params = new PlaybackParameters(1.0f);
-            MainActivity.appPlayer.setPlaybackParameters(params);
-            MainActivity.videoIsTranscoded = false;
-        }
+        // TODO: Remove (when deciding about resetPlayer())
+//        if (MainActivity.appPlayer != null) {
+//            MainActivity.appPlayer.stop(true);
+//            MainActivity.appPlayer.removeListener(fileViewPlayerListener);
+//            PlaybackParameters params = new PlaybackParameters(1.0f);
+//            MainActivity.appPlayer.setPlaybackParameters(params);
+//            MainActivity.videoIsTranscoded = false;
+//        }
     }
 
     private void showBuffering() {
@@ -4217,9 +4137,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void loadAndScheduleDurations() {
-        if (MainActivity.appPlayer != null && playbackStarted) {
-            elapsedDuration = MainActivity.appPlayer.getCurrentPosition() < 0 ? 0 : MainActivity.appPlayer.getCurrentPosition();
-            totalDuration = MainActivity.appPlayer.getDuration() < 0 ? 0 : MainActivity.appPlayer.getDuration();
+        Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+        if (currentPlayer != null && playbackStarted) {
+            elapsedDuration = currentPlayer.getCurrentPosition() < 0 ? 0 : currentPlayer.getCurrentPosition();
+            totalDuration = currentPlayer.getDuration() < 0 ? 0 : currentPlayer.getDuration();
 
             renderElapsedDuration();
             renderTotalDuration();
@@ -4387,19 +4308,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void toggleCast() {
-        /*if (!MainActivity.castPlayer.isCastSessionAvailable()) {
-            showError(getString(R.string.no_cast_session_available));
-            return;
-        }
-
-        if (currentPlayer == MainActivity.appPlayer) {
-            setCurrentPlayer(MainActivity.castPlayer);
-        } else {
-            setCurrentPlayer(MainActivity.appPlayer);
-        }*/
-    }
-
     private void onDownloadAborted() {
         downloadInProgress = false;
 
@@ -4522,18 +4430,19 @@ public class FileViewFragment extends BaseFragment implements
             return true;
         }
 
+        Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
         if (item.getGroupId() == Helper.PLAYBACK_SPEEDS_GROUP_ID) {
             int speed = item.getItemId();
-            if (MainActivity.appPlayer != null) {
-                setPlaybackSpeed(MainActivity.appPlayer, speed);
+            if (currentPlayer != null) {
+                setPlaybackSpeed(currentPlayer, speed);
                 return true;
             }
         } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
             loadingQualityChanged = true;
             int quality = item.getItemId();
 
-            if (MainActivity.appPlayer != null) {
-                setPlayerQuality(MainActivity.appPlayer, quality);
+            if (currentPlayer != null) {
+                setPlayerQuality(currentPlayer, quality);
                 return true;
             }
         }
@@ -4560,13 +4469,6 @@ public class FileViewFragment extends BaseFragment implements
                 LinearLayout fileViewActionsArea = root.findViewById(R.id.file_view_actions_area);
                 fileViewActionsArea.setWeightSum(isOwnClaim ? 6 : 5);
             }
-        }
-    }
-
-    public static class StreamLoadErrorPolicy extends DefaultLoadErrorHandlingPolicy {
-        @Override
-        public int getMinimumLoadableRetryCount(int dataType) {
-            return Integer.MAX_VALUE;
         }
     }
 
@@ -5238,7 +5140,7 @@ public class FileViewFragment extends BaseFragment implements
                                                     a.runOnUiThread(new Runnable() {
                                                         @Override
                                                         public void run() {
-                                                            MainActivity.appPlayer.stop();
+                                                            MainActivity.playerManager.getCurrentPlayer().stop();
                                                             livestreamStartingMillis = 0;
                                                             renderPublisherNotBroadcasting(actualClaim);
                                                         }
