@@ -3534,7 +3534,7 @@ public class FileViewFragment extends BaseFragment implements
                             Callable<List<Claim>> resolveCallable = () -> Lbry.resolve(urls, Lbry.API_CONNECTION_STRING);
                             Future<List<Claim>> resolveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(resolveCallable);
 
-                            List<Claim> result = resolveFuture.get();
+                            List<Claim> result = resolveFuture.get().stream().filter(c -> c != null).collect(Collectors.toList());
                             if (!urls.contains("")) {
                                 urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
                             }
