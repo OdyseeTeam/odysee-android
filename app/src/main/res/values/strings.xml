@@ -15,6 +15,7 @@
     <string name="change_default_channel">Change default channel</string>
     <string name="go_live">Go Live</string>
     <string name="channels">Channels</string>
+    <string name="creator_settings">Creator Settings</string>
     <string name="library">Library</string>
     <string name="publishes">Publishes</string>
     <string name="new_publish">New Publish</string>
@@ -360,6 +361,31 @@
 
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
     <string name="send_buffering_events">Send buffering events to LBRY servers</string>
+
+    <!-- Creator Settings -->
+    <string name="no_channel_for_creator_settings">You have not created a channel yet. Create a new channel first in order to access Creator Settings.</string>
+    <string name="enable_comments_for_channel">Enable comments for channel</string>
+    <string name="slow_mode">Slow mode</string>
+    <string name="slow_mode_desc">Mininum time gap in seconds between comments (affects livestream chat as well)</string>
+    <string name="minimum_channel_age">Minimum channel age for comments</string>
+    <string name="minimum_channel_age_desc">Channels with a lifespan lower than the specified duration will not be able to comment on your content. Examples: 30m, 6h, 14d, 2M</string>
+    <string name="minimum_credits_tip_amount_comments">Minimum credits tip amount for comments</string>
+    <string name="minimum_credits_tip_amount_comments_desc">Enabling a minimum amount to comment will force all comments, including livestreams, to have tips associated with them. This can help prevent spam.</string>
+    <string name="minimum_credits_tip_amount_hyperchats">Minimum credits tip amount for hyperchats</string>
+    <string name="minimum_credits_tip_amount_hyperchats_desc">Enabling a minimum amount to hyperchat will force all TIPPED comments to have this value in order to be shown. This still allows regular comments to be posted.</string>
+    <string name="moderators">Moderators</string>
+    <string name="moderators_desc">Moderators can block channels on your behalf. Blocked channels will appear in your "Blocked and Muted" list.</string>
+    <string name="add_moderator">Add moderator</string>
+    <string name="filter">Filter</string>
+    <string name="filter_desc">Comments and livestream chat containing these words will be blocked.</string>
+    <string name="add_words">Add words</string>
+    <string name="creator_settings_load_failed">The creator settings for %1$s could not be loaded. Please try again with a different channel.</string>
+    <string name="creator_settings_save_failed">The creator settings for %1$s could not be saved. Please try again.</string>
+    <string name="no_words_to_block">Please specify one or more words that you would like to block.</string>
+    <string name="min_tip_amount_invalid">The minimum credits amount specified is invalid.</string>
+    <string name="slow_mode_value_invalid">Please specify a valid number for slow mode.</string>
+    <string name="min_channel_age_invalid">Please specify a valid minimum channel age. Examples: 5m, 2h, 8d, 3M</string>
+    <string name="min_channel_age_180D">The duration for minimum channel age cannot be more than 180 days</string>
 
     <string-array name="media_autoplay">
         <item>Never</item>

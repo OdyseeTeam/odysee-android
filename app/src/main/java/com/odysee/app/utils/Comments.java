@@ -46,17 +46,16 @@ public class Comments {
     private static final String STATUS_ENDPOINT = "https://comments.lbry.com";
     public static final String COMMENT_SERVER_ENDPOINT = "https://comments.lbry.com/api/v2";
 
-    public static JSONObject channelSignName(JSONObject commentBody, final String channelId, final String channelName) throws ApiCallException, JSONException {
+    public static JSONObject channelSignName(JSONObject params, final String channelId, final String channelName) throws ApiCallException, JSONException {
         // NOTE: Intentionally passing in channelName twice in a row.
-        return channelSignPrivate(commentBody, channelId, channelName, channelName);
+        return channelSignPrivate(params, channelId, channelName, channelName);
     }
 
-    public static JSONObject channelSignWithCommentData(JSONObject commentBody, Comment comment, final String hexDataSource) throws ApiCallException, JSONException {
-        return channelSignPrivate(commentBody, comment.getChannelId(), comment.getChannelName(), hexDataSource);
+    public static JSONObject channelSignWithCommentData(JSONObject params, Comment comment, final String hexDataSource) throws ApiCallException, JSONException {
+        return channelSignPrivate(params, comment.getChannelId(), comment.getChannelName(), hexDataSource);
     }
 
-    public static JSONObject channelSignPrivate(JSONObject commentBody, final String channelId, final String channelName, final String hexDataSource) throws ApiCallException, JSONException {
-
+    public static JSONObject channelSignPrivate(JSONObject params, final String channelId, final String channelName, final String hexDataSource) throws ApiCallException, JSONException {
         final String hexData = Helper.toHexString(hexDataSource);
 
         Map<String, Object> signingParams = new HashMap<>(3);
@@ -64,10 +63,11 @@ public class Comments {
         signingParams.put("channel_id", channelId);
         signingParams.put("channel_name", channelName);
 
-        if (commentBody.has("auth_token"))
-            return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, commentBody.getString("auth_token"));
-        else
-            return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
+        if (params != null && params.has("auth_token")) {
+            return (JSONObject) Lbry.authenticatedGenericApiCall("channel_sign", signingParams, params.getString("auth_token"));
+        }
+
+        return (JSONObject) Lbry.genericApiCall("channel_sign", signingParams);
     }
 
     /**

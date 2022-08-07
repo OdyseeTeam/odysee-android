@@ -234,6 +234,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
+import com.odysee.app.ui.other.CreatorSettingsFragment;
 import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
@@ -971,6 +972,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 ListView defaultChannelList = customView.findViewById(R.id.default_channel_list);
                 View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
+                View buttonCreatorSettings = customView.findViewById(R.id.button_creator_settings);
                 View buttonPublishes = customView.findViewById(R.id.button_publishes);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
                 View buttonYouTubeSync = customView.findViewById(R.id.button_youtube_sync);
@@ -984,6 +986,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonCreatorSettings.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonPublishes.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -1116,6 +1119,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         popupWindow.dismiss();
                         hideNotifications();
                         openFragment(ChannelManagerFragment.class, true, null);
+                    }
+                });
+                buttonCreatorSettings.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(CreatorSettingsFragment.class, true, null);
                     }
                 });
                 buttonPublishes.setOnClickListener(new View.OnClickListener() {

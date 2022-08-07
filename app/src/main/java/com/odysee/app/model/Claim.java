@@ -236,6 +236,10 @@ public class Claim {
         return null;
     }
 
+    public String getClaimIdLast7() {
+        return claimId != null ? claimId.substring(claimId.length() - 7) : null;
+    }
+
     /**
      * Gets the URL from the CDN where getting the image file
      * @param width Pass zero for width and height for the full size image file

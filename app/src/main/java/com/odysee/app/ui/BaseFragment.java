@@ -104,10 +104,14 @@ public class BaseFragment extends Fragment {
     }
 
     public void showError(String message) {
+        showError(message, Snackbar.LENGTH_LONG);
+    }
+
+    public void showError(String message, int length) {
         Context context = getContext();
         View v = getView();
         if (context != null && v != null) {
-            Snackbar.make(v, message, Snackbar.LENGTH_LONG).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
+            Snackbar.make(v, message, length).setBackgroundTint(Color.RED).setTextColor(Color.WHITE).show();
         }
     }
 
