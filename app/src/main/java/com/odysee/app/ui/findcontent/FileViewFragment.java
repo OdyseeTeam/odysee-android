@@ -86,7 +86,6 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
-import com.google.common.collect.Ordering;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
 import org.commonmark.Extension;
@@ -3188,7 +3187,8 @@ public class FileViewFragment extends BaseFragment implements
 
                     playlistResolved = true;
 
-                    Collections.sort(claims, Ordering.explicit(fileClaim.getClaimIds()).onResultOf(Claim::getClaimId));
+                    List<String> playlistClaimIds = fileClaim.getClaimIds();
+                    Collections.sort(claims, Comparator.comparing(claim -> playlistClaimIds.indexOf(claim.getClaimId())));
 
                     a.runOnUiThread(new Runnable() {
                         @Override
@@ -3538,13 +3538,13 @@ public class FileViewFragment extends BaseFragment implements
                             if (!urls.contains("")) {
                                 urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
                             }
-                            Collections.sort(result, Ordering.explicit(urls).onResultOf(claim -> {
+                            Collections.sort(result, Comparator.comparing(claim -> {
                                 try {
-                                    return LbryUri.normalize(claim.getPermanentUrl());
+                                    return urls.indexOf(LbryUri.normalize(claim.getPermanentUrl()));
                                 } catch (LbryUriException ex) {
                                     ex.printStackTrace();
+                                    return urls.indexOf("");
                                 }
-                                return "";
                             }));
 
                             a.runOnUiThread(new Runnable() {

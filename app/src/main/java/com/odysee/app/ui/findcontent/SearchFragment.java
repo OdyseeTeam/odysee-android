@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.common.collect.Ordering;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.LighthouseSearch;
 import org.json.JSONException;
@@ -29,7 +28,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -536,13 +535,13 @@ public class SearchFragment extends BaseFragment implements
                         if (!urls.contains("")) {
                             urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
                         }
-                        Collections.sort(results, Ordering.explicit(urls).onResultOf(claim -> {
+                        Collections.sort(results, Comparator.comparing(claim -> {
                             try {
-                                return LbryUri.normalize(claim.getPermanentUrl());
+                                return urls.indexOf(LbryUri.normalize(claim.getPermanentUrl()));
                             } catch (LbryUriException ex) {
                                 ex.printStackTrace();
+                                return urls.indexOf("");
                             }
-                            return "";
                         }));
 
                         List<Claim> sanitizedClaims = results.stream().filter(item -> !item.getValueType().equalsIgnoreCase(Claim.TYPE_REPOST))
