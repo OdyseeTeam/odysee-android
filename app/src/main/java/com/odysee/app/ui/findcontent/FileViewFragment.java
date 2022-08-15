@@ -88,6 +88,10 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import com.google.common.collect.Ordering;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.OdyseeApp;
 import org.commonmark.Extension;
@@ -112,6 +116,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.text.DecimalFormat;
@@ -160,6 +165,7 @@ import com.odysee.app.callable.BuildCommentReactOptions;
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.lbryinc.CreatorSetting;
 import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.runnable.ReactToComment;
 import com.odysee.app.callable.Search;
@@ -290,6 +296,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private WebView webView;
     private boolean webViewAdded;
+    private CreatorSetting currentCreatorSetting;
 
     private ViewGroup singleCommentRoot;
     private ImageButton expandButton;
@@ -725,8 +732,10 @@ public class FileViewFragment extends BaseFragment implements
                 if ((status != null && status.isBlocked()) || Helper.isClaimBlocked(actualClaim)) {
                     renderClaimBlocked(status.getMessage());
                 } else {
+                    checkAndLoadChannelSettings();
                     checkAndLoadRelatedContent();
                     checkAndLoadComments();
+
                     renderClaim();
                     if (actualClaim.getFile() == null) {
                         loadFile();
@@ -909,6 +918,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    // TODO: Deprecate
     private String buildLbryTvStreamingUrl() {
         return String.format("%s/content/claims/%s/%s/stream", CDN_PREFIX, fileClaim.getName(), fileClaim.getClaimId());
     }
@@ -1311,6 +1321,7 @@ public class FileViewFragment extends BaseFragment implements
                         renderClaimBlocked(status.getMessage());
                     } else {
                         loadFile();
+                        checkAndLoadChannelSettings();
                         checkAndLoadRelatedContent();
                         checkAndLoadComments();
                         renderClaim();
@@ -1769,9 +1780,20 @@ public class FileViewFragment extends BaseFragment implements
                             showError(getString(R.string.insufficient_balance));
                             return;
                         }
-                        // TODO: Get the min_spend setting for this particular livestream channel
-                        if (tipAmount.doubleValue() < Helper.MIN_SPEND) {
-                            showError(getString(R.string.min_spend_required));
+
+                        double minSpend = Helper.MIN_SPEND; // absolute minimum to use, if no creator setting was loaded
+                        // check creatorSetting for minimum
+                        if (currentCreatorSetting != null &&
+                                (currentCreatorSetting.getMinTipAmountCommentValue() > 0 ||
+                                        currentCreatorSetting.getMinTipAmountSuperChatValue() > 0)) {
+                            // always use min comment value first if set, otherwise, use min superchat value
+                            minSpend = currentCreatorSetting.getMinTipAmountCommentValue() > 0 ?
+                                    currentCreatorSetting.getMinTipAmountCommentValue() :
+                                    currentCreatorSetting.getMinTipAmountSuperChatValue();
+                        }
+
+                        if (tipAmount.doubleValue() < minSpend) {
+                            showError(getString(R.string.creator_min_spend_required, minSpend));
                             return;
                         }
                     }
@@ -3560,6 +3582,7 @@ public class FileViewFragment extends BaseFragment implements
             Helper.saveViewHistory(theClaim.getPermanentUrl(), theClaim);
         }
 
+        checkAndLoadChannelSettings();
         checkAndLoadComments(true);
     }
 
@@ -4779,6 +4802,14 @@ public class FileViewFragment extends BaseFragment implements
             return;
         }
 
+        if (currentCreatorSetting != null && currentCreatorSetting.getMinTipAmountCommentValue() > 0) {
+            // TODO: We need to add back a field to the post comment form for the user to
+            // input the amount of credits to send when posting a comment.
+            // For now, this will always fail.
+            showError(getString(R.string.please_enter_min_tip_amount));
+            return;
+        }
+
         postComment();
     }
 
@@ -5316,6 +5347,54 @@ public class FileViewFragment extends BaseFragment implements
         if (chatMessageListAdapter != null && chatMessageListAdapter.getItemCount() > 0) {
             chatMessageList.smoothScrollToPosition(chatMessageListAdapter.getItemCount() - 1);
         }
+    }
+
+    private void checkAndLoadChannelSettings() {
+        currentCreatorSetting = null;
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim.getSigningChannel() != null) {
+            loadChannelSettings(actualClaim.getSigningChannel().getClaimId());
+        }
+    }
+
+    private void loadChannelSettings(final String channelId) {
+        Activity activity = getActivity();
+        if (activity != null) {
+            ((OdyseeApp) activity.getApplication()).getExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Map<String, Object> options = new HashMap<>();
+                        options.put("channel_id", channelId);
+                        options.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+
+                        okhttp3.Response response = Comments.performRequest(Lbry.buildJsonParams(options), "setting.Get");
+                        ResponseBody responseBody = response.body();
+                        JSONObject jsonResponse = new JSONObject(responseBody.string());
+                        if (!jsonResponse.has("result") || jsonResponse.isNull("result")) {
+                            throw new ApiCallException("invalid json response");
+                        }
+
+                        JSONObject result = Helper.getJSONObject("result", jsonResponse);
+                        Type type = new TypeToken<CreatorSetting>(){}.getType();
+                        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+                        CreatorSetting creatorSetting = gson.fromJson(result.toString(), type);
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                didLoadChannelSettings(creatorSetting);
+                            }
+                        });
+                    } catch (JSONException | ApiCallException | IOException ex) {
+                        // pass
+                    }
+                }
+            });
+        }
+    }
+
+    private void didLoadChannelSettings(CreatorSetting creatorSetting) {
+        currentCreatorSetting = creatorSetting;
     }
 
     class CodeAttributeProvider implements AttributeProvider {

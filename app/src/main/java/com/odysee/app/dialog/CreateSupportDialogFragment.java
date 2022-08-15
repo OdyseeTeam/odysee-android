@@ -53,11 +53,14 @@ import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.WalletBalance;
+import com.odysee.app.model.lbryinc.CreatorSetting;
 import com.odysee.app.supplier.SupportCreateSupplier;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
+
+import lombok.Setter;
 
 public class CreateSupportDialogFragment extends BottomSheetDialogFragment implements WalletBalanceListener {
     public static final String TAG = "CreateSupportDialog";
@@ -75,7 +78,6 @@ public class CreateSupportDialogFragment extends BottomSheetDialogFragment imple
 
     private boolean fetchingChannels;
     private ProgressBar progressLoadingChannels;
-
 
     private final CreateSupportListener listener;
     private final Claim claim;

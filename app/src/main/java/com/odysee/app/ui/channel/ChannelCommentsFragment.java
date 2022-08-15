@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
@@ -30,28 +32,39 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.CommentItemDecoration;
 import com.odysee.app.adapter.CommentListAdapter;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
+import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.Comment;
+import com.odysee.app.model.lbryinc.CreatorSetting;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
 import com.odysee.app.tasks.CommentListTask;
 import com.odysee.app.tasks.claim.*;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
@@ -60,8 +73,12 @@ import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Utils;
 import com.odysee.app.checkers.CommentEnabledCheck;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import lombok.Getter;
 import lombok.Setter;
+import okhttp3.ResponseBody;
 
 public class ChannelCommentsFragment extends BaseFragment implements ChannelCreateDialogFragment.ChannelCreateListener {
 
@@ -73,6 +90,7 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
     @Getter
     private CommentListAdapter commentListAdapter;
     private CommentEnabledCheck commentEnabledCheck;
+    private CreatorSetting creatorSetting;
 
     private Comment replyToComment;
     private View containerReplyToComment;
@@ -516,6 +534,11 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
             showError(getString(R.string.please_select_channel));
             return;
         }
+        if (creatorSetting != null && creatorSetting.getMinTipAmountCommentValue() > 0) {
+            // TODO: Update comment form
+            showError(getString(R.string.please_enter_min_tip_amount));
+            return;
+        }
 
         postComment();
     }
@@ -774,5 +797,45 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
         });
 
         Helper.setViewText(inlineBalanceValue, Helper.shortCurrencyFormat(Lbry.getAvailableBalance()));
+    }
+
+    private void loadChannelSettings(final String channelId) {
+        Activity activity = getActivity();
+        if (activity != null) {
+            ((OdyseeApp) activity.getApplication()).getExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Map<String, Object> options = new HashMap<>();
+                        options.put("channel_id", channelId);
+                        options.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+
+                        okhttp3.Response response = Comments.performRequest(Lbry.buildJsonParams(options), "setting.Get");
+                        ResponseBody responseBody = response.body();
+                        JSONObject jsonResponse = new JSONObject(responseBody.string());
+                        if (!jsonResponse.has("result") || jsonResponse.isNull("result")) {
+                            throw new ApiCallException("invalid json response");
+                        }
+
+                        JSONObject result = Helper.getJSONObject("result", jsonResponse);
+                        Type type = new TypeToken<CreatorSetting>(){}.getType();
+                        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+                        CreatorSetting creatorSetting = gson.fromJson(result.toString(), type);
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                didLoadChannelSettings(creatorSetting);
+                            }
+                        });
+                    } catch (JSONException | ApiCallException | IOException ex) {
+                        // pass
+                    }
+                }
+            });
+        }
+    }
+
+    private void didLoadChannelSettings(CreatorSetting creatorSetting) {
+        this.creatorSetting = creatorSetting;
     }
 }

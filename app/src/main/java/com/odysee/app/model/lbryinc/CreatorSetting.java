@@ -13,6 +13,13 @@ public class CreatorSetting {
     private int slowModeMinGap; // Unit: seconds
     private int timeSinceFirstComment; // Unit: minutes
 
+    public double getMinTipAmountCommentValue() {
+        return minTipAmountComment != null ? minTipAmountComment.doubleValue() : 0;
+    }
+    public double getMinTipAmountSuperChatValue() {
+        return minTipAmountSuperChat != null ? minTipAmountSuperChat.doubleValue() : 0;
+    }
+
     public String getTimeSinceFirstCommentString() {
         if (timeSinceFirstComment <= 0) {
             return "";
