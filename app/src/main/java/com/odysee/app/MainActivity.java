@@ -1661,7 +1661,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void openSendTo(String path) {
         Map<String, Object> params = new HashMap<>();
         params.put("directFilePath", path);
-//        openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+        openFragment(PublishFormFragment.class, true, params);
     }
 
     public void openFileClaim(Claim claim) {
