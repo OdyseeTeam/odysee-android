@@ -14,62 +14,6 @@
             android:layout_height="match_parent"
             android:paddingBottom="16dp"
             android:orientation="vertical">
-            <RelativeLayout
-                android:id="@+id/publish_form_media_container"
-                android:clickable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:layout_width="match_parent"
-                android:layout_height="240dp"
-                android:background="@android:color/black">
-
-                <ImageView
-                    android:id="@+id/publish_form_thumbnail_preview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <LinearLayout
-                    android:id="@+id/publish_form_thumbnail_upload_progress"
-                    android:background="@color/channelCoverBackground"
-                    android:layout_alignParentEnd="true"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal"
-                    android:paddingTop="2dp"
-                    android:paddingBottom="2dp"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:visibility="gone">
-                    <ProgressBar
-                        android:layout_width="16dp"
-                        android:layout_height="16dp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        style="@style/TextView_Light"
-                        android:text="@string/uploading_thumbnail"
-                        android:textColor="@color/white" />
-                </LinearLayout>
-
-                <RelativeLayout
-                    android:background="@drawable/bg_small_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:layout_alignParentBottom="true"
-                    android:layout_centerHorizontal="true">
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_centerInParent="true"
-                        android:src="@drawable/ic_edit"
-                        app:tint="@color/white" />
-                </RelativeLayout>
-            </RelativeLayout>
-
             <include layout="@layout/card_reward_driver"
                 android:visibility="gone"
                 android:layout_width="match_parent"
@@ -98,10 +42,45 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 style="@style/TextView_Light"
-                                android:inputType="textMultiLine"
-                                android:singleLine="false"
                                 android:textSize="14sp" />
                         </com.google.android.material.textfield.TextInputLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/publish_form_address_channel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:fontFamily="@font/inter"
+                                android:textSize="14sp"
+                                android:text="@string/url_anonymous_prefix" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:hint="@string/url">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/publish_form_input_address"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textSize="14sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/publish_form_inline_address_invalid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/address_invalid_characters"
+                            android:textColor="@color/red"
+                            android:visibility="gone" />
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="match_parent"
@@ -113,7 +92,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 style="@style/TextView_Light"
-                                android:singleLine="true"
+                                android:inputType="textMultiLine"
+                                android:singleLine="false"
                                 android:textSize="14sp" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
@@ -221,17 +201,92 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter"
+                            android:textSize="20sp"
+                            android:text="@string/thumbnail" />
+
+                        <RelativeLayout
+                            android:id="@+id/publish_form_media_container"
+                            android:clickable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:layout_width="match_parent"
+                            android:layout_height="240dp"
+                            android:background="@android:color/black">
+
+                            <ImageView
+                                android:id="@+id/publish_form_thumbnail_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <LinearLayout
+                                android:id="@+id/publish_form_thumbnail_upload_progress"
+                                android:background="@color/channelCoverBackground"
+                                android:layout_alignParentEnd="true"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginTop="4dp"
+                                android:orientation="horizontal"
+                                android:paddingTop="2dp"
+                                android:paddingBottom="2dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:visibility="gone">
+                                <ProgressBar
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    style="@style/TextView_Light"
+                                    android:text="@string/uploading_thumbnail"
+                                    android:textColor="@color/white" />
+                            </LinearLayout>
+
+                            <RelativeLayout
+                                android:background="@drawable/bg_small_icon"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_marginStart="16dp"
+                                android:layout_marginBottom="16dp"
+                                android:layout_alignParentBottom="true"
+                                android:layout_centerHorizontal="true">
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:layout_centerInParent="true"
+                                    android:src="@drawable/ic_edit"
+                                    app:tint="@color/white" />
+                            </RelativeLayout>
+                        </RelativeLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
                         <RelativeLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:layout_marginBottom="8dp">
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_centerVertical="true"
                                 android:fontFamily="@font/inter"
-                                android:textSize="20sp"
-                                android:text="@string/channel" />
+                                android:text="@string/channel"
+                                android:textSize="20sp" />
                             <ProgressBar
                                 android:id="@+id/publish_form_loading_channels"
                                 android:layout_width="20dp"
@@ -245,202 +300,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <androidx.cardview.widget.CardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="8dp"
-                                android:layout_centerVertical="true"
-                                android:fontFamily="@font/inter"
-                                android:textSize="20sp"
-                                android:text="@string/price" />
-                            <com.google.android.material.switchmaterial.SwitchMaterial
-                                android:id="@+id/publish_form_price_switch"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_centerVertical="true" />
-                        </RelativeLayout>
-
-                        <TextView
-                            android:id="@+id/publish_form_no_price"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/free_publish"
-                            style="@style/TextView_Light"
-                            android:textSize="14sp" />
-
-                        <RelativeLayout
-                            android:id="@+id/publish_form_price_container"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:visibility="gone">
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/publish_form_price_layout"
-                                android:layout_width="100dp"
-                                android:layout_height="wrap_content"
-                                android:hint="@string/price">
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/publish_form_input_price"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    style="@style/TextView_Light"
-                                    android:textSize="14sp"
-                                    android:inputType="numberDecimal" />
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                            <androidx.appcompat.widget.AppCompatSpinner
-                                android:id="@+id/publish_form_currency_spinner"
-                                android:entries="@array/publish_currencies"
-                                android:layout_width="160dp"
-                                android:layout_height="wrap_content"
-                                android:layout_toEndOf="@+id/publish_form_price_layout"
-                                android:layout_marginStart="4dp"
-                                android:layout_marginTop="24dp" />
-                        </RelativeLayout>
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <androidx.cardview.widget.CardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-                            <TextView
-                                android:layout_centerVertical="true"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="8dp"
-                                android:fontFamily="@font/inter"
-                                android:textSize="20sp"
-                                android:text="@string/content_address" />
-                            <TextView
-                                android:id="@+id/publish_form_generate_address"
-                                android:background="?attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:layout_alignParentEnd="true"
-                                android:layout_centerVertical="true"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="8dp"
-                                style="@style/TextView_Light"
-                                android:textSize="14sp"
-                                android:text="@string/randomize"
-                                android:focusable="true"/>
-                        </RelativeLayout>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/TextView_Light"
-                            android:text="@string/content_address_desc"
-                            android:textSize="14sp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:hint="@string/address">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/publish_form_input_address"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                style="@style/TextView_Light"
-                                android:inputType="textNoSuggestions"
-                                android:textSize="14sp" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <TextView
-                            android:id="@+id/publish_form_inline_address_invalid"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            style="@style/TextView_Light"
-                            android:text="@string/address_invalid_characters"
-                            android:textColor="@color/red"
-                            android:visibility="invisible" />
-
-                        <RelativeLayout
-                            android:layout_marginTop="16dp"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/publish_form_input_layout_deposit"
-                                android:layout_width="100dp"
-                                android:layout_height="wrap_content"
-                                android:hint="@string/deposit">
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/publish_form_input_deposit"
-                                    android:fontFamily="@font/inter"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:text="@string/min_deposit"
-                                    android:textSize="14sp"
-                                    android:inputType="numberDecimal" />
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                            <TextView
-                                android:id="@+id/publish_form_input_currency"
-                                android:layout_toEndOf="@id/publish_form_input_layout_deposit"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:layout_marginTop="30dp"
-                                style="@style/TextView_Light"
-                                android:text="@string/lbc"
-                                android:textAllCaps="true"
-                                android:textSize="11sp" />
-
-                            <LinearLayout
-                                android:id="@+id/publish_form_inline_balance_container"
-                                android:layout_toEndOf="@id/publish_form_input_currency"
-                                android:layout_marginStart="24dp"
-                                android:layout_marginTop="28dp"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:visibility="invisible">
-                                <ImageView
-                                    android:layout_width="12dp"
-                                    android:layout_height="12dp"
-                                    android:layout_gravity="center_vertical"
-                                    android:src="@drawable/ic_credits" />
-                                <TextView
-                                    android:id="@+id/publish_form_inline_balance_value"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    style="@style/TextView_Light"
-                                    android:layout_marginStart="2dp" />
-                            </LinearLayout>
-                        </RelativeLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            style="@style/TextView_Light"
-                            android:text="@string/deposit_remains_yours" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -465,9 +324,79 @@
                                 android:fontFamily="@font/inter"
                                 android:textSize="20sp"
                                 android:text="@string/additional_options" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                style="@style/TextView_Light"
+                                android:fontFamily="@font/inter"
+                                android:textSize="14sp"
+                                android:text="@string/release_time" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+                                <TextView
+                                    android:id="@+id/publish_form_release_date"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:fontFamily="@font/inter"
+                                    android:text="@string/time_default"
+                                    android:textColor="@color/odyseePink"
+                                    android:textSize="14sp" />
+                                <TextView
+                                    android:id="@+id/publish_form_release_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8sp"
+                                    android:visibility="gone"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    style="@style/TextView_Light"
+                                    android:fontFamily="@font/inter"
+                                    android:textColor="@color/odyseePink"
+                                    android:textSize="14sp"
+                                    android:text="@string/time_default" />
+                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/publish_form_release_time_future_not_allowed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:visibility="gone"
+                                style="@style/TextView_Light"
+                                android:fontFamily="@font/inter"
+                                android:textSize="14sp"
+                                android:text="@string/future_not_allowed" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/publish_form_release_time_now"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    android:fontFamily="@font/inter"
+                                    android:text="@string/time_now" />
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/publish_form_release_time_default"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    android:visibility="gone"
+                                    android:fontFamily="@font/inter"
+                                    android:text="@string/time_default" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 style="@style/TextView_Light"
                                 android:text="@string/language"
                                 android:textSize="14sp" />
@@ -505,6 +434,127 @@
                                     android:inputType="textNoSuggestions"
                                     android:textSize="14sp" />
                             </com.google.android.material.textfield.TextInputLayout>
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginBottom="8dp"
+                                    android:fontFamily="@font/inter"
+                                    android:text="@string/price"
+                                    android:textSize="14sp" />
+                                <com.google.android.material.switchmaterial.SwitchMaterial
+                                    android:id="@+id/publish_form_price_switch"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_centerVertical="true" />
+                            </RelativeLayout>
+                            <TextView
+                                android:id="@+id/publish_form_no_price"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/free_publish"
+                                style="@style/TextView_Light"
+                                android:textSize="14sp" />
+                            <RelativeLayout
+                                android:id="@+id/publish_form_price_container"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:visibility="gone">
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/publish_form_price_layout"
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:hint="@string/price">
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/publish_form_input_price"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        style="@style/TextView_Light"
+                                        android:textSize="14sp"
+                                        android:inputType="numberDecimal" />
+                                </com.google.android.material.textfield.TextInputLayout>
+                                <androidx.appcompat.widget.AppCompatSpinner
+                                    android:id="@+id/publish_form_currency_spinner"
+                                    android:entries="@array/publish_currencies"
+                                    android:layout_width="160dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_toEndOf="@+id/publish_form_price_layout"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_marginTop="24dp" />
+                            </RelativeLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                style="@style/TextView_Light"
+                                android:text="@string/deposit"
+                                android:textSize="14sp" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp">
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/publish_form_input_layout_deposit"
+                                    android:layout_width="100dp"
+                                    android:layout_height="wrap_content"
+                                    android:hint="@string/deposit">
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/publish_form_input_deposit"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:fontFamily="@font/inter"
+                                        android:inputType="numberDecimal"
+                                        android:singleLine="true"
+                                        android:text="@string/min_deposit"
+                                        android:textSize="14sp" />
+                                </com.google.android.material.textfield.TextInputLayout>
+                                <TextView
+                                    android:id="@+id/publish_form_input_currency"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginTop="30dp"
+                                    android:layout_toEndOf="@id/publish_form_input_layout_deposit"
+                                    android:text="@string/lbc"
+                                    android:textAllCaps="true"
+                                    android:textSize="11sp" />
+                                <LinearLayout
+                                    android:id="@+id/publish_form_inline_balance_container"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="24dp"
+                                    android:layout_marginTop="28dp"
+                                    android:layout_toEndOf="@id/publish_form_input_currency"
+                                    android:orientation="horizontal"
+                                    android:visibility="invisible">
+                                    <ImageView
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:layout_gravity="center_vertical"
+                                        android:src="@drawable/ic_credits" />
+                                    <TextView
+                                        android:id="@+id/publish_form_inline_balance_value"
+                                        style="@style/TextView_Light"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="2dp" />
+                                </LinearLayout>
+                            </RelativeLayout>
+
+                            <TextView
+                                style="@style/TextView_Light"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/deposit_remains_yours"
+                                android:textSize="14sp" />
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
                 </LinearLayout>

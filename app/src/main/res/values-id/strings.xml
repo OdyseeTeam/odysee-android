@@ -127,10 +127,6 @@
     <string name="mature_tags">Tag dewasa</string>
     <string name="price">Harga</string>
     <string name="free_publish">Konten Anda akan gratis. Tekan sakelar untuk menetapkan harga.</string>
-    <string name="content_address">Alamat konten</string>
-    <string name="randomize">Acak</string>
-    <string name="address">Alamat</string>
-    <string name="content_address_desc">Alamat tempat orang dapat menemukan konten Andat (mis. lbry://myvideo)</string>
     <string name="license">Lisensi</string>
     <string name="license_desc">Deskripsi lisensi</string>
     <string name="additional_options">Opsi tambahan</string>

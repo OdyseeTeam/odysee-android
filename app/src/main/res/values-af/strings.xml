@@ -128,10 +128,6 @@
     <string name="mature_tags">Volwasse etikette</string>
     <string name="price">Prys</string>
     <string name="free_publish">U content sal gratis wees. Druk op die skakelaar om \'n prys in te stel.</string>
-    <string name="content_address">Contentadres</string>
-    <string name="randomize">Dit enige</string>
-    <string name="address">Adres</string>
-    <string name="content_address_desc">Die adres waar mense u content kan vind (bv. lbry://myvideo)</string>
     <string name="license">Lisensie</string>
     <string name="license_desc">Lisensie beskrywing</string>
     <string name="additional_options">Bykomende Opsies</string>

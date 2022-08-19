@@ -139,10 +139,6 @@
     <string name="mature_tags">Tagovi za odrasle</string>
     <string name="price">Cena</string>
     <string name="free_publish">Vaš sadržaj će biti besplatan. Pritisnite dugme za podešavanje cene ukoliko želite.</string>
-    <string name="content_address">Adresa sadržaja</string>
-    <string name="randomize">Odaberi nasumično</string>
-    <string name="address">Adresa</string>
-    <string name="content_address_desc">Adresa na kojoj ljudi mogu pronaći vaš sadržaj (na primer lbry://myvideo).</string>
     <string name="license">Licenca</string>
     <string name="license_desc">Opis licence</string>
     <string name="additional_options">Dodatne Opcije</string>

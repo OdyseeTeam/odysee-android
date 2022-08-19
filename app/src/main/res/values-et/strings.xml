@@ -102,10 +102,6 @@
     <string name="mature_tags">Täiskasvanuile -sildid</string>
     <string name="price">Hind</string>
     <string name="free_publish">Postitus on tasuta. Kliki siin, et seada talle hind.</string>
-    <string name="content_address">Postituse aadress</string>
-    <string name="randomize">Juhuvalik</string>
-    <string name="address">Aadress</string>
-    <string name="content_address_desc">Aadress kust Sinu postitused on leitavad (nt. lbry://myvideo).</string>
     <string name="license">Litsents</string>
     <string name="license_desc">Litsentsi kirjeldus</string>
     <string name="additional_options">Lisavõimalused</string>

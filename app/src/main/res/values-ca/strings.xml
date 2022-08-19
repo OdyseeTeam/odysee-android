@@ -133,10 +133,6 @@
     <string name="mature_tags">Etiquetes per a adults</string>
     <string name="price">Preu</string>
     <string name="free_publish">El teu contingut serà gratis. Pitja el botó per establir-ne un preu</string>
-    <string name="content_address">Adreça de contingut</string>
-    <string name="randomize">Aleatoritza</string>
-    <string name="address">Adreça</string>
-    <string name="content_address_desc">L\'adreça en la qual la gent pot trobar el teu contingut (ex. lbry://elmeuvideo)</string>
     <string name="license">Llicència</string>
     <string name="license_desc">Descripció de la llicència</string>
     <string name="additional_options">Opcions addicionals</string>

@@ -231,12 +231,16 @@
     <string name="camera_permission_rationale_photo">LBRY requires access to your camera to take photos.</string>
     <string name="edit_content">Edit content</string>
     <string name="mature_tags">Mature tags</string>
+    <string name="thumbnail">Thumbnail</string>
+    <string name="url_anonymous_prefix">odysee.com/</string>
+    <string name="url_channel_prefix">odysee.com/\n%s/</string>
+    <string name="url">URL</string>
+    <string name="release_time">Release Time</string>
+    <string name="time_default">Default</string>
+    <string name="time_now">Now</string>
+    <string name="future_not_allowed">Cannot set to a future time.</string>
     <string name="price">Price</string>
     <string name="free_publish">Your content will be free. Press the toggle to set a price.</string>
-    <string name="content_address">Content address</string>
-    <string name="randomize">Randomize</string>
-    <string name="address">Address</string>
-    <string name="content_address_desc">The address where people can find your content (ex. lbry://myvideo)</string>
     <string name="license">License</string>
     <string name="license_desc">License description</string>
     <string name="additional_options">Additional Options</string>
@@ -264,6 +268,7 @@
     <string name="price_amount_not_set">Please enter a price or turn off the toggle to make your content free.</string>
     <string name="publish_no_thumbnail">Please select a thumbnail to upload before publishing.</string>
     <string name="publish_thumbnail_in_progress">Please wait for the thumbnail to finish uploading before publishing.</string>
+    <string name="invalid_release_time">Please enter a valid release time.</string>
 
     <string name="language">Language</string>
     <string name="english">English</string>

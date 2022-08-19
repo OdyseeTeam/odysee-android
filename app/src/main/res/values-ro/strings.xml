@@ -134,10 +134,6 @@
     <string name="mature_tags">Etichete adulți</string>
     <string name="price">Preț</string>
     <string name="free_publish">Conținutul tău va fi gratuit. Apasă comutatorul dacă ceri un preț.</string>
-    <string name="content_address">Adresă conținut</string>
-    <string name="randomize">Aleator</string>
-    <string name="address">Adresa</string>
-    <string name="content_address_desc">Adresa unde poate fi găsit conținutul (ex. lbry://filmulmeu).</string>
     <string name="license">Licența</string>
     <string name="license_desc">Descriere licență</string>
     <string name="additional_options">Opțiuni adiționale</string>

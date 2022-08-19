@@ -127,10 +127,6 @@
     <string name="mature_tags">成人標籤</string>
     <string name="price">價錢</string>
     <string name="free_publish">你的內容將會是免費。請開啟選項以設定價錢。</string>
-    <string name="content_address">內容網址</string>
-    <string name="randomize">隨機化</string>
-    <string name="address">網址</string>
-    <string name="content_address_desc">人們用以查閱你已發佈內容的網址（例：lbry://myvideo）</string>
     <string name="license">授權</string>
     <string name="license_desc">授權描述</string>
     <string name="additional_options">進階選項</string>

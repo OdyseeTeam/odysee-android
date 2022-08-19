@@ -133,10 +133,6 @@
     <string name="mature_tags">Etichette per adulti</string>
     <string name="price">Prezzo</string>
     <string name="free_publish">Il tuo contenuto sarà gratuito. Clicca l\'interruttore per impostare un prezzo.</string>
-    <string name="content_address">Indirizzo contenuto</string>
-    <string name="randomize">Randomizza</string>
-    <string name="address">Indirizzo</string>
-    <string name="content_address_desc">L\'indirizzo al quale le persone possono trovare i tuoi contenuti (es. lbry://myvideo)</string>
     <string name="license">Licenza</string>
     <string name="license_desc">Descrizione licenza</string>
     <string name="additional_options">Opzioni aggiuntive</string>

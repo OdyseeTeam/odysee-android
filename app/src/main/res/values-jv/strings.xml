@@ -127,10 +127,6 @@
     <string name="mature_tags">Tag diwasa</string>
     <string name="price">Rega</string>
     <string name="free_publish">Konten sampeyan bakal gratis. Pencet pilihan kanggo nyetel rega.</string>
-    <string name="content_address">Alamat konten</string>
-    <string name="randomize">Ngacak</string>
-    <string name="address">Alamate</string>
-    <string name="content_address_desc">Alamat ing ngendi wong bisa nemokake konten sampeyan (contohe. lbry://myvideo). </string>
     <string name="license">Lisensi</string>
     <string name="license_desc">Katrangan lisensine</string>
     <string name="additional_options">Pilihan tambahan</string>

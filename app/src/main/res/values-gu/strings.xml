@@ -128,10 +128,6 @@
     <string name="mature_tags">પુખ્ત ટૅગ્સ</string>
     <string name="price">કિંમત</string>
     <string name="free_publish">તમારી સામગ્રી મફત હશે. ભાવ સેટ કરવા માટે ટgગલ દબાવો.</string>
-    <string name="content_address">સામગ્રી સરનામું</string>
-    <string name="randomize">રેન્ડમાઇઝ કરો</string>
-    <string name="address">સરનામું</string>
-    <string name="content_address_desc">સરનામું જ્યાં લોકો તમારી સામગ્રી શોધી શકે છે (ઉદા. lbry://myvideo)</string>
     <string name="license">લાઇસન્સ</string>
     <string name="license_desc">લાઇસેંસનું વર્ણન</string>
     <string name="additional_options">વધારાના વિકલ્પો</string>

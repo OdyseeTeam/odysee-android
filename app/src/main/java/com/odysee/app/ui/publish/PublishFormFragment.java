@@ -15,6 +15,8 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +42,10 @@ import com.arthenica.mobileffmpeg.StatisticsCallback;
 import com.bumptech.glide.Glide;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.DateValidatorPointBackward;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -50,9 +56,15 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -135,7 +147,6 @@ public class PublishFormFragment extends BaseFragment implements
     private View layoutPrice;
     private SwitchMaterial switchPrice;
     private ImageView imageThumbnail;
-    private TextView linkGenerateAddress;
 
     private TextInputEditText inputTitle;
     private TextInputEditText inputDescription;
@@ -146,7 +157,13 @@ public class PublishFormFragment extends BaseFragment implements
     private TextInputLayout layoutOtherLicenseDescription;
     private View inlineDepositBalanceContainer;
     private TextView inlineDepositBalanceValue;
+    private TextView textAddressChannel;
     private TextView textInlineAddressInvalid;
+    private TextView linkReleaseDate;
+    private TextView linkReleaseTime;
+    private TextView textReleaseTimeFutureNotAllowed;
+    private MaterialButton buttonReleaseTimeNow;
+    private MaterialButton buttonReleaseTimeDefault;
 
     private View linkPublishCancel;
     private MaterialButton buttonPublish;
@@ -160,6 +177,9 @@ public class PublishFormFragment extends BaseFragment implements
     private GalleryItem currentGalleryItem;
     private String currentFilePath;
     private String transcodedFilePath;
+    private long releaseDateMillis = Long.MIN_VALUE;
+    private int releaseTimeHours = -1;
+    private int releaseTimeMinutes = -1;
 
     private View mediaContainer;
     private View uploadProgress;
@@ -184,6 +204,7 @@ public class PublishFormFragment extends BaseFragment implements
         noTagsView = root.findViewById(R.id.form_no_added_tags);
         noTagResultsView = root.findViewById(R.id.form_no_tag_results);
 
+        textAddressChannel = root.findViewById(R.id.publish_form_address_channel);
         textInlineAddressInvalid = root.findViewById(R.id.publish_form_inline_address_invalid);
         inlineDepositBalanceContainer = root.findViewById(R.id.publish_form_inline_balance_container);
         inlineDepositBalanceValue = root.findViewById(R.id.publish_form_inline_balance_value);
@@ -202,7 +223,6 @@ public class PublishFormFragment extends BaseFragment implements
         switchPrice = root.findViewById(R.id.publish_form_price_switch);
         uploadProgress = root.findViewById(R.id.publish_form_thumbnail_upload_progress);
         imageThumbnail = root.findViewById(R.id.publish_form_thumbnail_preview);
-        linkGenerateAddress = root.findViewById(R.id.publish_form_generate_address);
 
         inputTitle = root.findViewById(R.id.publish_form_input_title);
         inputDescription = root.findViewById(R.id.publish_form_input_description);
@@ -214,6 +234,12 @@ public class PublishFormFragment extends BaseFragment implements
         priceCurrencySpinner = root.findViewById(R.id.publish_form_currency_spinner);
         languageSpinner = root.findViewById(R.id.publish_form_language_spinner);
         licenseSpinner = root.findViewById(R.id.publish_form_license_spinner);
+
+        linkReleaseDate = root.findViewById(R.id.publish_form_release_date);
+        linkReleaseTime = root.findViewById(R.id.publish_form_release_time);
+        textReleaseTimeFutureNotAllowed = root.findViewById(R.id.publish_form_release_time_future_not_allowed);
+        buttonReleaseTimeNow = root.findViewById(R.id.publish_form_release_time_now);
+        buttonReleaseTimeDefault = root.findViewById(R.id.publish_form_release_time_default);
 
         linkPublishCancel = root.findViewById(R.id.publish_form_cancel);
         buttonPublish = root.findViewById(R.id.publish_form_publish_button);
@@ -275,15 +301,6 @@ public class PublishFormFragment extends BaseFragment implements
             }
         });
 
-        linkGenerateAddress.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!editMode) {
-                    inputAddress.setText(Helper.generateUrl());
-                }
-            }
-        });
-
         switchPrice.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
@@ -302,7 +319,7 @@ public class PublishFormFragment extends BaseFragment implements
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 String value = Helper.getValue(charSequence);
                 boolean invalid = !Helper.isNullOrEmpty(value) && !LbryUri.isNameValid(value);
-                Helper.setViewVisibility(textInlineAddressInvalid, invalid ? View.VISIBLE : View.INVISIBLE);
+                Helper.setViewVisibility(textInlineAddressInvalid, invalid ? View.VISIBLE : View.GONE);
             }
 
             @Override
@@ -350,10 +367,15 @@ public class PublishFormFragment extends BaseFragment implements
                 Object item = adapterView.getItemAtPosition(position);
                 if (item instanceof Claim) {
                     Claim claim = (Claim) item;
-                    if (claim.isPlaceholder() && !claim.isPlaceholderAnonymous()) {
+                    if (claim.isPlaceholderAnonymous()) {
+                        textAddressChannel.setText(R.string.url_anonymous_prefix);
+                    } else if (claim.isPlaceholder()) {
                         if (!fetchingChannels) {
                             showChannelCreator();
                         }
+                        textAddressChannel.setText(R.string.url_anonymous_prefix);
+                    } else {
+                        textAddressChannel.setText(getString(R.string.url_channel_prefix, claim.getName()));
                     }
                 }
             }
@@ -379,6 +401,97 @@ public class PublishFormFragment extends BaseFragment implements
             @Override
             public void afterTextChanged(Editable editable) {
 
+            }
+        });
+
+        linkReleaseDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (context instanceof MainActivity) {
+                    MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                            .setSelection(releaseDateMillis > Long.MIN_VALUE
+                                    ? releaseDateMillis : MaterialDatePicker.todayInUtcMilliseconds())
+                            .setCalendarConstraints(
+                                    new CalendarConstraints.Builder()
+                                            .setValidator(DateValidatorPointBackward.now())
+                                            .build()
+                            )
+                            .build();
+                    datePicker.addOnPositiveButtonClickListener(new MaterialPickerOnPositiveButtonClickListener<Long>() {
+                        @Override
+                        public void onPositiveButtonClick(Long millis) {
+                            linkReleaseDate.setText(DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_DATE));
+                            linkReleaseTime.setVisibility(View.VISIBLE);
+                            buttonReleaseTimeDefault.setVisibility(View.VISIBLE);
+                            releaseDateMillis = millis;
+                            checkReleaseTimeInvalid();
+                        }
+                    });
+                    datePicker.show(((MainActivity) context).getSupportFragmentManager(), "DatePicker");
+                }
+            }
+        });
+
+        linkReleaseTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (context instanceof MainActivity) {
+                    ZonedDateTime time = Instant.now().atZone(ZoneId.systemDefault());
+                    MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                            .setTimeFormat(DateFormat.is24HourFormat(context) ? TimeFormat.CLOCK_24H : TimeFormat.CLOCK_12H)
+                            .setHour(releaseTimeHours > -1 ? releaseTimeHours : time.getHour())
+                            .setMinute(releaseTimeMinutes > -1 ? releaseTimeMinutes : time.getMinute())
+                            .build();
+                    timePicker.addOnPositiveButtonClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            releaseTimeHours = timePicker.getHour();
+                            releaseTimeMinutes = timePicker.getMinute();
+
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.set(Calendar.HOUR_OF_DAY, releaseTimeHours);
+                            calendar.set(Calendar.MINUTE, releaseTimeMinutes);
+
+                            linkReleaseTime.setText(checkReleaseTimeInvalid() ? getString(R.string.time_default)
+                                    : DateUtils.formatDateTime(context, calendar.getTimeInMillis(), DateUtils.FORMAT_SHOW_TIME));
+                        }
+                    });
+                    timePicker.show(((MainActivity) context).getSupportFragmentManager(), "TimePicker");
+                }
+            }
+        });
+
+        buttonReleaseTimeNow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Instant now = Instant.now();
+                ZonedDateTime time = now.atZone(ZoneId.systemDefault());
+                long millis = now.toEpochMilli();
+
+                linkReleaseDate.setText(DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_DATE));
+                linkReleaseTime.setText(DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_TIME));
+                linkReleaseTime.setVisibility(View.VISIBLE);
+                buttonReleaseTimeDefault.setVisibility(View.VISIBLE);
+                textReleaseTimeFutureNotAllowed.setVisibility(View.GONE);
+
+                releaseDateMillis = MaterialDatePicker.todayInUtcMilliseconds();
+                releaseTimeHours = time.getHour();
+                releaseTimeMinutes = time.getMinute();
+            }
+        });
+
+        buttonReleaseTimeDefault.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                releaseDateMillis = Long.MIN_VALUE;
+                releaseTimeHours = -1;
+                releaseTimeMinutes = -1;
+
+                linkReleaseTime.setText(R.string.time_default);
+                linkReleaseDate.setText(R.string.time_default);
+                linkReleaseTime.setVisibility(View.GONE);
+                textReleaseTimeFutureNotAllowed.setVisibility(View.GONE);
+                buttonReleaseTimeDefault.setVisibility(View.GONE);
             }
         });
 
@@ -437,6 +550,11 @@ public class PublishFormFragment extends BaseFragment implements
                 double priceAmount = Helper.parseDouble(priceString, 0);
                 if (switchPrice.isChecked() && priceAmount == 0) {
                     showError(getString(R.string.price_amount_not_set));
+                    return;
+                }
+
+                if (releaseDateMillis > Long.MIN_VALUE && (releaseTimeHours == -1 || releaseTimeMinutes == -1)) {
+                    showError(getString(R.string.invalid_release_time));
                     return;
                 }
 
@@ -645,6 +763,11 @@ public class PublishFormFragment extends BaseFragment implements
         }
 
         Helper.setViewVisibility(cardVideoOptimization, isVideo ? View.VISIBLE : View.GONE);
+
+        String fileName = new File(filePath).getName();
+        fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        Helper.setViewText(inputTitle, fileName);
+        Helper.setViewText(inputAddress, fileName.replaceAll(LbryUri.REGEX_INVALID_URI, "-"));
 
         publishFileChecked = true;
     }
@@ -960,6 +1083,21 @@ public class PublishFormFragment extends BaseFragment implements
         }
     }
 
+    private boolean checkReleaseTimeInvalid() {
+        boolean isReleaseTimeInvalid = releaseTimeHours > -1 && releaseTimeMinutes > -1
+                && LocalDateTime
+                        .ofInstant(Instant.ofEpochMilli(releaseDateMillis), ZoneId.of("UTC"))
+                        .plusHours(releaseTimeHours)
+                        .plusMinutes(releaseTimeMinutes)
+                        .isAfter(LocalDateTime.now());
+        textReleaseTimeFutureNotAllowed.setVisibility(isReleaseTimeInvalid ? View.VISIBLE : View.GONE);
+        if (isReleaseTimeInvalid) {
+            releaseTimeHours = -1;
+            releaseTimeMinutes = -1;
+        }
+        return isReleaseTimeInvalid;
+    }
+
     private Claim buildPublishClaim() {
         Claim claim = new Claim();
 
@@ -1001,14 +1139,14 @@ public class PublishFormFragment extends BaseFragment implements
             metadata.setLicenseUrl(selectedLicense.getUrl());
         }
 
-        // set release time from current claim (on edit)
-        if (currentClaim != null) {
-            Claim.StreamMetadata currentMetadata = (Claim.StreamMetadata) currentClaim.getValue();
-            metadata.setReleaseTime(currentMetadata.getReleaseTime());
-            if (metadata.getReleaseTime() == 0) {
-                metadata.setReleaseTime(currentClaim.getTimestamp());
-            }
-            claim.setTimestamp(currentClaim.getTimestamp());
+        if (releaseDateMillis > Long.MIN_VALUE && releaseTimeHours > -1 && releaseTimeMinutes > -1) {
+            long secs = LocalDateTime
+                    .ofInstant(Instant.ofEpochMilli(releaseDateMillis), ZoneId.of("UTC"))
+                    .plusHours(releaseTimeHours)
+                    .plusMinutes(releaseTimeMinutes)
+                    .atZone(ZoneId.systemDefault())
+                    .toEpochSecond();
+            metadata.setReleaseTime(secs);
         }
 
         claim.setValueType(Claim.TYPE_STREAM);
@@ -1108,7 +1246,6 @@ public class PublishFormFragment extends BaseFragment implements
         Helper.setViewEnabled(languageSpinner, false);
         Helper.setViewEnabled(licenseSpinner, false);
         Helper.setViewEnabled(priceCurrencySpinner, false);
-        Helper.setViewEnabled(linkGenerateAddress, false);
 
         Helper.setViewEnabled(linkShowExtraFields, false);
         Helper.setViewEnabled(linkPublishCancel, false);
@@ -1128,7 +1265,6 @@ public class PublishFormFragment extends BaseFragment implements
         Helper.setViewEnabled(languageSpinner, true);
         Helper.setViewEnabled(licenseSpinner, true);
         Helper.setViewEnabled(priceCurrencySpinner, true);
-        Helper.setViewEnabled(linkGenerateAddress, true);
 
         Helper.setViewEnabled(linkShowExtraFields, true);
         Helper.setViewEnabled(linkPublishCancel, true);
