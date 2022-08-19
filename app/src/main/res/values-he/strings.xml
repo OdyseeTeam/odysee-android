@@ -145,10 +145,6 @@
     <string name="mature_tags">תגיות למבוגרים</string>
     <string name="price">מחיר</string>
     <string name="free_publish">התוכן שלך יפורסם בחינם. לחץ על המתג לקביעת מחיר.</string>
-    <string name="content_address">כתובת התוכן</string>
-    <string name="randomize">צור אקראית</string>
-    <string name="address">כתובת</string>
-    <string name="content_address_desc">הכתובת שבעזרתה אנשים ימצאו את התוכן שלכם (לדוגמה lbry://myvideo)</string>
     <string name="license">רישיון</string>
     <string name="license_desc">תיאור רישיון</string>
     <string name="additional_options">אפשרויות נוספות</string>

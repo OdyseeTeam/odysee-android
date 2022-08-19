@@ -129,10 +129,6 @@ Bitte versuche es später erneut.</string>
     <string name="mature_tags">Altersbeschränkte Themen</string>
     <string name="price">Preis</string>
     <string name="free_publish">Dein Inhalt wird kostenlos zur Verfügung stehen. Drücke den Schalter um einen Preis festzulegen.</string>
-    <string name="content_address">Inhaltsadresse</string>
-    <string name="randomize">Randomisieren</string>
-    <string name="address">Adresse</string>
-    <string name="content_address_desc">Die Adresse, an der Personen Deinen Inhalt finden können (z. B. lbry://myvideo)</string>
     <string name="license">Lizenz</string>
     <string name="license_desc">Lizenzbeschreibung</string>
     <string name="additional_options">Weitere Optionen</string>

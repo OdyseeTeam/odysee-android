@@ -133,10 +133,6 @@
     <string name="mature_tags">Etiquetas maduras</string>
     <string name="price">Precio</string>
     <string name="free_publish">Tu contenido será gratis. Presiona el botón para establecer un precio.</string>
-    <string name="content_address">Dirección de contenido</string>
-    <string name="randomize">Aleatorio</string>
-    <string name="address">Dirección</string>
-    <string name="content_address_desc">La dirección donde las personas pueden encontrar su contenido (Ejemplo. lbry://myvideo)</string>
     <string name="license">Licencia</string>
     <string name="license_desc">Descripción de la licencia</string>
     <string name="additional_options">Opciones adicionales</string>

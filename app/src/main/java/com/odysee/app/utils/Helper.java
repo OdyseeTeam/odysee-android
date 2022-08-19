@@ -857,16 +857,6 @@ public final class Helper {
         return (int) (value * scale + 0.5f);
     }
 
-    public static String generateUrl() {
-        Random random = new Random();
-
-        String sb = "";
-        sb += Predefined.ADJECTIVES.get(random.nextInt(Predefined.ADJECTIVES.size())) + "-";
-        sb += Predefined.ADJECTIVES.get(random.nextInt(Predefined.ADJECTIVES.size())) + "-";
-        sb += Predefined.ANIMALS.get(random.nextInt(Predefined.ANIMALS.size()));
-        return sb.toLowerCase();
-    }
-
     public static void refreshRecyclerView(RecyclerView rv) {
         if (rv == null) {
             return;

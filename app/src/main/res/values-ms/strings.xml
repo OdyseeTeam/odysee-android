@@ -128,10 +128,6 @@ Sila kembali sebentar lagi.</string>
     <string name="mature_tags">Tag-tag matang</string>
     <string name="price">Harga</string>
     <string name="free_publish">Kandungan anda akan menjadi percuma. Tekan butang toggel untuk menetapkan harga.</string>
-    <string name="content_address">Alamat kandungan</string>
-    <string name="randomize">Rawakan</string>
-    <string name="address">Alamat</string>
-    <string name="content_address_desc">Alamat dimana pengguna dapat menemui kandungan anda (contoh:  lbry://myvideo)</string>
     <string name="license">Lesen</string>
     <string name="license_desc">Deskripsi lesen</string>
     <string name="additional_options">Pilihan Tambahan</string>

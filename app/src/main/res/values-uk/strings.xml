@@ -140,10 +140,6 @@
     <string name="mature_tags">Дорослі теги</string>
     <string name="price">Ціна</string>
     <string name="free_publish">Ваш контент буде безкоштовним. Натисніть, щоби вказати ціну.</string>
-    <string name="content_address">Адреса контенту</string>
-    <string name="randomize">Обрати навмання </string>
-    <string name="address">Адреса </string>
-    <string name="content_address_desc">Адреса, за якою люди можуть знайти Ваш контент (наприклад lbry://myvideo)</string>
     <string name="license">Ліцензія</string>
     <string name="license_desc">Опис ліцензії</string>
     <string name="additional_options">Додаткові налаштування</string>

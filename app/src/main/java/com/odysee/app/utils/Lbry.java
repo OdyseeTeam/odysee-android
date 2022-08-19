@@ -45,7 +45,7 @@ public final class Lbry {
     public static final Map<ClaimCacheKey, Claim> claimCache = new HashMap<>();
     public static final Map<Map<String, Object>, ClaimSearchCacheValue> claimSearchCache = new HashMap<>();
     public static WalletBalance walletBalance = new WalletBalance();
-    public static List<Tag> knownTags = new ArrayList<>();
+    public static List<Tag> knownTags = Predefined.DEFAULT_KNOWN_TAGS.stream().map(Tag::new).collect(Collectors.toList());
     public static List<Tag> followedTags = new ArrayList<>();
     public static List<Claim> ownClaims = new ArrayList<>();
     public static List<Claim> ownChannels = new ArrayList<>(); // Make this a subset of ownClaims?

@@ -128,10 +128,6 @@
     <string name="mature_tags">Olgun etiketler</string>
     <string name="price">Ücret</string>
     <string name="free_publish">İçeriğiniz ücretsiz olacak. Bir fiyat belirlemek için seçim düğmesine basın.</string>
-    <string name="content_address">İçerik adresi</string>
-    <string name="randomize">Rastgele</string>
-    <string name="address">Adres</string>
-    <string name="content_address_desc">Kullanıcıların içeriğinizi bulabileceği adres (ör. lbry://myvideo)</string>
     <string name="license">Lisans</string>
     <string name="license_desc">Lisans açıklaması</string>
     <string name="additional_options">Ek Ayarlar</string>

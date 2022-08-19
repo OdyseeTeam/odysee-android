@@ -133,10 +133,6 @@
     <string name="mature_tags">परिपक्व टैग</string>
     <string name="price">मूल्य</string>
     <string name="free_publish">आपकी सामग्री निशुल्क होगी। टाॅगल को दबाकर मूल्य निश्चित करें।</string>
-    <string name="content_address">सामग्री का पता</string>
-    <string name="randomize">बेतरतीब</string>
-    <string name="address">पता</string>
-    <string name="content_address_desc">वह पता जहां लोग आप की सामग्री को ढूंढ पाए  (ex. lbry://myvideo)</string>
     <string name="license">लाइसेंस</string>
     <string name="license_desc">लाइसेंस विवरण</string>
     <string name="additional_options">अतिरिक्त विकल्प</string>

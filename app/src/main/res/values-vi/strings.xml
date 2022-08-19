@@ -123,10 +123,6 @@
     <string name="mature_tags">Thẻ nội dung người lớn</string>
     <string name="price">Giá</string>
     <string name="free_publish">Nội dung của bạn sẽ được miễn phí. Nhấn nút bật để đặt giá.</string>
-    <string name="content_address">Địa chỉ nội dung</string>
-    <string name="randomize">Chọn ngẫu nhiên</string>
-    <string name="address">Địa chỉ</string>
-    <string name="content_address_desc">Địa chỉ nơi mọi người có thể tìm thấy nội dung của bạn (ví dụ: lbry: // myvideo)</string>
     <string name="license">Bản quyền</string>
     <string name="license_desc">Mô tả giấy phép bản quyền</string>
     <string name="additional_options">Thêm tùy chọn</string>

@@ -145,10 +145,6 @@
     <string name="mature_tags">Dorosłe tagi</string>
     <string name="price">Cena</string>
     <string name="free_publish">Twoja zawartość będzie darmowa. Kliknij przełącznik aby ustawić cene.</string>
-    <string name="content_address">Adres treści</string>
-    <string name="randomize">Losuj</string>
-    <string name="address">Adres</string>
-    <string name="content_address_desc">Adres, pod którym ludzie mogą znaleźć Twoje treści (np. bry://myvideo)</string>
     <string name="license">Licencja</string>
     <string name="license_desc">Opis licencji</string>
     <string name="additional_options">Dodatkowe opcje</string>
