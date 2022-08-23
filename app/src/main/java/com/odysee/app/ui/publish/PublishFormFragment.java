@@ -1449,13 +1449,6 @@ public class PublishFormFragment extends BaseFragment implements
             }
             channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
         }
-
-        if (channelSpinner != null) {
-            View formRoot = (View) channelSpinner.getParent().getParent();
-            formRoot.setVisibility(View.VISIBLE);
-            formRoot.findViewById(R.id.has_channels).setVisibility(View.VISIBLE);
-            formRoot.findViewById(R.id.no_channels).setVisibility(View.GONE);
-        }
     }
 
     private static class VideoProbeTask extends AsyncTask<Void, Void, VideoInformation> {

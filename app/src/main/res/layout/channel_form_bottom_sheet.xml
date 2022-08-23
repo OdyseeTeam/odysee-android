@@ -30,6 +30,7 @@
             android:layout_height="wrap_content"
             style="@style/TextView_Light"
             android:hint="@string/channel_name"
+            android:singleLine="true"
             tools:text="channel"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
