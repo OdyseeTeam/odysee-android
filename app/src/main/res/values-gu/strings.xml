@@ -69,8 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">\"%1$s\" પર ફાઇલ અસ્તિત્વમાં નથી.</string>
     <string name="confirm_purchase">ખરીદીની પુષ્ટિ કરો</string>
-    <string name="delete_file">ફાઇલ કાઢી નાંખવું </string>
-    <string name="confirm_delete_file_message">શું તમે ખરેખર આ ફાઇલને તમારા ઉપકરણમાંથી દૂર કરવા માંગો છો?</string>
     <string name="unable_to_view_url">%1$s લોડ કરવામાં નિષ્ફળ. પછીથી ફરી પ્રયત્ન કરો.</string>
     <string name="delete_content">સામગ્રી કાઢી નાંખો?</string>
     <string name="confirm_delete_content_message">શું તમે ખરેખર આ સામગ્રીને પ્રકાશિત કરવા માંગો છો? તમારા ઉપકરણમાંથી કોઈ ફાઇલો દૂર કરવામાં આવશે નહીં.</string>

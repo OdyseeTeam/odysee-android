@@ -194,7 +194,6 @@ import com.odysee.app.tasks.BufferEventTask;
 import com.odysee.app.tasks.CommentCreateTask;
 import com.odysee.app.tasks.CommentListHandler;
 import com.odysee.app.tasks.CommentListTask;
-import com.odysee.app.tasks.GenericTaskHandler;
 import com.odysee.app.tasks.ReadTextFileTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
 import com.odysee.app.tasks.claim.AbandonStreamTask;
@@ -204,7 +203,6 @@ import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.PurchaseListTask;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
-import com.odysee.app.tasks.file.DeleteFileTask;
 import com.odysee.app.tasks.file.FileListTask;
 import com.odysee.app.tasks.file.GetFileTask;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
@@ -1497,25 +1495,6 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (actualClaim != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
-                        setTitle(R.string.delete_file).
-                        setMessage(R.string.confirm_delete_file_message)
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                deleteClaimFile();
-                            }
-                        }).setNegativeButton(R.string.no, null);
-                    builder.show();
-                }
-            }
-        });
-
-        root.findViewById(R.id.file_view_action_unpublish).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                if (actualClaim != null) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_content).
                         setMessage(R.string.confirm_delete_content_message)
                         .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
@@ -2039,8 +2018,8 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(layoutLoadingState, View.VISIBLE);
             Helper.setViewVisibility(layoutNothingAtLocation, View.GONE);
 
-            final View rootView = getView();
-            AbandonStreamTask task = new AbandonStreamTask(Arrays.asList(actualClaim.getClaimId()), layoutResolving, new AbandonHandler() {
+            AbandonStreamTask task = new AbandonStreamTask(Collections.singletonList(actualClaim.getClaimId()),
+                    layoutResolving, Lbryio.AUTH_TOKEN, new AbandonHandler() {
                 @Override
                 public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                     Context context = getContext();
@@ -2135,44 +2114,6 @@ public class FileViewFragment extends BaseFragment implements
         } else {
             // download the file
             fileGet(true);
-        }
-    }
-
-    private void deleteClaimFile() {
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        if (actualClaim != null) {
-            View actionDelete = getView().findViewById(R.id.file_view_action_delete);
-            DeleteFileTask task = new DeleteFileTask(actualClaim.getClaimId(), new GenericTaskHandler() {
-                @Override
-                public void beforeStart() {
-                    actionDelete.setEnabled(false);
-                }
-
-                @Override
-                public void onSuccess() {
-                    Helper.setViewVisibility(actionDelete, View.GONE);
-                    View root = getView();
-                    if (root != null) {
-//                        root.findViewById(R.id.file_view_action_download).setVisibility(View.VISIBLE);
-                        root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.GONE);
-                    }
-                    Helper.setViewEnabled(actionDelete, true);
-
-                    actualClaim.setFile(null);
-                    Lbry.unsetFilesForCachedClaims(Collections.singletonList(actualClaim.getClaimId()));
-
-                    restoreMainActionButton();
-                }
-
-                @Override
-                public void onError(Exception error) {
-                    actionDelete.setEnabled(true);
-                    if (error != null) {
-                        showError(error.getMessage());
-                    }
-                }
-            });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -4400,10 +4341,8 @@ public class FileViewFragment extends BaseFragment implements
         View root = getView();
         if (root != null) {
             if (actualClaim.getFile() != null && actualClaim.getFile().isCompleted()) {
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), View.VISIBLE);
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.GONE);
             } else {
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), View.GONE);
 //                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.VISIBLE);
             }
 
@@ -4563,10 +4502,8 @@ public class FileViewFragment extends BaseFragment implements
             View root = getView();
             if (root != null) {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_report), isOwnClaim ? View.GONE : View.VISIBLE);
-                // TODO Re-enable this when implemented
-//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_edit), isOwnClaim ? View.VISIBLE : View.GONE);
-//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_unpublish), isOwnClaim ? View.VISIBLE : View.GONE);
-
+                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_edit), isOwnClaim ? View.VISIBLE : View.GONE);
+                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), isOwnClaim ? View.VISIBLE : View.GONE);
 
                 LinearLayout fileViewActionsArea = root.findViewById(R.id.file_view_actions_area);
                 fileViewActionsArea.setWeightSum(isOwnClaim ? 6 : 5);

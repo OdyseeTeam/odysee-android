@@ -148,13 +148,11 @@
     <string name="auto_quality">Auto</string>
     <string name="claim_file_not_found">The file at "%1$s" does not exist.</string>
     <string name="confirm_purchase">Confirm Purchase</string>
-    <string name="delete_file">Delete file</string>
-    <string name="confirm_delete_file_message">Are you sure you want to remove this file from your device?</string>
     <string name="unable_to_view_url">Failed to load %1$s. Please try again later.</string>
     <string name="cast_introductory_overlay_text">Touch to cast media to your TV</string>
-    <string name="delete_content">Delete content?</string>
-    <string name="confirm_delete_content_message">Are you sure you want to unpublish this content? No files will be removed from your device.</string>
-    <string name="content_deleted">The content was successfully deleted from the blockchain.</string>
+    <string name="delete_content">Confirm Removal</string>
+    <string name="confirm_delete_content_message">Are you sure you want to remove this?\n\nThis will prevent others from accessing the content you published. It will return the deposited Credits to your spendable balance.\n\n<font color="#ff0000">FINAL WARNING: This action is permanent and cannot be undone.</font></string>
+    <string name="content_deleted">Your upload will be removed in a few minutes.</string>
     <string name="content_failed_delete">The content could not be deleted at this time. Please try again later.</string>
     <string name="comment">Comment</string>
     <string name="comment_as">Comment as</string>
@@ -255,6 +253,7 @@
     <string name="video_optimize_failed">Your video could not be optimized. The file will be uploaded with no changes.</string>
     <string name="completed_video_duration">Completed Video Duration: %1$s</string>
     <string name="publish_successful">Your content was successfully published. It may take a few moments to appear on the blockchain.</string>
+    <string name="update_successful">Your content was successfully updated. It may take a few moments to appear on the blockchain.</string>
     <string name="transcode_in_progress">Video optimization is in progress. If you wish to cancel, press Cancel at the bottom of the page.</string>
     <string name="optimization_in_progress">Video optimization is in progress.</string>
     <string name="cannot_capture_video">There is no camera app available to record videos on this device.</string>
@@ -328,12 +327,12 @@
     <!-- Publishes -->
     <string name="one_or_more_publishes_failed_abandon">One or more content items could not be deleted at this time. Please try again later.</string>
     <plurals name="confirm_delete_publishes">
-        <item quantity="one">Are you sure you want to delete the selected content item?</item>
-        <item quantity="other">Are you sure you want to delete the selected content items?</item>
+        <item quantity="one"><![CDATA[Are you sure you want to remove the selected item?<div />This will prevent others from accessing the content you published. It will return the deposited Credits to your spendable balance.<div /><font color="#ff0000">FINAL WARNING: This action is permanent and cannot be undone.</font>]]></item>
+        <item quantity="other"><![CDATA[Are you sure you want to remove the selected items?<div />This will prevent others from accessing the content you published. It will return the deposited Credits to your spendable balance.<div /><font color="#ff0000">FINAL WARNING: This action is permanent and cannot be undone.</font>]]></item>
     </plurals>
     <plurals name="publishes_deleted">
-        <item quantity="one">The content item was successfully deleted.</item>
-        <item quantity="other">The content items were successfully deleted.</item>
+        <item quantity="one">Your upload will be removed in a few minutes.</item>
+        <item quantity="other">Your uploads will be removed in a few minutes.</item>
     </plurals>
 
     <!-- Splash -->
@@ -512,7 +511,6 @@
     <string name="receive">Receive</string>
     <string name="spend">Spend</string>
     <string name="publish">Publish</string>
-    <string name="unpublish">Unpublish</string>
     <string name="support">Support</string>
     <string name="abandon">Abandon</string>
     <string name="channel">Channel</string>

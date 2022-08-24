@@ -66,8 +66,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Faili teekonnal %1$s\" ei eksisteeri.</string>
     <string name="confirm_purchase">Kinnita ost</string>
-    <string name="delete_file">Kustuta fail</string>
-    <string name="confirm_delete_file_message">Oled kindel, et soovid seda faili siit seadmest kustutada?</string>
     <string name="unable_to_view_url">Faili %1$s laadimine ebaõnnestus. Palun proovi hiljem uuesti.</string>
     <string name="delete_content">Kustutan selle materjali?</string>
     <string name="confirm_delete_content_message">Kindel, et tahad selle postituse tühistada? Ühtegi faili selle käigus su seadmest ei kustutata.</string>

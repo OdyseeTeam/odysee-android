@@ -1581,7 +1581,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (claim != null) {
             params.put("claim", claim);
         }
-//        openFragment(PublishFormFragment.class, true, NavMenuItem.ID_ITEM_NEW_PUBLISH, params);
+        openFragment(PublishFormFragment.class, true, params);
     }
 
     public void openChannelUrl(String url, String source) {
@@ -2714,6 +2714,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Account odyseeAccount = Helper.getOdyseeAccount(accounts);
         if (odyseeAccount != null) {
             fetchOwnChannels();
+            fetchOwnClaims();
             scheduleWalletBalanceUpdate();
             loadRemoteNotifications(false);
         } else {

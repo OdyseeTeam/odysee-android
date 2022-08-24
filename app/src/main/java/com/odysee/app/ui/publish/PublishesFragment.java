@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -245,7 +246,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
                 String message = getResources().getQuantityString(R.plurals.confirm_delete_publishes, selectedClaims.size());
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext()).
                         setTitle(R.string.delete_selection).
-                        setMessage(message)
+                        setMessage(Html.fromHtml(message))
                         .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -273,7 +274,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
 
         Helper.setViewVisibility(contentList, View.INVISIBLE);
         Helper.setViewVisibility(fabNewPublish, View.INVISIBLE);
-        AbandonStreamTask task = new AbandonStreamTask(claimIds, loading, new AbandonHandler() {
+        AbandonStreamTask task = new AbandonStreamTask(claimIds, loading, Lbryio.AUTH_TOKEN, new AbandonHandler() {
             @Override
             public void onComplete(List<String> successfulClaimIds, List<String> failedClaimIds, List<Exception> errors) {
                 View root = getView();

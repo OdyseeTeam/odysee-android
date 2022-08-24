@@ -71,8 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">לא קיים קובץ במיקום \"%1$s\".</string>
     <string name="confirm_purchase">אשר רכישה</string>
-    <string name="delete_file">מחק קובץ</string>
-    <string name="confirm_delete_file_message">האם אתה בטוח שברצונך למחוק את קובץ זה ממכשירך?</string>
     <string name="unable_to_view_url">טעינת %1$s נכשלה. אנא נסה שנית מאוחר יותר.</string>
     <string name="delete_content">מחק תוכן?</string>
     <string name="confirm_delete_content_message">האם אתה בטוח שברצונך להסיר תוכן זה מפרסום? קבצים לא ימחקו ממכשירך.</string>
@@ -293,7 +291,6 @@
     <string name="receive">קבלה</string>
     <string name="spend">הוצאה</string>
     <string name="publish">פרסום</string>
-    <string name="unpublish">הסרה מפרסום</string>
     <string name="support">תמיכה</string>
     <string name="abandon">נטישה</string>
     <string name="channel">ערוץ</string>

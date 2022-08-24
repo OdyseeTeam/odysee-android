@@ -71,8 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Fail \"%1$s\" tidak wujud.</string>
     <string name="confirm_purchase">Sahkan Pembelian</string>
-    <string name="delete_file">Padam fail</string>
-    <string name="confirm_delete_file_message">Adakah anda pasti ingin membuang fail ini dari peranti anda?</string>
     <string name="unable_to_view_url">%1$s gagal dimuatkan. Sila cuba sebentar lagi.</string>
     <string name="delete_content">Padamkan kandungan?</string>
     <string name="confirm_delete_content_message">Adakah anda pasti ingin membatalkan penerbitan kandungan ini? Fail akan masih kekal dalam peranti anda.</string>
@@ -270,7 +268,6 @@ Sila kembali sebentar lagi.</string>
     <string name="receive">Terima</string>
     <string name="spend">Berbelanja</string>
     <string name="publish">Terbitkan</string>
-    <string name="unpublish">Nyah-terbitkan</string>
     <string name="support">Sokong</string>
     <string name="abandon">Abaikan</string>
     <string name="channel">Saluran</string>

@@ -19,11 +19,13 @@ public class AbandonStreamTask extends AsyncTask<Void, Void, Boolean> {
     private List<String> successfulClaimIds;
     private List<String> failedClaimIds;
     private List<Exception> failedExceptions;
+    private String authToken;
     private final View progressView;
     private final AbandonHandler handler;
 
-    public AbandonStreamTask(List<String> claimIds, View progressView, AbandonHandler handler) {
+    public AbandonStreamTask(List<String> claimIds, View progressView, String authToken, AbandonHandler handler) {
         this.claimIds = claimIds;
+        this.authToken = authToken;
         this.progressView = progressView;
         this.handler = handler;
     }
@@ -42,7 +44,7 @@ public class AbandonStreamTask extends AsyncTask<Void, Void, Boolean> {
                 Map<String, Object> options = new HashMap<>();
                 options.put("claim_id", claimId);
                 options.put("blocking", true);
-                JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_STREAM_ABANDON, options);
+                JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_STREAM_ABANDON, options, authToken);
                 successfulClaimIds.add(claimId);
             } catch (ApiCallException ex) {
                 failedClaimIds.add(claimId);

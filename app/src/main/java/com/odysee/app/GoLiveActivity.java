@@ -547,7 +547,7 @@ public class GoLiveActivity extends AppCompatActivity {
         Claim claim = buildLivestreamClaim();
         AccountManager am = AccountManager.get(this);
         String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        PublishClaimTask task = new PublishClaimTask(claim, "", null, authToken, new ClaimResultHandler() {
+        PublishClaimTask task = new PublishClaimTask(claim, null, authToken, new ClaimResultHandler() {
             @Override
             public void beforeStart() { }
 
