@@ -25,12 +25,12 @@ import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.cardview.widget.CardView;
-import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.arthenica.mobileffmpeg.Config;
@@ -140,7 +140,7 @@ public class PublishFormFragment extends BaseFragment implements
     private AppCompatSpinner languageSpinner;
     private AppCompatSpinner licenseSpinner;
 
-    private NestedScrollView scrollView;
+    private ScrollView scrollView;
     private View layoutExtraFields;
     private TextView linkShowExtraFields;
     private View textNoPrice;
@@ -344,7 +344,7 @@ public class PublishFormFragment extends BaseFragment implements
                     scrollView.post(new Runnable() {
                         @Override
                         public void run() {
-                            scrollView.fullScroll(NestedScrollView.FOCUS_DOWN);
+                            scrollView.fullScroll(ScrollView.FOCUS_DOWN);
                         }
                     });
                 } else {

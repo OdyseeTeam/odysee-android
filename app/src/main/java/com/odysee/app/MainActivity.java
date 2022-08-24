@@ -95,6 +95,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
@@ -1431,13 +1432,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
-    public void setActionBarTitle(int stringResourceId) {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            SpannableString spannable = new SpannableString(getString(stringResourceId));
-            spannable.setSpan(new TypefaceSpan("inter"), 0, spannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            actionBar.setTitle(spannable);
-        }
+    public void setActionBarTitle(@StringRes int stringResourceId) {
+        ((TextView) findViewById(R.id.title)).setText(stringResourceId);
+        findViewById(R.id.title).setVisibility(View.VISIBLE);
     }
 
     public void addScreenOrientationListener(ScreenOrientationListener listener) {
@@ -1555,6 +1552,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         getSupportFragmentManager().popBackStack();
         findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
         findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+        findViewById(R.id.title).setVisibility(View.GONE);
         findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
     }
 
@@ -3679,6 +3677,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
                     showBottomNavigation();
                 }
+                findViewById(R.id.title).setVisibility(View.GONE);
                 findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
 
                 ActionBar actionBar = getSupportActionBar();
@@ -4439,6 +4438,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             currentDisplayFragment = fragment;
             findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
             findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
+            findViewById(R.id.title).setVisibility(View.GONE);
             findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.GONE);
         } catch (Exception ex) {
             ex.printStackTrace();
