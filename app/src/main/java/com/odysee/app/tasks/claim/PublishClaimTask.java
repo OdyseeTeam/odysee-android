@@ -22,15 +22,13 @@ import com.odysee.app.utils.Lbry;
 
 public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
     private final Claim claim;
-    private final String filePath;
     private final View progressView;
     private final String authToken;
     private final ClaimResultHandler handler;
     private Exception error;
 
-    public PublishClaimTask(Claim claim, String filePath, View progressView, String authToken, ClaimResultHandler handler) {
+    public PublishClaimTask(Claim claim, View progressView, String authToken, ClaimResultHandler handler) {
         this.claim = claim;
-        this.filePath = filePath;
         this.progressView = progressView;
         this.authToken = authToken;
         this.handler = handler;
@@ -53,9 +51,6 @@ public class PublishClaimTask extends AsyncTask<Void, Void, Claim> {
         options.put("description", Helper.isNullOrEmpty(claim.getDescription()) ? "" : claim.getDescription());
         options.put("thumbnail_url", Helper.isNullOrEmpty(claim.getThumbnailUrl()) ? "" : claim.getThumbnailUrl());
 
-        if (!Helper.isNullOrEmpty(filePath)) {
-            options.put("file_path", filePath);
-        }
         if (claim.getTags() != null && claim.getTags().size() > 0) {
             options.put("tags", new ArrayList<>(claim.getTags()));
         }

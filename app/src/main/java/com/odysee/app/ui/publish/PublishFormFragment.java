@@ -1,7 +1,6 @@
 package com.odysee.app.ui.publish;
 
 import android.Manifest;
-import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -58,6 +57,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -87,6 +87,7 @@ import com.odysee.app.tasks.UploadImageTask;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
 import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.tasks.claim.ClaimResultHandler;
+import com.odysee.app.tasks.claim.PublishClaimTask;
 import com.odysee.app.tasks.claim.TusPublishTask;
 import com.odysee.app.tasks.lbryinc.LogPublishTask;
 import com.odysee.app.ui.BaseFragment;
@@ -95,6 +96,7 @@ import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.Predefined;
 import com.odysee.app.utils.Utils;
 import lombok.Data;
@@ -673,6 +675,12 @@ public class PublishFormFragment extends BaseFragment implements
                     updateSuggestedTags(currentFilter, SUGGESTED_LIMIT, true);
                 }
 
+                long releaseTime = metadata.getReleaseTime();
+                if (releaseTime == 0) {
+                    releaseTime = currentClaim.getTimestamp();
+                }
+                updateReleaseTime(releaseTime);
+
                 if (metadata.getFee() != null) {
                     Fee fee = metadata.getFee();
                     switchPrice.setChecked(true);
@@ -1056,10 +1064,15 @@ public class PublishFormFragment extends BaseFragment implements
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (editMode) {
-                if (currentClaim.getSigningChannel() != null && !editChannelSpinnerLoaded) {
-                    int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
-                    if (position > -1) {
-                        channelSpinner.setSelection(position);
+                if (!editChannelSpinnerLoaded) {
+                    if (currentClaim.getSigningChannel() != null) {
+                        int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
+                        if (position > -1) {
+                            channelSpinner.setSelection(position);
+                        }
+                    } else {
+                        // select anonymous
+                        channelSpinner.setSelection(1);
                     }
                     editChannelSpinnerLoaded = true;
                 }
@@ -1096,6 +1109,33 @@ public class PublishFormFragment extends BaseFragment implements
             releaseTimeMinutes = -1;
         }
         return isReleaseTimeInvalid;
+    }
+
+    private void updateReleaseTime(long epochSeconds) {
+        LocalDateTime date = LocalDateTime
+                .ofInstant(Instant.ofEpochMilli(epochSeconds * 1000), ZoneId.systemDefault());
+        releaseDateMillis = date
+                .with(LocalTime.MIN)
+                .atZone(ZoneId.of("UTC"))
+                .toInstant()
+                .toEpochMilli();
+        releaseTimeHours = date.getHour();
+        releaseTimeMinutes = date.getMinute();
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, releaseTimeHours);
+        calendar.set(Calendar.MINUTE, releaseTimeMinutes);
+
+        Context context = getContext();
+        if (context != null) {
+            linkReleaseDate.setText(DateUtils.formatDateTime(
+                    context, releaseDateMillis, DateUtils.FORMAT_SHOW_DATE));
+            linkReleaseTime.setText(DateUtils.formatDateTime(
+                    context, calendar.getTimeInMillis(), DateUtils.FORMAT_SHOW_TIME));
+
+            linkReleaseTime.setVisibility(View.VISIBLE);
+            buttonReleaseTimeDefault.setVisibility(View.VISIBLE);
+        }
     }
 
     private Claim buildPublishClaim() {
@@ -1188,9 +1228,7 @@ public class PublishFormFragment extends BaseFragment implements
             finalFilePath = currentGalleryItem != null ? currentGalleryItem.getFilePath() : currentFilePath;
         }
         saveInProgress = true;
-        AccountManager am = AccountManager.get(getContext());
-        String authToken = am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type");
-        TusPublishTask task = new TusPublishTask(claim, finalFilePath, progressPublish, authToken, new ClaimResultHandler() {
+        ClaimResultHandler handler = new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 preSave();
@@ -1213,7 +1251,7 @@ public class PublishFormFragment extends BaseFragment implements
                 bundle.putString("claim_name", claimResult.getName());
                 LbryAnalytics.logEvent(editMode ? LbryAnalytics.EVENT_PUBLISH_UPDATE : LbryAnalytics.EVENT_PUBLISH, bundle);
 
-                showMessage(R.string.publish_successful);
+                showMessage(!editMode ? R.string.publish_successful : R.string.update_successful);
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     MainActivity activity = (MainActivity) context;
@@ -1226,8 +1264,14 @@ public class PublishFormFragment extends BaseFragment implements
                 showError(error.getMessage());
                 postSave();
             }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        };
+        if (!editMode) {
+            TusPublishTask task = new TusPublishTask(claim, finalFilePath, progressPublish, Lbryio.AUTH_TOKEN, handler);
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else  {
+            PublishClaimTask task = new PublishClaimTask(claim, progressPublish, Lbryio.AUTH_TOKEN, handler);
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
     }
 
     private void preSave() {

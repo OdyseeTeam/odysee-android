@@ -69,8 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Файл з \"%1$s\" не існує.</string>
     <string name="confirm_purchase">Підтвердити покупку </string>
-    <string name="delete_file">Видалити файл</string>
-    <string name="confirm_delete_file_message">Ви впевнені, що хочете видали цей файл з пристрою? </string>
     <string name="unable_to_view_url">Не вдалося завантажити %1$s. Будь ласка, спробуйте пізніше ще раз.</string>
     <string name="delete_content">Видалити контент?</string>
     <string name="confirm_delete_content_message">Ви впевнені, що бажаєте прибрати цю публікацію? Жоден файл не буде видалений з вашого пристрою.</string>

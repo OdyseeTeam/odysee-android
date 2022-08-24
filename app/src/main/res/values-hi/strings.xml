@@ -71,8 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">यह फाइल इस स्थान  \"%1$s\" पर मौजूद नहीं है।</string>
     <string name="confirm_purchase">खरीद की पुष्टि करें</string>
-    <string name="delete_file">फाइल को हटाएं</string>
-    <string name="confirm_delete_file_message">क्या आप यकीनन इस फाइल को अपनी डिवाइस से हटाना चाहते हैं?</string>
     <string name="unable_to_view_url">लोड करने में असफल %1$s. कृपया कुछ देर में प्रयास करें</string>
     <string name="delete_content">सामग्री को हटाए?</string>
     <string name="confirm_delete_content_message">क्या आप वाकई इस सामग्री को अनपब्लिश करना चाहते हैं? कोई भी फाइल आपकी डिवाइस से नहीं हटेगी।</string>
@@ -277,7 +275,6 @@
     <string name="receive">प्राप्त करना</string>
     <string name="spend">व्यय , खर्च</string>
     <string name="publish">प्रकाशित करना</string>
-    <string name="unpublish">अप्रकाशित</string>
     <string name="support">समर्थन</string>
     <string name="abandon">त्याग देना</string>
     <string name="channel">चैनल</string>

@@ -71,8 +71,6 @@
     <string name="zero_duration">00:00</string>
     <string name="claim_file_not_found">Это файл \"%1$s\" не существует.</string>
     <string name="confirm_purchase">Подведите покупку</string>
-    <string name="delete_file">Удалить файл</string>
-    <string name="confirm_delete_file_message">Вы уверены, что хотите удалить этот файл с Вашего устройства?</string>
     <string name="unable_to_view_url">Не удалось загрузить %1$s. Пожалуйста, попробуйте ещё раз позже. </string>
     <string name="delete_content">Удалить материал?</string>
     <string name="confirm_delete_content_message">Вы уверены, что хотите отменить публикацию? Это не затронет файлы на Вашем устройстве.</string>
@@ -293,7 +291,6 @@
     <string name="receive">Получено</string>
     <string name="spend">Потратить </string>
     <string name="publish">Публикация</string>
-    <string name="unpublish">Отмена публикации</string>
     <string name="support">Поддержка</string>
     <string name="abandon">Оставить </string>
     <string name="channel">Канал</string>

@@ -71,8 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">File ing \"%1$s\" ora ana.</string>
     <string name="confirm_purchase">Konfirmasi Pembelian</string>
-    <string name="delete_file">Busak file</string>
-    <string name="confirm_delete_file_message">Apa sampeyan pengin ngilangi file iki saka piranti sampeyan?</string>
     <string name="unable_to_view_url">Gagal mbukak %1$s. Coba maneh mengko.</string>
     <string name="delete_content">Mbusak konten?</string>
     <string name="confirm_delete_content_message">Apa sampeyan pengin pengin nggawe konten iki? Ora ana file sing bakal dicopot saka piranti sampeyan.</string>
@@ -269,7 +267,6 @@
     <string name="receive">Nampa</string>
     <string name="spend">Nglampahi</string>
     <string name="publish">Terbitake</string>
-    <string name="unpublish">Unpublikasi</string>
     <string name="support">Dhukungan</string>
     <string name="abandon">Nolak</string>
     <string name="channel">Saluran</string>

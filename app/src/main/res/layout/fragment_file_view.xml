@@ -454,7 +454,7 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_repost"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
@@ -489,7 +489,7 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_edit"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
@@ -522,8 +522,9 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_download"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:visibility="gone"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
@@ -563,13 +564,14 @@
 
                     <LinearLayout
                         android:id="@+id/file_view_action_delete"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
+                        android:visibility="gone"
                         android:orientation="vertical"
-                        android:padding="8dp"
-                        android:visibility="gone">
+                        android:padding="8dp">
 
                         <RelativeLayout
                             android:layout_width="36dp"
@@ -590,38 +592,6 @@
                             android:layout_gravity="center_horizontal"
                             android:fontFamily="@font/inter"
                             android:text="@string/delete"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/file_view_action_unpublish"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:visibility="gone"
-                        android:orientation="vertical"
-                        android:padding="8dp">
-
-                        <RelativeLayout
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_gravity="center_horizontal">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_centerInParent="true"
-                                android:src="@drawable/ic_unpublish"
-                                app:tint="@color/foreground" />
-                        </RelativeLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal"
-                            android:fontFamily="@font/inter"
-                            android:text="@string/unpublish"
                             android:textSize="12sp" />
                     </LinearLayout>
 

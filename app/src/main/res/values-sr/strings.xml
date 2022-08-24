@@ -71,8 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Datoteka na lokaciji \"%1$s\" ne postoji.</string>
     <string name="confirm_purchase">Potvrdi Kupovinu</string>
-    <string name="delete_file">Obriši datoteku</string>
-    <string name="confirm_delete_file_message">Da li ste sigurni da želite da obrišete ovu datoteku sa Vašeg uređaja?</string>
     <string name="unable_to_view_url">Neuspešno učitavanje %1$s. Molimo Vas pokušajte kasnije.</string>
     <string name="delete_content">Obrisati sadržaj?</string>
     <string name="confirm_delete_content_message">Da li ste sigurni da želite da poništite objavu ovog sadržaja? Datoteke sa vašeg uređaja neće biti obrisani.</string>
@@ -285,7 +283,6 @@
     <string name="receive">Primite</string>
     <string name="spend">Potroši</string>
     <string name="publish">Objavite</string>
-    <string name="unpublish">Obriši</string>
     <string name="support">Pomoć</string>
     <string name="abandon">Odustani</string>
     <string name="channel">Kanal</string>
