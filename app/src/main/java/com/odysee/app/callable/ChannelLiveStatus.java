@@ -1,5 +1,7 @@
 package com.odysee.app.callable;
 
+import com.odysee.app.utils.Helper;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -17,26 +19,36 @@ import okhttp3.ResponseBody;
 /**
  * A callable which makes a request to Odysee Live API and, if response includes channel claim ID,
  * it will return the "data" key.
- *
- * If alwaysReturnData is set to true, then this will return the data field, no matter if channel is not currently livestreaming.
  */
 public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
     private static final String ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API = "https://api.odysee.live/livestream/is_live?channel_claim_id=";
+    private static final String ODYSEE_LIVESTREAM_SUBSCRIBED_LIVE_STATUS_API = "https://api.odysee.live/livestream/subscribed?channel_claim_ids=";
     private final List<String> channelIds;
     private boolean alwaysReturnData = false;
+    private boolean subscribed = false;
 
     public ChannelLiveStatus(List<String> channelIds) {
         this.channelIds = channelIds;
     }
 
     /**
-     *
-     * @param channelIds list of channels to be queried
+     * @param channelIds       list of channels to be queried
      * @param alwaysReturnData set to true if you are interested on the data, even if channel is not live right now
      */
     public ChannelLiveStatus(List<String> channelIds, boolean alwaysReturnData) {
+        this(channelIds, alwaysReturnData, false);
+    }
+
+    /**
+     *
+     * @param channelIds list of channels to be queried
+     * @param alwaysReturnData set to true if you are interested on the data, even if channel is not live right now
+     * @param subscribed set to true if the request is for multiple channel ids, false for a single channel ID
+     */
+    public ChannelLiveStatus(List<String> channelIds, boolean alwaysReturnData, boolean subscribed) {
         this(channelIds);
         this.alwaysReturnData = alwaysReturnData;
+        this.subscribed = subscribed;
     }
 
     /**
@@ -50,34 +62,66 @@ public class ChannelLiveStatus implements Callable<Map<String, JSONObject>> {
         Map<String, JSONObject> streamingChannels = new HashMap<>();
         Request.Builder builder = new Request.Builder();
         OkHttpClient client = new OkHttpClient.Builder().build();
-        for (String channelId: channelIds) {
-            String url = ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API.concat(channelId);
-//            Log.i("OdyseeLiveStatus", "get: getting channel live status from: " + url);
-            builder.url(url);
-            Request request = builder.build();
+        if (!subscribed) {
+            for (String channelId: channelIds) {
+                String url = ODYSEE_LIVESTREAM_CHANNEL_LIVE_STATUS_API.concat(channelId);
+                JSONArray jsonDataArray = fetchLiveStatusData(url, builder, client);
 
-            try (Response resp = client.newCall(request).execute()) {
-                ResponseBody body = resp.body();
-                int responseCode = resp.code();
-                if (body != null) {
-                    String responseString = body.string();
-                    if (responseCode >= 200 && responseCode < 300) {
-                        JSONObject json = new JSONObject(responseString);
-                        if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
-                            JSONObject jsonData = (JSONObject) json.get("data");
-                            if (jsonData.has("ChannelClaimID") && jsonData.getString("ChannelClaimID").equals(channelId)) {
-                                if (alwaysReturnData || (jsonData.has("Live") && jsonData.getBoolean("Live"))) {
-                                    streamingChannels.put(channelId, jsonData);
-                                }
-                            }
+                if (jsonDataArray != null && jsonDataArray.length() > 0) {
+                    JSONObject json = jsonDataArray.getJSONObject(0);
+                    if (json.has("ChannelClaimID") && json.getString("ChannelClaimID").equals(channelId)
+                          && (alwaysReturnData || (json.has("Live") && json.getBoolean("Live")))) {
+                        streamingChannels.put(channelId, json);
+                    }
+                }
+            }
+        } else {
+            String url = ODYSEE_LIVESTREAM_SUBSCRIBED_LIVE_STATUS_API.concat(Helper.join(channelIds, ","));
+
+            JSONArray jsonData = fetchLiveStatusData(url, builder, client);
+
+            if (jsonData != null) {
+                int s = jsonData.length();
+
+                for (int i = 0; i < s; i++) {
+                    JSONObject channelData = jsonData.getJSONObject(i);
+
+                    if (channelData.has("ChannelClaimID") && channelIds.contains(channelData.getString("ChannelClaimID"))) {
+                        streamingChannels.put(channelData.getString("ChannelClaimID"), channelData);
+                    }
+                }
+            }
+        }
+        return streamingChannels;
+    }
+
+    private JSONArray fetchLiveStatusData(String url, Request.Builder builder, OkHttpClient client) {
+        builder.url(url);
+        Request request = builder.build();
+
+        JSONArray jsonData = null;
+        try (Response resp = client.newCall(request).execute()) {
+            ResponseBody body = resp.body();
+            int responseCode = resp.code();
+
+            if (body != null) {
+                String responseString = body.string();
+                if (responseCode >= 200 && responseCode < 300) {
+                    JSONObject json = new JSONObject(responseString);
+                    if (!json.isNull("data") && (json.has("success") && json.getBoolean("success"))) {
+                        if (subscribed) {
+                            jsonData = json.getJSONArray("data");
+                        } else {
+                            jsonData = new JSONArray();
+                            jsonData.put(json.get("data"));
                         }
                     }
                 }
-            } catch (IOException | JSONException e) {
-                e.printStackTrace();
             }
-
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            return null;
         }
-        return streamingChannels;
+        return jsonData;
     }
 }

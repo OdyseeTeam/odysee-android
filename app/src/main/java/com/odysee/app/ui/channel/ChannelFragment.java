@@ -110,10 +110,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
     // Tab names
     public static final int CONTENT = 0;
-    public static final int SCHEDULED_LIVESTREAMS = 1;
-    public static final int PLAYLISTS = 2;
-    public static final int ABOUT = 3;
-    public static final int COMMENTS = 4;
+    public static final int PLAYLISTS = 1;
+    public static final int ABOUT = 2;
+    public static final int COMMENTS = 3;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -471,8 +470,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
             activity.removeFetchChannelsListener(this);
         }
         if (tabPager != null && tabPager.getAdapter() != null) {
-            currentTab = tabFromPosition(tabPager.getCurrentItem(),
-                    ((ChannelPagerAdapter) tabPager.getAdapter()).hasScheduledLivestreams);
+            currentTab = tabPager.getCurrentItem();
         }
         super.onPause();
     }
@@ -676,7 +674,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                         new Handler().postDelayed(new Runnable() {
                                             @Override
                                             public void run() {
-                                                tabPager.setCurrentItem(hasScheduledStreams ? 4 : 3);
+                                                tabPager.setCurrentItem(3);
                                             }
                                         }, 500);
                                     } else {
@@ -684,7 +682,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                                             @Override
                                             public void run() {
-                                                tabPager.setCurrentItem(positionFromTab(currentTab, hasScheduledStreams), false);
+                                                tabPager.setCurrentItem(currentTab, false);
                                             }
                                         }, 500);
                                     }
@@ -692,10 +690,8 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                 new TabLayoutMediator(tabLayout, tabPager, new TabLayoutMediator.TabConfigurationStrategy() {
                                     @Override
                                     public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                                        int tabNum = tabFromPosition(position, hasScheduledStreams);
-                                        switch (tabNum) {
+                                        switch (position) {
                                             case CONTENT: tab.setText(R.string.content); break;
-                                            case SCHEDULED_LIVESTREAMS: tab.setText(R.string.scheduled_livestreams); break;
                                             case PLAYLISTS: tab.setText(R.string.playlists); break;
                                             case ABOUT: tab.setText(R.string.about); break;
                                             case COMMENTS: tab.setText(R.string.comments);
@@ -783,20 +779,13 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         @SneakyThrows
         @Override
         public Fragment createFragment(int position) {
-            int tab = ChannelFragment.tabFromPosition(position, hasScheduledLivestreams);
-            switch (tab) {
+            switch (position) {
                 case CONTENT:
                     ChannelContentFragment contentFragment = ChannelContentFragment.class.newInstance();
                     if (channelClaim != null) {
                         contentFragment.setChannelId(channelClaim.getClaimId());
                     }
                     return contentFragment;
-                case SCHEDULED_LIVESTREAMS:
-                    ChannelScheduledLivestreamsFragment livestreamsFragment = ChannelScheduledLivestreamsFragment.class.newInstance();
-                    if (channelClaim != null) {
-                        livestreamsFragment.setChannelId(channelClaim.getClaimId());
-                    }
-                    return livestreamsFragment;
                 case PLAYLISTS:
                     ChannelPlaylistsFragment playlistsFragment = ChannelPlaylistsFragment.class.newInstance();
                     if (channelClaim != null) {
@@ -841,34 +830,6 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         @Override
         public int getItemCount() {
             return hasScheduledLivestreams ? 5 : 4;
-        }
-    }
-
-    // Converting from tab number to position
-    public static int tabFromPosition(final int position, final boolean hasScheduledStreams) {
-        if (position == 0) {
-            return CONTENT;
-        } else if (position == 1 && hasScheduledStreams) {
-            return SCHEDULED_LIVESTREAMS;
-        } else if (position == 1 || (position == 2 && hasScheduledStreams)) {
-            return PLAYLISTS;
-        } else if (position == 2 || (position == 3 && hasScheduledStreams)) {
-            return ABOUT;
-        } else if (position == 3 || (position == 4 && hasScheduledStreams)) {
-            return COMMENTS;
-        } else {
-            return -1;
-        }
-    }
-    public static int positionFromTab(final int tab, final boolean hasScheduledStreams) {
-        if (tab == CONTENT) {
-            return 0;
-        } else if (tab == SCHEDULED_LIVESTREAMS && hasScheduledStreams) {
-            return 1;
-        } else if (tab == PLAYLISTS || tab == ABOUT || tab == COMMENTS) {
-            return hasScheduledStreams ? tab : tab - 1; // Tab constants match up with positions
-        } else {
-            return -1;
         }
     }
 }

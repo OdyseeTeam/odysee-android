@@ -68,6 +68,7 @@
     <string name="done">Done</string>
     <string name="all">All</string>
     <string name="discover_channels">Discover new channels</string>
+    <string name="scheduled_expand_button_accessibility">Button to expand or contract scheduled livestreams</string>
 
     <!-- Claim lists -->
     <string name="anonymous">Anonymous</string>
@@ -202,7 +203,7 @@
     <!-- Channel view -->
     <string name="no_channel_info">There\'s nothing here yet.\nPlease check back later.</string>
     <string name="content">Content</string>
-    <string name="scheduled_livestreams">Scheduled Livestreams</string>
+    <string name="upcoming_livestreams">Upcoming Livestreams</string>
     <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>
