@@ -1437,6 +1437,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         findViewById(R.id.title).setVisibility(View.VISIBLE);
     }
 
+    public void clearActionBarTitle() {
+        ((TextView) findViewById(R.id.title)).setText(null);
+        findViewById(R.id.title).setVisibility(View.GONE);
+    }
+
     public void addScreenOrientationListener(ScreenOrientationListener listener) {
         if (!screenOrientationListeners.contains(listener)) {
             screenOrientationListeners.add(listener);
