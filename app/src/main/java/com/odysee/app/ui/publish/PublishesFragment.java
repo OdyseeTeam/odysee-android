@@ -121,6 +121,7 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             activity.setWunderbarValue(null);
+            activity.clearActionBarTitle();
             LbryAnalytics.setCurrentScreen(activity, "Publishes", "Publishes");
         }
         if (adapter != null && contentList != null) {
