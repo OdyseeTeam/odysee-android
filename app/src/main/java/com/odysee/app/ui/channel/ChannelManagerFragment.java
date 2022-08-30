@@ -269,7 +269,8 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
     @Override
     public boolean onPrepareActionMode(androidx.appcompat.view.ActionMode actionMode, Menu menu) {
         int selectionCount = adapter != null ? adapter.getSelectedCount() : 0;
-        menu.findItem(R.id.action_edit).setVisible(selectionCount == 1);
+        menu.findItem(R.id.action_edit).setVisible(selectionCount == 1 &&
+                adapter.getSelectedItems().get(0).getConfirmations() > 0);
         return true;
     }
 
