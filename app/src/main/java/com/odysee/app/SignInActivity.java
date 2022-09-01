@@ -21,6 +21,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -68,7 +69,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class SignInActivity extends Activity {
+public class SignInActivity extends AppCompatActivity {
     public static final String ACTION_USER_FINISHED_SIGN_IN = "com.odysee.app.USER_SIGNED_IN_SUCCESSFULLY";
     public final static String ARG_ACCOUNT_TYPE = "com.odysee";
     public final static String ARG_AUTH_TYPE = "auth_token_type";
