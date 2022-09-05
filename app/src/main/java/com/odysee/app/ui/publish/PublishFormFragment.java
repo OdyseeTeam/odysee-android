@@ -108,6 +108,7 @@ public class PublishFormFragment extends BaseFragment implements
     private static final String H264_CODEC = "h264";
     private static final int MAX_VIDEO_DIMENSION = 1920;
     private static final int MAX_BITRATE = 5000000; // 5mbps
+    private static final ZoneId UTC_ZONE = ZoneId.of("UTC");
 
     private boolean storageRefusedOnce;
     private static final int SUGGESTED_LIMIT = 8;
@@ -422,7 +423,12 @@ public class PublishFormFragment extends BaseFragment implements
                     datePicker.addOnPositiveButtonClickListener(new MaterialPickerOnPositiveButtonClickListener<Long>() {
                         @Override
                         public void onPositiveButtonClick(Long millis) {
-                            linkReleaseDate.setText(DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_DATE));
+                            long localMillis = LocalDateTime
+                                    .ofInstant(Instant.ofEpochMilli(millis), UTC_ZONE)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli();
+                            linkReleaseDate.setText(DateUtils.formatDateTime(context, localMillis, DateUtils.FORMAT_SHOW_DATE));
                             linkReleaseTime.setVisibility(View.VISIBLE);
                             buttonReleaseTimeDefault.setVisibility(View.VISIBLE);
                             releaseDateMillis = millis;
@@ -1099,7 +1105,7 @@ public class PublishFormFragment extends BaseFragment implements
     private boolean checkReleaseTimeInvalid() {
         boolean isReleaseTimeInvalid = releaseTimeHours > -1 && releaseTimeMinutes > -1
                 && LocalDateTime
-                        .ofInstant(Instant.ofEpochMilli(releaseDateMillis), ZoneId.of("UTC"))
+                        .ofInstant(Instant.ofEpochMilli(releaseDateMillis), UTC_ZONE)
                         .plusHours(releaseTimeHours)
                         .plusMinutes(releaseTimeMinutes)
                         .isAfter(LocalDateTime.now());
@@ -1116,7 +1122,7 @@ public class PublishFormFragment extends BaseFragment implements
                 .ofInstant(Instant.ofEpochMilli(epochSeconds * 1000), ZoneId.systemDefault());
         releaseDateMillis = date
                 .with(LocalTime.MIN)
-                .atZone(ZoneId.of("UTC"))
+                .atZone(UTC_ZONE)
                 .toInstant()
                 .toEpochMilli();
         releaseTimeHours = date.getHour();
@@ -1181,7 +1187,7 @@ public class PublishFormFragment extends BaseFragment implements
 
         if (releaseDateMillis > Long.MIN_VALUE && releaseTimeHours > -1 && releaseTimeMinutes > -1) {
             long secs = LocalDateTime
-                    .ofInstant(Instant.ofEpochMilli(releaseDateMillis), ZoneId.of("UTC"))
+                    .ofInstant(Instant.ofEpochMilli(releaseDateMillis), UTC_ZONE)
                     .plusHours(releaseTimeHours)
                     .plusMinutes(releaseTimeMinutes)
                     .atZone(ZoneId.systemDefault())
