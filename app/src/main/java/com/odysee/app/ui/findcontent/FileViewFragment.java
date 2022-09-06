@@ -2631,8 +2631,10 @@ public class FileViewFragment extends BaseFragment implements
                                         MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
                             }
 
-                            MainActivity.playerManager.initializeCurrentPlayer(
-                                    currentMediaSourceUrl, C.TIME_UNSET, fileClaim, getContext());
+                            if (MainActivity.playerManager != null) { // null pointer check
+                                MainActivity.playerManager.initializeCurrentPlayer(
+                                        currentMediaSourceUrl, C.TIME_UNSET, fileClaim, getContext());
+                            }
                         });
                     }
                 } catch (LbryRequestException | LbryResponseException | JSONException ex) {
