@@ -3124,7 +3124,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+                                  List<String> editedCollectionClaimIds) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
                     //openNavFragments.get

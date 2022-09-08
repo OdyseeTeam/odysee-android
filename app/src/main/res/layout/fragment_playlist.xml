@@ -45,11 +45,27 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
             android:backgroundTint="@color/black"
             android:text="@string/play"
             android:textColor="@color/white"
             android:fontFamily="@font/inter"
             app:icon="@drawable/ic_play"
+            app:iconTint="@color/white"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:id="@+id/playlist_publish"
+            android:visibility="gone"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorPrimary"
+            android:text="@string/publish"
+            android:textColor="@color/white"
+            android:fontFamily="@font/inter"
+            app:icon="@drawable/ic_cloud_upload"
             app:iconTint="@color/white"
             app:iconGravity="textStart" />
     </androidx.appcompat.widget.LinearLayoutCompat>

@@ -27,16 +27,22 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
+import com.odysee.app.dialog.PublishPlaylistDialogFragment;
+import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.model.Tag;
+import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
+import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -50,6 +56,7 @@ public class PlaylistFragment extends BaseFragment implements
     private ClaimListAdapter adapter;
     private RecyclerView playlistList;
     private MaterialButton playButton;
+    private MaterialButton publishButton;
     private ProgressBar playlistItemsLoading;
 
     private TextView textTitle;
@@ -71,20 +78,46 @@ public class PlaylistFragment extends BaseFragment implements
         playlistList.setLayoutManager(llm);
 
         playButton = root.findViewById(R.id.playlist_play);
+        publishButton = root.findViewById(R.id.playlist_publish);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Context context = getContext();
                 if (currentCollection != null && context instanceof MainActivity) {
                     MainActivity activity = (MainActivity) context;
-                    // openPrivatePlaylist also works for public (published) collections, because we've already  loaded and resolved
+                    // openPrivatePlaylist also works for public (published) collections, because we've already loaded and resolved
                     // so we use it, because it's faster, instead of  having to re-resolve
                     activity.openPrivatePlaylist(currentCollection);
                 }
             }
         });
 
+        publishButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                PublishPlaylistDialogFragment dialog = PublishPlaylistDialogFragment.newInstance(
+                        currentCollection, new PublishPlaylistDialogFragment.PublishPlaylistListener() {
+                    @Override
+                    public void onPlaylistPublished(Claim claim) {
+                        //showMessage(R.string.playlist_successfully_published);
+                        Helper.setViewVisibility(publishButton, View.GONE);
+
+                        // remove the playlist from editedCollections
+                        removeFromEditedCollections(claim.getClaimId());
+                    }
+                });
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    dialog.show(((MainActivity) context).getSupportFragmentManager(), PublishPlaylistDialogFragment.TAG);
+                }
+            }
+        });
+
         return root;
+    }
+
+    private void removeFromEditedCollections(String claimId) {
+
     }
 
     private void loadPlaylist() {
@@ -135,6 +168,8 @@ public class PlaylistFragment extends BaseFragment implements
         }
         Helper.setViewText(textTitle, collection.getName());
         Helper.setViewText(textVideoCount, getResources().getQuantityString(R.plurals.video_count, collection.getItems().size(), collection.getItems().size()));
+
+        checkCanPublishPlaylist();
 
         // load the claims
         ResolveTask task = new ResolveTask(collection.getItems(), Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
@@ -270,5 +305,37 @@ public class PlaylistFragment extends BaseFragment implements
             }
         }
         return super.onContextItemSelected(item);
+    }
+
+    private void checkCanPublishPlaylist() {
+        if (currentCollection.getItems() == null || currentCollection.getItems().size() == 0) {
+            Helper.setViewVisibility(publishButton, View.GONE);
+            return;
+        }
+
+        // publish button should only be shown if it's a private playlist
+        // or if the playlist has been updated (check for ID in the wallet state's editedCollections)
+        boolean canPublish = Helper.isNullOrEmpty(currentCollection.getClaimId());
+        if (canPublish) {
+            Helper.setViewVisibility(publishButton, View.VISIBLE);
+            return;
+        }
+
+        // retrieve the user state to check if the claimId can be found in editedCollections
+        Context context = getContext();
+        LoadSharedUserStateTask task = new LoadSharedUserStateTask(context, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
+            @Override
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+                                  List<String> editedCollectionClaimIds) {
+                boolean hasPendingChanges = editedCollectionClaimIds != null && editedCollectionClaimIds.contains(currentCollection.getClaimId());
+                Helper.setViewVisibility(publishButton, hasPendingChanges ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onError(Exception error) {
+
+            }
+        }, Lbryio.AUTH_TOKEN);
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 }

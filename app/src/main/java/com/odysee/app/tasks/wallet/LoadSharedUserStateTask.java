@@ -48,6 +48,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     private List<Subscription> subscriptions;
     private List<Tag> followedTags;
     private List<LbryUri> blockedChannels;
+    private List<String> editedCollectionClaimIds;
 
     public LoadSharedUserStateTask(Context context, LoadSharedUserStateHandler handler, String authToken) {
         this.context = context;
@@ -97,6 +98,19 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                             }
                             if (watchlaterPlaylist == null || watchLaterCollection.getUpdatedAtTimestamp() > watchlaterPlaylist.getUpdatedAtTimestamp()) {
                                 DatabaseHelper.saveCollection(watchLaterCollection, db);
+                            }
+                        }
+                    }
+
+                    JSONObject editedCollections = Helper.getJSONObject("editedCollections", value);
+                    if (editedCollections != null) {
+                        Iterator<String> ecIdsIterator = editedCollections.keys();
+                        editedCollectionClaimIds = new ArrayList<>();
+                        while (ecIdsIterator.hasNext()) {
+                            String claimId = ecIdsIterator.next();
+                            // we only need the claimID
+                            if (!editedCollectionClaimIds.contains(claimId)) {
+                                editedCollectionClaimIds.add(claimId);
                             }
                         }
                     }
@@ -244,7 +258,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     protected void onPostExecute(Boolean result) {
         if (handler != null) {
             if (result) {
-                handler.onSuccess(subscriptions, followedTags, blockedChannels);
+                handler.onSuccess(subscriptions, followedTags, blockedChannels, editedCollectionClaimIds);
             } else {
                 handler.onError(error);
             }
@@ -252,7 +266,8 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
     }
 
     public interface LoadSharedUserStateHandler {
-        void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels);
+        void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+                       List<String> editedCollectionClaimIds);
         void onError(Exception error);
     }
 }

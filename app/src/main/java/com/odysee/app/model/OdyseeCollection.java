@@ -33,6 +33,7 @@ public class OdyseeCollection {
     private int visibility;
 
     // published playlist
+    private Claim actualClaim;
     private String claimId;
     private String permanentUrl;
 
@@ -101,6 +102,7 @@ public class OdyseeCollection {
         collection.setType(OdyseeCollection.TYPE_PLAYLIST);
         collection.setUpdatedAt(new Date(claim.getTimestamp() * 1000));
         collection.setVisibility(OdyseeCollection.VISIBILITY_PUBLIC);  // claims are published, so public
+        collection.setActualClaim(claim);
 
         return collection;
     }
