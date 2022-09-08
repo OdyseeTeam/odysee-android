@@ -72,6 +72,9 @@ public final class Lbry {
     public static final String METHOD_GET = "get";
     public static final String METHOD_PUBLISH = "publish";
 
+    public static final String METHOD_COLLECTION_CREATE = "collection_create";
+    public static final String METHOD_COLLECTION_UPDATE = "collection_update";
+
     public static final String METHOD_WALLET_BALANCE = "wallet_balance";
     public static final String METHOD_WALLET_ENCRYPT = "wallet_encrypt";
     public static final String METHOD_WALLET_DECRYPT = "wallet_decrypt";

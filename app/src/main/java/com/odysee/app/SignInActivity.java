@@ -782,7 +782,8 @@ public class SignInActivity extends AppCompatActivity {
         // load the shared user state after wallet sync is done
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(SignInActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+                                  List<String> editedCollectionClaimIds) {
                 Log.d(TAG, "Loaded user state successfully.");
                 Lbryio.subscriptions = new ArrayList<>(subscriptions);
                 Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
