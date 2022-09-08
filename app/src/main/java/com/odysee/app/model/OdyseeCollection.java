@@ -35,6 +35,7 @@ public class OdyseeCollection {
     // published playlist
     private Claim actualClaim;
     private String claimId;
+    private String claimName;
     private String permanentUrl;
 
     public OdyseeCollection() {
@@ -96,6 +97,7 @@ public class OdyseeCollection {
         OdyseeCollection collection = new OdyseeCollection();
         collection.setId(claim.getClaimId());
         collection.setClaimId(claim.getClaimId());
+        collection.setClaimName(claim.getName());
         collection.setPermanentUrl(claim.getPermanentUrl());
         collection.setItems(new ArrayList<>(items));
         collection.setName(claim.getTitle());
