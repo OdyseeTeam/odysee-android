@@ -327,7 +327,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
                     // Try to obtain a thumbnail by resolving the first item in the playlist (if no thumbnail was already set)
                     if (!isEditMode() || collection.getActualClaim() == null ||
                         collection.getActualClaim() != null && Helper.isNullOrEmpty(collection.getActualClaim().getThumbnailUrl())) {
-                        
+
                     }
 
                     DecimalFormat amountFormat = new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US));
