@@ -5100,7 +5100,6 @@ public class FileViewFragment extends BaseFragment implements
 
                 @Override
                 public void onMessage(String message) {
-                    Log.i(TAG, "onMessage: ".concat(message));
                     try {
                         JSONObject json = new JSONObject(message);
                         String type = Helper.getJSONString("type", null, json);
