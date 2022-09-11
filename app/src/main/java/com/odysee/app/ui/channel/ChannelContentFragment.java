@@ -333,7 +333,11 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                                     Context context = getContext();
                                                     if (context instanceof MainActivity) {
                                                         MainActivity activity = (MainActivity) context;
-                                                        activity.openFileClaim(claim);
+
+                                                        // Scheduled livestreams will be from current channel, so there is no point in navigating to currently displayed data
+                                                        if (claim.getValueType().equals(Claim.TYPE_STREAM)) {
+                                                            activity.openFileClaim(claim);
+                                                        }
                                                     }
                                                 }
                                             });

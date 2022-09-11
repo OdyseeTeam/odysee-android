@@ -683,7 +683,12 @@ public class FollowingFragment extends BaseFragment implements
                                                 Context context = getContext();
                                                 if (context instanceof MainActivity) {
                                                     MainActivity activity = (MainActivity) context;
-                                                    activity.openFileClaim(claim);
+
+                                                    if (claim.getValueType().equals(Claim.TYPE_STREAM)) {
+                                                        activity.openFileClaim(claim);
+                                                    } else if (claim.getValueType().equals(Claim.TYPE_CHANNEL)) {
+                                                        activity.openChannelClaim(claim);
+                                                    }
                                                 }
                                             }
                                         });
