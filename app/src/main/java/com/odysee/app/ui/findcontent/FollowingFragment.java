@@ -207,6 +207,11 @@ public class FollowingFragment extends BaseFragment implements
             @Override
             public void onClick(View view) {
                 Helper.setViewVisibility(scheduledStreamsList, scheduledStreamsList.getVisibility() == View.VISIBLE ? View.GONE: View.VISIBLE);
+                MainActivity a = (MainActivity) getActivity();
+
+                if (a != null) {
+                    a.setExpandedStatePreferenceScheduledClaims(scheduledStreamsList.getVisibility() == View.VISIBLE);
+                }
             }
         });
 
@@ -393,12 +398,14 @@ public class FollowingFragment extends BaseFragment implements
     public void onResume() {
         super.onResume();
         Context context = getContext();
-        Helper.setWunderbarValue(null, context);
-        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            LbryAnalytics.setCurrentScreen(activity, "Subscriptions", "Subscriptions");
-            activity.addDownloadActionListener(this);
+        if (context != null) {
+            Helper.setWunderbarValue(null, context);
+            PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
+            if (context instanceof MainActivity) {
+                MainActivity activity = (MainActivity) context;
+                LbryAnalytics.setCurrentScreen(activity, "Subscriptions", "Subscriptions");
+                activity.addDownloadActionListener(this);
+            }
         }
 
         // check if subscriptions exist
@@ -979,6 +986,11 @@ public class FollowingFragment extends BaseFragment implements
     private void checkNoScheduledLivestreams() {
         boolean noScheduled = scheduledClaimsListAdapter == null || scheduledClaimsListAdapter.getItemCount() == 0;
         Helper.setViewVisibility(scheduledLivestreamsLayout, noScheduled ? View.GONE : View.VISIBLE);
+
+        MainActivity a = (MainActivity) getActivity();
+        if (!noScheduled && a != null) {
+            scheduledStreamsList.setVisibility(a.getExpandedStatePreferenceScheduledClaims() ? View.VISIBLE : View.GONE);
+        }
     }
 
     private Map<String, Object> buildScheduledLivestreamsOptions() {

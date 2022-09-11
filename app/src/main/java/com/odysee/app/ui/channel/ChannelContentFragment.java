@@ -91,6 +91,11 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
             @Override
             public void onClick(View view) {
                 Helper.setViewVisibility(scheduledStreamsList, scheduledStreamsList.getVisibility() == View.VISIBLE ? View.GONE: View.VISIBLE);
+                MainActivity a = (MainActivity) getActivity();
+
+                if (a != null) {
+                    a.setExpandedStatePreferenceScheduledClaims(scheduledStreamsList.getVisibility() == View.VISIBLE);
+                }
             }
         });
 
@@ -589,6 +594,11 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     private void checkNoScheduledLivestreams() {
         boolean noScheduled = scheduledClaimsListAdapter == null || scheduledClaimsListAdapter.getItemCount() == 0;
         Helper.setViewVisibility(scheduledLivestreamsLayout, noScheduled ? View.GONE : View.VISIBLE);
+
+        MainActivity a = (MainActivity) getActivity();
+        if (!noScheduled && a != null) {
+            scheduledStreamsList.setVisibility(a.getExpandedStatePreferenceScheduledClaims() ? View.VISIBLE : View.GONE);
+        }
     }
 
     private Map<String, Object> buildScheduledLivestreamsOptions() {
