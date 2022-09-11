@@ -136,7 +136,7 @@ public class FollowingFragment extends BaseFragment implements
     private ClaimSearchTask contentClaimSearchTask;
     private boolean loadingSuggested;
     private boolean loadingContent;
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Handler uiThreadHandler = new Handler(Looper.getMainLooper());
 
     Map<String, JSONObject> liveChannels;
 
@@ -229,9 +229,6 @@ public class FollowingFragment extends BaseFragment implements
                             currentClaimSearchPage++;
                             fetchClaimSearchContent();
                         }
-                    }
-                    if (!fetchingScheduledClaims && !scheduledClaimsFetched) {
-                        fetchScheduledSubscribedContent();
                     }
                 }
             }
@@ -593,7 +590,7 @@ public class FollowingFragment extends BaseFragment implements
 
                 @Override
                 public void onError(Exception error) {
-                    handler.postDelayed(FollowingFragment.this::fetchAndResolveChannelList, 5_000);
+                    uiThreadHandler.postDelayed(FollowingFragment.this::fetchAndResolveChannelList, 5_000);
                 }
             });
             resolveSubscribedTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -659,43 +656,51 @@ public class FollowingFragment extends BaseFragment implements
     private void fetchScheduledSubscribedContent() {
         if (!fetchingScheduledClaims && !scheduledClaimsFetched) {
             fetchingScheduledClaims = true;
-            List<Claim> scheduledClaims = findScheduledLivestreams();
 
-            if (scheduledClaims != null && scheduledClaims.size() > 0) {
-                scheduledClaims = Helper.filterClaimsByOutpoint(scheduledClaims);
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    List<Claim> scheduledClaims = findScheduledLivestreams();
 
-                List<Claim> finalScheduledClaims = scheduledClaims;
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (scheduledClaimsListAdapter == null) {
-                            Context context = getContext();
-                            if (context != null) {
-                                scheduledClaimsListAdapter = new ClaimListAdapter(finalScheduledClaims, ClaimListAdapter.STYLE_SMALL_LIST_HORIZONTAL, context);
-                                scheduledClaimsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                                    @Override
-                                    public void onClaimClicked(Claim claim, int position) {
-                                        Context context = getContext();
-                                        if (context instanceof MainActivity) {
-                                            MainActivity activity = (MainActivity) context;
-                                            activity.openFileClaim(claim);
-                                        }
+                    if (scheduledClaims != null && scheduledClaims.size() > 0) {
+                        scheduledClaims = Helper.filterClaimsByOutpoint(scheduledClaims);
+
+                        List<Claim> finalScheduledClaims = scheduledClaims;
+                        uiThreadHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (scheduledClaimsListAdapter == null) {
+                                    Context context = getContext();
+                                    if (context != null) {
+                                        scheduledClaimsListAdapter = new ClaimListAdapter(finalScheduledClaims, ClaimListAdapter.STYLE_SMALL_LIST_HORIZONTAL, context);
+                                        scheduledClaimsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                            @Override
+                                            public void onClaimClicked(Claim claim, int position) {
+                                                Context context = getContext();
+                                                if (context instanceof MainActivity) {
+                                                    MainActivity activity = (MainActivity) context;
+                                                    activity.openFileClaim(claim);
+                                                }
+                                            }
+                                        });
                                     }
-                                });
-                            }
-                        } else {
-                            scheduledClaimsListAdapter.addItems(finalScheduledClaims);
-                        }
+                                } else {
+                                    scheduledClaimsListAdapter.addItems(finalScheduledClaims);
+                                }
 
-                        if (scheduledStreamsList != null && scheduledStreamsList.getAdapter() == null) {
-                            scheduledStreamsList.setAdapter(scheduledClaimsListAdapter);
-                        }
-                        checkNoScheduledLivestreams();
+                                fetchingScheduledClaims = false;
+                                scheduledClaimsFetched = true;
+
+                                if (scheduledStreamsList != null && scheduledStreamsList.getAdapter() == null) {
+                                    scheduledStreamsList.setAdapter(scheduledClaimsListAdapter);
+                                }
+                                checkNoScheduledLivestreams();
+                            }
+                        });
                     }
-                });
-            }
-            fetchingScheduledClaims = false;
-            scheduledClaimsFetched = true;
+                }
+            });
+            t.start();
         }
     }
 
@@ -926,6 +931,9 @@ public class FollowingFragment extends BaseFragment implements
                                     claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
                                     claimSearchOptions.put("has_no_source", true);
                                     claimSearchOptions.put("claim_ids", claimIds);
+                                    claimSearchOptions.put("channel_ids", Collections.singletonList(id));
+                                    // If user scrolls the content list, /page/ parameter would be increased, but our expected result will be on page 1
+                                    claimSearchOptions.put("page", 1); // The query about a single claimId, so there will be no more than 1 page of results
                                     Future<List<Claim>> upcomingFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
 
                                     upcomingClaims = upcomingFuture.get();
