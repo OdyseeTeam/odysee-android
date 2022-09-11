@@ -315,6 +315,10 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                         if (scheduledClaims != null && scheduledClaims.size() > 0) {
                             scheduledClaims = Helper.filterClaimsByOutpoint(scheduledClaims);
 
+                            for (Claim c : scheduledClaims) {
+                                c.setHighlightLive(true);
+                            }
+
                             List<Claim> finalScheduledClaims = scheduledClaims;
                             a.runOnUiThread(new Runnable() {
                                 @Override

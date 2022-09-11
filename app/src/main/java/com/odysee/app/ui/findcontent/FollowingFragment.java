@@ -665,6 +665,10 @@ public class FollowingFragment extends BaseFragment implements
                     if (scheduledClaims != null && scheduledClaims.size() > 0) {
                         scheduledClaims = Helper.filterClaimsByOutpoint(scheduledClaims);
 
+                        for (Claim c : scheduledClaims) {
+                            c.setHighlightLive(true);
+                        }
+
                         List<Claim> finalScheduledClaims = scheduledClaims;
                         uiThreadHandler.post(new Runnable() {
                             @Override
