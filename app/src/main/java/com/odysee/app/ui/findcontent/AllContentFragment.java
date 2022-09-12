@@ -113,7 +113,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     if ("movies".equalsIgnoreCase(category.getName())) {
                         moviesIndex = i;
                     }
-                    if ("wildwest".equalsIgnoreCase(category.getName())) {
+                    if ("rabbithole".equalsIgnoreCase(category.getName())) {
                         wildWestIndex = i;
                     }
 
@@ -259,7 +259,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 tagName = o.toString();
             }
             singleTagView = true;
-            tags = Arrays.asList(tagName);
+            tags = Collections.singletonList(tagName);
             titleView.setText(Helper.capitalize(tagName));
             Helper.setViewVisibility(customizeLink, View.GONE);
         } else {
@@ -426,8 +426,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         Context context = getContext();
         if (context != null) {
             ((MainActivity) context).removeDownloadActionListener(this);
+            PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
-        PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         contentCategoriesDisplayed = false;
         super.onPause();
     }

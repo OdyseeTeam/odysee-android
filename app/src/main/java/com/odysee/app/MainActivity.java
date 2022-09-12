@@ -1958,8 +1958,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         castHelper.addCastStateListener();
         checkNowPlaying();
 
-        if (isSignedIn())
+        if (isSignedIn()) {
             loadRemoteNotifications(false);
+        }
 
         scheduleWalletBalanceUpdate();
 
