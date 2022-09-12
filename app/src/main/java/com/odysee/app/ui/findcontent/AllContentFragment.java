@@ -441,11 +441,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
 
         List<String> channelIdsForCategory = null;
-        List<String> excludedChannelIdsForCategory = null;
+        List<String> excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
 
-        if (currentCategoryId == wildWestIndex) {
-            excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
-        } else if (currentChannelIdList != null) {
+        if (currentChannelIdList != null) {
             channelIdsForCategory = Arrays.asList(currentChannelIdList);
         } else {
             channelIdsForCategory = Arrays.asList(dynamicCategories.get(0).getChannelIds());
