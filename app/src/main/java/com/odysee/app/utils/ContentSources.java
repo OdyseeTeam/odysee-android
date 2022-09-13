@@ -57,7 +57,7 @@ public final class ContentSources {
         public boolean isValid() {
             return !Helper.isNullOrEmpty(name) &&
                     ((channelIds != null && channelIds.length > 0) ||
-                            ("wildwest".equalsIgnoreCase(name) &&
+                            ("rabbithole".equalsIgnoreCase(name) &&
                                     (excludedChannelIds != null && excludedChannelIds.length > 0)));
         }
     }
