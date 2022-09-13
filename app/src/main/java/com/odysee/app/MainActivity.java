@@ -3290,6 +3290,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         fetchTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    public void setExpandedStatePreferenceScheduledClaims(boolean forceExpanded) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        sp.edit().putBoolean("com.odysee.app.force_expanded_state_scheduled_claims_list", forceExpanded).apply();
+    }
+
+    public boolean getExpandedStatePreferenceScheduledClaims() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean("com.odysee.app.force_expanded_state_scheduled_claims_list", true);
+    }
+
     private byte[] rsaEncrypt(byte[] secret, KeyStore keyStore) throws Exception {
         PrivateKey privateKey = null;
         PublicKey publicKey = null;

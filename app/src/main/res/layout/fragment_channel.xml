@@ -57,6 +57,7 @@
                 android:background="@color/channelCoverBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:minHeight="48dp"
                 android:layout_alignParentEnd="true"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="8dp"
@@ -72,6 +73,7 @@
                     android:id="@+id/channel_view_block_unblock_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
                     android:textColor="@color/white"
                     android:text="@string/block_channel"
                     android:layout_marginStart="2dp"/>
@@ -154,29 +156,26 @@
 
         </RelativeLayout>
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/channel_view_pager"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:elevation="4dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
+                android:layout_gravity="end"
                 android:padding="8dp">
                 <RelativeLayout
                     android:id="@+id/channel_view_edit"
                     android:clickable="true"
                     android:background="?attr/selectableItemBackground"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    android:focusable="true">
                     <ImageView
                         android:layout_centerInParent="true"
                         android:layout_width="24dp"
@@ -188,8 +187,8 @@
                     android:id="@+id/channel_view_delete"
                     android:clickable="true"
                     android:background="?attr/selectableItemBackground"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp"
                     android:visibility="gone">
                     <ImageView
@@ -203,8 +202,8 @@
                     android:id="@+id/channel_view_share"
                     android:clickable="true"
                     android:background="?attr/selectableItemBackground"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp">
                     <ImageView
                         android:layout_centerInParent="true"
@@ -217,8 +216,8 @@
                     android:id="@+id/channel_view_tip"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp">
                     <com.odysee.app.ui.controls.SolidIconView
                         android:layout_centerInParent="true"
@@ -232,8 +231,8 @@
                     android:id="@+id/channel_view_report"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp">
                     <ImageView
                         android:layout_centerInParent="true"
@@ -242,17 +241,20 @@
                         android:src="@drawable/ic_report"
                         app:tint="@color/foreground" />
                 </RelativeLayout>
-                <RelativeLayout
+                <LinearLayout
                     android:id="@+id/channel_view_follow_unfollow"
                     android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp">
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true">
                     <TextView
                         android:id="@+id/channel_view_text_follow"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
+                        android:layout_gravity="center_vertical"
                         android:layout_marginStart="6dp"
                         android:layout_marginEnd="6dp"
                         android:fontFamily="@font/inter"
@@ -262,30 +264,29 @@
                         android:textAllCaps="true" />
                     <com.odysee.app.ui.controls.OutlineIconView
                         android:id="@+id/channel_view_icon_follow"
-                        android:layout_toRightOf="@id/channel_view_text_follow"
-                        android:layout_centerVertical="true"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:layout_gravity="center_vertical"
                         android:layout_marginEnd="6dp"
                         android:text="@string/fa_heart"
                         android:textColor="@color/red"
                         android:textSize="20dp" />
                     <com.odysee.app.ui.controls.SolidIconView
                         android:id="@+id/channel_view_icon_unfollow"
-                        android:layout_centerInParent="true"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:layout_gravity="center_vertical"
                         android:text="@string/fa_heart_broken"
                         android:textColor="@color/foreground"
                         android:textSize="20dp"
                         android:visibility="invisible"/>
-                </RelativeLayout>
+                </LinearLayout>
                 <RelativeLayout
                     android:id="@+id/channel_view_subscribe_notify"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginStart="8dp"
                     android:visibility="gone">
                     <com.odysee.app.ui.controls.SolidIconView
@@ -298,6 +299,11 @@
                         android:textSize="20dp"/>
                 </RelativeLayout>
             </LinearLayout>
-        </RelativeLayout>
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/channel_view_pager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

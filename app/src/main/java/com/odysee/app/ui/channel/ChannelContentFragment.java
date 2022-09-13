@@ -17,14 +17,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.odysee.app.OdyseeApp;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -68,6 +72,9 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     private View bigContentLoading;
     private View noContentView;
     private ClaimListAdapter contentListAdapter;
+    private RecyclerView scheduledStreamsList;
+    private ClaimListAdapter scheduledClaimsListAdapter;
+    private View scheduledLivestreamsLayout;
     private boolean contentClaimSearchLoading;
     private boolean contentHasReachedEnd;
     private int currentClaimSearchPage;
@@ -75,6 +82,22 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_channel_content, container, false);
+
+        scheduledLivestreamsLayout = root.findViewById(R.id.scheduled_livestreams_container);
+        scheduledStreamsList = root.findViewById(R.id.scheduled_livestreams_recyclerview);
+        LinearLayoutManager llm = new LinearLayoutManager(getContext());
+        scheduledStreamsList.setLayoutManager(llm);
+        root.findViewById(R.id.expand_scheduled_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Helper.setViewVisibility(scheduledStreamsList, scheduledStreamsList.getVisibility() == View.VISIBLE ? View.GONE: View.VISIBLE);
+                MainActivity a = (MainActivity) getActivity();
+
+                if (a != null) {
+                    a.setExpandedStatePreferenceScheduledClaims(scheduledStreamsList.getVisibility() == View.VISIBLE);
+                }
+            }
+        });
 
         currentSortBy = ContentSortDialogFragment.ITEM_SORT_BY_NEW;
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
@@ -90,8 +113,8 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         noContentView = root.findViewById(R.id.channel_content_no_claim_search_content);
 
         contentList = root.findViewById(R.id.channel_content_list);
-        LinearLayoutManager llm = new LinearLayoutManager(getContext());
-        contentList.setLayoutManager(llm);
+        LinearLayoutManager llmContent = new LinearLayoutManager(getContext());
+        contentList.setLayoutManager(llmContent);
         contentList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -292,6 +315,56 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                 @Override
                 public void run() {
                     try {
+                        List<Claim> scheduledClaims = findScheduledLivestreams();
+
+                        if (scheduledClaims != null && scheduledClaims.size() > 0) {
+                            scheduledClaims = Helper.filterClaimsByOutpoint(scheduledClaims);
+
+                            for (Claim c : scheduledClaims) {
+                                c.setHighlightLive(true);
+                            }
+
+                            List<Claim> finalScheduledClaims = scheduledClaims;
+                            a.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (scheduledClaimsListAdapter == null) {
+                                        Context context = getContext();
+                                        if (context != null) {
+                                            scheduledClaimsListAdapter = new ClaimListAdapter(finalScheduledClaims, ClaimListAdapter.STYLE_SMALL_LIST, context);
+                                            scheduledClaimsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                                @Override
+                                                public void onClaimClicked(Claim claim, int position) {
+                                                    Context context = getContext();
+                                                    if (context instanceof MainActivity) {
+                                                        MainActivity activity = (MainActivity) context;
+
+                                                        // Scheduled livestreams will be from current channel, so there is no point in navigating to currently displayed data
+                                                        if (claim.getValueType().equals(Claim.TYPE_STREAM)) {
+                                                            activity.openFileClaim(claim);
+                                                        }
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    } else {
+                                        scheduledClaimsListAdapter.addItems(finalScheduledClaims);
+                                    }
+
+                                    if (scheduledStreamsList != null && scheduledStreamsList.getAdapter() == null) {
+                                        scheduledStreamsList.setAdapter(scheduledClaimsListAdapter);
+                                    }
+                                }
+                            });
+                        }
+
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                checkNoScheduledLivestreams();
+                            }
+                        });
+
                         List<Future<Page>> results = ((OdyseeApp) a.getApplication()).getExecutor().invokeAll(callables);
 
                         List<Claim> items = new ArrayList<>();
@@ -459,6 +532,102 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     private void checkNoContent() {
         boolean noContent = contentListAdapter == null || contentListAdapter.getItemCount() == 0;
         Helper.setViewVisibility(noContentView, noContent ? View.VISIBLE : View.GONE);
+    }
+
+    private List<Claim> findScheduledLivestreams() {
+        MainActivity a = (MainActivity) getActivity();
+        List<Claim> upcomingClaims = null;
+        if (a != null) {
+            try {
+                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(Collections.singletonList(channelId), true, true);
+                Future<Map<String, JSONObject>> futureUpcoming = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                Map<String, JSONObject> upcomingJsonData = futureUpcoming.get();
+
+                if (upcomingJsonData != null && upcomingJsonData.size() > 0 && upcomingJsonData.containsKey(channelId)) {
+                    JSONObject channelData = upcomingJsonData.get(channelId);
+                    if (channelData != null && channelData.has("FutureClaims")) {
+                        JSONArray jsonClaimIds = channelData.optJSONArray("FutureClaims");
+
+                        if (jsonClaimIds != null) {
+                            List<String> claimIds = new ArrayList<>();
+                            for (int j = 0; j < jsonClaimIds.length(); j++) {
+                                JSONObject obj = jsonClaimIds.getJSONObject(j);
+                                claimIds.add(obj.getString("ClaimID"));
+                            }
+
+                            Map<String, Object> claimSearchOptions = buildScheduledLivestreamsOptions();
+
+                            claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                            claimSearchOptions.put("has_no_source", true);
+                            claimSearchOptions.put("claim_ids", claimIds);
+                            Future<List<Claim>> upcomingFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
+
+                            upcomingClaims = upcomingFuture.get();
+                            if (channelData.has("ActiveClaim")) {
+                                // Extract active livestream's claimId to compare with future ones
+                                JSONObject activeClaimIdJSON = (JSONObject) channelData.get("ActiveClaim");
+
+                                upcomingClaims.removeIf(t -> {
+                                    try {
+                                        return channelData.getBoolean("Live") && t.getClaimId().equalsIgnoreCase(activeClaimIdJSON.getString("ClaimID"));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                        return false;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
+            } catch (InterruptedException | ExecutionException | JSONException e) {
+                Throwable cause = e.getCause();
+                if (cause != null) {
+                    cause.printStackTrace();
+                }
+                return null;
+            }
+        }
+        return upcomingClaims;
+    }
+
+    private void checkNoScheduledLivestreams() {
+        boolean noScheduled = scheduledClaimsListAdapter == null || scheduledClaimsListAdapter.getItemCount() == 0;
+        Helper.setViewVisibility(scheduledLivestreamsLayout, noScheduled ? View.GONE : View.VISIBLE);
+
+        MainActivity a = (MainActivity) getActivity();
+        if (!noScheduled && a != null) {
+            scheduledStreamsList.setVisibility(a.getExpandedStatePreferenceScheduledClaims() ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private Map<String, Object> buildScheduledLivestreamsOptions() {
+        Context context = getContext();
+        boolean canShowMatureContent = false;
+        if (context != null) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+            canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
+        }
+
+        Date ct = new Date();
+        Calendar cal = GregorianCalendar.getInstance();
+        cal.setTime(ct);
+
+        int releaseTime = Long.valueOf(cal.getTimeInMillis() / 1000L).intValue();
+
+        return Lbry.buildClaimSearchOptions(
+                Collections.singletonList(Claim.TYPE_STREAM),
+                null,
+                canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                null,
+                !Helper.isNullOrEmpty(channelId) ? Collections.singletonList(channelId) : null,
+                null,
+                Collections.singletonList("^release_time"),
+                ">" + releaseTime,
+                0,
+                0,
+                currentClaimSearchPage == 0 ? 1 : currentClaimSearchPage,
+                Helper.CONTENT_PAGE_SIZE);
     }
 
     private void loadViewCounts(List<Claim> claims) {
