@@ -671,9 +671,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         liveText = context.getResources().getString(R.string.soon).toUpperCase();
                         vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
                     } else {
-                        liveText = String.valueOf(item.getLivestreamViewers());
-                        vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
-                        vh.durationView.setCompoundDrawablePadding(8);
+                        int livestreamViewers = item.getLivestreamViewers();
+
+                        if (livestreamViewers > 0) {
+                            liveText = String.valueOf(livestreamViewers);
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_viewerscount, 0);
+                            vh.durationView.setCompoundDrawablePadding(8);
+                        } else {
+                            liveText = context.getResources().getString(R.string.live).toUpperCase();
+                            vh.durationView.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+                        }
                     }
 
                     vh.durationView.setText(liveText);
