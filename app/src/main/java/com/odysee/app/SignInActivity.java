@@ -785,7 +785,7 @@ public class SignInActivity extends AppCompatActivity {
             public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
                 Log.d(TAG, "Loaded user state successfully.");
                 Lbryio.subscriptions = new ArrayList<>(subscriptions);
-                Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
+                Lbryio.mutedChannels = new ArrayList<>(blockedChannels);
                 finishSignInActivity();
             }
 

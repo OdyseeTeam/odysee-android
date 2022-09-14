@@ -143,20 +143,20 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonBell = root.findViewById(R.id.channel_view_subscribe_notify);
         iconBell = root.findViewById(R.id.channel_view_icon_bell);
 
-        blockUnblock = root.findViewById(R.id.channel_view_block_unblock);
-        blockUnblockText = root.findViewById(R.id.channel_view_block_unblock_text);
+        blockUnblock = root.findViewById(R.id.channel_view_mute_unmute);
+        blockUnblockText = root.findViewById(R.id.channel_view_mute_unmute_text);
 
         blockUnblock.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean blocked = Lbryio.isChannelBlocked(claim);
+                boolean blocked = Lbryio.isChannelMuted(claim);
                 Context context = getContext();
                 if (context instanceof MainActivity) {
                     if (blocked) {
                         // handle unblock
-                        ((MainActivity) context).handleUnblockChannel(claim);
+                        ((MainActivity) context).handleUnmuteChannel(claim);
                     } else {
-                        ((MainActivity) context).handleBlockChannel(claim);
+                        ((MainActivity) context).handleMuteChannel(claim);
                     }
                 }
             }
@@ -718,9 +718,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
     public void checkChannelBlocked() {
         if (claim != null) {
-            boolean channelBlocked = Lbryio.isChannelBlocked(claim);
+            boolean channelBlocked = Lbryio.isChannelMuted(claim);
             if (blockUnblockText != null) {
-                blockUnblockText.setText(channelBlocked ? R.string.unblock_channel : R.string.block_channel);
+                blockUnblockText.setText(channelBlocked ? R.string.unmute_channel : R.string.mute_channel);
             }
         }
     }

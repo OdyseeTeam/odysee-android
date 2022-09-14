@@ -153,7 +153,7 @@
                         app:drawableStartCompat="@drawable/ic_slime_bw"/>
 
                     <RelativeLayout
-                        android:id="@+id/comment_block_channel"
+                        android:id="@+id/comment_mute_channel"
                         android:background="?selectableItemBackground"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -163,11 +163,12 @@
                         android:layout_gravity="center_vertical"
                         android:clickable="true"
                         android:focusable="true">
+
                         <ImageView
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:layout_centerInParent="true"
-                            android:src="@drawable/ic_block" />
+                            android:src="@drawable/ic_mute" />
                     </RelativeLayout>
                 </LinearLayout>
             </LinearLayout>

@@ -51,7 +51,7 @@
                 android:scaleType="centerCrop"
                 android:src="@drawable/default_channel_cover" />
             <LinearLayout
-                android:id="@+id/channel_view_block_unblock"
+                android:id="@+id/channel_view_mute_unmute"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="@color/channelCoverBackground"
@@ -69,11 +69,11 @@
                     android:src="@drawable/ic_block"
                     app:tint="@color/white" />
                 <TextView
-                    android:id="@+id/channel_view_block_unblock_text"
+                    android:id="@+id/channel_view_mute_unmute_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/white"
-                    android:text="@string/block_channel"
+                    android:text="@string/mute_channel"
                     android:layout_marginStart="2dp"/>
             </LinearLayout>
             <LinearLayout

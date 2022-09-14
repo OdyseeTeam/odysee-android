@@ -696,7 +696,7 @@ public class FollowingFragment extends BaseFragment implements
                     });
 
                     items = Helper.filterClaimsByOutpoint(items);
-                    items = Helper.filterClaimsByBlockedChannels(items, Lbryio.blockedChannels);
+                    items = Helper.filterClaimsByBlockedChannels(items, Lbryio.mutedChannels);
 
                     if (a != null) {
                         List<Claim> finalClaims = items;

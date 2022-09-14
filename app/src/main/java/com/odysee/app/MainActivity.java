@@ -38,10 +38,7 @@ import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.Editable;
-import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
-import android.text.style.TypefaceSpan;
 import android.transition.Slide;
 import android.transition.TransitionManager;
 import android.util.Base64;
@@ -2826,13 +2823,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 @Override
                 public void run() {
                     SQLiteDatabase db = dbHelper.getReadableDatabase();
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                    Lbryio.mutedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
                     initialBlockedChannelsLoaded = true;
 
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelBlocking(true);
+                            finishChannelMuting(true);
                         }
                     });
                 }
@@ -3174,19 +3171,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (blockedChannels != null && !blockedChannels.isEmpty()) {
                     if (!initialBlockedListLoaded()) {
                         // first time the blocked list is loaded, so we attempt to merge the entries
-                        List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.blockedChannels);
+                        List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.mutedChannels);
                         for (LbryUri uri : blockedChannels) {
                             if (!newBlockedChannels.contains(uri)) {
                                 newBlockedChannels.add(uri);
                             }
                         }
 
-                        Lbryio.blockedChannels = new ArrayList<>(newBlockedChannels);
+                        Lbryio.mutedChannels = new ArrayList<>(newBlockedChannels);
                         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
                         sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, true).apply();
                     } else {
                         // replace the blocked channels list entirely
-                        Lbryio.blockedChannels = new ArrayList<>(blockedChannels);
+                        Lbryio.mutedChannels = new ArrayList<>(blockedChannels);
                     }
                 }
 
@@ -5117,35 +5114,35 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
     }
 
-    public void handleBlockChannel(final Claim channel) {
+    public void handleMuteChannel(final Claim channel) {
         if (channel != null) {
             // show confirm dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(this).
-                    setTitle(getString(R.string.confirm_block_channel_title, channel.getName())).
-                    setMessage(R.string.confirm_block_channel)
+                    setTitle(getString(R.string.confirm_mute_channel_title, channel.getName())).
+                    setMessage(R.string.confirm_mute_channel)
                     .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            blockChannel(channel);
+                            muteChannel(channel);
                         }
                     }).setNegativeButton(R.string.no, null);
             builder.show();
         }
     }
 
-    public void handleUnblockChannel(final Claim channel) {
+    public void handleUnmuteChannel(final Claim channel) {
         ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     SQLiteDatabase db = dbHelper.getWritableDatabase();
                     DatabaseHelper.removeBlockedChannel(channel.getClaimId(), db);
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                    Lbryio.mutedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
 
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelUnblocking(true, channel);
+                            finishChannelUnmuting(true, channel);
                         }
                     });
                 } catch (SQLiteException ex) {
@@ -5153,7 +5150,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelUnblocking(false, null);
+                            finishChannelUnmuting(false, null);
                         }
                     });
                 }
@@ -5161,19 +5158,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
     }
 
-    public void blockChannel(Claim channel) {
+    public void muteChannel(Claim channel) {
         ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     SQLiteDatabase db = dbHelper.getWritableDatabase();
                     DatabaseHelper.createOrUpdateBlockedChannel(channel.getClaimId(), channel.getName(), db);
-                    Lbryio.blockedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
+                    Lbryio.mutedChannels = new ArrayList<>(DatabaseHelper.getBlockedChannels(db));
 
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelBlocking(true, channel);
+                            finishChannelMuting(true, channel);
                         }
                     });
                 } catch (SQLiteException ex) {
@@ -5181,7 +5178,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            finishChannelBlocking(false);
+                            finishChannelMuting(false);
                         }
                     });
                 }
@@ -5190,50 +5187,50 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
 
-    public void finishChannelBlocking(boolean success) {
-        finishChannelBlocking(success, null);
+    public void finishChannelMuting(boolean success) {
+        finishChannelMuting(success, null);
     }
 
-    public void finishChannelBlocking(boolean success, Claim channel) {
+    public void finishChannelMuting(boolean success, Claim channel) {
         if (!success) {
-            showMessage(getString(R.string.channel_could_not_be_blocked));
+            showMessage(getString(R.string.channel_could_not_be_muted));
             return;
         }
 
         if (channel != null) {
-            showMessage(getString(R.string.channel_blocked, channel.getName()));
+            showMessage(getString(R.string.channel_muted, channel.getName()));
         }
 
         // refresh claim adapters where appropriate
-        applyBlockedChannelFilters();
+        applyMutedChannelFilters();
         saveSharedUserState();
     }
 
-    public void finishChannelUnblocking(boolean success, Claim channel) {
+    public void finishChannelUnmuting(boolean success, Claim channel) {
         if (!success) {
-            showMessage(getString(R.string.channel_could_not_be_unblocked));
+            showMessage(getString(R.string.channel_could_not_be_unmuted));
             return;
         }
 
         if (channel != null) {
-            showMessage(getString(R.string.channel_unblocked, channel.getName()));
+            showMessage(getString(R.string.channel_unmuted, channel.getName()));
         }
 
-        applyBlockedChannelFilters();
+        applyMutedChannelFilters();
         saveSharedUserState();
     }
 
-    private void applyBlockedChannelFilters() {
+    private void applyMutedChannelFilters() {
         Fragment current = getCurrentFragment();
         if (current != null) {
             if (current instanceof AllContentFragment) {
-                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // content view
+                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // content view
             } else if (current instanceof FileViewFragment) {
-                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // related content and comments view
+                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // related content and comments view
             } else if (current instanceof SearchFragment) {
-                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // search results
+                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // search results
             } else if (current instanceof ChannelFragment) {
-                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // channel comments
+                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // channel comments
             }
         }
     }

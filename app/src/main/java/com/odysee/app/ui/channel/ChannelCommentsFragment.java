@@ -166,7 +166,7 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
 
         fetchChannels();
         checkAndLoadComments();
-        applyFilterForBlockedChannels(Lbryio.blockedChannels);
+        applyFilterForBlockedChannels(Lbryio.mutedChannels);
     }
 
     @Override
@@ -313,7 +313,7 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
                                 }
                             }
 
-                            commentListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+                            commentListAdapter.filterBlockedChannels(Lbryio.mutedChannels);
 
                             commentListAdapter.notifyDataSetChanged();
                         }

@@ -186,7 +186,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             noThumbnailView = v.findViewById(R.id.comment_no_thumbnail);
             alphaView = v.findViewById(R.id.comment_thumbnail_alpha);
             commentActions = v.findViewById(R.id.comment_actions_area);
-            blockChannelView = v.findViewById(R.id.comment_block_channel);
+            blockChannelView = v.findViewById(R.id.comment_mute_channel);
             viewReplies = v.findViewById(R.id.textview_view_replies);
             moreOptionsView = v.findViewById(R.id.comment_more_options);
 
@@ -355,7 +355,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
                 Claim channel = comment.getPoster();
                 if (channel != null) {
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleBlockChannel(channel);
+                        ((MainActivity) context).handleMuteChannel(channel);
                     }
                 }
             }

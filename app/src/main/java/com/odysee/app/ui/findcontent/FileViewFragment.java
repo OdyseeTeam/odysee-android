@@ -1045,7 +1045,7 @@ public class FileViewFragment extends BaseFragment implements
 
         checkOwnClaim();
         fetchChannels();
-        applyFilterForBlockedChannels(Lbryio.blockedChannels);
+        applyFilterForBlockedChannels(Lbryio.mutedChannels);
     }
 
     @Override
@@ -3671,7 +3671,7 @@ public class FileViewFragment extends BaseFragment implements
         List<Claim> filteredClaims = claims.stream().filter(c -> !c.getClaimId().equalsIgnoreCase(actualClaim.getClaimId()))
                                            .collect(Collectors.toList());
 
-        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.blockedChannels);
+        filteredClaims = Helper.filterClaimsByBlockedChannels(filteredClaims, Lbryio.mutedChannels);
 
         Context ctx = getContext();
         if (ctx != null) {
@@ -3971,7 +3971,7 @@ public class FileViewFragment extends BaseFragment implements
                             }
 
                             // filter for blocked comments
-                            commentListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+                            commentListAdapter.filterBlockedChannels(Lbryio.mutedChannels);
 
                             commentListAdapter.notifyDataSetChanged();
                         }
@@ -4466,7 +4466,7 @@ public class FileViewFragment extends BaseFragment implements
                     Claim channel = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleBlockChannel(channel);
+                        ((MainActivity) context).handleMuteChannel(channel);
                     }
                 }
             }
