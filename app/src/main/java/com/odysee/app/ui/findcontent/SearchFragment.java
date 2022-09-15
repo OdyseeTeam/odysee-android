@@ -29,7 +29,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -266,7 +265,7 @@ public class SearchFragment extends BaseFragment implements
                     Claim channel = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleBlockChannel(channel);
+                        ((MainActivity) context).handleMuteChannel(channel);
                     }
                 }
             }
@@ -299,7 +298,7 @@ public class SearchFragment extends BaseFragment implements
             explainerView.setVisibility(View.VISIBLE);
         }
 
-        applyFilterForBlockedChannels(Lbryio.blockedChannels);
+        applyFilterForMutedChannels(Lbryio.mutedChannels);
     }
 
     public void onPause() {
@@ -565,7 +564,7 @@ public class SearchFragment extends BaseFragment implements
                                         resultListAdapter.addItems(sanitizedClaims);
                                     }
 
-                                    resultListAdapter.filterBlockedChannels(Lbryio.blockedChannels);
+                                    resultListAdapter.filterBlockedChannels(Lbryio.mutedChannels);
                                     checkNothingToBeShown();
                                 }
                             }
@@ -641,7 +640,7 @@ public class SearchFragment extends BaseFragment implements
         }
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> blockedChannels) {
         if (resultListAdapter != null) {
             resultListAdapter.filterBlockedChannels(blockedChannels);
         }

@@ -65,6 +65,7 @@ public final class Lbryio {
     public static List<String> blockedOutpoints = new ArrayList<>();
     public static List<String> filteredOutpoints = new ArrayList<>();
     public static List<LbryUri> blockedChannels = new ArrayList<>();
+    public static List<LbryUri> mutedChannels = new ArrayList<>();
     public static double LBCUSDRate = 0;
     public static String AUTH_TOKEN;
     private static boolean generatingAuthToken = false;
@@ -410,6 +411,15 @@ public final class Lbryio {
     }
     public static boolean isFollowing(Claim claim) {
         return subscriptions.contains(Subscription.fromClaim(claim));
+    }
+    public static boolean isChannelMuted(Claim channel) {
+        String channelClaimId = channel.getClaimId();
+        for (LbryUri uri : mutedChannels) {
+            if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
+                return true;
+            }
+        }
+        return false;
     }
     public static boolean isChannelBlocked(Claim channel) {
         String channelClaimId = channel.getClaimId();

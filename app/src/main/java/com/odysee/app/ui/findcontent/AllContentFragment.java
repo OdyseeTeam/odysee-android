@@ -419,7 +419,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             updateSortByLinkText();
         }
 
-        applyFilterForBlockedChannels(Lbryio.blockedChannels);
+        applyFilterForMutedChannels(Lbryio.mutedChannels);
     }
 
     public void onPause() {
@@ -501,7 +501,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 claims = Helper.filterClaimsByOutpoint(claims);
-                claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.blockedChannels);
+                claims = Helper.filterClaimsByBlockedChannels(claims, Lbryio.mutedChannels);
 
                 if (contentListAdapter == null) {
                     Context context = getContext();
@@ -588,7 +588,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     Claim channel = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleBlockChannel(channel);
+                        ((MainActivity) context).handleMuteChannel(channel);
                     }
                 }
             }
@@ -622,7 +622,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         buildAndDisplayContentCategories();
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> blockedChannels) {
         if (contentListAdapter != null) {
             contentListAdapter.filterBlockedChannels(blockedChannels);
         }

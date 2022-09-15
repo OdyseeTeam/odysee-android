@@ -102,6 +102,9 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
     private View layoutNothingAtLocation;
     private View layoutLoadingState;
 
+    private View muteUnmute;
+    private TextView muteUnmuteText;
+
     private View blockUnblock;
     private TextView blockUnblockText;
 
@@ -142,6 +145,25 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         buttonBell = root.findViewById(R.id.channel_view_subscribe_notify);
         iconBell = root.findViewById(R.id.channel_view_icon_bell);
 
+        muteUnmute = root.findViewById(R.id.channel_view_mute_unmute);
+        muteUnmuteText = root.findViewById(R.id.channel_view_mute_unmute_text);
+
+        muteUnmute.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean blocked = Lbryio.isChannelMuted(claim);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    if (blocked) {
+                        // handle unblock
+                        ((MainActivity) context).handleUnmuteChannel(claim);
+                    } else {
+                        ((MainActivity) context).handleMuteChannel(claim);
+                    }
+                }
+            }
+        });
+
         blockUnblock = root.findViewById(R.id.channel_view_block_unblock);
         blockUnblockText = root.findViewById(R.id.channel_view_block_unblock_text);
 
@@ -153,9 +175,10 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                 if (context instanceof MainActivity) {
                     if (blocked) {
                         // handle unblock
-                        ((MainActivity) context).handleUnblockChannel(claim);
+                        // note: passing null to modChannel will result in the default channel being automatically used
+                        ((MainActivity) context).handleUnblockChannel(claim, null);
                     } else {
-                        ((MainActivity) context).handleBlockChannel(claim);
+                        ((MainActivity) context).handleBlockChannel(claim, null);
                     }
                 }
             }
@@ -459,7 +482,7 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
 
         checkParams();
         checkOwnChannel();
-        checkChannelBlocked();
+        checkChannelMuted();
     }
 
     public void onPause() {
@@ -721,6 +744,15 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         }
     }
 
+    public void checkChannelMuted() {
+        if (claim != null) {
+            boolean channelMuted = Lbryio.isChannelMuted(claim);
+            if (muteUnmuteText != null) {
+                muteUnmuteText.setText(channelMuted ? R.string.unmute_channel : R.string.mute_channel);
+            }
+        }
+    }
+
     private void resetSubCount() {
         subCount = -1;
         Helper.setViewText(textFollowerCount, null);
@@ -752,16 +784,22 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         }
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> mutedChannels) {
         if (tabPager != null && tabPager.getAdapter() != null) {
             Fragment commentsFragment = ((ChannelPagerAdapter) tabPager.getAdapter()).getCommentsFragment();
             if (commentsFragment instanceof ChannelCommentsFragment) {
-                ((ChannelCommentsFragment) commentsFragment).applyFilterForBlockedChannels(blockedChannels);
+                ((ChannelCommentsFragment) commentsFragment).applyFilterForMutedChannels(mutedChannels);
             }
         }
 
+        checkChannelMuted();
+    }
+
+    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
         checkChannelBlocked();
     }
+
+
 
     private static class ChannelPagerAdapter extends FragmentStateAdapter {
         private final Claim channelClaim;

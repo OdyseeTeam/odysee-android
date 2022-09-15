@@ -16,7 +16,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -327,7 +326,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
                 }
             }
-            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.block_channel);
+            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.mute_channel);
         }
     }
 
