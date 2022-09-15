@@ -1045,7 +1045,7 @@ public class FileViewFragment extends BaseFragment implements
 
         checkOwnClaim();
         fetchChannels();
-        applyFilterForBlockedChannels(Lbryio.mutedChannels);
+        applyFilterForMutedChannels(Lbryio.mutedChannels);
     }
 
     @Override
@@ -5036,7 +5036,7 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> blockedChannels) {
         if (relatedContentAdapter != null) {
             relatedContentAdapter.filterBlockedChannels(blockedChannels);
         }

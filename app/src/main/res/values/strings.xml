@@ -79,6 +79,16 @@
     <string name="channel_could_not_be_unmuted">An error occurred while trying to unmute the channel. Please try again later.</string>
     <string name="channel_muted">You have muted all content and comments from %1$s</string>
     <string name="channel_unmuted">You have unmuted all content and comments from %1$s</string>
+
+    <string name="block_channel">Block channel</string>
+    <string name="unblock_channel">Unblock channel</string>
+    <string name="confirm_block_channel_title">Block %1$s?</string>
+    <string name="confirm_block_channel">Do you want to block this channel from commenting on content published by %1$s?</string>
+    <string name="channel_could_not_be_blocked">An error occurred while trying to block the channel. Please try again later.</string>
+    <string name="channel_could_not_be_unblocked">An error occurred while trying to unblock the channel. Please try again later.</string>
+    <string name="channel_blocked">You have blocked this channel from commenting on content by %1$s</string>
+    <string name="channel_unblocked">You have unblocked this channel from commenting on content by %1$s</string>
+
     <string name="watch_later">Watch Later</string>
     <string name="favorites">Favorites</string>
     <string name="add_to_lists">Add to Lists</string>

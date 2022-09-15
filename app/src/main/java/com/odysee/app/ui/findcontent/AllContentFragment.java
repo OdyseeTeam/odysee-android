@@ -418,7 +418,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             updateSortByLinkText();
         }
 
-        applyFilterForBlockedChannels(Lbryio.mutedChannels);
+        applyFilterForMutedChannels(Lbryio.mutedChannels);
     }
 
     public void onPause() {
@@ -621,7 +621,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         buildAndDisplayContentCategories();
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> blockedChannels) {
         if (contentListAdapter != null) {
             contentListAdapter.filterBlockedChannels(blockedChannels);
         }

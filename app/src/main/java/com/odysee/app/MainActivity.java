@@ -143,6 +143,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -246,6 +247,7 @@ import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
 import com.odysee.app.utils.CastHelper;
+import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.ContentSources;
 import com.odysee.app.utils.FirebaseMessagingToken;
 import com.odysee.app.utils.Helper;
@@ -262,6 +264,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         ActionMode.Callback, SelectionModeListener, OnAccountsUpdateListener, VerificationListener {
@@ -5220,19 +5223,210 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         saveSharedUserState();
     }
 
+    private void applyBlockedChannelFilters() {
+        Fragment current = getCurrentFragment();
+        if (current != null) {
+            if (current instanceof ChannelFragment) {
+                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.blockedChannels); // channel comments
+            }
+        }
+    }
+
     private void applyMutedChannelFilters() {
         Fragment current = getCurrentFragment();
         if (current != null) {
             if (current instanceof AllContentFragment) {
-                ((AllContentFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // content view
+                ((AllContentFragment) current).applyFilterForMutedChannels(Lbryio.mutedChannels); // content view
             } else if (current instanceof FileViewFragment) {
-                ((FileViewFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // related content and comments view
+                ((FileViewFragment) current).applyFilterForMutedChannels(Lbryio.mutedChannels); // related content and comments view
             } else if (current instanceof SearchFragment) {
-                ((SearchFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // search results
+                ((SearchFragment) current).applyFilterForMutedChannels(Lbryio.mutedChannels); // search results
             } else if (current instanceof ChannelFragment) {
-                ((ChannelFragment) current).applyFilterForBlockedChannels(Lbryio.mutedChannels); // channel comments
+                ((ChannelFragment) current).applyFilterForMutedChannels(Lbryio.mutedChannels); // channel comments
             }
         }
+    }
+
+    public void handleBlockChannel(Claim channel, Claim modChannel) {
+        if (channel != null) {
+            if (modChannel == null) {
+                String defaultChannelName = Helper.getDefaultChannelName(this);
+                if (!Helper.isNullOrEmpty(defaultChannelName)) {
+                    modChannel = Lbry.ownChannels.stream().filter(
+                            claim -> defaultChannelName.equalsIgnoreCase(claim.getName())).findFirst().orElse(null);
+                } else {
+                    // no default channel set, use the first found owned channel
+                    modChannel = Lbry.ownChannels.size() > 0 ? Lbry.ownChannels.get(0) : null;
+                }
+
+                // if it's still null after this point, return
+                if (modChannel == null) {
+                    return;
+                }
+            }
+
+            final Claim actualModChannel = modChannel;
+
+            // show confirm dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this).
+                    setTitle(getString(R.string.confirm_block_channel_title, channel.getName())).
+                    setMessage(getString(R.string.confirm_block_channel, actualModChannel.getName()))
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            blockChannel(channel, actualModChannel);
+                        }
+                    }).setNegativeButton(R.string.no, null);
+            builder.show();
+        }
+    }
+
+    public void handleUnblockChannel(final Claim channel, Claim modChannel) {
+        if (modChannel == null) {
+            String defaultChannelName = Helper.getDefaultChannelName(this);
+            if (!Helper.isNullOrEmpty(defaultChannelName)) {
+                modChannel = Lbry.ownChannels.stream().filter(
+                        claim -> defaultChannelName.equalsIgnoreCase(claim.getName())).findFirst().orElse(null);
+            } else {
+                // no default channel set, use the first found owned channel
+                modChannel = Lbry.ownChannels.size() > 0 ? Lbry.ownChannels.get(0) : null;
+            }
+
+            // if it's still null after this point, return
+            if (modChannel == null) {
+                return;
+            }
+        }
+
+        final Claim actualModChannel = modChannel;
+
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // perform moderation.UnBlock request
+                    JSONObject params = new JSONObject();
+                    params.put("channel_id", actualModChannel.getClaimId());
+                    params.put("channel_name", actualModChannel.getName());
+                    params.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+                    JSONObject jsonChannelSign = Comments.channelSignName(params, actualModChannel.getClaimId(), actualModChannel.getName());
+
+                    Map<String, Object> options = new HashMap<>();
+                    options.put("mod_channel_id", actualModChannel.getClaimId());
+                    options.put("mod_channel_name", actualModChannel.getName());
+                    options.put("un_blocked_channel_id", channel.getClaimId());
+                    options.put("un_blocked_channel_name", channel.getName().substring(1)); // strip the @?
+                    options.put("signature", Helper.getJSONString("signature", "", jsonChannelSign));
+                    options.put("signing_ts", Helper.getJSONString("signing_ts", "", jsonChannelSign));
+                    options.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+
+                    okhttp3.Response response = Comments.performRequest(Lbry.buildJsonParams(options), "moderation.UnBlock");
+                    ResponseBody responseBody = response.body();
+                    JSONObject jsonResponse = new JSONObject(responseBody.string());
+                    if (!jsonResponse.has("result") || jsonResponse.isNull("result")) {
+                        throw new ApiCallException("invalid json response");
+                    }
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(true, channel, actualModChannel);
+                        }
+                    });
+                } catch (JSONException | ApiCallException | IOException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelUnblocking(false, channel, actualModChannel);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void blockChannel(Claim channel, Claim modChannel) {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // perform moderation.Block request
+                    JSONObject params = new JSONObject();
+                    params.put("channel_id", modChannel.getClaimId());
+                    params.put("channel_name", modChannel.getName());
+                    params.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+                    JSONObject jsonChannelSign = Comments.channelSignName(params, modChannel.getClaimId(), modChannel.getName());
+
+                    Map<String, Object> options = new HashMap<>();
+                    options.put("mod_channel_id", modChannel.getClaimId());
+                    options.put("mod_channel_name", modChannel.getName());
+                    options.put("blocked_channel_id", channel.getClaimId());
+                    options.put("blocked_channel_name", channel.getName().substring(1)); // strip the @?
+                    options.put("signature", Helper.getJSONString("signature", "", jsonChannelSign));
+                    options.put("signing_ts", Helper.getJSONString("signing_ts", "", jsonChannelSign));
+                    options.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+
+                    okhttp3.Response response = Comments.performRequest(Lbry.buildJsonParams(options), "moderation.Block");
+                    ResponseBody responseBody = response.body();
+                    JSONObject jsonResponse = new JSONObject(responseBody.string());
+                    if (!jsonResponse.has("result") || jsonResponse.isNull("result")) {
+                        throw new ApiCallException("invalid json response");
+                    }
+
+                    JSONObject result = Helper.getJSONObject("result", jsonResponse);
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(true, channel, modChannel);
+                        }
+                    });
+                } catch (JSONException | ApiCallException | IOException ex) {
+                    // pass
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            finishChannelBlocking(false, channel, modChannel);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void finishChannelBlocking(boolean success, Claim channel, Claim modChannel) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_blocked));
+            return;
+        }
+
+        if (channel != null) {
+            LbryUri url = LbryUri.tryParse(channel.getPermanentUrl());
+            if (url != null && !Lbryio.blockedChannels.contains(url)) {
+                Lbryio.blockedChannels.add(url);
+            }
+            showMessage(getString(R.string.channel_blocked, modChannel.getName()));
+        }
+
+        applyBlockedChannelFilters();
+    }
+
+    public void finishChannelUnblocking(boolean success, Claim channel, Claim modChannel) {
+        if (!success) {
+            showMessage(getString(R.string.channel_could_not_be_unblocked));
+            return;
+        }
+
+        if (channel != null) {
+            LbryUri url = LbryUri.tryParse(channel.getPermanentUrl());
+            if (url != null) {
+                Lbryio.blockedChannels.remove(url);
+            }
+            showMessage(getString(R.string.channel_unblocked, modChannel.getName()));
+        }
+
+        applyBlockedChannelFilters();
     }
 
     private void checkSyncedWallet() {

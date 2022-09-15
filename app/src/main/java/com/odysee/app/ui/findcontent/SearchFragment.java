@@ -298,7 +298,7 @@ public class SearchFragment extends BaseFragment implements
             explainerView.setVisibility(View.VISIBLE);
         }
 
-        applyFilterForBlockedChannels(Lbryio.mutedChannels);
+        applyFilterForMutedChannels(Lbryio.mutedChannels);
     }
 
     public void onPause() {
@@ -640,7 +640,7 @@ public class SearchFragment extends BaseFragment implements
         }
     }
 
-    public void applyFilterForBlockedChannels(List<LbryUri> blockedChannels) {
+    public void applyFilterForMutedChannels(List<LbryUri> blockedChannels) {
         if (resultListAdapter != null) {
             resultListAdapter.filterBlockedChannels(blockedChannels);
         }

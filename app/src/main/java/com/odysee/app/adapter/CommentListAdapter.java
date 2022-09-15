@@ -169,6 +169,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         protected final View commentActions;
         protected final View viewReplies;
         protected final View blockChannelView;
+        protected final View muteChannelView;
         protected final View moreOptionsView;
 
         private final CommentListAdapter adapter;
@@ -186,7 +187,8 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             noThumbnailView = v.findViewById(R.id.comment_no_thumbnail);
             alphaView = v.findViewById(R.id.comment_thumbnail_alpha);
             commentActions = v.findViewById(R.id.comment_actions_area);
-            blockChannelView = v.findViewById(R.id.comment_mute_channel);
+            blockChannelView = v.findViewById(R.id.comment_block_channel);
+            muteChannelView = v.findViewById(R.id.comment_mute_channel);
             viewReplies = v.findViewById(R.id.textview_view_replies);
             moreOptionsView = v.findViewById(R.id.comment_more_options);
 
@@ -353,10 +355,18 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             @Override
             public void onClick(View view) {
                 Claim channel = comment.getPoster();
-                if (channel != null) {
-                    if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleMuteChannel(channel);
-                    }
+                if (channel != null && context instanceof MainActivity) {
+                    ((MainActivity) context).handleBlockChannel(channel, null);
+                }
+            }
+        });
+
+        holder.muteChannelView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Claim channel = comment.getPoster();
+                if (channel != null && context instanceof MainActivity) {
+                    ((MainActivity) context).handleMuteChannel(channel);
                 }
             }
         });
