@@ -58,6 +58,8 @@
     <string name="theuniverse_category">The Universe</string>
     <string name="movies_category">Movies</string>
     <string name="wildwest_category">Rabbit Hole</string>
+    <string name="livestreaming_now">Livestreaming now</string>
+    <string name="active_expand_button_accessibility">Button to expand or contract active livestreams</string>
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Find Channels to follow</string>

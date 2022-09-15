@@ -37,6 +37,55 @@
                 app:selectionRequired="true" />
         </HorizontalScrollView>
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/active_livestreams_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="16dp"
+            android:orientation="vertical"
+            tools:visibility="visible"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/active_livestreams_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:gravity="center_vertical"
+                android:text="@string/livestreaming_now"
+                style="@style/TextView_SemiBold" />
+
+            <ImageButton android:id="@+id/expand_active_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:contentDescription="@string/active_expand_button_accessibility"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/active_livestreams_text"
+                app:layout_constraintBottom_toBottomOf="@id/active_livestreams_text"
+                app:tint="@color/colorPrimary"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_expand"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/active_livestreams_recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@id/active_livestreams_text"
+                app:layout_constraintStart_toStartOf="parent"
+                android:scrollbars="horizontal"
+                tools:listitem="@layout/list_item_gallery"
+                tools:itemCount="2"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <RelativeLayout
             android:id="@+id/all_content_filter_container"
             android:layout_width="match_parent"
