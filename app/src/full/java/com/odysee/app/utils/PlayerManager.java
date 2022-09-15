@@ -78,7 +78,7 @@ public class PlayerManager {
 
             MediaSource mediaSource;
             if (MainActivity.videoIsTranscoded) {
-                mediaSource = new HlsMediaSource.Factory(cacheDataSourceFactory)
+                mediaSource = new HlsMediaSource.Factory(!claim.isLive() ? cacheDataSourceFactory : dataSourceFactory)
                         .setLoadErrorHandlingPolicy(new StreamLoadErrorPolicy())
                         .createMediaSource(MediaItem.fromUri(sourceUrl));
             } else {
