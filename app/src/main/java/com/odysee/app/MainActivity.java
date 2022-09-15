@@ -1958,8 +1958,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         castHelper.addCastStateListener();
         checkNowPlaying();
 
-        if (isSignedIn())
+        if (isSignedIn()) {
             loadRemoteNotifications(false);
+        }
 
         scheduleWalletBalanceUpdate();
 
@@ -3124,7 +3125,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels) {
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+                                  List<String> editedCollectionClaimIds) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
                     //openNavFragments.get
@@ -3286,6 +3288,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
         fetchTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    public void setExpandedStatePreferenceScheduledClaims(boolean forceExpanded) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        sp.edit().putBoolean("com.odysee.app.force_expanded_state_scheduled_claims_list", forceExpanded).apply();
+    }
+
+    public boolean getExpandedStatePreferenceScheduledClaims() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean("com.odysee.app.force_expanded_state_scheduled_claims_list", true);
     }
 
     private byte[] rsaEncrypt(byte[] secret, KeyStore keyStore) throws Exception {

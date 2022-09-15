@@ -66,6 +66,7 @@ import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.Comment;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.ViewHistory;
@@ -550,6 +551,13 @@ public final class Helper {
                 return true;
             }
         }
+
+        for (OdyseeCollection collection : Lbry.ownCollections) {
+            if (claimName.equalsIgnoreCase(collection.getClaimName())) {
+                return true;
+            }
+        }
+
         return false;
     }
 

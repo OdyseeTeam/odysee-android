@@ -23,7 +23,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp">
 
-        <RelativeLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/find_following_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -33,7 +33,9 @@
             <TextView android:id="@+id/find_following_page_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 android:fontFamily="@font/inter"
                 android:textSize="20sp"
                 android:text="@string/find_channels_to_follow"/>
@@ -41,10 +43,60 @@
                 android:id="@+id/following_channel_load_progress"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 android:visibility="gone"
-                android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true" />
-        </RelativeLayout>
+                tools:visibility="visible" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/scheduled_livestreams_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="16dp"
+            android:orientation="vertical"
+            tools:visibility="visible"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/upcoming_livestreams_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:gravity="center_vertical"
+                android:text="@string/upcoming_livestreams"
+                style="@style/TextView_SemiBold" />
+            <ImageButton android:id="@+id/expand_scheduled_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:contentDescription="@string/scheduled_expand_button_accessibility"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/upcoming_livestreams_text"
+                app:layout_constraintBottom_toBottomOf="@id/upcoming_livestreams_text"
+                app:tint="@color/colorPrimary"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_expand"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/scheduled_livestreams_recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@id/upcoming_livestreams_text"
+                app:layout_constraintStart_toStartOf="parent"
+                android:scrollbars="horizontal"
+                tools:listitem="@layout/list_item_gallery"
+                tools:itemCount="2"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/following_filter_container"
@@ -53,21 +105,21 @@
             android:layout_marginBottom="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
+            app:layout_constraintTop_toBottomOf="@id/scheduled_livestreams_container"
             android:visibility="gone"
             tools:visibility="visible">
             <LinearLayout android:id="@+id/filter_by_channel_link"
-                          android:background="?attr/selectableItemBackground"
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          app:layout_constraintStart_toStartOf="parent"
-                          app:layout_constraintTop_toTopOf="parent"
-                          app:layout_constraintBottom_toBottomOf="parent"
-                          android:layout_centerVertical="true"
-                          android:minHeight="48dp"
-                          android:visibility="gone"
-                          tools:visibility="visible"
-                          android:clickable="true"
-                          android:focusable="true">
+                android:background="?attr/selectableItemBackground"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:minHeight="48dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:clickable="true"
+                android:focusable="true">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -92,7 +144,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 android:layout_marginStart="16dp"
-                android:layout_centerVertical="true"
                 android:minHeight="48dp"
                 android:clickable="true"
                 android:focusable="true">
@@ -117,7 +168,6 @@
                 android:id="@+id/following_time_link"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
                 app:layout_constraintStart_toEndOf="@id/following_sort_link"
                 app:layout_constraintTop_toTopOf="parent"
@@ -150,7 +200,6 @@
                 style="@style/TextView_Light"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
                 android:layout_marginEnd="4dp"
                 android:minHeight="48dp"
                 app:layout_constraintEnd_toStartOf="@id/following_content_progress"
@@ -169,8 +218,7 @@
                 android:layout_height="16dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:layout_centerVertical="true" />
+                app:layout_constraintBottom_toBottomOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
@@ -239,6 +287,5 @@
         </RelativeLayout>
 
     </LinearLayout>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

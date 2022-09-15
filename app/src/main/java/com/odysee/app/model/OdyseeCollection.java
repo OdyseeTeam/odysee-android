@@ -33,7 +33,9 @@ public class OdyseeCollection {
     private int visibility;
 
     // published playlist
+    private Claim actualClaim;
     private String claimId;
+    private String claimName;
     private String permanentUrl;
 
     public OdyseeCollection() {
@@ -95,12 +97,14 @@ public class OdyseeCollection {
         OdyseeCollection collection = new OdyseeCollection();
         collection.setId(claim.getClaimId());
         collection.setClaimId(claim.getClaimId());
+        collection.setClaimName(claim.getName());
         collection.setPermanentUrl(claim.getPermanentUrl());
         collection.setItems(new ArrayList<>(items));
         collection.setName(claim.getTitle());
         collection.setType(OdyseeCollection.TYPE_PLAYLIST);
         collection.setUpdatedAt(new Date(claim.getTimestamp() * 1000));
         collection.setVisibility(OdyseeCollection.VISIBILITY_PUBLIC);  // claims are published, so public
+        collection.setActualClaim(claim);
 
         return collection;
     }

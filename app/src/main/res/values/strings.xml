@@ -57,7 +57,7 @@
     <string name="finance20_category">Finance 2.0</string>
     <string name="theuniverse_category">The Universe</string>
     <string name="movies_category">Movies</string>
-    <string name="wildwest_category">Wild West</string>
+    <string name="wildwest_category">Rabbit Hole</string>
 
     <!-- Following page -->
     <string name="find_channels_to_follow">Find Channels to follow</string>
@@ -68,6 +68,7 @@
     <string name="done">Done</string>
     <string name="all">All</string>
     <string name="discover_channels">Discover new channels</string>
+    <string name="scheduled_expand_button_accessibility">Button to expand or contract scheduled livestreams</string>
 
     <!-- Claim lists -->
     <string name="anonymous">Anonymous</string>
@@ -212,7 +213,7 @@
     <!-- Channel view -->
     <string name="no_channel_info">There\'s nothing here yet.\nPlease check back later.</string>
     <string name="content">Content</string>
-    <string name="scheduled_livestreams">Scheduled Livestreams</string>
+    <string name="upcoming_livestreams">Upcoming Livestreams</string>
     <string name="playlists">Playlists</string>
     <string name="website">Website</string>
     <string name="reposted">reposted</string>
@@ -278,6 +279,8 @@
     <string name="publish_no_thumbnail">Please select a thumbnail to upload before publishing.</string>
     <string name="publish_thumbnail_in_progress">Please wait for the thumbnail to finish uploading before publishing.</string>
     <string name="invalid_release_time">Please enter a valid release time.</string>
+    <string name="name_already_used">You have already published content using the specified name. Please enter a new name.</string>
+    <string name="publish_playlist_failed">The playlist could not be published at this time. Please try again later. Error: %1$s</string>
 
     <string name="language">Language</string>
     <string name="english">English</string>
@@ -500,8 +503,8 @@
     <string name="delete_or_edit_past_content">(Delete or edit past content to spend)</string>
     <string name="delete_supports_to_spend">(Delete supports to spend)</string>
 
-    <string name="backup_synced">A backup of your wallet is synced with lbry.tv</string>
-    <string name="backup_notsynced">Your wallet is not currently synced with lbry.tv. You are responsible for backing up your wallet.</string>
+    <string name="backup_synced">A backup of your wallet is synced with Odysee</string>
+    <string name="backup_notsynced">Your wallet is not currently synced with Odysee. You are responsible for backing up your wallet.</string>
     <string name="synced_what_does_this_mean">&lt;a href="https://lbry.com/faq/account-sync"&gt;What does this mean?&lt;/a&gt;</string>
     <string name="backup_what_does_this_mean">&lt;a href="https://lbry.com/faq/how-to-backup-wallet#android"&gt;What does this mean?&lt;/a&gt;</string>
 
@@ -542,7 +545,7 @@
     <string name="five">5</string>
 
     <string name="account_recommended">Account Recommended</string>
-    <string name="wallet_account_desc">A lbry.tv account allows you to earn rewards, backup your wallet, and keep everything in sync.</string>
+    <string name="wallet_account_desc">An Odysee account allows you to earn rewards, backup your wallet, and keep everything in sync.</string>
     <string name="wallet_without_account">Without an account, you assume all responsibility for securing your wallet and LBRY data.</string>
     <string name="skip_account">Skip Account</string>
     <string name="sign_up">Sign up</string>
@@ -626,6 +629,11 @@
     <string name="min_deposit">0.001</string>
     <string name="content_successfully_reposted">The content was successfully reposted!</string>
     <string name="repost_name_invalid_characters">The repost name contains invalid characters.</string>
+    <string name="publish_playlist">Publish Playlist</string>
+    <string name="publish_playlist_title_required">Please enter a title for the playlist</string>
+    <string name="playlist_at_least_one_item_required">The playlist should contain at least one video.</string>
+    <string name="playlist_name_invalid_characters">The playlist name contains invalid characters.</string>
+    <string name="please_select_publish_channel">Please select a channel to publish the playlist.</string>
     <plurals name="you_sent_a_tip">
         <item quantity="one">You sent %1$s credit as a tip, Mahalo!</item>
         <item quantity="other">You sent %1$s credits as a tip, Mahalo!</item>
@@ -636,7 +644,7 @@
     </plurals>
 
     <!-- Verification -->
-    <string name="agree_to_terms">By creating an account, you agree to our <a href="https://lbry.com/termsofservice">terms</a> and confirm you are over the age of 13.</string>
+    <string name="agree_to_terms">By creating an account, you agree to our <a href="https://odysee.com/termsofservice">terms</a> and confirm you are over the age of 13.</string>
     <string name="provide_email_address">Please provide an email address.</string>
     <string name="email_placeholder">you@example.com</string>
     <string name="email_sent_to">An email has been sent to</string>
@@ -648,7 +656,7 @@
     <string name="signup_error_occurred">An unknown error occurred during signup. Please try again.</string>
     <string name="signup_failed">Sign up failed: %1$s</string>
     <string name="please_follow_instructions">Please follow the instructions in the email sent to your address to continue.</string>
-    <string name="sign_in_successful">You have successfully signed in to lbry.tv</string>
+    <string name="sign_in_successful">You have successfully signed in to Odysee</string>
     <string name="retrieving_account_information">Retrieving account information…</string>
     <string name="apply_wallet_data">Applying wallet data…</string>
     <string name="please_enter_signin_password">Please enter your password</string>
@@ -659,7 +667,7 @@
     <string name="password">Password</string>
     <string name="wallet_password">Wallet password</string>
     <string name="enable_sync">Enable sync</string>
-    <string name="wallet_sync_op_failed">The wallet sync operation could not be completed at this time. Please try again later. If this problem persists, please send an email to hello@lbry.com.</string>
+    <string name="wallet_sync_op_failed">The wallet sync operation could not be completed at this time. Please try again later. If this problem persists, please send an email to hello@odysee.com.</string>
     <string name="phone_number">Phone Number</string>
     <string name="enter_phone_number">Please enter your phone number.</string>
     <string name="not_interested">Not interested</string>
@@ -830,11 +838,11 @@
     <string name="earn_extra_credits_invites">You can earn extra credits for each person you invite to use LBRY.</string>
     <string name="invites_learn_more">&lt;a href="https://lbry.com/faq/invites"&gt;Learn more&lt;/a&gt;.</string>
     <string name="invite_link">Invite Link</string>
-    <string name="share_this_link">Share this link with friends (or enemies) and get credits when they join lbry.tv.</string>
+    <string name="share_this_link">Share this link with friends (or enemies) and get credits when they join Odysee.</string>
     <string name="your_invite_link">Your invite link</string>
     <string name="customize_invite_link">Customize invite link</string>
     <string name="invite_by_email">Invite by Email</string>
-    <string name="invite_someone">Invite someone you know by email and earn credits when they join lbry.tv.</string>
+    <string name="invite_someone">Invite someone you know by email and earn credits when they join Odysee.</string>
     <string name="invite_email_placeholder">imaginary@friend.com</string>
     <string name="invite">Invite</string>
     <string name="invite_history">Invite History</string>
