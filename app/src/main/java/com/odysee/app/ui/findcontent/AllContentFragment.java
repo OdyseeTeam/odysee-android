@@ -650,19 +650,19 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
     private List<Claim> findActiveLivestreams() {
         MainActivity a = (MainActivity) getActivity();
-        List<Claim> subscribedUpcomingClaims = new ArrayList<>();
+        List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
                 List<String> channelIds = Arrays.asList(currentChannelIdList);
 
                 Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(channelIds, false, true);
-                Future<Map<String, JSONObject>> futureUpcoming = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
-                Map<String, JSONObject> upcomingJsonData = futureUpcoming.get();
+                Future<Map<String, JSONObject>> futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                Map<String, JSONObject> activeJsonData = futureActive.get();
 
-                if (upcomingJsonData != null && upcomingJsonData.size() > 0) {
+                if (activeJsonData != null && activeJsonData.size() > 0) {
                     List<String> claimIds = new ArrayList<>();
 
-                    upcomingJsonData.forEach((k, v) -> {
+                    activeJsonData.forEach((k, v) -> {
                         try {
                             if (v.getBoolean("Live") && v.has("ActiveClaim")) {
                                 String cid = v.getJSONObject("ActiveClaim").getString("ClaimID");
@@ -678,20 +678,20 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     claimSearchOptions.put("has_no_source", true);
                     claimSearchOptions.put("claim_ids", claimIds);
                     claimSearchOptions.put("page", 1);
-                    Future<List<Claim>> upcomingFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
+                    Future<List<Claim>> activeClaimsFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
 
                     // Using two different variables to make it easier to debug
-                    List<Claim> upcomingClaims = upcomingFuture.get();
+                    List<Claim> activeClaims = activeClaimsFuture.get();
 
-                    subscribedUpcomingClaims = upcomingClaims.stream().filter(c -> {
+                    subscribedActiveClaims = activeClaims.stream().filter(c -> {
                         String channelId = c.getSigningChannel().getClaimId();
-                        return upcomingJsonData.containsKey(channelId);
+                        return activeJsonData.containsKey(channelId);
                     }).collect(Collectors.toList());
 
-                    for (Claim claim : subscribedUpcomingClaims) {
+                    for (Claim claim : subscribedActiveClaims) {
                         try {
                             String channelId = claim.getSigningChannel().getClaimId();
-                            JSONObject j = upcomingJsonData.get(channelId);
+                            JSONObject j = activeJsonData.get(channelId);
                             if (j != null) {
                                 claim.setLivestreamUrl(j.getString("VideoURL"));
                                 claim.setLivestreamViewers(j.getInt("ViewerCount"));
@@ -711,7 +711,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 return null;
             }
         }
-        return subscribedUpcomingClaims;
+        return subscribedActiveClaims;
     }
 
     private void checkNoActiveLivestreams() {
