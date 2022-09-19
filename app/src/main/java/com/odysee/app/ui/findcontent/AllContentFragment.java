@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,6 +21,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
+import com.odysee.app.OdyseeApp;
+import com.odysee.app.callable.ChannelLiveStatus;
+import com.odysee.app.callable.Search;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,6 +32,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -71,6 +80,11 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private TextView contentFromLinkText;
     private TextView scopeLinkText;
     private RecyclerView contentList;
+    private RecyclerView livestreamsList;
+    private ClaimListAdapter activeClaimsListAdapter;
+    private View activeLivestreamsLayout;
+    private boolean fetchingLivestreamingClaims = false;
+    private boolean livestreamingClaimsFetched = false;
     private int currentSortBy;
     private int currentContentFrom;
     @Getter
@@ -138,6 +152,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_all_content, container, false);
 
+        Context context = getContext();
+
         // All content page is sorted by trending by default, past week if sort is top
         currentSortBy = ContentSortDialogFragment.ITEM_SORT_BY_TRENDING;
         currentContentFrom = ContentFromDialogFragment.ITEM_FROM_PAST_WEEK;
@@ -169,8 +185,22 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             }
         });
 
+        activeLivestreamsLayout = root.findViewById(R.id.active_livestreams_container);
+        livestreamsList = root.findViewById(R.id.active_livestreams_recyclerview);
+
+        LinearLayoutManager hllm = new LinearLayoutManager(context, RecyclerView.HORIZONTAL, false);
+        livestreamsList.setLayoutManager(hllm);
+        root.findViewById(R.id.expand_active_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Helper.setViewVisibility(livestreamsList, livestreamsList.getVisibility() == View.VISIBLE ? View.GONE: View.VISIBLE);
+                // This is different from the expansion button for scheduled livestreams as this is only used on the Home tab.
+                // That's the reason why there is no persistence code needed. Last state will remain for all categories on the session.
+            }
+        });
+
         contentList = root.findViewById(R.id.all_content_list);
-        LinearLayoutManager llm = new LinearLayoutManager(getContext());
+        LinearLayoutManager llm = new LinearLayoutManager(context);
         contentList.setLayoutManager(llm);
         contentList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -273,6 +303,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
 
         if (reload) {
+            livestreamingClaimsFetched = false;
+            fetchActiveLivestreams();
             fetchClaimSearchContent(true);
         }
     }
@@ -288,6 +320,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
     private void onCategoryChanged() {
         Helper.setViewVisibility(layoutFilterContainer, currentCategoryId == wildWestIndex ? View.GONE : View.VISIBLE);
+        livestreamingClaimsFetched = false;
+        fetchActiveLivestreams();
         fetchClaimSearchContent(true);
     }
 
@@ -441,11 +475,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
 
         List<String> channelIdsForCategory = null;
-        List<String> excludedChannelIdsForCategory = null;
+        List<String> excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
 
-        if (currentCategoryId == wildWestIndex) {
-            excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
-        } else if (currentChannelIdList != null) {
+        if (currentChannelIdList != null) {
             channelIdsForCategory = Arrays.asList(currentChannelIdList);
         } else {
             channelIdsForCategory = Arrays.asList(dynamicCategories.get(0).getChannelIds());
@@ -549,6 +581,165 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private void checkNoContent() {
         boolean noContent = contentListAdapter == null || contentListAdapter.getItemCount() == 0;
         Helper.setViewVisibility(noContentView, noContent ? View.VISIBLE : View.GONE);
+    }
+
+    private void fetchActiveLivestreams() {
+        if (!fetchingLivestreamingClaims && !livestreamingClaimsFetched) {
+            fetchingLivestreamingClaims = true;
+            if (activeClaimsListAdapter != null) {
+                activeClaimsListAdapter.clearItems();
+            }
+
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    List<Claim> activeClaims = findActiveLivestreams();
+                    fetchingLivestreamingClaims = false;
+
+                    if (activeClaims != null && activeClaims.size() > 0) {
+                        activeClaims = Helper.filterClaimsByOutpoint(activeClaims);
+
+                        List<Claim> finalActiveClaims = activeClaims;
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (activeClaimsListAdapter == null) {
+                                    Context context = getContext();
+                                    if (context != null) {
+                                        activeClaimsListAdapter = new ClaimListAdapter(finalActiveClaims, ClaimListAdapter.STYLE_SMALL_LIST_HORIZONTAL, context);
+                                        activeClaimsListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                            @Override
+                                            public void onClaimClicked(Claim claim, int position) {
+                                                Context context = getContext();
+                                                if (context instanceof MainActivity) {
+                                                    MainActivity activity = (MainActivity) context;
+
+                                                    if (claim.getValueType().equals(Claim.TYPE_STREAM)) {
+                                                        activity.openFileClaim(claim);
+                                                    } else if (claim.getValueType().equals(Claim.TYPE_CHANNEL)) {
+                                                        activity.openChannelClaim(claim);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    activeClaimsListAdapter.addItems(finalActiveClaims);
+                                }
+
+                                livestreamingClaimsFetched = true;
+
+                                if (livestreamsList != null && livestreamsList.getAdapter() == null) {
+                                    livestreamsList.setAdapter(activeClaimsListAdapter);
+                                }
+                            }
+                        });
+                    }
+
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            checkNoActiveLivestreams();
+                        }
+                    });
+                }
+            });
+            t.start();
+        }
+    }
+
+    private List<Claim> findActiveLivestreams() {
+        MainActivity a = (MainActivity) getActivity();
+        List<Claim> subscribedActiveClaims = new ArrayList<>();
+        if (a != null) {
+            try {
+                List<String> channelIds = Arrays.asList(currentChannelIdList);
+
+                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(channelIds, false, true);
+                Future<Map<String, JSONObject>> futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                Map<String, JSONObject> activeJsonData = futureActive.get();
+
+                if (activeJsonData != null && activeJsonData.size() > 0) {
+                    List<String> claimIds = new ArrayList<>();
+
+                    activeJsonData.forEach((k, v) -> {
+                        try {
+                            if (v.getBoolean("Live") && v.has("ActiveClaim")) {
+                                String cid = v.getJSONObject("ActiveClaim").getString("ClaimID");
+                                claimIds.add(cid);
+                            }
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                    Map<String, Object> claimSearchOptions = buildActiveLivestreamsOptions();
+
+                    claimSearchOptions.put("claim_type", Collections.singletonList(Claim.TYPE_STREAM));
+                    claimSearchOptions.put("has_no_source", true);
+                    claimSearchOptions.put("claim_ids", claimIds);
+                    claimSearchOptions.put("page", 1);
+                    Future<List<Claim>> activeClaimsFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
+
+                    // Using two different variables to make it easier to debug
+                    List<Claim> activeClaims = activeClaimsFuture.get();
+
+                    subscribedActiveClaims = activeClaims.stream().filter(c -> {
+                        String channelId = c.getSigningChannel().getClaimId();
+                        return activeJsonData.containsKey(channelId);
+                    }).collect(Collectors.toList());
+
+                    for (Claim claim : subscribedActiveClaims) {
+                        try {
+                            String channelId = claim.getSigningChannel().getClaimId();
+                            JSONObject j = activeJsonData.get(channelId);
+                            if (j != null) {
+                                claim.setLivestreamUrl(j.getString("VideoURL"));
+                                claim.setLivestreamViewers(j.getInt("ViewerCount"));
+                                claim.setLive(true);
+                                claim.setHighlightLive(true);
+                            }
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause != null) {
+                    cause.printStackTrace();
+                }
+                return null;
+            }
+        }
+        return subscribedActiveClaims;
+    }
+
+    private void checkNoActiveLivestreams() {
+        boolean noActive = activeClaimsListAdapter == null || activeClaimsListAdapter.getItemCount() == 0;
+        Helper.setViewVisibility(activeLivestreamsLayout, noActive ? View.GONE : View.VISIBLE);
+    }
+
+    private Map<String, Object> buildActiveLivestreamsOptions() {
+        Context context = getContext();
+        boolean canShowMatureContent = false;
+        if (context != null) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+            canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
+        }
+
+        return Lbry.buildClaimSearchOptions(
+                Collections.singletonList(Claim.TYPE_STREAM),
+                null,
+                canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
+                null,
+                Arrays.asList(currentChannelIdList),
+                Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds()),
+                null,
+                null,
+                0,
+                0,
+                1,
+                Helper.CONTENT_PAGE_SIZE);
     }
 
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {

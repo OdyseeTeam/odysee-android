@@ -868,7 +868,6 @@ public class FollowingFragment extends BaseFragment implements
                             String livestreamUrl = j.getString("VideoURL");
                             int viewersCount = j.getInt("ViewerCount");
                             String startTime = j.getString("Start");
-                            System.out.println(pair.getKey() + " = " + pair.getValue());
                             if (!activeClaimId.equalsIgnoreCase("Confirming")) {
                                 activeClaims.add(Claim.fromLiveStatus(activeClaimId, livestreamUrl, viewersCount, startTime));
                                 activeClaimIds.add(activeClaimId);
