@@ -521,7 +521,7 @@ public class FollowingFragment extends BaseFragment implements
         if (channelFilterListAdapter != null) {
             Claim selected = channelFilterListAdapter.getSelectedItem();
             if (selected != null && !Helper.isNullOrEmpty(selected.getClaimId())) {
-                return Arrays.asList(selected.getClaimId());
+                return Collections.singletonList(selected.getClaimId());
             }
         }
 
@@ -626,6 +626,9 @@ public class FollowingFragment extends BaseFragment implements
                     currentClaimSearchPage = 1;
                     contentClaimSearchLoading = false;
                     fetchClaimSearchContent();
+                    fetchingScheduledClaims = false;
+                    scheduledClaimsFetched = false;
+                    fetchScheduledSubscribedContent();
                 }
 
                 @Override
@@ -644,6 +647,9 @@ public class FollowingFragment extends BaseFragment implements
                     currentClaimSearchPage = 1;
                     contentClaimSearchLoading = false;
                     fetchClaimSearchContent();
+                    fetchingScheduledClaims = false;
+                    scheduledClaimsFetched = false;
+                    fetchScheduledSubscribedContent();
                 }
             });
         }
@@ -663,6 +669,11 @@ public class FollowingFragment extends BaseFragment implements
     private void fetchScheduledSubscribedContent() {
         if (!fetchingScheduledClaims && !scheduledClaimsFetched) {
             fetchingScheduledClaims = true;
+
+            if (scheduledClaimsListAdapter != null) {
+                scheduledClaimsListAdapter.clearItems();
+                checkNoScheduledLivestreams();
+            }
 
             Thread t = new Thread(new Runnable() {
                 @Override
@@ -921,7 +932,7 @@ public class FollowingFragment extends BaseFragment implements
         List<Claim> subscribedUpcomingClaims = new ArrayList<>();
         if (a != null) {
             try {
-                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(channelIds, true, true);
+                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(getChannelIds(), true, true);
                 Future<Map<String, JSONObject>> futureUpcoming = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
                 Map<String, JSONObject> upcomingJsonData = futureUpcoming.get();
 
