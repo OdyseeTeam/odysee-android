@@ -3491,6 +3491,7 @@ public class FileViewFragment extends BaseFragment implements
                 "            <meta charset=\"utf-8\"/>\n" +
                 "            <meta name=\"viewport\" content=\"width=device-width, user-scalable=no\"/>\n" +
                 "            <style type=\"text/css\">\n" +
+                "              :root { color-scheme: light dark }\n" +
                 "              body { font-family: 'Inter', sans-serif; margin: 16px }\n" +
                 "              img { width: 100%; }\n" +
                 "              pre { white-space: pre-wrap; word-wrap: break-word }\n" +
