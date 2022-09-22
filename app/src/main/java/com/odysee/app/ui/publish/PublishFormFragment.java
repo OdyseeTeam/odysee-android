@@ -1161,7 +1161,7 @@ public class PublishFormFragment extends BaseFragment implements
         }
         if (switchPrice.isChecked()) {
             Fee fee = new Fee();
-            fee.setCurrency((String) priceCurrencySpinner.getSelectedItem());
+            fee.setCurrency(priceCurrencySpinner.getSelectedItemPosition() == 0 ? "lbc" : "usd");
             fee.setAmount(Helper.getValue(inputPrice.getText()));
             metadata.setFee(fee);
         }
