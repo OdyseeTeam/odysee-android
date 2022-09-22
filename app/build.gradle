@@ -92,6 +92,7 @@ dependencies {
     implementation ('com.github.bumptech.glide:glide:4.13.2') {
         exclude group: "com.android.support"
     }
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
     implementation 'com.squareup.okhttp3:okhttp:4.9.1'
 
     fullImplementation 'com.google.firebase:firebase-analytics:19.0.1'
@@ -137,7 +138,6 @@ dependencies {
     //noinspection AnnotationProcessorOnCompilePath
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 
     implementation 'org.ocpsoft.prettytime:prettytime:5.0.2.Final'
 

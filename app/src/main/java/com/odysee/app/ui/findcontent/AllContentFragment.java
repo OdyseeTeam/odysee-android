@@ -1,11 +1,23 @@
 package com.odysee.app.ui.findcontent;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.InstallSourceInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,6 +26,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,15 +34,27 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+import com.google.android.material.snackbar.Snackbar;
+import com.odysee.app.BuildConfig;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.callable.Search;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -109,6 +134,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     private ChipGroup categorySelection;
     private int wildWestIndex = -1;
     private int moviesIndex = -1;
+
+    private long latestVersionCheck = 0L;
 
     private void buildAndDisplayContentCategories() {
         if (contentCategoriesDisplayed) {
@@ -454,6 +481,9 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
 
         applyFilterForMutedChannels(Lbryio.mutedChannels);
+
+        // Check for app auto-update
+        checkAppUpdater();
     }
 
     public void onPause() {
@@ -464,6 +494,172 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
         contentCategoriesDisplayed = false;
         super.onPause();
+    }
+
+    private void checkAppUpdater() {
+        if (BuildConfig.DEBUG) {
+            return;
+        }
+
+        Date now = new Date();
+
+        Context activity = getActivity();
+        // Check for a new version once in a day
+        if (activity != null && (now.getTime() - latestVersionCheck) > (24 * 3600 * 1000)) {
+            latestVersionCheck = now.getTime();
+
+            PackageManager pm = activity.getPackageManager();
+            try {
+                String installer;
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                    InstallSourceInfo installSourceInfo = pm.getInstallSourceInfo(activity.getPackageName());
+                    installer = installSourceInfo.getInstallingPackageName();
+                } else {
+                    //noinspection deprecation
+                    installer = pm.getInstallerPackageName(activity.getPackageName());
+                }
+
+                List<String> packagesNotAutoUpdating = Arrays.asList("com.google.android.feedback", "com.android.ending", "org.fdroid.fdroid");
+
+                if (installer == null || !packagesNotAutoUpdating.contains(installer)) {
+                    ((OdyseeApp)getActivity().getApplication()).getExecutor().submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            checkRemoteLatestVersion(getView());
+                        }
+                    });
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Checks for a new version on the remote server and then updates the app if a new one is available
+     * @param root the root view to show the snackbar
+     */
+    private void checkRemoteLatestVersion(View root) {
+        /* JSON file format:
+         * { latestVersionCode: integer,
+         *   url: string including https and package file }
+         */
+        Request.Builder builder = new Request.Builder();
+        builder = builder.url("http://apk.odysee.com/odysee-android/odysee-android-latest.json");
+        Request request = builder.build();
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+        Call call = okHttpClient.newCall(request);
+
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("RemoteLatestVersion", e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                ResponseBody body = response.body();
+
+                if (body != null) {
+                    String respBody = body.string();
+
+                    try {
+                        JSONObject responseJson = new JSONObject(respBody);
+
+                        long latestCode = responseJson.getLong("latestVersionCode");
+                        String latestUrl = responseJson.getString("url");
+
+                        if (latestCode > BuildConfig.VERSION_CODE && !Helper.isNullOrEmpty(latestUrl)) {
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Snackbar.make(root, getResources().getString(R.string.snackbar_new_version_available), BaseTransientBottomBar.LENGTH_INDEFINITE).setAction(getResources().getString(R.string.snackbar_install_button), new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            Context c = getContext();
+                                            if (c != null) {
+                                                ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                                                String filePath = c.getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk");
+                                                final Uri uri = Uri.parse("file://" + filePath);
+                                                File f = new File(filePath);
+
+                                                if (f.exists()) {
+                                                    f.delete();
+                                                }
+                                                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(latestUrl));
+                                                request.setDescription("Odysee new version available");
+                                                request.setTitle(getResources().getString(R.string.downloadmanager_new_version_available));
+
+                                                //set destination
+                                                request.setDestinationUri(uri);
+                                                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+
+                                                // get download service and enqueue file
+                                                final DownloadManager manager = (DownloadManager) c.getSystemService(Context.DOWNLOAD_SERVICE);
+                                                manager.enqueue(request);
+
+                                                //set BroadcastReceiver to install app when .apk is downloaded
+                                                BroadcastReceiver onComplete = new BroadcastReceiver() {
+                                                    public void onReceive(Context ctxt, Intent intent) {
+                                                        ContextCompat.checkSelfPermission(ctxt, Manifest.permission.READ_EXTERNAL_STORAGE);
+
+                                                        installApk();
+                                                        getContext().unregisterReceiver(this);
+                                                    }
+                                                };
+                                                //register receiver for when .apk download is compete
+                                                c.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                                            }
+                                        }
+                                    }).show();
+                                }
+                            });
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+        });
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    private void installApk() {
+        try {
+            Context context = getContext();
+            if (context != null) {
+                File file = new File(getContext().getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk"));
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                    Uri downloaded_apk = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
+                    intent.setDataAndType(downloaded_apk, "application/vnd.android.package-archive");
+                    List<ResolveInfo> resInfoList;
+
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S_V2) {
+                        resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY));
+                    } else {
+                        //noinspection deprecation
+                        resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                    }
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        context.grantUriPermission(context.getApplicationContext().getPackageName() + ".provider", downloaded_apk, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(intent);
+                } else {
+                    intent.setAction(Intent.ACTION_VIEW);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
+                    intent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                }
+                startActivity(intent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private Map<String, Object> buildContentOptions() {
