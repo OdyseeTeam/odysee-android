@@ -1,10 +1,12 @@
 package com.odysee.app.tasks.wallet;
 
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 
+import com.odysee.app.model.Claim;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
@@ -183,7 +186,19 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                         }
                     }
 
+                    JSONObject settings = Helper.getJSONObject("settings", value);
+                    if (settings != null) {
+                        AccountManager am = AccountManager.get(context);
+                        String channelName = am.getUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name");
+                        List<Claim> filteredClaim = Lbry.ownChannels.stream().filter(c -> c.getName().equalsIgnoreCase(channelName)).collect(Collectors.toList());
+                        if (filteredClaim.size() == 1) {
+                            settings.put("active_channel_claim", filteredClaim.get(0).getClaimId());
+                        }
+                    }
+                    value.put("settings", settings);
+
                     sharedObject = shared;
+                    sharedObject.put("value", value);
                 }
             }
 

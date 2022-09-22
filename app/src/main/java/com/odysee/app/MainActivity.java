@@ -1122,6 +1122,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         AccountManager am = AccountManager.get(ctx);
                         am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", defaultChannelName);
                         ((ProfileDefaultChannelAdapter)defaultChannelList.getAdapter()).setDefaultChannelName(defaultChannelName);
+                        saveSharedUserState();
                     }
                 });
 
