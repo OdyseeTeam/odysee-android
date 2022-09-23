@@ -139,7 +139,6 @@
     <string name="storage_permission_rationale_videos">LBRY необходим доступ для отображения и публикации Ваших видео, изображений и других файлов на устройстве.</string>
     <string name="camera_permission_rationale_record">LBRY необходим доступ к Вашей камере чтобы записывать видео.</string>
     <string name="camera_permission_rationale_photo">LBRY необходим доступ к Вашей камере чтобы делать фотографии.</string>
-    <string name="edit_content">Редактировать контент</string>
     <string name="mature_tags">Взрослые теги</string>
     <string name="price">Стоимость</string>
     <string name="free_publish">Ваш контент будет бесплатным. Нажмите, чтобы установить цену.</string>

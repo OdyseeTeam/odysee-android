@@ -122,7 +122,6 @@ Sila kembali sebentar lagi.</string>
     <string name="storage_permission_rationale_videos">LBRY memerlukan akses untuk memaparkan dan menerbitkan video, gambar dan fail lain dari peranti anda.</string>
     <string name="camera_permission_rationale_record">LBRY memerlukan akses ke kamera anda untuk merakam video.</string>
     <string name="camera_permission_rationale_photo">LBRY memerlukan akses ke kamera anda untuk mengambil gambar.</string>
-    <string name="edit_content">Sunting kandungan</string>
     <string name="mature_tags">Tag-tag matang</string>
     <string name="price">Harga</string>
     <string name="free_publish">Kandungan anda akan menjadi percuma. Tekan butang toggel untuk menetapkan harga.</string>

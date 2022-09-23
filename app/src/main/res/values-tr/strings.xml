@@ -122,7 +122,6 @@
     <string name="storage_permission_rationale_videos">LBRY, videolarınızı, resimlerinizi ve diğer dosyalarınızı cihazınızdan görüntüleyebilmek ve yayınlayabilmek için erişim gerektirir.</string>
     <string name="camera_permission_rationale_record">LBRY video kaydetmek için kameranıza erişim gerektirir.</string>
     <string name="camera_permission_rationale_photo">LBRY, fotoğraf çekmek için kameranıza erişmenizi gerektirir.</string>
-    <string name="edit_content">İçeriği düzenle</string>
     <string name="mature_tags">Olgun etiketler</string>
     <string name="price">Ücret</string>
     <string name="free_publish">İçeriğiniz ücretsiz olacak. Bir fiyat belirlemek için seçim düğmesine basın.</string>

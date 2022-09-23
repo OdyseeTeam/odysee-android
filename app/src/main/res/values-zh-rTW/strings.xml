@@ -121,7 +121,6 @@
     <string name="storage_permission_rationale_videos">LBRY 需要授予權限才能檢視及發佈位於你裝置上的影片、圖像和其他檔案。</string>
     <string name="camera_permission_rationale_record">LBRY 需要授予相機權限才能錄影。</string>
     <string name="camera_permission_rationale_photo">LBRY 需要授予相機權限才能拍照。</string>
-    <string name="edit_content">編輯內容</string>
     <string name="mature_tags">成人標籤</string>
     <string name="price">價錢</string>
     <string name="free_publish">你的內容將會是免費。請開啟選項以設定價錢。</string>

@@ -122,7 +122,6 @@
     <string name="storage_permission_rationale_videos">LBRY ને તમારા ઉપકરણમાંથી તમારી વિડિઓઝ, છબીઓ અને અન્ય ફાઇલોને પ્રદર્શિત અને પ્રકાશિત કરવા માટે toક્સેસની જરૂર છે.</string>
     <string name="camera_permission_rationale_record">વિડિઓઝ રેકોર્ડ કરવા માટે LBRY ને તમારા કૅમેરાને ઍક્સેસ કરવાની જરૂર છે.</string>
     <string name="camera_permission_rationale_photo">ફોટા લેવા માટે એલબીઆરવાયને તમારા કૅમેરાને ઍક્સેસ કરવાની જરૂર છે.</string>
-    <string name="edit_content">સામગ્રી સંપાદિત કરો</string>
     <string name="mature_tags">પુખ્ત ટૅગ્સ</string>
     <string name="price">કિંમત</string>
     <string name="free_publish">તમારી સામગ્રી મફત હશે. ભાવ સેટ કરવા માટે ટgગલ દબાવો.</string>

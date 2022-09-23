@@ -117,7 +117,6 @@
     <string name="storage_permission_rationale_videos">LBRY yêu cầu quyền truy cập để có thể hiển thị và xuất bản video, hình ảnh và các tệp khác từ thiết bị của bạn.</string>
     <string name="camera_permission_rationale_record">LBRY yêu cầu quyền truy cập vào máy ảnh của bạn để quay video.</string>
     <string name="camera_permission_rationale_photo">LBRY yêu cầu quyền truy cập vào máy ảnh của bạn để chụp ảnh.</string>
-    <string name="edit_content">Chỉnh sửa nội dung</string>
     <string name="mature_tags">Thẻ nội dung người lớn</string>
     <string name="price">Giá</string>
     <string name="free_publish">Nội dung của bạn sẽ được miễn phí. Nhấn nút bật để đặt giá.</string>

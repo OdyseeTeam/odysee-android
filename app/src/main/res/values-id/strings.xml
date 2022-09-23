@@ -121,7 +121,6 @@
     <string name="storage_permission_rationale_videos">LBRY membutuhkan akses untuk dapat menampilkan dan mempublikasikan video, gambar, dan file lainnya dari perangkat Anda.</string>
     <string name="camera_permission_rationale_record">LBRY membutuhkan akses ke kamera Anda untuk merekam video.</string>
     <string name="camera_permission_rationale_photo">LBRY membutuhkan akses ke kamera Anda untuk mengambil foto.</string>
-    <string name="edit_content">Edit konten</string>
     <string name="mature_tags">Tag dewasa</string>
     <string name="price">Harga</string>
     <string name="free_publish">Konten Anda akan gratis. Tekan sakelar untuk menetapkan harga.</string>
