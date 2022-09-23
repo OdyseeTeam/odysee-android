@@ -240,7 +240,7 @@
     <string name="storage_permission_rationale_videos">LBRY requires access to be able to display and publish your videos, images and other files from your device.</string>
     <string name="camera_permission_rationale_record">LBRY requires access to your camera to record videos.</string>
     <string name="camera_permission_rationale_photo">LBRY requires access to your camera to take photos.</string>
-    <string name="edit_content">Edit content</string>
+    <string name="edit_upload">Edit upload</string>
     <string name="mature_tags">Mature tags</string>
     <string name="thumbnail">Thumbnail</string>
     <string name="url_anonymous_prefix">odysee.com/</string>

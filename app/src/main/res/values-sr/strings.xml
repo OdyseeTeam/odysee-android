@@ -133,7 +133,6 @@
     <string name="storage_permission_rationale_videos">LBRY zahteva od Vas da odobrite pristup kako bi mogao da prikazuje ili otprema video, slike ili druge datoteke sa Vašeg uređjaja.</string>
     <string name="camera_permission_rationale_record">LBRY zahteva pristup Vašoj kameri kako bi snimao video snimke.</string>
     <string name="camera_permission_rationale_photo">LBRY zahteva pristup Vašoj kameri kako bi mogao da slika.</string>
-    <string name="edit_content">Izmeni sadržaj</string>
     <string name="mature_tags">Tagovi za odrasle</string>
     <string name="price">Cena</string>
     <string name="free_publish">Vaš sadržaj će biti besplatan. Pritisnite dugme za podešavanje cene ukoliko želite.</string>

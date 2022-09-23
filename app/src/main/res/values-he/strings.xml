@@ -139,7 +139,6 @@
     <string name="storage_permission_rationale_videos">‏‪LBRY‬ דורשת גישה על מנת להציג ולפרסם את הסרטונים, תמונות וקבצים אחרים שזמינים במכשירך.</string>
     <string name="camera_permission_rationale_record">‏‪LBRY‬ דורשת גישה למצלמה על מנת להקליט סרטונים.</string>
     <string name="camera_permission_rationale_photo">‏‪LBRY‬ דורשת גישה למצלמה על מנת לצלם תמונות.</string>
-    <string name="edit_content">ערוך תוכן</string>
     <string name="mature_tags">תגיות למבוגרים</string>
     <string name="price">מחיר</string>
     <string name="free_publish">התוכן שלך יפורסם בחינם. לחץ על המתג לקביעת מחיר.</string>

@@ -127,7 +127,6 @@
     <string name="storage_permission_rationale_videos">LBRY richiede l\'accesso per poter visualizzare e pubblicare i tuoi video, immagini e altri file dal tuo dispositivo.</string>
     <string name="camera_permission_rationale_record">LBRY richiede l\'accesso alla tua fotocamera per registrare video.</string>
     <string name="camera_permission_rationale_photo">LBRY richiede l\'accesso alla tua fotocamera per scattare foto.</string>
-    <string name="edit_content">Modifica contenuto</string>
     <string name="mature_tags">Etichette per adulti</string>
     <string name="price">Prezzo</string>
     <string name="free_publish">Il tuo contenuto sarà gratuito. Clicca l\'interruttore per impostare un prezzo.</string>

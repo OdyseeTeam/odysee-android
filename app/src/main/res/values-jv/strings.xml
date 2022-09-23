@@ -121,7 +121,6 @@
     <string name="storage_permission_rationale_videos">LBRY mbutuhake akses supaya bisa nampilake lan nerbitake video, gambar lan file liyane saka piranti sampeyan.</string>
     <string name="camera_permission_rationale_record">LBRY mbutuhake akses menyang kamera kanggo ngrekam video.</string>
     <string name="camera_permission_rationale_photo">LBRY mbutuhake akses menyang kamera kanggo njupuk foto.</string>
-    <string name="edit_content">Edit konten</string>
     <string name="mature_tags">Tag diwasa</string>
     <string name="price">Rega</string>
     <string name="free_publish">Konten sampeyan bakal gratis. Pencet pilihan kanggo nyetel rega.</string>

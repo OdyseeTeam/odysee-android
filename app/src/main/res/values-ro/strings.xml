@@ -128,7 +128,6 @@
     <string name="storage_permission_rationale_videos">LBRY necesită dreptul de a putea afișa și publica videoclipuri, imagini și alte fișiere din dispozitiv.</string>
     <string name="camera_permission_rationale_record">LBRY necesită accesul la camera foto pentru a înregistra videoclipuri.</string>
     <string name="camera_permission_rationale_photo">LBRY necesită accesul la camera foto pentru a face poze.</string>
-    <string name="edit_content">Editare conținut</string>
     <string name="mature_tags">Etichete adulți</string>
     <string name="price">Preț</string>
     <string name="free_publish">Conținutul tău va fi gratuit. Apasă comutatorul dacă ceri un preț.</string>

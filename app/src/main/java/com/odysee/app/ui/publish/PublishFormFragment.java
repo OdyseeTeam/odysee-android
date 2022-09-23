@@ -537,9 +537,9 @@ public class PublishFormFragment extends BaseFragment implements
 
                 // check minimum deposit
                 String depositString = Helper.getValue(inputDeposit.getText());
-                double depositAmount = 0;
+                double depositAmount;
                 try {
-                    depositAmount = Double.valueOf(depositString);
+                    depositAmount = Double.parseDouble(depositString);
                 } catch (NumberFormatException ex) {
                     // pass
                     showError(getString(R.string.please_enter_valid_deposit));
@@ -587,7 +587,7 @@ public class PublishFormFragment extends BaseFragment implements
             activity.addFilePickerListener(this);
             activity.addWalletBalanceListener(this);
 
-            activity.setActionBarTitle(editMode ? R.string.edit_content : R.string.new_publish);
+            activity.setActionBarTitle(R.string.new_publish);
         }
     }
 
@@ -993,7 +993,8 @@ public class PublishFormFragment extends BaseFragment implements
             LbryAnalytics.setCurrentScreen(activity, "Channel Form", "ChannelForm");
             activity.addStoragePermissionListener(this);
             if (editMode) {
-                activity.setActionBarTitle(R.string.edit_content);
+                activity.setActionBarTitle(R.string.edit_upload);
+                buttonPublish.setText(R.string.save);
             }
         }
 

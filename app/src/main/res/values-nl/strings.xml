@@ -122,7 +122,6 @@
     <string name="storage_permission_rationale_videos">LBRY heeft toegang nodig om uw video\'s, afbeeldingen en andere bestanden vanaf uw apparaat te kunnen weergeven en publiceren.</string>
     <string name="camera_permission_rationale_record">LBRY heeft toegang tot uw camera nodig om video\'s op te nemen.</string>
     <string name="camera_permission_rationale_photo">LBRY heeft toegang tot uw camera nodig om foto\'s te maken.</string>
-    <string name="edit_content">Bewerk inhoud</string>
     <string name="mature_tags">Volwassenen labels</string>
     <string name="price">Prijs</string>
     <string name="free_publish">Uw inhoud is gratis. Druk op de schakelaar om een prijs in te stellen.</string>

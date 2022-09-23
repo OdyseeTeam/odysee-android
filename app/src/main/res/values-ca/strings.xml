@@ -127,7 +127,6 @@
     <string name="storage_permission_rationale_videos">LBRY necessita accés per poder mostrar i publicar els teus vídeos, imatges i altres fitxer des del teu dispositiu.</string>
     <string name="camera_permission_rationale_record">LBRY necessita tenir accés a la teva càmera per enregistrar vídeos.</string>
     <string name="camera_permission_rationale_photo">LBRY necessita tenir accés a la teva càmera per fer fotos. </string>
-    <string name="edit_content">Edita contingut</string>
     <string name="mature_tags">Etiquetes per a adults</string>
     <string name="price">Preu</string>
     <string name="free_publish">El teu contingut serà gratis. Pitja el botó per establir-ne un preu</string>

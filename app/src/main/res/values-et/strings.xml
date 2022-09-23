@@ -96,7 +96,6 @@
     <string name="storage_permission_rationale_videos">Failide postitamiseks ja näitamiseks vajab LBRY ligipääsu sinu failidele.</string>
     <string name="camera_permission_rationale_record">Videosalvestuse võimaldamiseks vajab LBRY ligipääsu kaamerale.</string>
     <string name="camera_permission_rationale_photo">Fotode tegemiseks vajab LBRY ligipääsu sinu kaamerale.</string>
-    <string name="edit_content">Muuda postitust</string>
     <string name="mature_tags">Täiskasvanuile -sildid</string>
     <string name="price">Hind</string>
     <string name="free_publish">Postitus on tasuta. Kliki siin, et seada talle hind.</string>
