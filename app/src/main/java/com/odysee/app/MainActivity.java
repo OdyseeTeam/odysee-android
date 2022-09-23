@@ -4527,7 +4527,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void fetchOwnClaims() {
         Map<String, Object> options = Lbry.buildClaimListOptions(
                 Arrays.asList(Claim.TYPE_STREAM, Claim.TYPE_REPOST), 1, 999, true);
-        ClaimListTask task = new ClaimListTask(options, null, new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, null, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownClaims = Helper.filterDeletedClaims(new ArrayList<>(claims));
