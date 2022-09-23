@@ -41,8 +41,10 @@ import org.json.JSONObject;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +53,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -83,7 +86,8 @@ public final class Helper {
     public static final String ISO_DATE_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     public static final String ISO_DATE_FORMAT_JSON = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     public static final String SDK_AMOUNT_FORMAT = "0.0#######";
-    public static final MediaType FORM_MEDIA_TYPE = MediaType.parse("application/x-www-form-urlencoded");
+    public static final MediaType FORM_MEDIA_TYPE = MediaType.get("application/x-www-form-urlencoded");
+    public static final MediaType FORM_DATA_MEDIA_TYPE = MediaType.get("multipart/form-data");
     public static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
     public static final int CONTENT_PAGE_SIZE = 25;
     public static final double MIN_DEPOSIT = 0.001;
@@ -1043,5 +1047,49 @@ public final class Helper {
         }
 
         return status;
+    }
+
+    public static Map<String, Object> buildPublishOptions(Claim claim) {
+        Map<String, Object> options = new HashMap<>();
+
+        Claim.StreamMetadata metadata = (Claim.StreamMetadata) claim.getValue();
+        DecimalFormat amountFormat = new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US));
+
+        options.put("blocking", true);
+        options.put("name", claim.getName());
+        options.put("bid", amountFormat.format(new BigDecimal(claim.getAmount()).doubleValue()));
+        options.put("title", Helper.isNullOrEmpty(claim.getTitle()) ? "" : claim.getTitle());
+        options.put("description", Helper.isNullOrEmpty(claim.getDescription()) ? "" : claim.getDescription());
+        options.put("thumbnail_url", Helper.isNullOrEmpty(claim.getThumbnailUrl()) ? "" : claim.getThumbnailUrl());
+
+        if (claim.getTags() != null && claim.getTags().size() > 0) {
+            options.put("tags", new ArrayList<>(claim.getTags()));
+        }
+        if (metadata.getFee() != null) {
+            options.put("fee_currency", metadata.getFee().getCurrency());
+            options.put("fee_amount", amountFormat.format(new BigDecimal(metadata.getFee().getAmount()).doubleValue()));
+        }
+        if (claim.getSigningChannel() != null) {
+            options.put("channel_id", claim.getSigningChannel().getClaimId());
+        }
+        if (metadata.getLanguages() != null && metadata.getLanguages().size() > 0) {
+            options.put("languages", metadata.getLanguages());
+        }
+        if (!Helper.isNullOrEmpty(metadata.getLicense())) {
+            options.put("license", metadata.getLicense());
+        }
+        if (!Helper.isNullOrEmpty(metadata.getLicenseUrl())) {
+            options.put("license_url", metadata.getLicenseUrl());
+        }
+
+        if (metadata.getReleaseTime() > 0) {
+            options.put("release_time", metadata.getReleaseTime());
+        } else if (claim.getTimestamp() > 0) {
+            options.put("release_time", claim.getTimestamp());
+        } else {
+            options.put("release_time", Double.valueOf(Math.floor(System.currentTimeMillis() / 1000.0)).intValue());
+        }
+
+        return options;
     }
 }
