@@ -1,19 +1,22 @@
 package com.odysee.app.tasks.wallet;
 
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 
+import com.odysee.app.model.Claim;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.data.DatabaseHelper;
@@ -79,6 +82,7 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     JSONObject value = shared.getJSONObject("value");
                     JSONArray tags =  value.has("tags") && !value.isNull("tags") ? value.getJSONArray("tags") : null;
                     JSONArray blocked = value.has("blocked") && !value.isNull("blocked") ? value.getJSONArray("blocked") : null;
+                    JSONObject settings = value.has("settings") && !value.isNull("settings") ? value.getJSONObject("settings") : null;
 
                     JSONObject builtInCollections = Helper.getJSONObject("builtinCollections", value);
                     if (builtInCollections != null) {
@@ -185,6 +189,20 @@ public class LoadSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                                     blockedChannels.add(uri);
                                     DatabaseHelper.createOrUpdateBlockedChannel(uri.getClaimId(), uri.getClaimName(), db);
                                 }
+                            }
+                        }
+                    }
+
+                    if (settings != null) {
+                        String defaultChannel = settings.optString("active_channel_claim");
+
+                        if (!Helper.isNullOrEmpty(defaultChannel)) {
+                            List<Claim> filteredChannel = Lbry.ownChannels.stream().filter(c -> c.getClaimId().equalsIgnoreCase(defaultChannel)).collect(Collectors.toList());
+
+                            if (filteredChannel.size() == 1) {
+                                String channelName = filteredChannel.get(0).getName();
+                                AccountManager am = AccountManager.get(context);
+                                am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", channelName);
                             }
                         }
                     }

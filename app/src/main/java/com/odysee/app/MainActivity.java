@@ -1012,6 +1012,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
 
                 if (isSignedIn) {
+                    loadSharedUserState();
                     userIdText.setVisibility(View.VISIBLE);
                     signUserButton.setVisibility(View.GONE);
                     userIdText.setText(am.getUserData(odyseeAccount, "email"));
@@ -1121,6 +1122,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         AccountManager am = AccountManager.get(ctx);
                         am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", defaultChannelName);
                         ((ProfileDefaultChannelAdapter)defaultChannelList.getAdapter()).setDefaultChannelName(defaultChannelName);
+                        saveSharedUserState();
                     }
                 });
 
