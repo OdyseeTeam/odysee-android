@@ -92,6 +92,12 @@
     <string name="channel_blocked">You have blocked this channel from commenting on content by %1$s</string>
     <string name="channel_unblocked">You have unblocked this channel from commenting on content by %1$s</string>
 
+    <string name="blocked">Blocked</string>
+    <string name="muted">Muted</string>
+    <string name="blocked_and_muted">Blocked &amp; Muted List</string>
+    <string name="load_blocked_failed">The list of blocked channels could not be loaded at this time. Please try again later.</string>
+    <string name="load_muted_failed">The list of muted channels could not be loaded at this time. Please try again later.</string>
+
     <string name="watch_later">Watch Later</string>
     <string name="favorites">Favorites</string>
     <string name="add_to_lists">Add to Lists</string>

@@ -4459,15 +4459,18 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (item.getGroupId() == FILE_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+        if (item.getGroupId() == FILE_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (relatedContentAdapter != null) {
                 int position = relatedContentAdapter.getPosition();
                 Claim claim = relatedContentAdapter.getItems().get(position);
                 if (claim != null && claim.getSigningChannel() != null) {
                     Claim channel = claim.getSigningChannel();
                     Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleMuteChannel(channel);
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_block) {
+                        activity.handleBlockChannel(channel, null);
+                    } else {
+                        activity.handleMuteChannel(channel);
                     }
                 }
             }

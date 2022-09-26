@@ -28,6 +28,12 @@
     <item
         android:id="@+id/action_block"
         android:icon="@drawable/ic_block"
+        android:title="@string/block_channel"
+        app:iconTint="@color/actionBarForeground"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_mute"
+        android:icon="@drawable/ic_mute"
         android:title="@string/mute_channel"
         app:iconTint="@color/actionBarForeground"
         app:showAsAction="always" />
