@@ -413,19 +413,23 @@ public final class Lbryio {
         return subscriptions.contains(Subscription.fromClaim(claim));
     }
     public static boolean isChannelMuted(Claim channel) {
-        String channelClaimId = channel.getClaimId();
-        for (LbryUri uri : mutedChannels) {
-            if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
-                return true;
+        if (channel != null) {
+            String channelClaimId = channel.getClaimId();
+            for (LbryUri uri : mutedChannels) {
+                if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
+                    return true;
+                }
             }
         }
         return false;
     }
     public static boolean isChannelBlocked(Claim channel) {
-        String channelClaimId = channel.getClaimId();
-        for (LbryUri uri : blockedChannels) {
-            if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
-                return true;
+        if (channel != null) {
+            String channelClaimId = channel.getClaimId();
+            for (LbryUri uri : blockedChannels) {
+                if (uri.getClaimId().equalsIgnoreCase(channelClaimId)) {
+                    return true;
+                }
             }
         }
         return false;

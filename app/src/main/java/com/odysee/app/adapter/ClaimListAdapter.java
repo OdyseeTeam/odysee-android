@@ -41,6 +41,7 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.ui.other.BlockedAndMutedFragment;
 import com.odysee.app.utils.FormatTime;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryUri;
@@ -313,20 +314,30 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
             RecyclerView.Adapter<? extends RecyclerView.ViewHolder> adapter = getBindingAdapter();
+            boolean isBlocked = false;
+            boolean isMuted = false;
             if (adapter instanceof ClaimListAdapter) {
                 ClaimListAdapter claimListAdapter = ((ClaimListAdapter) adapter);
                 final Claim original = claimListAdapter.getItems().get(getAbsoluteAdapterPosition());
                 final Claim item = Claim.TYPE_REPOST.equalsIgnoreCase(original.getValueType()) ?
                         (original.getRepostedClaim() != null ? original.getRepostedClaim() : original): original;
-                if (claimListAdapter.isOwnCollection) {
-                    contextMenu.add(contextGroupId, R.id.action_remove_from_list, Menu.NONE, R.string.remove_from_list);
-                } else if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
-                    contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
-                    contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
-                    contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+
+                if (contextGroupId != BlockedAndMutedFragment.BLOCKED_AND_MUTED_CONTEXT_GROUP_ID) {
+                    if (claimListAdapter.isOwnCollection) {
+                        contextMenu.add(contextGroupId, R.id.action_remove_from_list, Menu.NONE, R.string.remove_from_list);
+                    } else if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                        contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
+                        contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
+                        contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
+                    }
                 }
+
+                isBlocked =  Lbryio.isChannelBlocked(item.isChannel() ? item : item.getSigningChannel());
+                isMuted = Lbryio.isChannelMuted(item.isChannel() ? item : item.getSigningChannel());
             }
-            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, R.string.mute_channel);
+
+            contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, isBlocked ? R.string.unblock_channel : R.string.block_channel);
+            contextMenu.add(contextGroupId, R.id.action_mute, Menu.NONE, isMuted ? R.string.unmute_channel : R.string.mute_channel);
         }
     }
 

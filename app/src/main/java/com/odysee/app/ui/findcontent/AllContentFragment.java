@@ -580,7 +580,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (contentListAdapter != null) {
                 int position = contentListAdapter.getPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
@@ -588,7 +588,12 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     Claim channel = claim.getSigningChannel();
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleMuteChannel(channel);
+                        MainActivity activity = (MainActivity) context;
+                        if (item.getItemId() == R.id.action_block) {
+                            activity.handleBlockChannel(channel, null);
+                        } else {
+                            activity.handleMuteChannel(channel);
+                        }
                     }
                 }
             }

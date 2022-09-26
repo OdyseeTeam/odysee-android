@@ -566,6 +566,10 @@ public class Claim {
         this.disliked = d;
     }
 
+    public boolean isChannel() {
+        return TYPE_CHANNEL.equalsIgnoreCase(valueType);
+    }
+
     @Data
     public static class Meta {
         private long activationHeight;

@@ -233,6 +233,7 @@ import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
+import com.odysee.app.ui.other.BlockedAndMutedFragment;
 import com.odysee.app.ui.other.CreatorSettingsFragment;
 import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
@@ -991,6 +992,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 ListView defaultChannelList = customView.findViewById(R.id.default_channel_list);
                 View buttonGoLive = customView.findViewById(R.id.button_go_live);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
+                View buttonBlockedAndMuted = customView.findViewById(R.id.button_blocked_and_muted);
                 View buttonCreatorSettings = customView.findViewById(R.id.button_creator_settings);
                 View buttonPublishes = customView.findViewById(R.id.button_publishes);
                 View buttonShowRewards = customView.findViewById(R.id.button_show_rewards);
@@ -1138,6 +1140,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         popupWindow.dismiss();
                         hideNotifications();
                         openFragment(ChannelManagerFragment.class, true, null);
+                    }
+                });
+                buttonBlockedAndMuted.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(BlockedAndMutedFragment.class, true, null);
                     }
                 });
                 buttonCreatorSettings.setOnClickListener(new View.OnClickListener() {
@@ -3125,7 +3135,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // load wallet preferences
         LoadSharedUserStateTask loadTask = new LoadSharedUserStateTask(MainActivity.this, new LoadSharedUserStateTask.LoadSharedUserStateHandler() {
             @Override
-            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> blockedChannels,
+            public void onSuccess(List<Subscription> subscriptions, List<Tag> followedTags, List<LbryUri> mutedChannels,
                                   List<String> editedCollectionClaimIds) {
                 if (subscriptions != null && subscriptions.size() > 0) {
                     // reload subscriptions if wallet fragment is FollowingFragment
@@ -3173,11 +3183,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 }
 
-                if (blockedChannels != null && !blockedChannels.isEmpty()) {
+                if (mutedChannels != null && !mutedChannels.isEmpty()) {
                     if (!initialBlockedListLoaded()) {
                         // first time the blocked list is loaded, so we attempt to merge the entries
                         List<LbryUri> newBlockedChannels = new ArrayList<>(Lbryio.mutedChannels);
-                        for (LbryUri uri : blockedChannels) {
+                        for (LbryUri uri : mutedChannels) {
                             if (!newBlockedChannels.contains(uri)) {
                                 newBlockedChannels.add(uri);
                             }
@@ -3188,7 +3198,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         sp.edit().putBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_BLOCKED_LIST_LOADED, true).apply();
                     } else {
                         // replace the blocked channels list entirely
-                        Lbryio.mutedChannels = new ArrayList<>(blockedChannels);
+                        Lbryio.mutedChannels = new ArrayList<>(mutedChannels);
                     }
                 }
 
