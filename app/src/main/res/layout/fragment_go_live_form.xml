@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pageBackground">
+    <ScrollView
+        android:id="@+id/go_live_form_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            android:orientation="vertical">
+            <include layout="@layout/card_reward_driver"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/go_live_form_create_mode_toggle_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:checkedButton="@+id/go_live_form_new_livestream">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/go_live_form_new_livestream"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/new_livestream"
+                    style="?attr/materialButtonOutlinedStyle" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/choose_replay"
+                    style="?attr/materialButtonOutlinedStyle" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <!-- region: Title, URL, Description -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/title">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/go_live_form_input_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                style="@style/TextView_Light"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/go_live_form_address_channel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:fontFamily="@font/inter"
+                                android:textSize="14sp"
+                                android:text="@string/url_anonymous_prefix" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:hint="@string/url">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/go_live_form_input_address"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textSize="14sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/go_live_form_inline_address_invalid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/address_invalid_characters"
+                            android:textColor="@color/red"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:hint="@string/description">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/go_live_form_input_description"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                style="@style/TextView_Light"
+                                android:inputType="textMultiLine"
+                                android:singleLine="false"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Date -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/go_live_form_date_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter"
+                            android:textSize="20sp"
+                            android:text="@string/date" />
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/go_live_form_date_toggle_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:checkedButton="@+id/go_live_form_anytime">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/go_live_form_anytime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/anytime"
+                                style="?attr/materialButtonOutlinedStyle" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/scheduled_time"
+                                style="?attr/materialButtonOutlinedStyle" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <LinearLayout
+                            android:id="@+id/go_live_form_scheduled_picker"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingTop="8dp"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+                                <TextView
+                                    android:id="@+id/go_live_form_release_date"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:fontFamily="@font/inter"
+                                    android:text="@string/time_default"
+                                    android:textColor="@color/odyseePink"
+                                    android:textSize="14sp" />
+
+                                <TextView
+                                    android:id="@+id/go_live_form_release_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8sp"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    style="@style/TextView_Light"
+                                    android:fontFamily="@font/inter"
+                                    android:textColor="@color/odyseePink"
+                                    android:textSize="14sp"
+                                    android:text="@string/time_default" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/go_live_form_release_time_past_not_allowed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:visibility="gone"
+                                style="@style/TextView_Light"
+                                android:fontFamily="@font/inter"
+                                android:textSize="14sp"
+                                android:text="@string/past_not_allowed" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/go_live_form_release_time_default"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minWidth="0dp"
+                                android:minHeight="0dp"
+                                android:fontFamily="@font/inter"
+                                android:text="@string/time_default" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/go_live_form_date_info"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingTop="8dp"
+                            android:fontFamily="@font/inter"
+                            android:textSize="14sp"
+                            android:text="@string/anytime_info" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Replays -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/go_live_form_replays_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/go_live_form_replays_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter"
+                                android:textSize="20sp"
+                                android:text="@string/select_replay" />
+
+                            <androidx.legacy.widget.Space
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1" />
+
+                            <ProgressBar
+                                android:id="@+id/go_live_form_replays_progress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent" />
+
+                            <ImageButton
+                                android:id="@+id/go_live_form_replays_reload"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:src="@drawable/ic_sync" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/go_live_form_replays_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+                            <androidx.viewpager2.widget.ViewPager2
+                                android:id="@+id/go_live_form_replays_pager"
+                                android:layout_width="match_parent"
+                                android:layout_height="500dp" />
+
+                            <com.google.android.material.tabs.TabLayout
+                                android:id="@+id/go_live_form_replays_tab_layout"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                app:tabMode="scrollable"
+                                app:tabMaxWidth="45sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Tags -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:fontFamily="@font/inter"
+                            android:textSize="20sp"
+                            android:text="@string/tags" />
+
+                        <include layout="@layout/container_inline_tag_form" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Thumbnail -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter"
+                            android:textSize="20sp"
+                            android:text="@string/thumbnail" />
+
+                        <RelativeLayout
+                            android:id="@+id/go_live_form_media_container"
+                            android:clickable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:layout_width="match_parent"
+                            android:layout_height="240dp"
+                            android:background="@android:color/black">
+                            <ImageView
+                                android:id="@+id/go_live_form_thumbnail_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <LinearLayout
+                                android:id="@+id/go_live_form_thumbnail_upload_progress"
+                                android:background="@color/channelCoverBackground"
+                                android:layout_alignParentEnd="true"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginTop="4dp"
+                                android:orientation="horizontal"
+                                android:paddingTop="2dp"
+                                android:paddingBottom="2dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:visibility="gone">
+                                <ProgressBar
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    style="@style/TextView_Light"
+                                    android:text="@string/uploading_thumbnail"
+                                    android:textColor="@color/white" />
+                            </LinearLayout>
+
+                            <RelativeLayout
+                                android:background="@drawable/bg_small_icon"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_marginStart="16dp"
+                                android:layout_marginBottom="16dp"
+                                android:layout_alignParentBottom="true"
+                                android:layout_centerHorizontal="true">
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:layout_centerInParent="true"
+                                    android:src="@drawable/ic_edit"
+                                    app:tint="@color/white" />
+                            </RelativeLayout>
+                        </RelativeLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Channel -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginBottom="8dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerVertical="true"
+                                android:fontFamily="@font/inter"
+                                android:text="@string/channel"
+                                android:textSize="20sp" />
+
+                            <ProgressBar
+                                android:id="@+id/go_live_form_loading_channels"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:visibility="gone" />
+                        </RelativeLayout>
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/go_live_form_channel_spinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+
+                <!-- region: Additional Options -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/go_live_form_extra_options_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:fontFamily="@font/inter"
+                            android:textSize="20sp"
+                            android:text="@string/additional_options" />
+
+                        <!-- region: Additional Options - Language -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/language"
+                            android:textSize="14sp" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/go_live_form_language_spinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" />
+                        <!-- endregion -->
+
+                        <!-- region: Additional Options - License -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/license"
+                            android:textSize="14sp" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/go_live_form_license_spinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/go_live_form_license_other_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:hint="@string/license_desc"
+                            android:visibility="gone">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/go_live_form_input_license_other"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                style="@style/TextView_Light"
+                                android:inputType="textNoSuggestions"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <!-- endregion -->
+
+                        <!-- region: Additional Options - Deposit -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/deposit"
+                            android:textSize="14sp" />
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp">
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/go_live_form_input_layout_deposit"
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/deposit">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/go_live_form_input_deposit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/inter"
+                                    android:inputType="numberDecimal"
+                                    android:singleLine="true"
+                                    android:text="@string/min_deposit"
+                                    android:textSize="14sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <TextView
+                                android:id="@+id/go_live_form_input_currency"
+                                style="@style/TextView_Light"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginTop="30dp"
+                                android:layout_toEndOf="@id/go_live_form_input_layout_deposit"
+                                android:text="@string/lbc"
+                                android:textAllCaps="true"
+                                android:textSize="11sp" />
+
+                            <LinearLayout
+                                android:id="@+id/go_live_form_inline_balance_container"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="24dp"
+                                android:layout_marginTop="28dp"
+                                android:layout_toEndOf="@id/go_live_form_input_currency"
+                                android:orientation="horizontal"
+                                android:visibility="invisible">
+                                <ImageView
+                                    android:layout_width="12dp"
+                                    android:layout_height="12dp"
+                                    android:layout_gravity="center_vertical"
+                                    android:src="@drawable/ic_credits" />
+
+                                <TextView
+                                    android:id="@+id/go_live_form_inline_balance_value"
+                                    style="@style/TextView_Light"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="2dp" />
+                            </LinearLayout>
+                        </RelativeLayout>
+
+                        <TextView
+                            style="@style/TextView_Light"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/deposit_remains_yours"
+                            android:textSize="14sp" />
+                        <!-- endregion -->
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+                <!-- endregion -->
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/go_live_form_toggle_extra"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="24dp"
+                android:layout_marginEnd="16dp"
+                style="@style/TextView_Light"
+                android:text="@string/show_extra_fields"
+                android:focusable="true" />
+
+            <!-- region: Cancel / Create Buttons -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:layout_marginTop="24dp">
+                <TextView
+                    android:id="@+id/go_live_form_cancel"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginTop="24dp"
+                    style="@style/TextView_Light"
+                    android:text="@string/cancel" />
+
+                <ProgressBar
+                    android:id="@+id/go_live_form_creating"
+                    android:layout_centerVertical="true"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_toStartOf="@id/go_live_form_create_button"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/go_live_form_create_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/create" />
+            </RelativeLayout>
+            <!-- endregion -->
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

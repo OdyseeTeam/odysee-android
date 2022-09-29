@@ -13,7 +13,9 @@
     <string name="your_tags">Your Tags</string>
     <string name="all_content">All Content</string>
     <string name="change_default_channel">Change default channel</string>
+    <string name="upload">Upload</string>
     <string name="go_live">Go Live</string>
+    <string name="livestreams">Livestreams</string>
     <string name="channels">Channels</string>
     <string name="creator_settings">Creator Settings</string>
     <string name="library">Library</string>
@@ -719,19 +721,28 @@
     <string name="no_added_tags">You have not added any tags yet. Add tags to improve discovery.</string>
     <string name="form_no_tag_results">We could not find new tags that have not been added yet.</string>
 
-    <!-- Go Live -->
-    <string name="precheck_please_wait">Please wait while we check a few things. If this is your first time, this may take a couple of minutes…</string>
-    <string name="precheck_need_channel">You need to create a channel before you can livestream.</string>
-    <string name="precheck_error_loading_channels">An error occurred loading your channels. Please try again later.</string>
-    <string name="precheck_wait_confirmation">Please wait, your livestream claim is pending confirmation.</string>
-    <string name="select_channel">Please select a channel</string>
-    <string name="channel_error_pending">Your channel is still pending. Please wait a couple of minutes and try again.</string>
-    <string name="channel_error_need_minimum_credits">You need to have at least %1$,.2f credits staked (directly or through supports) on %2$s to be able to livestream.</string>
-    <string name="error_publishing_livestream">An error occurred trying to set up your livestream. Please try again later.</string>
-    <string name="specify_title">Please specify a title for your livestream</string>
-    <string name="please_select_thumbnail">Please select a thumbnail</string>
-    <string name="need_valid_channel">Please select a valid channel to continue</string>
+    <!-- Livestreaming -->
+    <string name="create_livestream">Create a livestream</string>
+    <string name="edit_livestream">Edit livestream</string>
+    <string name="new_livestream">New livestream</string>
+    <string name="choose_replay">Choose replay</string>
+    <string name="date">Date</string>
+    <string name="anytime">Anytime</string>
+    <string name="scheduled_time">Scheduled time</string>
+    <string name="past_not_allowed">Cannot set to a time in the past.</string>
+    <string name="anytime_info">Confirmation process takes a few minutes, but then you can go live anytime. The stream is not shown anywhere until you are broadcasting.</string>
+    <string name="scheduled_info">Your scheduled streams will appear on your channel page and for your followers. Chat will not be active until 5 minutes before the start time.</string>
+    <string name="select_replay">Select replay</string>
+    <string name="no_replays">No replays available</string>
+    <string name="replay_processing">Processing… (%s%%)</string>
+    <string name="livestream_select_channel">Please select a channel to create a livestream.</string>
+    <string name="livestream_pending">Your livestream is now pending. You will be able to start shortly at the streaming dashboard.</string>
+    <string name="no_livestreams">No livestream publishes found</string>
+    <string name="no_livestreams_detail">You need to upload your livestream details before you can go live. Please note: Replays must be published manually after your stream by editing the livestream.</string>
     <string name="stream_key_not_generated">Your stream key could not be generated. Please try again later.</string>
+    <string name="stream_server_copied">Stream server copied</string>
+    <string name="stream_key_copied">Stream key copied</string>
+    <string name="no_stream_key_provided">No stream key was provided. This should not have happened.</string>
     <string name="stream_connect_failed">Could not establish a connection to the streaming URL. Please try again.</string>
     <string name="stream_connect_failed_retrying">Could not establish a connection to the streaming URL. Retrying…</string>
     <string name="camera_permission_rationale_livestream">Odysee requires access to your camera to livestream.</string>
@@ -741,6 +752,14 @@
     <string name="stream_stopped_went_to_home_reason">Because livestreaming sometimes doesn\'t resume properly after sleeping the device, your stream was automatically stopped.</string>
     <string name="confirm_stop_title">Stop streaming?</string>
     <string name="confirm_stop_message">Do you want to stop streaming?</string>
+    <string name="stream_server_title">Stream server</string>
+    <string name="stream_key_title">Stream key (can be reused)</string>
+    <string name="copy">Copy</string>
+    <string name="show">Show</string>
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
 
     <!-- Channels -->
     <string name="no_channel_created">You have not created a channel.\nStart now by creating a new channel!</string>
@@ -827,6 +846,7 @@
 
     <!-- Reward drivers -->
     <string name="publishing_requires_credits">Publishing requires credits.</string>
+    <string name="livestreaming_requires_credits">Livestreaming requires credits.</string>
     <string name="channel_creation_requires_credits">Channel creation requires credits.</string>
     <string name="earn_rewards_for_inviting">Earn rewards for inviting your friends.</string>
     <string name="earn_some_credits_to_access">Earn some credits to access this content.</string>

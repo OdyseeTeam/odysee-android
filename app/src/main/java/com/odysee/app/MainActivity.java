@@ -46,9 +46,10 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Menu;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
@@ -64,6 +65,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -235,6 +237,8 @@ import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.other.BlockedAndMutedFragment;
 import com.odysee.app.ui.other.CreatorSettingsFragment;
+import com.odysee.app.ui.publish.GoLiveFormFragment;
+import com.odysee.app.ui.publish.LivestreamsFragment;
 import com.odysee.app.ui.rewards.RewardVerificationFragment;
 import com.odysee.app.ui.library.LibraryFragment;
 import com.odysee.app.ui.library.PlaylistFragment;
@@ -374,6 +378,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String ACTION_NOW_PLAYING_CLAIM_UPDATED = "com.odysee.app.Broadcast.NowPlayingClaimUpdated";
     public static final String ACTION_NOW_PLAYING_CLAIM_CLEARED = "com.odysee.app.Broadcast.NowPlayingClaimCleared";
     public static final String ACTION_PUBLISH_SUCCESSFUL = "com.odysee.app.Broadcast.PublishSuccessful";
+    public static final String ACTION_LIVESTREAM_PUBLISH_SUCCESSFUL = "com.odysee.app.Broadcast.LivestreamPublishSuccessful";
     public static final String ACTION_OPEN_ALL_CONTENT_TAG = "com.odysee.app.Broadcast.OpenAllContentTag";
     public static final String ACTION_WALLET_BALANCE_UPDATED = "com.odysee.app.Broadcast.WalletBalanceUpdated";
     public static final String ACTION_OPEN_CHANNEL_URL = "com.odysee.app.Broadcast.OpenChannelUrl";
@@ -793,7 +798,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     return;
                 }
 
-                showPublishFlow();
+                PopupMenu popup = new PopupMenu(MainActivity.this, view);
+                MenuInflater inflater = popup.getMenuInflater();
+                inflater.inflate(R.menu.menu_upload, popup.getMenu());
+                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        if (item.getItemId() == R.id.action_upload) {
+                            showPublishFlow();
+                            return true;
+                        } else if (item.getItemId() == R.id.action_go_live) {
+                            showGoLiveFlow();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+                popup.show();
             }
         });
 
@@ -990,7 +1011,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 View buttonChangeDefaultChannel = customView.findViewById(R.id.button_change_default_channel);
                 View defaultChannelListParent = customView.findViewById(R.id.default_channel_list_layout);
                 ListView defaultChannelList = customView.findViewById(R.id.default_channel_list);
-                View buttonGoLive = customView.findViewById(R.id.button_go_live);
+                View buttonLivestreams = customView.findViewById(R.id.button_livestreams);
                 View buttonChannels = customView.findViewById(R.id.button_channels);
                 View buttonBlockedAndMuted = customView.findViewById(R.id.button_blocked_and_muted);
                 View buttonCreatorSettings = customView.findViewById(R.id.button_creator_settings);
@@ -1005,10 +1026,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Account odyseeAccount = Helper.getOdyseeAccount(am.getAccounts());
                 final boolean isSignedIn = odyseeAccount != null;
 
-                buttonGoLive.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonCreatorSettings.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonPublishes.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonLivestreams.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonShowRewards.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonYouTubeSync.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonSignOut.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -1090,8 +1111,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             defaultChannelList.requestLayout();
 
                             buttonChannels.setVisibility(View.GONE);
-                            buttonGoLive.setVisibility(View.GONE);
                             buttonPublishes.setVisibility(View.GONE);
+                            buttonLivestreams.setVisibility(View.GONE);
                             buttonShowRewards.setVisibility(View.GONE);
                             customView.findViewById(R.id.button_help_support).setVisibility(View.GONE);
                             customView.findViewById(R.id.button_app_settings).setVisibility(View.GONE);
@@ -1103,8 +1124,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         } else {
                             TransitionManager.beginDelayedTransition((ViewGroup) popupWindow.getContentView());
                             buttonChannels.setVisibility(View.VISIBLE);
-                            buttonGoLive.setVisibility(View.VISIBLE);
                             buttonPublishes.setVisibility(View.VISIBLE);
+                            buttonLivestreams.setVisibility(View.VISIBLE);
                             buttonShowRewards.setVisibility(View.VISIBLE);
                             customView.findViewById(R.id.button_help_support).setVisibility(View.VISIBLE);
                             customView.findViewById(R.id.button_app_settings).setVisibility(View.VISIBLE);
@@ -1128,14 +1149,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     }
                 });
 
-                buttonGoLive.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        popupWindow.dismiss();
-                        hideNotifications();
-                        startActivity(new Intent(MainActivity.this, GoLiveActivity.class));
-                    }
-                });
                 buttonChannels.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -1166,6 +1179,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         popupWindow.dismiss();
                         hideNotifications();
                         openFragment(PublishesFragment.class, true, null);
+                    }
+                });
+                buttonLivestreams.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        popupWindow.dismiss();
+                        hideNotifications();
+                        openFragment(LivestreamsFragment.class, true, null);
                     }
                 });
                 buttonShowRewards.setOnClickListener(new View.OnClickListener() {
@@ -1304,9 +1325,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // Show PublishFragment.class
         clearPlayingPlayer();
         hideNotifications(); // Avoid showing Notifications fragment when clicking Publish when Notification panel is opened
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.main_activity_other_fragment, new PublishFragment(), "PUBLISH").addToBackStack("publish_claim").commit();
-        findViewById(R.id.fragment_container_main_activity).setVisibility(View.GONE);
+        openFragment(PublishFragment.class, true, null);
+        hideActionBar();
+    }
+
+    private void showGoLiveFlow() {
+        clearPlayingPlayer();
+        hideNotifications();
+        openFragment(GoLiveFormFragment.class, true, null);
         hideActionBar();
     }
 
@@ -1580,7 +1606,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void run() {
                 try {
                     getSupportFragmentManager().popBackStack();
+                    getSupportFragmentManager().popBackStack(); // Pop PublishFragment (video picker)
                     openFragment(PublishesFragment.class, true, null);
+                } catch (IllegalStateException ex) {
+                    // pass
+                    try {
+                        onBackPressed();
+                    } catch (IllegalStateException iex) {
+                        // if this fails on some devices. what's the solution?
+                    }
+                }
+            }
+        });
+    }
+
+    public void openLivestreamsOnSuccessfulLivestreamPublish(Intent receivedIntent) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    getSupportFragmentManager().popBackStack();
+                    openFragment(LivestreamsFragment.class, true, null);
                 } catch (IllegalStateException ex) {
                     // pass
                     try {
@@ -1599,6 +1645,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             params.put("claim", claim);
         }
         openFragment(PublishFormFragment.class, true, params);
+    }
+
+    public void openGoLiveForm(Claim claim) {
+        Map<String, Object> params = new HashMap<>();
+        if (claim != null) {
+            params.put("claim", claim);
+        }
+        openFragment(GoLiveFormFragment.class, true, params);
     }
 
     public void openChannelUrl(String url, String source) {
@@ -3513,6 +3567,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         intentFilter.addAction(ACTION_OPEN_WALLET_PAGE);
         intentFilter.addAction(ACTION_OPEN_REWARDS_PAGE);
         intentFilter.addAction(ACTION_PUBLISH_SUCCESSFUL);
+        intentFilter.addAction(ACTION_LIVESTREAM_PUBLISH_SUCCESSFUL);
         intentFilter.addAction(ACTION_SAVE_SHARED_USER_STATE);
         intentFilter.addAction(LbrynetMessagingService.ACTION_NOTIFICATION_RECEIVED);
         requestsReceiver = new BroadcastReceiver() {
@@ -3529,6 +3584,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     saveSharedUserState();
                 } else if (ACTION_PUBLISH_SUCCESSFUL.equalsIgnoreCase(action)) {
                     openPublishesOnSuccessfulPublish();
+                } else if (ACTION_LIVESTREAM_PUBLISH_SUCCESSFUL.equalsIgnoreCase(action)) {
+                    openLivestreamsOnSuccessfulLivestreamPublish(intent);
                 } else if (LbrynetMessagingService.ACTION_NOTIFICATION_RECEIVED.equalsIgnoreCase(action)) {
                     handleNotificationReceived(intent);
                 }

@@ -235,7 +235,11 @@ public class PublishesFragment extends BaseFragment implements ActionMode.Callba
                 // start channel editor with the claim
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openPublishForm(claim);
+                    if (claim.hasSource()) {
+                        ((MainActivity) context).openPublishForm(claim);
+                    } else {
+                        ((MainActivity) context).openGoLiveForm(claim);
+                    }
                 }
 
                 actionMode.finish();

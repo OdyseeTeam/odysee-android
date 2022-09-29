@@ -6,232 +6,34 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".GoLiveActivity">
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/livestream_controls"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible"
-        tools:visibility="visible">
-
-        <com.haishinkit.view.HkSurfaceView
-            android:id="@+id/livestream_controls_camera_view"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/livestream_controls_toggle_streaming_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="32dp"
-            android:layout_marginBottom="32dp"
-            android:text="@string/start_streaming"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <ImageButton
-            android:id="@+id/livestream_controls_switch_camera_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="32dp"
-            android:layout_marginBottom="8dp"
-            android:contentDescription="@string/switch_camera"
-            android:backgroundTint="@color/smallIconBackground"
-            android:src="@drawable/ic_switch_camera"
-            app:layout_constraintBottom_toTopOf="@+id/livestream_controls_toggle_streaming_button"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/livestream_options"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible"
-        tools:visibility="visible">
-
-        <TextView
-            android:id="@+id/livestream_options_select_channel_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="@string/select_channel"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <androidx.appcompat.widget.AppCompatSpinner
-            android:id="@+id/livestream_options_select_channel_spinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_text" />
-
-        <TextView
-            android:id="@+id/livestream_options_channel_error_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_channel_spinner"
-            tools:text="@string/channel_error_pending"
-            tools:visibility="visible" />
-
-        <TextView
-            android:id="@+id/livestream_options_specify_title_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="@string/specify_title"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_channel_error_text" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/livestream_options_title_input_layout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:hint="@string/title"
-            android:padding="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_specify_title_text">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/livestream_options_title_input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter"
-                android:singleLine="true"
-                android:textSize="14sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:id="@+id/livestream_options_select_thumbnail_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="@string/please_select_thumbnail"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_title_input_layout" />
-
-        <ImageView
-            android:id="@+id/livestream_options_thumbnail_preview"
-            android:layout_width="0dp"
-            android:layout_height="240dp"
-            android:layout_marginTop="16dp"
-            android:background="@android:color/black"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_select_thumbnail_text" />
-
-        <LinearLayout
-            android:id="@+id/livestream_options_thumbnail_upload_progress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@color/channelCoverBackground"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
-            app:layout_constraintTop_toTopOf="@+id/livestream_options_thumbnail_preview">
-
-            <ProgressBar
-                android:layout_width="16sp"
-                android:layout_height="16sp" />
-
-            <TextView
-                style="@style/TextView_Light"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="@string/uploading_thumbnail"
-                android:textColor="@color/white" />
-        </LinearLayout>
-
-        <RelativeLayout
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/bg_small_icon"
-            app:layout_constraintBottom_toBottomOf="@+id/livestream_options_thumbnail_preview"
-            app:layout_constraintEnd_toEndOf="@+id/livestream_options_thumbnail_preview"
-            app:layout_constraintStart_toStartOf="@+id/livestream_options_thumbnail_preview">
-
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_centerInParent="true"
-                android:src="@drawable/ic_edit"
-                app:tint="@color/white" />
-        </RelativeLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/livestream_options_continue_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/inter"
-            android:text="@string/continue_text"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_options_thumbnail_preview" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/livestream_precheck"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_constraintBottom_toBottomOf="@+id/livestream_controls"
-        app:layout_constraintEnd_toEndOf="@+id/livestream_controls"
-        app:layout_constraintStart_toStartOf="@+id/livestream_controls"
-        app:layout_constraintTop_toTopOf="@+id/livestream_controls">
-
-        <ImageView
-            android:id="@+id/livestream_precheck_spaceman_image"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:src="@drawable/spaceman_happy"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/livestream_precheck_status_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="32dp"
-            android:gravity="center"
-            android:text="@string/precheck_please_wait"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/livestream_precheck_spaceman_image" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <ProgressBar
-        android:id="@+id/livestream_progress"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:visibility="gone"
+    <com.haishinkit.view.HkSurfaceView
+        android:id="@+id/livestream_controls_camera_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/livestream_controls_toggle_streaming_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="32dp"
+        android:text="@string/start_streaming"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageButton
+        android:id="@+id/livestream_controls_switch_camera_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="8dp"
+        android:contentDescription="@string/switch_camera"
+        android:backgroundTint="@color/smallIconBackground"
+        android:src="@drawable/ic_switch_camera"
+        app:layout_constraintBottom_toTopOf="@+id/livestream_controls_toggle_streaming_button"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

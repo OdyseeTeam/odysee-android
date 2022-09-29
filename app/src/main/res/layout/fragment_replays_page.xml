@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <include
+        android:id="@+id/replays_page_first"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        layout="@layout/card_livestream_replay" />
+
+    <include
+        android:id="@+id/replays_page_second"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="invisible"
+        layout="@layout/card_livestream_replay" />
+
+    <include
+        android:id="@+id/replays_page_third"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="invisible"
+        layout="@layout/card_livestream_replay" />
+
+    <include
+        android:id="@+id/replays_page_fourth"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="invisible"
+        layout="@layout/card_livestream_replay" />
+</LinearLayout>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/livestreams_server_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp">
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/livestreams_server_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:hint="@string/stream_server_title"
+            app:layout_constraintBottom_toTopOf="@+id/livestreams_key_text"
+            app:layout_constraintEnd_toStartOf="@+id/livestreams_server_copy_card"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/livestreams_server_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                style="@style/TextView_Light"
+                android:textSize="14sp"
+                android:text="rtmp://stream.odysee.com/live"
+                tools:ignore="HardcodedText" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/livestreams_server_copy_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:cardCornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/livestreams_server_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintDimensionRatio="w,1:1">
+            <ImageButton
+                android:id="@+id/livestreams_server_copy"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/odyseePink"
+                android:padding="8dp"
+                android:src="@drawable/ic_copy"
+                android:contentDescription="@string/copy" />
+        </androidx.cardview.widget.CardView>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/livestreams_key_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="@string/stream_key_title"
+            app:layout_constraintBottom_toTopOf="@id/livestreams_start_streaming"
+            app:layout_constraintEnd_toStartOf="@+id/livestreams_key_copy_card"
+            app:layout_constraintStart_toStartOf="parent">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/livestreams_key_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:inputType="textPassword"
+                style="@style/TextView_Light"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/livestreams_key_copy_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:cardCornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/livestreams_key_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/livestreams_key_text"
+            app:layout_constraintDimensionRatio="w,1:1">
+            <ImageButton
+                android:id="@+id/livestreams_key_copy"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/odyseePink"
+                android:padding="8dp"
+                android:src="@drawable/ic_copy"
+                android:contentDescription="@string/copy" />
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/livestreams_key_show_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:paddingTop="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:textColor="@color/odyseePink"
+            style="@style/TextView_Light"
+            android:fontFamily="@font/inter"
+            android:textSize="14sp"
+            android:text="@string/show"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/livestreams_key_text" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/livestreams_start_streaming"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:text="@string/start_streaming"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/livestreams_server_info">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/livestreams_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false" />
+
+        <RelativeLayout
+            android:id="@+id/livestreams_empty_container"
+            android:background="@color/pageBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:padding="36dp">
+                <ImageView
+                    android:layout_gravity="center_horizontal"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:adjustViewBounds="true"
+                    android:src="@drawable/spaceman_happy" />
+                <TextView
+                    android:text="@string/no_livestreams"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:layout_gravity="center_horizontal"
+                    android:textAlignment="center"
+                    style="@style/TextView_SemiBold"
+                    android:textSize="18sp"/>
+                <TextView
+                    android:text="@string/no_livestreams_detail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_gravity="center_horizontal"
+                    style="@style/TextView_Light"
+                    android:textSize="16sp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/livestreams_create_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/create_livestream"  />
+            </LinearLayout>
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/livestreams_list_loading"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/livestreams_create_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_add"
+        android:contentDescription="@string/create_livestream" />
+</RelativeLayout>
