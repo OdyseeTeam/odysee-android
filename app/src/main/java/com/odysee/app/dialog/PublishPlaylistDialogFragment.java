@@ -65,6 +65,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
     private ProgressBar publishProgress;
     private boolean requestInProgress;
     private TextView textTitle;
+    private TextView inputDescription;
 
     private AppCompatSpinner channelSpinner;
     private InlineChannelSpinnerAdapter channelSpinnerAdapter;
@@ -107,14 +108,17 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         textNamePrefix = view.findViewById(R.id.publish_playlist_name_prefix);
         inputName = view.findViewById(R.id.publish_playlist_name_input);
         inputTitle = view.findViewById(R.id.publish_playlist_title_input);
+        inputDescription = view.findViewById(R.id.publish_playlist_desc_input);
         linkToggleAdvanced = view.findViewById(R.id.publish_playlist_toggle_advanced);
         advancedContainer = view.findViewById(R.id.publish_playlist_advanced_container);
 
         //textTitle.setText(getString(R.string.publish_playlist_title, claim.getTitle()));
         inputName.setText(collection.getActualClaim() != null ? collection.getActualClaim().getName() : collection.getName());
         inputName.setEnabled(Helper.isNullOrEmpty(collection.getClaimId())); // check edit mode
+        inputDescription.setText(collection.getActualClaim() != null ? collection.getActualClaim().getDescription() : null);
+
         inputTitle.setText(collection.getName());
-        inputDeposit.setText(R.string.min_deposit);
+        inputDeposit.setText(collection.getActualClaim() != null ? collection.getActualClaim().getAmount() : getString(R.string.min_deposit));
 
         channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -263,6 +267,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         }
 
         final String title = Helper.getValue(inputTitle.getText());
+        final String description = Helper.getValue(inputDescription.getText());
         if (Helper.isNullOrEmpty(title)) {
             showError(getString(R.string.publish_playlist_title_required));
             return;
@@ -337,6 +342,9 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
                     options.put("bid", amountFormat.format(new BigDecimal(claimToPublish.getAmount()).doubleValue()));
                     options.put("title", title);
                     options.put("claims", claimToPublish.getClaimIds());
+                    if (description != null) {
+                        options.put("description", description.trim());
+                    }
                     if (!isEditMode()) {
                         options.put("name", name);
                     } else {
@@ -389,6 +397,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
 
         Helper.setViewEnabled(inputName, false);
         Helper.setViewEnabled(inputTitle, false);
+        Helper.setViewEnabled(inputDescription, false);
         Helper.setViewEnabled(inputDeposit, false);
         Helper.setViewEnabled(channelSpinner, false);
         Helper.setViewEnabled(buttonPublish, false);
@@ -406,6 +415,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         }
         Helper.setViewEnabled(inputName, !isEditMode());
         Helper.setViewEnabled(inputTitle, true);
+        Helper.setViewEnabled(inputDescription, true);
         Helper.setViewEnabled(inputDeposit, true);
         Helper.setViewEnabled(channelSpinner, true);
         Helper.setViewEnabled(buttonPublish, true);
