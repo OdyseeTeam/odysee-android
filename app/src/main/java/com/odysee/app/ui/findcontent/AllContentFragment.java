@@ -502,7 +502,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
 
         Date now = new Date();
-
         Context activity = getActivity();
         // Check for a new version once in a day
         if (activity != null && (now.getTime() - latestVersionCheck) > (24 * 3600 * 1000)) {
@@ -573,7 +572,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                             new Handler(Looper.getMainLooper()).post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Snackbar.make(root, getResources().getString(R.string.snackbar_new_version_available), BaseTransientBottomBar.LENGTH_INDEFINITE).setAction(getResources().getString(R.string.snackbar_install_button), new View.OnClickListener() {
+                                    Snackbar snackbar = Snackbar.make(root.findViewById(R.id.coordinator_root), getResources().getString(R.string.snackbar_new_version_available), BaseTransientBottomBar.LENGTH_INDEFINITE);
+                                    snackbar.setAction(getResources().getString(R.string.snackbar_install_button), new View.OnClickListener() {
                                         @Override
                                         public void onClick(View view) {
                                             Context c = getContext();
@@ -607,11 +607,13 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                                         getContext().unregisterReceiver(this);
                                                     }
                                                 };
-                                                //register receiver for when .apk download is compete
+
+                                                //register receiver for when .apk download is complete
                                                 c.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
                                             }
                                         }
-                                    }).show();
+                                    });
+                                    snackbar.show();
                                 }
                             });
                         }
