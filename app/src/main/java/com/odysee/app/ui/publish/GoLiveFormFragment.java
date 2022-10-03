@@ -1277,7 +1277,17 @@ public class GoLiveFormFragment extends BaseFragment implements
             if (channelSpinner.getAdapter() == null) {
                 channelSpinner.setAdapter(channelSpinnerAdapter);
             }
-            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+
+            int adapterCount = channelSpinnerAdapter.getCount();
+
+            if (adapterCount == 1) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.saveSharedUserState();
+                }
+            }
+
+            channelSpinner.setSelection(adapterCount - 1);
         }
     }
     // endregion

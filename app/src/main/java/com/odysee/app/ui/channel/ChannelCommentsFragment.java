@@ -390,7 +390,16 @@ public class ChannelCommentsFragment extends BaseFragment implements ChannelCrea
             if (commentChannelSpinner.getAdapter() == null) {
                 commentChannelSpinner.setAdapter(commentChannelSpinnerAdapter);
             }
-            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+            int adapterCount = commentChannelSpinnerAdapter.getCount();
+
+            if (adapterCount == 1) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.saveSharedUserState();
+                }
+            }
+
+            commentChannelSpinner.setSelection(adapterCount - 1);
         }
 
         if (commentChannelSpinner != null) {
