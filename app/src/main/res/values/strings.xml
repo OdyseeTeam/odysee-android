@@ -4,7 +4,7 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <!-- App updater -->
-    <string name="downloadmanager_new_version_available">New version available for Odysee Android</string>
+    <string name="downloadmanager_downloading_new_version">Downloading new version of Odysee Android</string>
     <string name="snackbar_new_version_available">There is a new version available for Odysee Android</string>
     <string name="snackbar_install_button">Install</string>
 

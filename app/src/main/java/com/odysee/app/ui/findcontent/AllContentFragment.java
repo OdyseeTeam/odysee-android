@@ -588,7 +588,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                                 }
                                                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(latestUrl));
                                                 request.setDescription("Odysee new version available");
-                                                request.setTitle(getResources().getString(R.string.downloadmanager_new_version_available));
+                                                request.setTitle(getResources().getString(R.string.downloadmanager_downloading_new_version));
 
                                                 //set destination
                                                 request.setDestinationUri(uri);
