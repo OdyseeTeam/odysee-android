@@ -1,7 +1,6 @@
 package com.odysee.app.ui.findcontent;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,7 +9,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -463,6 +461,15 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
         Context context = getContext();
         if (context instanceof MainActivity) {
+            // After updating the app, the APK fiel can be deleted here, as app will be restarted
+            String filePath = context.getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk");
+            File f = new File(filePath);
+
+            if (f.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            }
+
             MainActivity activity = (MainActivity) context;
             if (singleTagView) {
                 LbryAnalytics.setCurrentScreen(activity, "Tag", "Tag");
@@ -581,14 +588,15 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                         public void onClick(View view) {
                                             Context context = getContext();
                                             if (context != null) {
-                                                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
                                                 String filePath = context.getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk");
-                                                final Uri uri = Uri.parse("file://" + filePath);
                                                 File f = new File(filePath);
 
                                                 if (f.exists()) {
+                                                    //noinspection ResultOfMethodCallIgnored
                                                     f.delete();
                                                 }
+
+                                                final Uri uri = Uri.parse("file://" + filePath);
                                                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(latestUrl));
                                                 request.setDescription("Odysee new version available");
                                                 request.setTitle(getResources().getString(R.string.downloadmanager_downloading_new_version));
@@ -630,36 +638,24 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         });
     }
 
-    @SuppressLint("QueryPermissionsNeeded")
     private void installApk() {
         try {
             Context context = getContext();
             if (context != null) {
                 File file = new File(getContext().getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk"));
                 Intent intent = new Intent(Intent.ACTION_VIEW);
+                Uri downloaded_apk;
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    Uri downloaded_apk = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
-                    intent.setDataAndType(downloaded_apk, "application/vnd.android.package-archive");
-                    List<ResolveInfo> resInfoList;
-
-                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S_V2) {
-                        resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY));
-                    } else {
-                        //noinspection deprecation
-                        resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-                    }
-                    for (ResolveInfo resolveInfo : resInfoList) {
-                        context.grantUriPermission(context.getApplicationContext().getPackageName() + ".provider", downloaded_apk, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    }
+                    downloaded_apk = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
+                    context.grantUriPermission(context.getApplicationContext().getPackageName() + ".provider", downloaded_apk, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(intent);
                 } else {
+                    downloaded_apk = Uri.fromFile(file);
                     intent.setAction(Intent.ACTION_VIEW);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
-                    intent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 }
+                intent.setDataAndType(downloaded_apk, "application/vnd.android.package-archive");
                 startActivity(intent);
             }
         } catch (Exception e) {
