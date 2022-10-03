@@ -5,7 +5,7 @@ To make it possible for us to help you, please fill out below information carefu
 
 Before reporting any issues, please make sure that you're using the latest version.
 
-We are also available on live chat at https://chat.lbry.com
+We are also available on live chat at https://chat.odysee.com
 --> 
 
 
@@ -17,10 +17,10 @@ We are also available on live chat at https://chat.lbry.com
 3.
 
 ### Expected behaviour
-Tell us what should happen
+<!-- Tell us what should happen -->
 
 ### Actual behaviour
-Tell us what happens instead
+<!-- Tell us what happens instead -->
 
 
 ## System Configuration
@@ -43,7 +43,7 @@ Tell us what happens instead
 3.
 
 ### Definition of Done
-- [ ]  Tested against acceptance criteria
+- [ ] Tested against acceptance criteria
 - [ ] Tested against the assumptions of the user story
 - [ ] The project builds without errors
 - [ ] Unit tests are written and passing
