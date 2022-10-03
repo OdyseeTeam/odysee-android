@@ -46,6 +46,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -553,12 +554,12 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
         call.enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Log.e("RemoteLatestVersion", e.getMessage());
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 ResponseBody body = response.body();
 
                 if (body != null) {
@@ -578,10 +579,10 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                     snackbar.setAction(getResources().getString(R.string.snackbar_install_button), new View.OnClickListener() {
                                         @Override
                                         public void onClick(View view) {
-                                            Context c = getContext();
-                                            if (c != null) {
-                                                ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                                                String filePath = c.getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk");
+                                            Context context = getContext();
+                                            if (context != null) {
+                                                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                                                String filePath = context.getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk");
                                                 final Uri uri = Uri.parse("file://" + filePath);
                                                 File f = new File(filePath);
 
@@ -597,7 +598,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
 
                                                 // get download service and enqueue file
-                                                final DownloadManager manager = (DownloadManager) c.getSystemService(Context.DOWNLOAD_SERVICE);
+                                                final DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
                                                 manager.enqueue(request);
 
                                                 //set BroadcastReceiver to install app when .apk is downloaded
@@ -611,7 +612,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                                                 };
 
                                                 //register receiver for when .apk download is complete
-                                                c.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                                                context.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
                                             }
                                         }
                                     });
