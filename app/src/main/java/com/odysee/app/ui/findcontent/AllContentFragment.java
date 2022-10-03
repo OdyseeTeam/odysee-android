@@ -540,8 +540,10 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
      */
     private void checkRemoteLatestVersion(View root) {
         /* JSON file format:
-         * { latestVersionCode: integer,
-         *   url: string including https and package file }
+         * {
+         *   latest_version_code: integer,
+         *   url: string including https and package file
+         * }
          */
         Request.Builder builder = new Request.Builder();
         builder = builder.url("http://apk.odysee.com/odysee-android/odysee-android-latest.json");
@@ -565,7 +567,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                     try {
                         JSONObject responseJson = new JSONObject(respBody);
 
-                        long latestCode = responseJson.getLong("latestVersionCode");
+                        long latestCode = responseJson.getLong("latest_version_code");
                         String latestUrl = responseJson.getString("url");
 
                         if (latestCode > BuildConfig.VERSION_CODE && !Helper.isNullOrEmpty(latestUrl)) {
