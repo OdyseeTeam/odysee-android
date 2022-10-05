@@ -1137,6 +1137,7 @@ public class FileViewFragment extends BaseFragment implements
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setVisibility(View.VISIBLE);
             Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+            view.setPlayer(null);
             view.setPlayer(currentPlayer);
             view.setControllerHideOnTouch(currentPlayer instanceof ExoPlayer);
             view.setControllerShowTimeoutMs(currentPlayer instanceof ExoPlayer
@@ -2488,22 +2489,22 @@ public class FileViewFragment extends BaseFragment implements
 
                 activity.initMediaSession();
                 activity.initPlaybackNotification();
-            }
 
-            MainActivity.playerManager.setListener(new PlayerManager.Listener() {
-                @Override
-                public void onPlayerChanged(long previousPlaybackMs) {
-                    if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
-                        MainActivity.playerManager.initializeCurrentPlayer(
-                                currentMediaSourceUrl, previousPlaybackMs, fileClaim, context);
+                MainActivity.playerManager.setListener(new PlayerManager.Listener() {
+                    @Override
+                    public void onPlayerChanged(long previousPlaybackMs) {
+                        if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
+                            MainActivity.playerManager.initializeCurrentPlayer(
+                                    currentMediaSourceUrl, previousPlaybackMs, fileClaim, context);
+                        }
+                        setPlayerForPlayerView();
+                        activity.initMediaSession();
+                        activity.initPlaybackNotification();
                     }
-                    setPlayerForPlayerView();
-                    activity.initMediaSession();
-                    activity.initPlaybackNotification();
-                }
-            });
+                });
 
-            newPlayerCreated = true;
+                newPlayerCreated = true;
+            }
         }
 
         Claim claimToPlay = collectionClaimItem != null ? collectionClaimItem : fileClaim;
