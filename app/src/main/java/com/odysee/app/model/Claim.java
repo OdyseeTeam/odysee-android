@@ -326,7 +326,10 @@ public class Claim {
         return (value != null) ? value.getTitle() : null;
     }
     public String getTitleOrName() {
-        return (value != null) ? value.getTitle() : getName();
+        if (value != null && value.getTitle() != null) {
+            return value.getTitle();
+        }
+        return getName();
     }
 
     public long getDuration() {
