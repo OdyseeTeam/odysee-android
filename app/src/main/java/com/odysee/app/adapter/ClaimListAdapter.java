@@ -129,6 +129,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return selectedItems.contains(claim);
     }
 
+    public List<Claim> getUnderlyingItems() {
+        return this.items;
+    }
+
     public List<Claim> getItems() {
         return new ArrayList<>(this.items);
     }
@@ -813,6 +817,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     + context.getString(R.string.short_thousand);
         } else {
             return numberFormat.format(value);
+        }
+    }
+
+    /**
+     * This method should be called after drag/drop or user reordering in the recycler view.
+     */
+    public void recalculateItemOrders() {
+        int itemOrder = 0;
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).setItemOrder(++itemOrder);
         }
     }
 

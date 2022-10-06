@@ -19,6 +19,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -45,10 +46,12 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class PlaylistFragment extends BaseFragment implements
         ActionMode.Callback, DownloadActionListener, SelectionModeListener {
@@ -76,6 +79,7 @@ public class PlaylistFragment extends BaseFragment implements
         playlistList = root.findViewById(R.id.playlist_items);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         playlistList.setLayoutManager(llm);
+        setupDragAndDropForReordering();
 
         playButton = root.findViewById(R.id.playlist_play);
         publishButton = root.findViewById(R.id.playlist_publish);
@@ -114,6 +118,47 @@ public class PlaylistFragment extends BaseFragment implements
         });
 
         return root;
+    }
+
+    private void setupDragAndDropForReordering() {
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                return makeFlag(ItemTouchHelper.ACTION_STATE_DRAG,
+                        ItemTouchHelper.DOWN | ItemTouchHelper.UP | ItemTouchHelper.START | ItemTouchHelper.END);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                if (adapter != null) {
+                    Collections.swap(adapter.getUnderlyingItems(), viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
+                    adapter.notifyItemMoved(viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
+                    adapter.recalculateItemOrders();
+
+                    if (currentCollection != null) {
+                        currentCollection.setItemsFromStringList(adapter.getItems().stream().map(claim -> claim.getPermanentUrl()).collect(Collectors.toList()));
+
+                        // save the collection
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).handleSaveCollection(currentCollection);
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+
+            }
+        };
+
+        ItemTouchHelper helper = new ItemTouchHelper(callback);
+        helper.attachToRecyclerView(playlistList);
     }
 
     private void removeFromEditedCollections(String claimId) {
@@ -172,15 +217,16 @@ public class PlaylistFragment extends BaseFragment implements
         checkCanPublishPlaylist();
 
         // load the claims
-        ResolveTask task = new ResolveTask(collection.getItems(), Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
+        List<String> collectionItemUrls = collection.getItems().stream().map(OdyseeCollection.Item::getUrl).collect(Collectors.toList());
+        ResolveTask task = new ResolveTask(collectionItemUrls, Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 // reorder the claims based on the order in the playlist collection, TODO: find a more efficient way to do this
                 Map<String, Claim> playlistClaimMap = new LinkedHashMap<>();
                 List<String> claimIds = new ArrayList<>();
-                List<String> collectionItems = collection.getItems();
+                List<OdyseeCollection.Item> collectionItems = collection.getItems();
                 for (int i = 0; i < collectionItems.size(); i++) {
-                    LbryUri url = LbryUri.tryParse(collectionItems.get(i));
+                    LbryUri url = LbryUri.tryParse(collectionItems.get(i).getUrl());
                     if (url != null) {
                         claimIds.add(url.getClaimId());
                     }

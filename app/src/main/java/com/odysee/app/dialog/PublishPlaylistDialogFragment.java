@@ -311,10 +311,10 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         claimToPublish.setName(name);
         claimToPublish.setAmount(depositString);
 
-        List<String> collectionItems = collection.getItems();
+        List<OdyseeCollection.Item> collectionItems = collection.getItems();
         List<String> claimIds = new ArrayList<>(collectionItems.size());
-        for (String item : collectionItems) {
-            LbryUri url = LbryUri.tryParse(item);
+        for (OdyseeCollection.Item item : collectionItems) {
+            LbryUri url = LbryUri.tryParse(item.getUrl());
             if (url != null) {
                 claimIds.add(url.getClaimId());
             }
