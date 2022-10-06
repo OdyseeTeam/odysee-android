@@ -554,7 +554,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
          * }
          */
         Request.Builder builder = new Request.Builder();
-        builder = builder.url("http://apk.odysee.com/odysee-android/odysee-android-latest.json");
+        builder = builder.url("https://apk.odysee.tv/odysee-android-latest.json");
         Request request = builder.build();
         OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
         Call call = okHttpClient.newCall(request);
