@@ -62,6 +62,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     private float scale;
 
+    /**
+     * Note: This is only a flag to check for certain conditions and handle the behaviour differently on the playlist fragment
+     */
+    @Setter
+    private boolean longClickForContextMenu;
+
     @Getter
     @Setter
     private int contextGroupId;
@@ -91,6 +97,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Getter
     @Setter
     private int position;
+    @Getter
+    @Setter
+    private int currentPosition;
     @Setter
     private boolean isOwnCollection;
 
@@ -127,6 +136,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
     public boolean isClaimSelected(Claim claim) {
         return selectedItems.contains(claim);
+    }
+
+    public List<Claim> getUnderlyingItems() {
+        return this.items;
     }
 
     public List<Claim> getItems() {
@@ -444,6 +457,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     @Override
     public void onViewRecycled(ViewHolder holder) {
+        holder.itemView.setOnLongClickListener(null);
         if (holder.optionsMenuView != null) {
             holder.optionsMenuView.setOnClickListener(null);
         }
@@ -524,6 +538,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         vh.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
+                if (longClickForContextMenu) {
+                    setCurrentPosition(vh.getAbsoluteAdapterPosition());
+                    return false;
+                }
+
                 if (!canEnterSelectionMode) {
                     return false;
                 }
@@ -534,6 +553,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         selectionModeListener.onEnterSelectionMode();
                     }
                 }
+
                 toggleSelectedClaim(original);
                 return true;
             }
@@ -570,7 +590,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    setPosition(vh.getBindingAdapterPosition());
+                    setCurrentPosition(vh.getAbsoluteAdapterPosition());
                     view.showContextMenu();
                 }
             });
@@ -813,6 +833,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     + context.getString(R.string.short_thousand);
         } else {
             return numberFormat.format(value);
+        }
+    }
+
+    /**
+     * This method should be called after drag/drop or user reordering in the recycler view.
+     */
+    public void recalculateItemOrders() {
+        int itemOrder = 0;
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).setItemOrder(++itemOrder);
         }
     }
 

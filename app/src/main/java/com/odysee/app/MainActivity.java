@@ -169,6 +169,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -5074,7 +5075,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             }
 
                             OdyseeCollection collection = OdyseeCollection.createPrivatePlaylist(title);
-                            collection.setItems(Arrays.asList(url));
+                            collection.setItemsFromStringList(Arrays.asList(url));
                             handleAddUrlToList(url, collection, true);
                             if (dialog != null) {
                                 dialog.dismiss();
@@ -5110,9 +5111,35 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     saveSharedUserState();
                 } catch (SQLiteException ex) {
                     // failed
-                    if (showMessage) {
-                        showError(getString(R.string.could_not_add_to_list, collection.getName()));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (showMessage) {
+                                showError(getString(R.string.could_not_add_to_list, collection.getName()));
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void handleSaveCollection(final OdyseeCollection collection) {
+        ExecutorService executor = ((OdyseeApp) getApplication()).getExecutor();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    if (!Helper.isNullOrEmpty(collection.getId())) {
+                        DatabaseHelper.saveCollection(collection, db);
+
+                        // initiate sync afterwards
+                        saveSharedUserState();
                     }
+                } catch (SQLiteException ex) {
+                    // failed
+                    showError(getString(R.string.could_not_save_list, collection.getName()));
                 }
             }
         });

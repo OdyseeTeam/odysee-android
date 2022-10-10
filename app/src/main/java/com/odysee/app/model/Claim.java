@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.odysee.app.model.ItemOrderSortable;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.ImageCDNUrl;
 import com.odysee.app.utils.LbryUri;
@@ -33,7 +34,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Claim {
+public class Claim implements ItemOrderSortable {
     public static final String CLAIM_TYPE_CLAIM = "claim";
     public static final String CLAIM_TYPE_UPDATE = "update";
     public static final String CLAIM_TYPE_SUPPORT = "support";
@@ -109,6 +110,7 @@ public class Claim {
 
     // Collections
     private List<String> claimIds;
+    private int itemOrder;
 
     public static Claim claimFromOutput(JSONObject item) {
         // we only need name, permanent_url, txid and nout

@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -299,16 +300,25 @@ public class LibraryFragment extends BaseFragment implements
                     collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     collectionsMap.remove(OdyseeCollection.BUILT_IN_ID_WATCHLATER);
 
-                    List<OdyseeCollection> privateCollections = new ArrayList<>(collectionsMap.values());
+                    List<OdyseeCollection> collections = new ArrayList<>();
 
                     // Also need to load published / public lists at this point
-                    List<OdyseeCollection> collections = new ArrayList<>(privateCollections);
+                    List<OdyseeCollection> publicCollections = new ArrayList<>();
                     try {
-                        List<OdyseeCollection> publicCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
-                        collections.addAll(publicCollections);
+                        // Using local state which may in merge conflicts if a user happens to modify a public collection on different platforms (web or desktop)
+                        List<OdyseeCollection> ownCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
+                        ownCollections.removeIf(collection -> collectionsMap.keySet().contains(collection.getId()));
+                        //collectionsMap.keySet().removeIf(id -> ownCollections.stream().map(p -> p.getId()).collect(Collectors.toList()).contains(id));
+                        publicCollections = new ArrayList<>(ownCollections);
                     } catch (ApiCallException | JSONException ex) {
                         // pass
                     }
+
+
+                    List<OdyseeCollection> privateCollections = new ArrayList<>(collectionsMap.values());
+                    collections.addAll(privateCollections);
+                    collections.addAll(publicCollections);
+
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {

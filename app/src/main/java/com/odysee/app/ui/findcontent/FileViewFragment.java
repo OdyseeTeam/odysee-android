@@ -2493,9 +2493,10 @@ public class FileViewFragment extends BaseFragment implements
                 MainActivity.playerManager.setListener(new PlayerManager.Listener() {
                     @Override
                     public void onPlayerChanged(long previousPlaybackMs) {
+                        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                         if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
                             MainActivity.playerManager.initializeCurrentPlayer(
-                                    currentMediaSourceUrl, previousPlaybackMs, fileClaim, context);
+                                    currentMediaSourceUrl, previousPlaybackMs, actualClaim, context);
                         }
                         setPlayerForPlayerView();
                         activity.initMediaSession();
@@ -2633,8 +2634,9 @@ public class FileViewFragment extends BaseFragment implements
                             }
 
                             if (MainActivity.playerManager != null) { // null pointer check
+                                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                                 MainActivity.playerManager.initializeCurrentPlayer(
-                                        currentMediaSourceUrl, C.TIME_UNSET, fileClaim, getContext());
+                                        currentMediaSourceUrl, C.TIME_UNSET, actualClaim, getContext());
                             }
                         });
                     }

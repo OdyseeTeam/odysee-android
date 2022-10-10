@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,9 +37,11 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.InlineChannelSpinnerAdapter;
+import com.odysee.app.adapter.LanguageSpinnerAdapter;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
+import com.odysee.app.model.Language;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.tasks.claim.ClaimListResultHandler;
@@ -65,8 +68,10 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
     private ProgressBar publishProgress;
     private boolean requestInProgress;
     private TextView textTitle;
+    private TextView inputDescription;
 
     private AppCompatSpinner channelSpinner;
+    private AppCompatSpinner languageSpinner;
     private InlineChannelSpinnerAdapter channelSpinnerAdapter;
     private TextView textNamePrefix;
     private EditText inputName;
@@ -104,17 +109,35 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         textTitle = view.findViewById(R.id.publish_playlist_title);
 
         channelSpinner = view.findViewById(R.id.publish_playlist_channel_spinner);
+        languageSpinner = view.findViewById(R.id.publish_playlist_language_spinner);
         textNamePrefix = view.findViewById(R.id.publish_playlist_name_prefix);
         inputName = view.findViewById(R.id.publish_playlist_name_input);
         inputTitle = view.findViewById(R.id.publish_playlist_title_input);
+        inputDescription = view.findViewById(R.id.publish_playlist_desc_input);
         linkToggleAdvanced = view.findViewById(R.id.publish_playlist_toggle_advanced);
         advancedContainer = view.findViewById(R.id.publish_playlist_advanced_container);
 
         //textTitle.setText(getString(R.string.publish_playlist_title, claim.getTitle()));
-        inputName.setText(collection.getActualClaim() != null ? collection.getActualClaim().getName() : collection.getName());
+
+        Claim actualClaim = collection.getActualClaim() != null ? collection.getActualClaim() : null;
+        inputName.setText(actualClaim != null ? actualClaim.getName() : collection.getName());
         inputName.setEnabled(Helper.isNullOrEmpty(collection.getClaimId())); // check edit mode
+        inputDescription.setText(actualClaim != null ? actualClaim.getDescription() : null);
         inputTitle.setText(collection.getName());
-        inputDeposit.setText(R.string.min_deposit);
+        inputDeposit.setText(actualClaim != null ? actualClaim.getAmount() : getString(R.string.min_deposit));
+
+        languageSpinner.setAdapter(new LanguageSpinnerAdapter(getContext(), R.layout.spinner_item_generic));
+        if (actualClaim != null && actualClaim.getValue() instanceof Claim.StreamMetadata) {
+            Claim.StreamMetadata metadata = (Claim.StreamMetadata) actualClaim.getValue();
+            if (metadata.getLanguages() != null && metadata.getLanguages().size() > 0) {
+                // get the first language
+                String langCode = metadata.getLanguages().get(0);
+                int langCodePosition = ((LanguageSpinnerAdapter) languageSpinner.getAdapter()).getItemPosition(langCode);
+                if (langCodePosition > -1) {
+                    languageSpinner.setSelection(langCodePosition);
+                }
+            }
+        }
 
         channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -263,6 +286,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         }
 
         final String title = Helper.getValue(inputTitle.getText());
+        final String description = Helper.getValue(inputDescription.getText());
         if (Helper.isNullOrEmpty(title)) {
             showError(getString(R.string.publish_playlist_title_required));
             return;
@@ -306,10 +330,13 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         claimToPublish.setName(name);
         claimToPublish.setAmount(depositString);
 
-        List<String> collectionItems = collection.getItems();
+        Language selectedLanguage = (Language) languageSpinner.getSelectedItem();
+        List<String> languages = selectedLanguage != null ? Arrays.asList(selectedLanguage.getCode()) : null;
+
+        List<OdyseeCollection.Item> collectionItems = collection.getItems();
         List<String> claimIds = new ArrayList<>(collectionItems.size());
-        for (String item : collectionItems) {
-            LbryUri url = LbryUri.tryParse(item);
+        for (OdyseeCollection.Item item : collectionItems) {
+            LbryUri url = LbryUri.tryParse(item.getUrl());
             if (url != null) {
                 claimIds.add(url.getClaimId());
             }
@@ -325,9 +352,9 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
                 @Override
                 public void run() {
                     // Try to obtain a thumbnail by resolving the first item in the playlist (if no thumbnail was already set)
-                    if (!isEditMode() || collection.getActualClaim() == null ||
-                        collection.getActualClaim() != null && Helper.isNullOrEmpty(collection.getActualClaim().getThumbnailUrl())) {
-
+                    Claim actualClaim = collection.getActualClaim();
+                    if (!isEditMode() || actualClaim == null ||
+                            actualClaim != null && Helper.isNullOrEmpty(actualClaim.getThumbnailUrl())) {
                     }
 
                     DecimalFormat amountFormat = new DecimalFormat(Helper.SDK_AMOUNT_FORMAT, new DecimalFormatSymbols(Locale.US));
@@ -337,10 +364,22 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
                     options.put("bid", amountFormat.format(new BigDecimal(claimToPublish.getAmount()).doubleValue()));
                     options.put("title", title);
                     options.put("claims", claimToPublish.getClaimIds());
+                    if (description != null) {
+                        options.put("description", description.trim());
+                    }
                     if (!isEditMode()) {
                         options.put("name", name);
                     } else {
                         options.put("claim_id", collection.getClaimId());
+                    }
+
+                    if (languages != null) {
+                        options.put("languages", languages);
+                    } else if (actualClaim != null && actualClaim.getValue() instanceof Claim.StreamMetadata) {
+                        Claim.StreamMetadata metadata = (Claim.StreamMetadata) actualClaim.getValue();
+                        if (metadata.getLanguages() != null && metadata.getLanguages().size() > 0) {
+                            options.put("languages", metadata.getLanguages());
+                        }
                     }
 
                     Claim claimResult = null;
@@ -389,6 +428,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
 
         Helper.setViewEnabled(inputName, false);
         Helper.setViewEnabled(inputTitle, false);
+        Helper.setViewEnabled(inputDescription, false);
         Helper.setViewEnabled(inputDeposit, false);
         Helper.setViewEnabled(channelSpinner, false);
         Helper.setViewEnabled(buttonPublish, false);
@@ -406,6 +446,7 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
         }
         Helper.setViewEnabled(inputName, !isEditMode());
         Helper.setViewEnabled(inputTitle, true);
+        Helper.setViewEnabled(inputDescription, true);
         Helper.setViewEnabled(inputDeposit, true);
         Helper.setViewEnabled(channelSpinner, true);
         Helper.setViewEnabled(buttonPublish, true);
@@ -427,12 +468,9 @@ public class PublishPlaylistDialogFragment extends BottomSheetDialogFragment imp
     }
 
     private void showError(String message) {
-        View view = getView();
-        if (view != null && !Helper.isNullOrEmpty(message)) {
-            Snackbar.make(view, message, Snackbar.LENGTH_LONG).
-                    setBackgroundTint(Color.RED).
-                    setTextColor(Color.WHITE).
-                    show();
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).showError(message);
         }
     }
 

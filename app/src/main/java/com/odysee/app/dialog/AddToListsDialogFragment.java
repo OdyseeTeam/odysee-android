@@ -101,7 +101,7 @@ public class AddToListsDialogFragment extends BottomSheetDialogFragment {
                 @Override
                 public void run() {
                     SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
-                    List<OdyseeCollection> privateCollections = DatabaseHelper.getSimpleCollections(db);
+                    List<OdyseeCollection> privateCollections = DatabaseHelper.getSimpleCollections(true, db);
                     List<OdyseeCollection> publicCollections = new ArrayList<>();
                     try {
                          publicCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);

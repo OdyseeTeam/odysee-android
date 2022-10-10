@@ -213,7 +213,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_GET_COLLECTION_BY_ID = "SELECT id, name, type, visibility, updated_at FROM collections WHERE id = ?";
     private static final String SQL_DELETE_COLLECTION_BY_ID = "DELETE FROM collections WHERE id = ?";
     private static final String SQL_GET_COLLECTIONS = "SELECT id, name, type, visibility, updated_at FROM collections";
-    private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
+    private static final String SQL_GET_PRIVATE_COLLECTIONS = "SELECT id, name, type, visibility, updated_at FROM collections WHERE visibility = 1";
+    private static final String SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION = "SELECT url, item_order FROM collection_items WHERE collection_id = ? ORDER BY item_order ASC";
 
     public DatabaseHelper(Context context) {
         super(context, String.format("%s/%s", context.getFilesDir().getAbsolutePath(), DATABASE_NAME), null, DATABASE_VERSION);
@@ -643,11 +644,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             db.execSQL(SQL_REMOVE_COLLECTION_ITEMS_FOR_COLLECTION, new Object[] { collection.getId() });
 
-            List<String> items = new ArrayList<>(collection.getItems());
+            List<OdyseeCollection.Item> items = new ArrayList<>(collection.getItems());
             for (int i = 0; i < items.size(); i++)  {
                 db.execSQL(SQL_INSERT_COLLECTION_ITEM_FOR_COLLECTION, new Object[] {
                         collection.getId(),
-                        items.get(i),
+                        items.get(i).getUrl(),
                         (i + 1)  //  item order
                 });
             }
@@ -669,12 +670,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // only load the collection details without the items (for listing)
     public static List<OdyseeCollection> getSimpleCollections(SQLiteDatabase db) {
+        return getSimpleCollections(false, db);
+    }
+
+    // only load the collection details without the items (for listing)
+    public static List<OdyseeCollection> getSimpleCollections(boolean privateCollections, SQLiteDatabase db) {
         List<OdyseeCollection> collections = new ArrayList<>();
         Cursor cursor = null;
         try {
-            cursor = db.rawQuery(SQL_GET_COLLECTIONS, null);
+            cursor = db.rawQuery(privateCollections ? SQL_GET_PRIVATE_COLLECTIONS : SQL_GET_COLLECTIONS, null);
             while (cursor.moveToNext()) {
                 int columnIndex = 0;
                 OdyseeCollection collection = new OdyseeCollection();
@@ -721,7 +726,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 OdyseeCollection collection = entry.getValue();
                 cursor = db.rawQuery(SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION, new String[] { collection.getId() });
                 while (cursor.moveToNext()) {
-                    collection.addItem(cursor.getString(0), false);
+                    collection.addItem(cursor.getString(0), cursor.getInt(1), false);
                 }
                 Helper.closeCursor(cursor);
             }
@@ -756,7 +761,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (collection != null) {
                 cursor = db.rawQuery(SQL_GET_COLLECTION_ITEMS_FOR_COLLECTION, new String[] { collection.getId() });
                 while (cursor.moveToNext()) {
-                    collection.addItem(cursor.getString(0), false);
+                    collection.addItem(cursor.getString(0), cursor.getInt(1), false);
                 }
             }
         } finally {

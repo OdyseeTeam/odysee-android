@@ -1,5 +1,6 @@
 package com.odysee.app.model;
 
+import com.odysee.app.model.ItemOrderSortable;
 import com.odysee.app.utils.Helper;
 
 import org.json.JSONException;
@@ -27,7 +28,7 @@ public class OdyseeCollection {
     private String id;
     private String name;
     private String type;
-    private List<String> items;
+    private List<Item> items;
     private List<Claim> claims;
     private Date updatedAt;
     private int visibility;
@@ -43,21 +44,26 @@ public class OdyseeCollection {
         updatedAt = new Date();
     }
 
-    public void addItem(String url, boolean update) {
-        if (!items.contains(url)) {
-            items.add(url);
+    public void addItem(Item item, boolean update) {
+        if (!items.contains(item)) {
+            items.add(item);
             if (update) {
                 updatedAt = new Date();
             }
         }
     }
 
-    public void addItem(String url) {
-        addItem(url, true);
+    public void addItem(String url, int itemOrder, boolean update) {
+        Item item = new Item(url, itemOrder);
+        addItem(item, update);
+    }
+
+    public void addItem(String url, int itemOrder) {
+        addItem(url, itemOrder, true);
     }
 
     public void removeItem(String url) {
-        items.remove(url);
+        items.removeIf(item -> url.equalsIgnoreCase(item.getUrl()));
         updatedAt = new Date();
     }
 
@@ -84,7 +90,7 @@ public class OdyseeCollection {
 
         OdyseeCollection collection = new OdyseeCollection();
         collection.setId(id);
-        collection.setItems(Helper.getJsonStringArrayAsList("items", jsonObject));
+        collection.setItemsFromStringList(Helper.getJsonStringArrayAsList("items", jsonObject));
         collection.setName(Helper.getJSONString("name", null, jsonObject));
         collection.setType(Helper.getJSONString("type", null, jsonObject));
         collection.setUpdatedAt(new Date(Helper.getJSONLong("updatedAt", now, jsonObject) * 1000));
@@ -99,7 +105,7 @@ public class OdyseeCollection {
         collection.setClaimId(claim.getClaimId());
         collection.setClaimName(claim.getName());
         collection.setPermanentUrl(claim.getPermanentUrl());
-        collection.setItems(new ArrayList<>(items));
+        collection.setItemsFromStringList(items);
         collection.setName(claim.getTitle());
         collection.setType(OdyseeCollection.TYPE_PLAYLIST);
         collection.setUpdatedAt(new Date(claim.getTimestamp() * 1000));
@@ -109,11 +115,34 @@ public class OdyseeCollection {
         return collection;
     }
 
+    public void setItemsFromStringList(List<String> itemStringList) {
+        List<Item> items = new ArrayList<>(itemStringList.size());
+        int itemOrder = 0;
+        for (int i = 0; i < itemStringList.size(); i++) {
+            String thisItemString = itemStringList.get(i);
+            items.add(new Item(thisItemString, ++itemOrder));
+        }
+        this.items = new ArrayList<>(items);
+    }
+
     public static OdyseeCollection createPrivatePlaylist(String title) {
         OdyseeCollection collection = new OdyseeCollection();
         collection.setName(title);
         collection.setType(TYPE_PLAYLIST);
         collection.setVisibility(VISIBILITY_PRIVATE);
         return collection;
+    }
+
+    @Data
+    public static class Item implements ItemOrderSortable {
+        private String url;
+        private int itemOrder;
+        public Item() {
+
+        }
+        public Item(String url, int itemOrder) {
+            this.url = url;
+            this.itemOrder = itemOrder;
+        }
     }
 }
