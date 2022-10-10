@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
@@ -50,6 +51,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -172,36 +174,55 @@ public class PlaylistFragment extends BaseFragment implements
             collectionIdParam = (String) params.get("collectionId");
         }
 
+        Context context = getContext();
         final String collectionId = collectionIdParam;
-        if (Lbry.isOwnedCollection(collectionId)) {
-            // Check if it's edited and return the updated one, otherwise, just get what we have
 
-            OdyseeCollection collection = Lbry.getOwnCollectionById(collectionId);
-            if (collection != null) {
-                onPlaylistLoaded(collection);
-            }
-        } else {
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                Executors.newSingleThreadExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
-                            OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
+        if (context instanceof MainActivity) {
+            ExecutorService executor = ((OdyseeApp) ((MainActivity) context).getApplication()).getExecutor();
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // Try to load from local state first
+                        SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
+                        OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
 
-                            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                @Override
-                                public void run() {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                boolean playlistFound = false;
+                                if (collection != null) {
+                                    // Additionally, get the actualClaim if it's a published playlist and we have an existing reference
+                                    if (collection.getVisibility() == OdyseeCollection.VISIBILITY_PUBLIC &&
+                                            Lbry.isOwnedCollection(collectionId)) {
+                                        OdyseeCollection remoteCollection = Lbry.getOwnCollectionById(collectionId);
+                                        if (remoteCollection != null) {
+                                            collection.setActualClaim(remoteCollection.getActualClaim());
+                                        }
+                                    }
+
                                     onPlaylistLoaded(collection);
+                                    playlistFound = true;
+                                } else {
+                                    if (Lbry.isOwnedCollection(collectionId)) {
+                                        OdyseeCollection collection = Lbry.getOwnCollectionById(collectionId);
+                                        if (collection != null) {
+                                            onPlaylistLoaded(collection);
+                                            playlistFound = true;
+                                        }
+                                    }
                                 }
-                            });
-                        } catch (SQLiteException ex) {
-                            showError(getString(R.string.could_not_load_playlist));
-                        }
+
+                                if (!playlistFound) {
+                                    showError(getString(R.string.could_not_load_playlist));
+                                }
+                            }
+                        });
+                    } catch (SQLiteException ex) {
+                        showError(getString(R.string.could_not_load_playlist));
                     }
-                });
-            }
+                }
+            });
         }
     }
 
@@ -243,6 +264,7 @@ public class PlaylistFragment extends BaseFragment implements
                 collection.setClaims(new ArrayList<>(playlistClaimMap.values()));
 
                 adapter = new ClaimListAdapter(collection.getClaims(), ClaimListAdapter.STYLE_SMALL_LIST, getContext());
+                adapter.setLongClickForContextMenu(true);
                 adapter.setOwnCollection(true);
                 adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                     @Override
@@ -332,7 +354,7 @@ public class PlaylistFragment extends BaseFragment implements
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         if (currentCollection != null && item.getItemId() == R.id.action_remove_from_list) {
             String id = currentCollection.getId();
-            int position = adapter.getPosition();
+            int position = adapter.getCurrentPosition();
             Claim claim = adapter.getItems().get(position);
             String url = claim.getPermanentUrl();
 

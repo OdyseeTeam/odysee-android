@@ -305,10 +305,10 @@ public class LibraryFragment extends BaseFragment implements
                     // Also need to load published / public lists at this point
                     List<OdyseeCollection> publicCollections = new ArrayList<>();
                     try {
-                        // TODO: For public collections, make use of the local state instead of remote (since we only save changes locally before publishing)
-                        // This will hover result in merge conflicts if a user modifies a public collection on different platforms (web or desktop)
+                        // Using local state which may in merge conflicts if a user happens to modify a public collection on different platforms (web or desktop)
                         List<OdyseeCollection> ownCollections = Lbry.loadOwnCollections(Lbryio.AUTH_TOKEN);
-                        collectionsMap.keySet().removeIf(id -> ownCollections.stream().map(p -> p.getId()).collect(Collectors.toList()).contains(id));
+                        ownCollections.removeIf(collection -> collectionsMap.keySet().contains(collection.getId()));
+                        //collectionsMap.keySet().removeIf(id -> ownCollections.stream().map(p -> p.getId()).collect(Collectors.toList()).contains(id));
                         publicCollections = new ArrayList<>(ownCollections);
                     } catch (ApiCallException | JSONException ex) {
                         // pass
