@@ -1137,6 +1137,7 @@ public class FileViewFragment extends BaseFragment implements
             PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setVisibility(View.VISIBLE);
             Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+            view.setPlayer(null);
             view.setPlayer(currentPlayer);
             view.setControllerHideOnTouch(currentPlayer instanceof ExoPlayer);
             view.setControllerShowTimeoutMs(currentPlayer instanceof ExoPlayer
@@ -2488,23 +2489,23 @@ public class FileViewFragment extends BaseFragment implements
 
                 activity.initMediaSession();
                 activity.initPlaybackNotification();
-            }
 
-            MainActivity.playerManager.setListener(new PlayerManager.Listener() {
-                @Override
-                public void onPlayerChanged(long previousPlaybackMs) {
-                    Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                    if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
-                        MainActivity.playerManager.initializeCurrentPlayer(
-                                currentMediaSourceUrl, previousPlaybackMs, actualClaim, context);
+                MainActivity.playerManager.setListener(new PlayerManager.Listener() {
+                    @Override
+                    public void onPlayerChanged(long previousPlaybackMs) {
+                        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                        if (!Helper.isNullOrEmpty(currentMediaSourceUrl)) {
+                            MainActivity.playerManager.initializeCurrentPlayer(
+                                    currentMediaSourceUrl, previousPlaybackMs, actualClaim, context);
+                        }
+                        setPlayerForPlayerView();
+                        activity.initMediaSession();
+                        activity.initPlaybackNotification();
                     }
-                    setPlayerForPlayerView();
-                    activity.initMediaSession();
-                    activity.initPlaybackNotification();
-                }
-            });
+                });
 
-            newPlayerCreated = true;
+                newPlayerCreated = true;
+            }
         }
 
         Claim claimToPlay = collectionClaimItem != null ? collectionClaimItem : fileClaim;
@@ -4603,7 +4604,16 @@ public class FileViewFragment extends BaseFragment implements
             if (commentChannelSpinner.getAdapter() == null) {
                 commentChannelSpinner.setAdapter(commentChannelSpinnerAdapter);
             }
-            commentChannelSpinner.setSelection(commentChannelSpinnerAdapter.getCount() - 1);
+
+            int adapterCount = commentChannelSpinnerAdapter.getCount();
+
+            if (adapterCount == 1) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.saveSharedUserState();
+                }
+            }
+            commentChannelSpinner.setSelection(adapterCount - 1);
         }
 
         if (commentChannelSpinner != null) {
@@ -5095,180 +5105,198 @@ public class FileViewFragment extends BaseFragment implements
     private void checkWebSocketClient() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if ((webSocketClient == null || webSocketClient.isClosed()) && actualClaim != null && !actualClaim.hasSource()) {
-            String signingChannelShort = String.valueOf(LbryUri.parse(actualClaim.getSigningChannel().getCanonicalUrl()).getClaimId());
-            String livechatUrl = String.format("%s%s", Lbryio.WS_COMMENT_BASE_URL, actualClaim.getClaimId());
-            livechatUrl = livechatUrl.concat("&category=").concat(actualClaim.getSigningChannel().getNormalizedName())
-                                     .concat(":").concat(signingChannelShort)
-                                     .concat("&sub_category=viewer");
-            webSocketClient = new WebSocketClient(new URI(livechatUrl)) {
-                @Override
-                public void onOpen(ServerHandshake handshakedata) { }
+            if (actualClaim.getSigningChannel().getCanonicalUrl() != null) {
+                String signingChannelShort = String.valueOf(LbryUri.parse(actualClaim.getSigningChannel().getCanonicalUrl()).getClaimId());
+                String livechatUrl = String.format("%s%s", Lbryio.WS_COMMENT_BASE_URL, actualClaim.getClaimId());
+                livechatUrl = livechatUrl.concat("&category=").concat(actualClaim.getSigningChannel().getNormalizedName())
+                        .concat(":").concat(signingChannelShort)
+                        .concat("&sub_category=viewer");
+                webSocketClient = new WebSocketClient(new URI(livechatUrl)) {
+                    @Override
+                    public void onOpen(ServerHandshake handshakedata) {
+                    }
 
-                @Override
-                public void onMessage(String message) {
-                    try {
-                        JSONObject json = new JSONObject(message);
-                        String type = Helper.getJSONString("type", null, json);
+                    @Override
+                    public void onMessage(String message) {
+                        try {
+                            JSONObject json = new JSONObject(message);
+                            String type = Helper.getJSONString("type", null, json);
 
-                        if ("delta".equalsIgnoreCase(type) || "viewers".equalsIgnoreCase(type) || "livestream".equalsIgnoreCase(type)) {
-                            JSONObject data = Helper.getJSONObject("data", json);
+                            if ("delta".equalsIgnoreCase(type) || "viewers".equalsIgnoreCase(type) || "livestream".equalsIgnoreCase(type)) {
+                                JSONObject data = Helper.getJSONObject("data", json);
 
-                            Activity a = getActivity();
-                            if (data != null && "delta".equalsIgnoreCase(type)) {
-                                JSONObject commentJson = Helper.getJSONObject("comment", data);
-                                if (commentJson != null) {
-                                    Comment comment = new Comment();
-                                    comment.setHandler(chatMemberClickHandler);
+                                Activity a = getActivity();
+                                if (data != null && "delta".equalsIgnoreCase(type)) {
+                                    JSONObject commentJson = Helper.getJSONObject("comment", data);
+                                    if (commentJson != null) {
+                                        Comment comment = new Comment();
+                                        comment.setHandler(chatMemberClickHandler);
+                                        if (a != null) {
+                                            a.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    comment.setText(Helper.getJSONString("comment", "", commentJson));
+                                                    comment.setChannelId(Helper.getJSONString("channel_id", "", commentJson));
+                                                    comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
+                                                    if (!Helper.isNullOrEmpty(comment.getChannelName())) {
+                                                        if (chatMessageListAdapter == null) {
+                                                            chatMessageListAdapter = new ChatMessageListAdapter(Collections.singletonList(comment), getContext());
+                                                            if (actualClaim.getSigningChannel() != null) {
+                                                                chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
+                                                            }
+                                                            chatMessageList.setAdapter(chatMessageListAdapter);
+                                                        } else {
+                                                            final boolean wasAtBottom = isChatMessageListAtBottom();
+                                                            chatMessageListAdapter.addMessage(comment);
+                                                            if (wasAtBottom) {
+                                                                // only scroll to the end if the scrollview was previously at the bottom
+                                                                ((OdyseeApp) a.getApplication()).getScheduledExecutor().schedule(new Runnable() {
+                                                                    @Override
+                                                                    public void run() {
+                                                                        smoothScrollToLastChatMessage();
+                                                                    }
+                                                                }, 100, TimeUnit.MILLISECONDS);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                } else if (data != null && "viewers".equalsIgnoreCase(type)) {
+                                    int connectedViewers = data.getInt("connected");
+
                                     if (a != null) {
                                         a.runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                comment.setText(Helper.getJSONString("comment", "", commentJson));
-                                                comment.setChannelName(Helper.getJSONString("channel_name", "", commentJson));
-                                                if (!Helper.isNullOrEmpty(comment.getChannelName())) {
-                                                    if (chatMessageListAdapter == null) {
-                                                        chatMessageListAdapter = new ChatMessageListAdapter(Collections.singletonList(comment), getContext());
-                                                        if (actualClaim.getSigningChannel() != null) {
-                                                            chatMessageListAdapter.setStreamerClaimId(actualClaim.getSigningChannel().getClaimId());
-                                                        }
-                                                        chatMessageList.setAdapter(chatMessageListAdapter);
-                                                    } else {
-                                                        final boolean wasAtBottom = isChatMessageListAtBottom();
-                                                        chatMessageListAdapter.addMessage(comment);
-                                                        if (wasAtBottom) {
-                                                            // only scroll to the end if the scrollview was previously at the bottom
-                                                            ((OdyseeApp) a.getApplication()).getScheduledExecutor().schedule(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    smoothScrollToLastChatMessage();
-                                                                }
-                                                            }, 100, TimeUnit.MILLISECONDS);
-                                                        }
+                                                try {
+                                                    Context context = a.getApplicationContext();
+                                                    String displayText = context.getResources().getString(R.string.livestream_view_count, String.valueOf(connectedViewers));
+                                                    View root = getView();
+                                                    if (root != null) {
+                                                        TextView textViewCount = root.findViewById(R.id.file_view_view_count);
+                                                        Helper.setViewText(textViewCount, displayText);
+                                                        Helper.setViewVisibility(textViewCount, View.VISIBLE);
                                                     }
+                                                    if (livestreamStartingMillis != 0) {
+                                                        updatePublishTime(null, null);
+                                                    } else { // Broadcast has not started or has finished
+                                                        updatePublishTime((Claim.StreamMetadata) actualClaim.getValue(), actualClaim);
+                                                    }
+                                                } catch (IllegalStateException ex) {
+                                                    ex.printStackTrace();
                                                 }
                                             }
                                         });
                                     }
-                                }
-                            } else if (data != null && "viewers".equalsIgnoreCase(type)) {
-                                int connectedViewers = data.getInt("connected");
+                                } else if (data != null && "livestream".equalsIgnoreCase(type)) {
+                                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+                                    String liveTime = data.getString("live_time");
+                                    String endTime = data.getString("end_time");
 
-                                if (a != null) {
-                                    a.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            try {
-                                                Context context = a.getApplicationContext();
-                                                String displayText = context.getResources().getString(R.string.livestream_view_count, String.valueOf(connectedViewers));
-                                                View root = getView();
-                                                if (root != null) {
-                                                    TextView textViewCount = root.findViewById(R.id.file_view_view_count);
-                                                    Helper.setViewText(textViewCount, displayText);
-                                                    Helper.setViewVisibility(textViewCount, View.VISIBLE);
-                                                }
-                                                if (livestreamStartingMillis != 0) {
-                                                    updatePublishTime(null, null);
-                                                } else { // Broadcast has not started or has finished
-                                                    updatePublishTime((Claim.StreamMetadata) actualClaim.getValue(), actualClaim);
-                                                }
-                                            } catch (IllegalStateException ex) {
-                                                ex.printStackTrace();
+                                    if (a != null) {
+                                        ZonedDateTime zonedEnd = ZonedDateTime.parse(endTime, dtf);
+                                        ZonedDateTime zonedStart = ZonedDateTime.parse(liveTime, dtf);
+
+                                        if (zonedEnd != null && zonedStart != null) {
+                                            OdyseeApp app = (OdyseeApp) a.getApplication();
+
+                                            Date timeNow = new Date();
+
+                                            long millisecondsEnd = zonedEnd.toInstant().toEpochMilli();
+                                            long deltaEnd = millisecondsEnd - timeNow.getTime();
+
+                                            if (deltaEnd > 0) {
+                                                scheduledStopPlaying = app.getScheduledExecutor().schedule(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        a.runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                MainActivity.playerManager.getCurrentPlayer().stop();
+                                                                livestreamStartingMillis = 0;
+                                                                renderPublisherNotBroadcasting(actualClaim);
+                                                            }
+                                                        });
+                                                    }
+                                                }, deltaEnd, TimeUnit.MILLISECONDS);
                                             }
-                                        }
-                                    });
-                                }
-                            } else if (data != null && "livestream".equalsIgnoreCase(type)) {
-                                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
-                                String liveTime = data.getString("live_time");
-                                String endTime = data.getString("end_time");
 
-                                if (a != null) {
-                                    ZonedDateTime zonedEnd = ZonedDateTime.parse(endTime, dtf);
-                                    ZonedDateTime zonedStart = ZonedDateTime.parse(liveTime, dtf);
+                                            long millisecondsStart = zonedStart.toInstant().toEpochMilli();
+                                            livestreamStartingMillis = millisecondsStart;
+                                            updatePublishTime(null, null);
+                                            long deltaStart = millisecondsStart - timeNow.getTime();
 
-                                    if (zonedEnd != null && zonedStart != null) {
-                                        OdyseeApp app = (OdyseeApp) a.getApplication();
-
-                                        Date timeNow = new Date();
-
-                                        long millisecondsEnd = zonedEnd.toInstant().toEpochMilli();
-                                        long deltaEnd = millisecondsEnd - timeNow.getTime();
-
-                                        if (deltaEnd > 0) {
-                                            scheduledStopPlaying = app.getScheduledExecutor().schedule(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    a.runOnUiThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            MainActivity.playerManager.getCurrentPlayer().stop();
-                                                            livestreamStartingMillis = 0;
-                                                            renderPublisherNotBroadcasting(actualClaim);
-                                                        }
-                                                    });
-                                                }
-                                            }, deltaEnd, TimeUnit.MILLISECONDS);
-                                        }
-
-                                        long millisecondsStart = zonedStart.toInstant().toEpochMilli();
-                                        livestreamStartingMillis = millisecondsStart;
-                                        updatePublishTime(null, null);
-                                        long deltaStart = millisecondsStart - timeNow.getTime();
-
-                                        if (deltaStart > 0) {
-                                            scheduledStartPlaying = app.getScheduledExecutor().schedule(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    a.runOnUiThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            JSONObject jsonResult = jsonData.get(fileClaim.getSigningChannel().getClaimId());
-                                                            if (jsonResult != null && jsonResult.has("VideoURL")) {
-                                                                try {
-                                                                    claimLivestreamUrl = jsonResult.getString("VideoURL");
-                                                                    renderPublisherBroadcasting();
-                                                                    playMedia();
-                                                                } catch (JSONException e) {
-                                                                    e.printStackTrace();
+                                            if (deltaStart > 0) {
+                                                scheduledStartPlaying = app.getScheduledExecutor().schedule(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        a.runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                JSONObject jsonResult = jsonData.get(fileClaim.getSigningChannel().getClaimId());
+                                                                if (jsonResult != null && jsonResult.has("VideoURL")) {
+                                                                    try {
+                                                                        claimLivestreamUrl = jsonResult.getString("VideoURL");
+                                                                        renderPublisherBroadcasting();
+                                                                        playMedia();
+                                                                    } catch (JSONException e) {
+                                                                        e.printStackTrace();
+                                                                    }
                                                                 }
                                                             }
-                                                        }
-                                                    });
-                                                }
-                                            }, deltaStart, TimeUnit.MILLISECONDS);
+                                                        });
+                                                    }
+                                                }, deltaStart, TimeUnit.MILLISECONDS);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    } catch (JSONException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onClose(int code, String reason, boolean remote) {
-                    Context context = getContext();
-                    if (context instanceof MainActivity) {
-                        MainActivity activity = (MainActivity) context;
-                        if (!activity.isShuttingDown() && !leavingFileView) {
-                            // attempt to re-establish the connection if the app isn't being closed
-                            checkWebSocketClient();
+                        } catch (JSONException ex) {
+                            ex.printStackTrace();
                         }
                     }
-                }
 
-                @Override
-                public void onError(Exception ex) { }
-
-                protected void onSetSSLParameters(SSLParameters sslParameters) {
-                    // don't call setEndpointIdentificationAlgorithm for API level < 24
-                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                    @Override
+                    public void onClose(int code, String reason, boolean remote) {
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            MainActivity activity = (MainActivity) context;
+                            if (!activity.isShuttingDown() && !leavingFileView) {
+                                // attempt to re-establish the connection if the app isn't being closed
+                                checkWebSocketClient();
+                            }
+                        }
                     }
-                }
-            };
-            webSocketClient.connect();
+
+                    @Override
+                    public void onError(Exception ex) {
+                    }
+
+                    protected void onSetSSLParameters(SSLParameters sslParameters) {
+                        // don't call setEndpointIdentificationAlgorithm for API level < 24
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                        }
+                    }
+                };
+                webSocketClient.connect();
+            } else {
+                String url = actualClaim.getSigningChannel().getPermanentUrl();
+                ResolveTask task = new ResolveTask(url, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
+                    @Override
+                    public void onSuccess(List<Claim> claims) {
+                        actualClaim.setSigningChannel(claims.get(0));
+                        checkWebSocketClient();
+                    }
+
+                    @Override
+                    public void onError(Exception error) { }
+                });
+                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
         }
     }
 

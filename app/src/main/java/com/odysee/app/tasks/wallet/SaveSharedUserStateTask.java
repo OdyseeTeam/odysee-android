@@ -190,7 +190,16 @@ public class SaveSharedUserStateTask extends AsyncTask<Void, Void, Boolean> {
                     if (settings != null) {
                         AccountManager am = AccountManager.get(context);
                         String channelName = am.getUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name");
-                        List<Claim> filteredClaim = Lbry.ownChannels.stream().filter(c -> c.getName().equalsIgnoreCase(channelName)).collect(Collectors.toList());
+
+                        // If default channel name has not yet been set and there is only a single channel, set it as the default one
+                        if (channelName == null && Lbry.ownChannels.size() == 1) {
+                            channelName = Lbry.ownChannels.get(0).getName();
+                            am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", channelName);
+                        }
+
+                        String finalChannelName = channelName;
+                        List<Claim> filteredClaim = Lbry.ownChannels.stream().filter(c -> c.getName().equalsIgnoreCase(finalChannelName)).collect(Collectors.toList());
+
                         if (filteredClaim.size() == 1) {
                             settings.put("active_channel_claim", filteredClaim.get(0).getClaimId());
                         }
