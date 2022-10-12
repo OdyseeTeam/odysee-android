@@ -1035,6 +1035,7 @@ public class FileViewFragment extends BaseFragment implements
                 if (playerView.getPlayer() == null) {
                     playerView.setPlayer(MainActivity.playerManager.getCurrentPlayer());
                 }
+                updateQualityView();
             }
 
             loadAndScheduleDurations();
@@ -1577,7 +1578,7 @@ public class FileViewFragment extends BaseFragment implements
             public void onVisibilityChanged(int visibility) {
                 if (visibility == View.VISIBLE) {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.VISIBLE);
-                    ((TextView)playbackQuality).setText(AUTO_QUALITY_STRING);
+                    updateQualityView();
                } else {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.GONE);
                }
@@ -1959,6 +1960,14 @@ public class FileViewFragment extends BaseFragment implements
                 params.remove("source");
                 setParams(params);
             }
+        }
+    }
+
+    private void updateQualityView() {
+        if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
+            ((TextView) playbackQuality).setText(AUTO_QUALITY_STRING);
+        } else {
+            ((TextView) playbackQuality).setText(String.format("%sp", MainActivity.videoQuality));
         }
     }
 
@@ -2664,7 +2673,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private void setPlayerQuality(Player player, int quality) {
         for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
-            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
+            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) {
+                continue;
+            }
 
             if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
                 player.setTrackSelectionParameters(
@@ -2683,6 +2694,7 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             MainActivity.videoQuality = quality;
+            updateQualityView();
             break;
         }
     }

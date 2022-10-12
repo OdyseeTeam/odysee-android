@@ -185,6 +185,7 @@
                         android:letterSpacing="0.05"
                         android:padding="16dp"
                         android:singleLine="true"
+                        android:text="@string/auto_quality"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold" />
