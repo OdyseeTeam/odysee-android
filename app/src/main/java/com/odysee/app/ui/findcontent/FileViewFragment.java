@@ -1852,7 +1852,7 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 if (seekOverlayHandler == null) {
-                    seekOverlayHandler = new Handler();
+                    seekOverlayHandler = new Handler(Looper.getMainLooper());
                 } else {
                     seekOverlayHandler.removeCallbacksAndMessages(null); // Clear pending messages
                 }
