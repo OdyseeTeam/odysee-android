@@ -1541,43 +1541,47 @@ public class FileViewFragment extends BaseFragment implements
         StyledPlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
 
         Context context = getContext();
+
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.playerMediaRouteButton = mediaRouteButton;
+
+            if (activity.mediaRouteButtonVisible) {
+                activity.playerMediaRouteButton.setVisibility(View.VISIBLE);
+            }
+
+            activity.getCastHelper().setUpCastButton(activity.playerMediaRouteButton);
+        }
+
+        playbackQuality.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openContextMenu(playbackQuality);
+                }
+            }
+        });
+
+        playbackQuality.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+            @Override
+            public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+                if (MainActivity.playerManager != null) {
+                    Helper.buildQualityMenu(contextMenu, MainActivity.playerManager.getCurrentPlayer(), MainActivity.videoIsTranscoded);
+                }
+            }
+        });
+
         playerView.setControllerVisibilityListener(new StyledPlayerView.ControllerVisibilityListener() {
             @Override
             public void onVisibilityChanged(int visibility) {
                 if (visibility == View.VISIBLE) {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.VISIBLE);
-                    MainActivity activity = (MainActivity) context;
-                    if (activity != null) {
-                        activity.playerMediaRouteButton = mediaRouteButton;
-                        if (activity.mediaRouteButtonVisible) {
-                            activity.playerMediaRouteButton.setVisibility(View.VISIBLE);
-                        }
-                        activity.getCastHelper().setUpCastButton(activity.playerMediaRouteButton);
-                    }
-
                     ((TextView)playbackQuality).setText(AUTO_QUALITY_STRING);
-
-                    playbackQuality.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-                        @Override
-                        public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-                            if (MainActivity.playerManager != null) {
-                                Helper.buildQualityMenu(contextMenu, MainActivity.playerManager.getCurrentPlayer(), MainActivity.videoIsTranscoded);
-                            }
-                        }
-                    });
-                    playbackQuality.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            Context context = getContext();
-                            if (context instanceof MainActivity) {
-                                ((MainActivity) context).openContextMenu(playbackQuality);
-                            }
-                        }
-                    });
-                } else {
+               } else {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.GONE);
-                }
-            }
+               }
+             }
         });
 
         playerView.setFullscreenButtonClickListener(new StyledPlayerView.FullscreenButtonClickListener() {
