@@ -315,6 +315,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static boolean startingPermissionRequest = false;
     public static final boolean startingSignInFlowActivity = false;
 
+
+    // NOTE: This is only used for building a dynamic "Now Playing" queue.
+    // Regular playlists should NEVER be assigned to this.
+    public static OdyseeCollection nowPlayingQueue;
+
+    // This is different from nowPlayingQueue, as we use this to determine what is displayed
+    // in the overlay containing playlist items, which is contained in the main activity layout.
+    private OdyseeCollection currentQueue;
+
     @Getter
     private boolean userInstallInitialised;
     @Getter
@@ -5180,6 +5189,24 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Map<String, Object> params = new HashMap<>();
         params.put("collectionId", playlistId);
         openFragment(PlaylistFragment.class, true, params);
+    }
+
+    public void addToNowPlaying(Claim claim) {
+        boolean isNewQueue = false;
+        if (nowPlayingQueue == null) {
+            nowPlayingQueue = new OdyseeCollection();
+            nowPlayingQueue.setId(OdyseeCollection.PLACEHOLDER_ID_NOW_PLAYING);
+            nowPlayingQueue.setName(getString(R.string.now_playing));
+            isNewQueue = true;
+        }
+
+        nowPlayingQueue.addClaim(claim);
+
+        if (isNewQueue) {
+            // we need to navigate to FileViewFragment in this instance
+        } else {
+            // otherwise, refresh the playlist items display
+        }
     }
 
     public void handleAddUrlToList(String url, String builtInId) {

@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 public class OdyseeCollection {
     public static final String PLACEHOLDER_ID_NEW = "__new";
+    public static final String PLACEHOLDER_ID_NOW_PLAYING = "__now_playing";
     public static final String BUILT_IN_ID_FAVORITES = "favorites";
     public static final String BUILT_IN_ID_WATCHLATER = "watchlater";
 
@@ -42,6 +43,13 @@ public class OdyseeCollection {
     public OdyseeCollection() {
         items = new ArrayList<>();
         updatedAt = new Date();
+    }
+
+    public void addClaim(Claim claim) {
+        if (claims == null) {
+            claims = new ArrayList<>();
+        }
+        claims.add(claim);
     }
 
     public void addItem(Item item, boolean update) {

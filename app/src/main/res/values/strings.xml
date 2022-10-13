@@ -100,6 +100,7 @@
     <string name="load_blocked_failed">The list of blocked channels could not be loaded at this time. Please try again later.</string>
     <string name="load_muted_failed">The list of muted channels could not be loaded at this time. Please try again later.</string>
 
+    <string name="now_playing">Now Playing</string>
     <string name="watch_later">Watch Later</string>
     <string name="favorites">Favorites</string>
     <string name="add_to_lists">Add to Lists</string>
