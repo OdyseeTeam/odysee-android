@@ -40,6 +40,8 @@ public class OdyseeCollection {
     private String claimName;
     private String permanentUrl;
 
+    private int currentlyPlayingIndex;
+
     public OdyseeCollection() {
         items = new ArrayList<>();
         updatedAt = new Date();
@@ -131,6 +133,13 @@ public class OdyseeCollection {
             items.add(new Item(thisItemString, ++itemOrder));
         }
         this.items = new ArrayList<>(items);
+    }
+
+    public Claim getCurrentlyPlayingClaim() {
+        if (claims != null && claims.size() > currentlyPlayingIndex) {
+            return claims.get(currentlyPlayingIndex);
+        }
+        return null;
     }
 
     public static OdyseeCollection createPrivatePlaylist(String title) {

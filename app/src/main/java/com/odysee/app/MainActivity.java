@@ -121,6 +121,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
@@ -318,11 +319,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // NOTE: This is only used for building a dynamic "Now Playing" queue.
     // Regular playlists should NEVER be assigned to this.
-    public static OdyseeCollection nowPlayingQueue;
+    public static OdyseeCollection nowPlayingQueuePlaylist;
 
     // This is different from nowPlayingQueue, as we use this to determine what is displayed
     // in the overlay containing playlist items, which is contained in the main activity layout.
-    private OdyseeCollection currentQueue;
+    private OdyseeCollection currentPlaylist;
+
+    private ClaimListAdapter playlistOverlayItemsAdapter;
+    private RecyclerView playlistOverlayItemsList;
+    @Getter
+    private int playlistOverlayState;
+    private int lastPlaylistOverlayState;
+
+    public static final int PLAYLIST_OVERLAY_STATE_HIDDEN = 0;
+    public static final int PLAYLIST_OVERLAY_STATE_MINIMIZED = 1;
+    public static final int PLAYLIST_OVERLAY_STATE_MAXIMIZED = 2;
 
     @Getter
     private boolean userInstallInitialised;
@@ -1313,6 +1324,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         accountManager = AccountManager.get(this);
+
+        initPlaylistOverlay();
     }
 
     public static DatabaseHelper getDatabaseHelper() {
@@ -5193,14 +5206,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void addToNowPlaying(Claim claim) {
         boolean isNewQueue = false;
-        if (nowPlayingQueue == null) {
-            nowPlayingQueue = new OdyseeCollection();
-            nowPlayingQueue.setId(OdyseeCollection.PLACEHOLDER_ID_NOW_PLAYING);
-            nowPlayingQueue.setName(getString(R.string.now_playing));
+        if (nowPlayingQueuePlaylist == null) {
+            nowPlayingQueuePlaylist = new OdyseeCollection();
+            nowPlayingQueuePlaylist.setId(OdyseeCollection.PLACEHOLDER_ID_NOW_PLAYING);
+            nowPlayingQueuePlaylist.setName(getString(R.string.now_playing));
             isNewQueue = true;
         }
 
-        nowPlayingQueue.addClaim(claim);
+        nowPlayingQueuePlaylist.addClaim(claim);
 
         if (isNewQueue) {
             // we need to navigate to FileViewFragment in this instance
@@ -5616,6 +5629,165 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void resetCurrentDisplayFragment() {
         currentDisplayFragment = null;
+    }
+
+    public void setCurrentPlaylist(OdyseeCollection collection) {
+        this.currentPlaylist = collection;
+        didSetCurrentPlaylist();
+    }
+
+    public void setCurrentPlaylistIndex(int index) {
+        if (this.currentPlaylist != null) {
+            this.currentPlaylist.setCurrentlyPlayingIndex(index);
+        }
+        didSetCurrentPlaylistIndex();
+    }
+
+    public void addItemToNowPlayingQueue(Claim claim) {
+        if (claim == null || claim.isChannel()) {
+            return;
+        }
+    }
+
+    private void initPlaylistOverlay() {
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        playlistOverlayItemsList = findViewById(R.id.playlist_overlay_playlist_items);
+
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        playlistOverlayItemsList.setLayoutManager(llm);
+
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                maximizePlaylistOverlay();
+            }
+        });
+
+        playlistLayout.findViewById(R.id.playlist_layout_close).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                minimizePlaylistOverlay();
+            }
+        });
+
+        lastPlaylistOverlayState = -1;
+    }
+
+    private void didSetCurrentPlaylist() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        // update the playlist view
+        Claim currentPlaylistItem = currentPlaylist.getCurrentlyPlayingClaim();
+
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        TextView playlistSummaryCurrentlyPlaying = playlistLayout.findViewById(R.id.playlist_summary_now_playing);
+        TextView playlistSummaryTitle = playlistLayout.findViewById(R.id.playlist_summary_playlist_title);
+        TextView playlistOverlayTitle = playlistLayout.findViewById(R.id.playlist_overlay_title);
+
+        playlistSummaryCurrentlyPlaying.setText(currentPlaylistItem != null ? currentPlaylistItem.getTitle() : null);
+        playlistSummaryTitle.setText(currentPlaylist.getName());
+        playlistOverlayTitle.setText(currentPlaylist.getName());
+
+        playlistOverlayItemsAdapter = new ClaimListAdapter(currentPlaylist.getClaims(), ClaimListAdapter.STYLE_SMALL_LIST, this);
+        playlistOverlayItemsAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+            @Override
+            public void onClaimClicked(Claim claim, int position) {
+                Fragment fragment = getCurrentFragment();
+                if (fragment instanceof FileViewFragment) {
+                    ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
+                }
+            }
+        });
+        playlistOverlayItemsList.setAdapter(playlistOverlayItemsAdapter);
+
+        checkIfPlaylistOverlayShouldDisplay();
+    }
+
+    private void didSetCurrentPlaylistIndex() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        Claim currentPlaylistItem = currentPlaylist.getCurrentlyPlayingClaim();
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        TextView playlistOverlayTitle = playlistLayout.findViewById(R.id.playlist_overlay_title);
+        TextView playlistSummaryCurrentlyPlaying = playlistLayout.findViewById(R.id.playlist_summary_now_playing);
+
+        playlistSummaryCurrentlyPlaying.setText(currentPlaylistItem != null ? currentPlaylistItem.getTitle() : null);
+
+        String value = getString(R.string.playlist_position_tracker,
+                currentPlaylist.getName(),
+                String.valueOf(currentPlaylist.getCurrentlyPlayingIndex() + 1),
+                String.valueOf(currentPlaylist.getClaims().size()));
+
+        playlistOverlayTitle.setText(value);
+    }
+
+    public void checkIfPlaylistOverlayShouldDisplay() {
+        Fragment fragment = getCurrentFragment();
+        boolean inFileView = fragment instanceof FileViewFragment;
+        if (!inFileView) {
+            return;
+        }
+
+        if (playlistOverlayState != PLAYLIST_OVERLAY_STATE_MAXIMIZED && playlistOverlayState != PLAYLIST_OVERLAY_STATE_MINIMIZED) {
+            switch (lastPlaylistOverlayState) {
+                case PLAYLIST_OVERLAY_STATE_MAXIMIZED: default: maximizePlaylistOverlay(); break;
+                case PLAYLIST_OVERLAY_STATE_MINIMIZED: minimizePlaylistOverlay(); break;
+            }
+        }
+    }
+
+    public void maximizePlaylistOverlay() {
+        if (playlistOverlayState == PLAYLIST_OVERLAY_STATE_MAXIMIZED) {
+            return;
+        }
+
+        // TODO: Bottom-sheet animate upwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) playlistLayout.getLayoutParams();
+        layoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.setMargins(0, getScaledValue(240), 0, 0);
+
+        playlistLayout.setVisibility(View.VISIBLE);
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setVisibility(View.GONE);
+        playlistLayout.findViewById(R.id.playlist_overlay_card_layout).setVisibility(View.VISIBLE);
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_MAXIMIZED;
+    }
+
+    public void minimizePlaylistOverlay() {
+        if (playlistOverlayState == PLAYLIST_OVERLAY_STATE_MINIMIZED) {
+            return;
+        }
+
+        // TODO: Bottom-sheet animate downwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) playlistLayout.getLayoutParams();
+        layoutParams.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.setMargins(0, 0, 0, 0);
+
+        playlistLayout.setVisibility(View.VISIBLE);
+        playlistLayout.findViewById(R.id.playlist_overlay_card_layout).setVisibility(View.GONE);
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setVisibility(View.VISIBLE);
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_MINIMIZED;
+    }
+
+    public void hidePlaylistOverlay() {
+        // TODO: Animate downwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        playlistLayout.setVisibility(View.GONE);
+        lastPlaylistOverlayState = playlistOverlayState;
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_HIDDEN;
+    }
+
+    public void clearCurrentPlaylist() {
+        hidePlaylistOverlay();
+        currentPlaylist = null;
+        lastPlaylistOverlayState = -1;
     }
 
     @Override

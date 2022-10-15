@@ -67,6 +67,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
      */
     @Setter
     private boolean longClickForContextMenu;
+    @Getter
+    @Setter
+    private boolean inPlaylistOverlay;
 
     @Getter
     @Setter

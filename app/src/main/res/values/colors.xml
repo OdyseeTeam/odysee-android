@@ -29,10 +29,10 @@
     <color name="backgroundTextArea">#F1F1F1</color>
 
     <color name="odyseePink">#E50054</color>
+    <color name="odyseePinkLight">#FAC8C7</color>
     <color name="odyseePinkSemiTransparent">#33E50054</color>
     <color name="tagPink">#44E50054</color>
     <color name="tagGrape">#77F255DA</color>
-
     <color name="divider">#DFDFDF</color>
     <color name="lightDivider">#F1F1F1</color>
 
