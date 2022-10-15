@@ -5747,6 +5747,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void checkIfPlaylistOverlayShouldDisplay() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
         Fragment fragment = getCurrentFragment();
         boolean inFileView = fragment instanceof FileViewFragment;
         if (!inFileView) {

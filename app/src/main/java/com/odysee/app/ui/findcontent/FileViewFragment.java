@@ -3664,6 +3664,10 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             activity.clearCurrentPlaylist();
+            collectionClaimItem = null;
+            playlistClaims = new ArrayList<>();
+            playlistResolved = false;
+
             activity.openFileUrl(claimItem.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
         }
     }
@@ -3688,6 +3692,11 @@ public class FileViewFragment extends BaseFragment implements
 
                     if (ctx instanceof MainActivity) {
                         MainActivity activity = (MainActivity) ctx;
+                        activity.clearCurrentPlaylist();
+                        collectionClaimItem = null;
+                        playlistClaims = new ArrayList<>();
+                        playlistResolved = false;
+
                         if (claim.getName().startsWith("@")) {
                             activity.openChannelClaim(claim);
                         } else {
