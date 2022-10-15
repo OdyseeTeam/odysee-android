@@ -167,6 +167,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -330,6 +331,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private int playlistOverlayState;
     private int lastPlaylistOverlayState;
+    @Getter
+    private boolean playlistLoopEnabled;
 
     public static final int PLAYLIST_OVERLAY_STATE_HIDDEN = 0;
     public static final int PLAYLIST_OVERLAY_STATE_MINIMIZED = 1;
@@ -5663,6 +5666,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
 
+        playlistLayout.findViewById(R.id.playlist_control_loop).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                togglePlaylistLoopEnabled();
+            }
+        });
+
+        playlistLayout.findViewById(R.id.playlist_control_shuffle).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                performPlaylistShuffle();
+            }
+        });
+
         playlistLayout.findViewById(R.id.playlist_layout_close).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -5671,6 +5688,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         lastPlaylistOverlayState = -1;
+    }
+
+    private void initPlaylistOverlayAdapter(List<Claim> claims) {
+        playlistOverlayItemsAdapter = new ClaimListAdapter(claims, ClaimListAdapter.STYLE_SMALL_LIST, this);
+        playlistOverlayItemsAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+            @Override
+            public void onClaimClicked(Claim claim, int position) {
+                Fragment fragment = getCurrentFragment();
+                if (fragment instanceof FileViewFragment) {
+                    ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
+                }
+            }
+        });
+        playlistOverlayItemsList.setAdapter(playlistOverlayItemsAdapter);
     }
 
     private void didSetCurrentPlaylist() {
@@ -5690,17 +5721,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         playlistSummaryTitle.setText(currentPlaylist.getName());
         playlistOverlayTitle.setText(currentPlaylist.getName());
 
-        playlistOverlayItemsAdapter = new ClaimListAdapter(currentPlaylist.getClaims(), ClaimListAdapter.STYLE_SMALL_LIST, this);
-        playlistOverlayItemsAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-            @Override
-            public void onClaimClicked(Claim claim, int position) {
-                Fragment fragment = getCurrentFragment();
-                if (fragment instanceof FileViewFragment) {
-                    ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
-                }
-            }
-        });
-        playlistOverlayItemsList.setAdapter(playlistOverlayItemsAdapter);
+        initPlaylistOverlayAdapter(currentPlaylist.getClaims());
 
         checkIfPlaylistOverlayShouldDisplay();
     }
@@ -5788,6 +5809,37 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         hidePlaylistOverlay();
         currentPlaylist = null;
         lastPlaylistOverlayState = -1;
+    }
+
+    private void performPlaylistShuffle() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        Fragment fragment = getCurrentFragment();
+        if (fragment instanceof FileViewFragment) {
+            FileViewFragment fvFragment = (FileViewFragment) fragment;
+
+            // make sure that we have the same collection reference before shuffling
+            if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
+                // do the shuffle
+                List<Claim> currentClaims = currentPlaylist.getClaims();
+                Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
+                currentPlaylist.setClaims(currentClaims);
+                initPlaylistOverlayAdapter(currentPlaylist.getClaims());
+
+                // update the fragment and play from the beginning
+                fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
+                fvFragment.playFirstItemInCollection();
+            }
+        }
+    }
+
+    private void togglePlaylistLoopEnabled() {
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        View loopOnceIndicator = playlistLayout.findViewById(R.id.playlist_loop_indicator);
+        playlistLoopEnabled = !playlistLoopEnabled;
+        loopOnceIndicator.setVisibility(playlistLoopEnabled ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override

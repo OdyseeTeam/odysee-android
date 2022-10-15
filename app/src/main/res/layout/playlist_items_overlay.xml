@@ -139,40 +139,51 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="4dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="8dp"
                 android:id="@+id/playlist_overlay_controls">
                 <RelativeLayout
                     android:id="@+id/playlist_control_loop"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_marginStart="8dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:background="?attr/selectableItemBackground">
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:layout_centerInParent="true"
                         android:src="@drawable/ic_loop"
-                        app:tint="@color/foreground"
+                        app:tint="@color/foreground" />
+                    <TextView
+                        android:id="@+id/playlist_loop_indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:fontFamily="@font/inter"
+                        android:text="@string/one"
+                        android:textSize="8sp"
+                        android:textColor="@color/foreground"
+                        android:visibility="gone"
                         />
                 </RelativeLayout>
 
                 <RelativeLayout
                     android:id="@+id/playlist_control_shuffle"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_marginStart="8dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:background="?attr/selectableItemBackground">
+
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:layout_centerInParent="true"
                         android:src="@drawable/ic_shuffle"
-                        app:tint="@color/foreground"
-                        />
+                        app:tint="@color/foreground" />
                 </RelativeLayout>
             </androidx.appcompat.widget.LinearLayoutCompat>
 

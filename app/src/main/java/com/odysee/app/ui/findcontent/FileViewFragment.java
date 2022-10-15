@@ -225,6 +225,8 @@ import com.odysee.app.views.MediaRelativeLayout;
 
 import javax.net.ssl.SSLParameters;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -290,6 +292,8 @@ public class FileViewFragment extends BaseFragment implements
 
     private View tipButton;
     private boolean playlistResolved;
+
+    @Setter
     private List<Claim> playlistClaims = new ArrayList<>();
 
     private WebView webView;
@@ -362,6 +366,8 @@ public class FileViewFragment extends BaseFragment implements
     private Map<String, JSONObject> jsonData;
 
     private Comment.CommenterClickHandler chatMemberClickHandler;
+    @Getter
+    private String currentCollectionId;
 
     // Playlist items pseudo-pagination
     int playlistPos = 0, oldPlaylistPos = 0;
@@ -537,6 +543,12 @@ public class FileViewFragment extends BaseFragment implements
                 int nextIndex = collectionClaimIndex + 1;
                 if (nextIndex < playlistClaims.size() - 1) {
                     playClaimFromCollection(playlistClaims.get(nextIndex), nextIndex);
+                } else {
+                    // looks like we're at the last item, check if loop is enabled
+                    Context context = getContext();
+                    if (context instanceof MainActivity && ((MainActivity) context).isPlaylistLoopEnabled()) {
+                        playFirstItemInCollection();
+                    }
                 }
             }
         }
@@ -565,6 +577,7 @@ public class FileViewFragment extends BaseFragment implements
         OdyseeCollection collection = (OdyseeCollection) params.get("collection");
         playlistClaims = new ArrayList< >(collection.getClaims());
         playlistResolved = true;
+        currentCollectionId = collection.getId();
         currentPlaylistTitle = collection.getName();
 
         Context context = getContext();
@@ -3243,6 +3256,7 @@ public class FileViewFragment extends BaseFragment implements
                             if (playlistClaims.size() > 0) {
                                 OdyseeCollection collection = OdyseeCollection.fromClaim(fileClaim, new ArrayList<>());
                                 collection.setClaims(playlistClaims);
+                                currentCollectionId = collection.getId();
 
                                 Context context = getContext();
                                 if (context instanceof MainActivity) {
@@ -3526,6 +3540,12 @@ public class FileViewFragment extends BaseFragment implements
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         Intent chooser = Intent.createChooser(intent, getString(R.string.choose_app));
         startActivityForResult(chooser, 419);
+    }
+
+    public void playFirstItemInCollection() {
+        if (playlistClaims.size() > 0) {
+            playClaimFromCollection(playlistClaims.get(0), 0);
+        }
     }
 
     private void playClaimFromCollection(Claim theClaim, int index) {
