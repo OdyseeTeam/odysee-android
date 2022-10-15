@@ -729,7 +729,7 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(actualClaim.getType())) {
                     // We don't want to save actual collections to the view history
-                    Helper.saveViewHistory(currentUrl, actualClaim);
+                    Helper.saveViewHistory(actualClaim.getUnifiedUrl(), actualClaim);
                 }
 
                 CustomBlockRule.CustomBlockStatus status = null;
@@ -1319,7 +1319,7 @@ public class FileViewFragment extends BaseFragment implements
                     // do not save collections to view history
                     if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getType())) {
                         // also save view history
-                        Helper.saveViewHistory(url, fileClaim);
+                        Helper.saveViewHistory(fileClaim.getUnifiedUrl(), fileClaim);
                     }
 
                     CustomBlockRule.CustomBlockStatus status = null;
@@ -3554,7 +3554,7 @@ public class FileViewFragment extends BaseFragment implements
 
         // Save to view history, when playing from a collection
         if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(theClaim.getType())) {
-            Helper.saveViewHistory(theClaim.getPermanentUrl(), theClaim);
+            Helper.saveViewHistory(theClaim.getUnifiedUrl(), theClaim);
         }
 
         Context context = getContext();

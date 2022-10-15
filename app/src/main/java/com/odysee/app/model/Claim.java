@@ -575,6 +575,18 @@ public class Claim implements ItemOrderSortable {
         return TYPE_CHANNEL.equalsIgnoreCase(valueType);
     }
 
+    public String getUnifiedUrl() {
+        String url = getShortUrl();
+        if (Helper.isNullOrEmpty(url)) {
+            url = getCanonicalUrl();
+        }
+        if (Helper.isNullOrEmpty(url)) {
+            url = getPermanentUrl();
+        }
+
+        return url;
+    }
+
     @Data
     public static class Meta {
         private long activationHeight;
