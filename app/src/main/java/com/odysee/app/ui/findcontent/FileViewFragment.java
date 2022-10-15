@@ -225,6 +225,8 @@ import com.odysee.app.views.MediaRelativeLayout;
 
 import javax.net.ssl.SSLParameters;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -290,6 +292,8 @@ public class FileViewFragment extends BaseFragment implements
 
     private View tipButton;
     private boolean playlistResolved;
+
+    @Setter
     private List<Claim> playlistClaims = new ArrayList<>();
 
     private WebView webView;
@@ -362,6 +366,8 @@ public class FileViewFragment extends BaseFragment implements
     private Map<String, JSONObject> jsonData;
 
     private Comment.CommenterClickHandler chatMemberClickHandler;
+    @Getter
+    private String currentCollectionId;
 
     // Playlist items pseudo-pagination
     int playlistPos = 0, oldPlaylistPos = 0;
@@ -537,6 +543,12 @@ public class FileViewFragment extends BaseFragment implements
                 int nextIndex = collectionClaimIndex + 1;
                 if (nextIndex < playlistClaims.size() - 1) {
                     playClaimFromCollection(playlistClaims.get(nextIndex), nextIndex);
+                } else {
+                    // looks like we're at the last item, check if loop is enabled
+                    Context context = getContext();
+                    if (context instanceof MainActivity && ((MainActivity) context).isPlaylistLoopEnabled()) {
+                        playFirstItemInCollection();
+                    }
                 }
             }
         }
@@ -565,15 +577,12 @@ public class FileViewFragment extends BaseFragment implements
         OdyseeCollection collection = (OdyseeCollection) params.get("collection");
         playlistClaims = new ArrayList<>(collection.getClaims());
         playlistResolved = true;
+        currentCollectionId = collection.getId();
         currentPlaylistTitle = collection.getName();
 
-        relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
-        relatedContentAdapter.setListener(FileViewFragment.this);
-
-        View root = getView();
-        if (root != null) {
-            RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
-            relatedContentList.setAdapter(relatedContentAdapter);
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).setCurrentPlaylist(collection);
         }
 
         if (playlistClaims.size() > 0) {
@@ -583,13 +592,6 @@ public class FileViewFragment extends BaseFragment implements
             } else {
                 playClaimFromCollection(playlistClaims.get(0), 0);
             }
-        }
-    }
-
-    private void updatePlaylistContentDisplay(int index) {
-        if (playlistClaims != null) {
-            String value = getString(R.string.playlist_position_tracker, currentPlaylistTitle, String.valueOf(index + 1), String.valueOf(playlistClaims.size()));
-            Helper.setViewText(relatedContentTitle, value);
         }
     }
 
@@ -715,7 +717,7 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(actualClaim.getType())) {
                     // We don't want to save actual collections to the view history
-                    Helper.saveViewHistory(currentUrl, actualClaim);
+                    Helper.saveViewHistory(actualClaim.getUnifiedUrl(), actualClaim);
                 }
 
                 CustomBlockRule.CustomBlockStatus status = null;
@@ -1020,7 +1022,7 @@ public class FileViewFragment extends BaseFragment implements
                 enableFullScreenMode();
             }
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
-
+            activity.checkIfPlaylistOverlayShouldDisplay();
             activity.refreshChannelCreationRequired(getView());
         }
 
@@ -1055,7 +1057,9 @@ public class FileViewFragment extends BaseFragment implements
         }
         Context context = getContext();
         if (context instanceof MainActivity) {
-            ((MainActivity) context).updateMiniPlayerMargins(true);
+            MainActivity activity = (MainActivity) context;
+            activity.hidePlaylistOverlay();
+            activity.updateMiniPlayerMargins(true);
         }
         leavingFileView = true;
         if (webSocketClient != null) {
@@ -1303,7 +1307,7 @@ public class FileViewFragment extends BaseFragment implements
                     // do not save collections to view history
                     if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getType())) {
                         // also save view history
-                        Helper.saveViewHistory(url, fileClaim);
+                        Helper.saveViewHistory(fileClaim.getUnifiedUrl(), fileClaim);
                     }
 
                     CustomBlockRule.CustomBlockStatus status = null;
@@ -2390,10 +2394,6 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndLoadRelatedContent() {
-        if (playlistResolved) {
-            return;
-        }
-
         View root = getView();
         if (root != null) {
             RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
@@ -3242,9 +3242,20 @@ public class FileViewFragment extends BaseFragment implements
                         public void run() {
                             playlistClaims = claims;
                             if (playlistClaims.size() > 0) {
+                                OdyseeCollection collection = OdyseeCollection.fromClaim(fileClaim, new ArrayList<>());
+                                collection.setClaims(playlistClaims);
+                                currentCollectionId = collection.getId();
+
+                                Context context = getContext();
+                                if (context instanceof MainActivity) {
+                                    ((MainActivity) context).setCurrentPlaylist(collection);
+                                }
+
                                 playClaimFromCollection(playlistClaims.get(0), 0);
                             }
 
+                            // TODO: This block of code needs to be moved to being handled by the playlist overlay
+                            /*
                             relatedContentAdapter = new ClaimListAdapter(playlistClaims.subList(playlistPos, playlistPos + 25), getContext());
                             relatedContentAdapter.setListener(FileViewFragment.this);
                             scrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
@@ -3279,7 +3290,7 @@ public class FileViewFragment extends BaseFragment implements
                             if (root != null) {
                                 RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
                                 relatedContentList.setAdapter(relatedContentAdapter);
-                            }
+                            }*/
                         }
                     });
                 } catch (ExecutionException | InterruptedException e) {
@@ -3519,29 +3530,41 @@ public class FileViewFragment extends BaseFragment implements
         startActivityForResult(chooser, 419);
     }
 
+    public void playFirstItemInCollection() {
+        if (playlistClaims.size() > 0) {
+            playClaimFromCollection(playlistClaims.get(0), 0);
+        }
+    }
+
     private void playClaimFromCollection(Claim theClaim, int index) {
-        updatePlaylistContentDisplay(index + playlistPos);
         collectionClaimItem = theClaim;
         renderClaim();
 
         // Save to view history, when playing from a collection
         if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(theClaim.getType())) {
-            Helper.saveViewHistory(theClaim.getPermanentUrl(), theClaim);
+            Helper.saveViewHistory(theClaim.getUnifiedUrl(), theClaim);
+        }
+
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).setCurrentPlaylistIndex(index);
         }
 
         checkAndLoadChannelSettings();
         checkAndLoadComments(true);
+        checkAndLoadRelatedContent();
     }
 
     private void loadRelatedContent() {
         // reset the list view
         View root = getView();
         Activity a = getActivity();
-        if (fileClaim != null && root != null && a != null) {
+        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+        if (actualClaim != null && root != null && a != null) {
             Context context = getContext();
 
             List<Claim> loadingPlaceholders = new ArrayList<>();
-            int loadingPlaceholdersLength = Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType()) ? fileClaim.getClaimIds().size() : 15;
+            int loadingPlaceholdersLength = 15;
             for (int i = 0; i < loadingPlaceholdersLength; i++) {
                 Claim placeholder = new Claim();
                 placeholder.setLoadingPlaceholder(true);
@@ -3560,93 +3583,62 @@ public class FileViewFragment extends BaseFragment implements
                 canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
             }
 
-            if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) {
-                String title = fileClaim.getTitle();
-                String claimId = fileClaim.getClaimId();
+            String title = actualClaim.getTitle();
+            String claimId = actualClaim.getClaimId();
 
-                final boolean nsfw = canShowMatureContent;
-                relatedLoading.setVisibility(View.VISIBLE);
+            final boolean nsfw = canShowMatureContent;
+            relatedLoading.setVisibility(View.VISIBLE);
 
-                // Making a request which explicitly uses a certain value form the amount of results needed
-                // and no processing any possible exception, so using a callable instead of an AsyncTask
-                // makes sense for all Android API Levels
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0,
-                                nsfw, claimId, null, null, null, null);
-                        Future<List<String>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+            // Making a request which explicitly uses a certain value form the amount of results needed
+            // and no processing any possible exception, so using a callable instead of an AsyncTask
+            // makes sense for all Android API Levels
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    LighthouseSearch callable = new LighthouseSearch(title, RELATED_CONTENT_SIZE, 0,
+                            nsfw, claimId, null, null, null, null);
+                    Future<List<String>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
-                        try {
-                            List<String> urls = future.get();
+                    try {
+                        List<String> urls = future.get();
 
-                            Callable<List<Claim>> resolveCallable = () -> Lbry.resolve(urls, Lbry.API_CONNECTION_STRING);
-                            Future<List<Claim>> resolveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(resolveCallable);
+                        Callable<List<Claim>> resolveCallable = () -> Lbry.resolve(urls, Lbry.API_CONNECTION_STRING);
+                        Future<List<Claim>> resolveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(resolveCallable);
 
-                            List<Claim> result = resolveFuture.get().stream().filter(c -> c != null).collect(Collectors.toList());
-                            if (!urls.contains("")) {
-                                urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
+                        List<Claim> result = resolveFuture.get().stream().filter(c -> c != null).collect(Collectors.toList());
+                        if (!urls.contains("")) {
+                            urls.add(""); // Explicit empty string as catch-all for LbryUri.normalize errors
+                        }
+                        Collections.sort(result, Ordering.explicit(urls).onResultOf(claim -> {
+                            try {
+                                return LbryUri.normalize(claim.getPermanentUrl());
+                            } catch (LbryUriException ex) {
+                                ex.printStackTrace();
                             }
-                            Collections.sort(result, Ordering.explicit(urls).onResultOf(claim -> {
-                                try {
-                                    return LbryUri.normalize(claim.getPermanentUrl());
-                                } catch (LbryUriException ex) {
-                                    ex.printStackTrace();
-                                }
-                                return "";
-                            }));
+                            return "";
+                        }));
 
-                            a.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    relatedContentRequestSucceeded(result);
-                                    relatedLoading.setVisibility(View.GONE);
-                                }
-                            });
-                        } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
+                        a.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                relatedContentRequestSucceeded(result);
+                                relatedLoading.setVisibility(View.GONE);
+                            }
+                        });
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
                     }
-                });
-                t.start();
-            } else {
-                // TODO: This code is never reached (should be called in resolveUrl)
-                TextView relatedOrPlayList = root.findViewById(R.id.related_or_playlist);
-                relatedOrPlayList.setText(fileClaim.getTitle());
-                // TODO: When this code path fixed check what this does
-//                relatedOrPlayList.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cast_connected, 0, 0, 0);
-                relatedOrPlayList.setPadding(0, 0, 0, 16);
-                relatedOrPlayList.setTypeface(null, Typeface.BOLD);
-
-                Map<String, Object> claimSearchOptions = new HashMap<>(3);
-
-                claimSearchOptions.put("claim_ids", fileClaim.getClaimIds());
-                claimSearchOptions.put("not_tags", canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS));
-                claimSearchOptions.put("page_size", fileClaim.getClaimIds().size());
-
-                Future<List<Claim>> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(new Search(claimSearchOptions));
-
-                try {
-                    List<Claim> playlistClaimItems = future.get();
-
-                    if (playlistClaimItems != null) {
-                        relatedContentAdapter.setItems(playlistClaimItems);
-                        relatedContentAdapter.setListener(FileViewFragment.this);
-
-                        View v = getView();
-                        if (v != null) {
-                            relatedContentList.setAdapter(relatedContentAdapter);
-                            relatedContentAdapter.notifyDataSetChanged();
-
-                            Helper.setViewVisibility(
-                                    v.findViewById(R.id.file_view_no_related_content),
-                                    relatedContentAdapter == null || relatedContentAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-                        }
-                    }
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
                 }
-            }
+            });
+            t.start();
+        }
+    }
+
+    public void onPlaylistOverlayClaimClicked(Claim claimItem, int position) {
+        if ((fileClaim != null && Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) ||
+                (collectionClaimItem != null && playlistClaims.size() > position)) {
+            playClaimFromCollection(claimItem, position);
+            return;
         }
     }
 
@@ -3656,15 +3648,14 @@ public class FileViewFragment extends BaseFragment implements
             return;
         }
 
-        if ((fileClaim != null && Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) ||
-                (collectionClaimItem != null && playlistClaims.size() > 0)) {
-            playClaimFromCollection(claimItem, position);
-            return;
-        }
-
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
+            activity.clearCurrentPlaylist();
+            collectionClaimItem = null;
+            playlistClaims = new ArrayList<>();
+            playlistResolved = false;
+
             activity.openFileUrl(claimItem.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
         }
     }
@@ -3689,6 +3680,11 @@ public class FileViewFragment extends BaseFragment implements
 
                     if (ctx instanceof MainActivity) {
                         MainActivity activity = (MainActivity) ctx;
+                        activity.clearCurrentPlaylist();
+                        collectionClaimItem = null;
+                        playlistClaims = new ArrayList<>();
+                        playlistResolved = false;
+
                         if (claim.getName().startsWith("@")) {
                             activity.openChannelClaim(claim);
                         } else {
@@ -4016,7 +4012,22 @@ public class FileViewFragment extends BaseFragment implements
             restoreMainActionButton();
             return true;
         }
+        if (isPlaylistOverlayMaximized()) {
+            Context context = getContext();
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).minimizePlaylistOverlay();
+            }
+            return true;
+        }
 
+        return false;
+    }
+
+    private boolean isPlaylistOverlayMaximized() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            return ((MainActivity) context).getPlaylistOverlayState() == MainActivity.PLAYLIST_OVERLAY_STATE_MAXIMIZED;
+        }
         return false;
     }
 
@@ -4478,6 +4489,28 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
             return true;
+        }
+
+        if (item.getGroupId() ==  FILE_CONTEXT_GROUP_ID)  {
+            if (relatedContentAdapter != null) {
+                int position = relatedContentAdapter.getPosition();
+                Claim claim = relatedContentAdapter.getItems().get(position);
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
+                    }
+                }
+            }
         }
 
         Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();

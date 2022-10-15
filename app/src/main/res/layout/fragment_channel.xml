@@ -54,7 +54,7 @@
                 android:id="@+id/channel_view_mute_unmute"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="@color/channelCoverBackground"
+                android:background="@color/overlayBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
@@ -82,7 +82,7 @@
                 android:id="@+id/channel_view_block_unblock"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="@color/channelCoverBackground"
+                android:background="@color/overlayBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -114,7 +114,7 @@
                 android:orientation="vertical">
                 <TextView
                     android:id="@+id/channel_view_title"
-                    android:background="@color/channelCoverBackground"
+                    android:background="@color/overlayBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="4dp"
@@ -128,7 +128,7 @@
                     android:textColor="@color/white" />
                 <TextView
                     android:id="@+id/channel_view_follower_count"
-                    android:background="@color/channelCoverBackground"
+                    android:background="@color/overlayBackground"
                     android:visibility="invisible"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

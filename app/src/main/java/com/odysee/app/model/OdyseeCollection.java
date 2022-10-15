@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 public class OdyseeCollection {
     public static final String PLACEHOLDER_ID_NEW = "__new";
+    public static final String PLACEHOLDER_ID_NOW_PLAYING = "__now_playing";
     public static final String BUILT_IN_ID_FAVORITES = "favorites";
     public static final String BUILT_IN_ID_WATCHLATER = "watchlater";
 
@@ -39,9 +40,18 @@ public class OdyseeCollection {
     private String claimName;
     private String permanentUrl;
 
+    private int currentlyPlayingIndex;
+
     public OdyseeCollection() {
         items = new ArrayList<>();
         updatedAt = new Date();
+    }
+
+    public void addClaim(Claim claim) {
+        if (claims == null) {
+            claims = new ArrayList<>();
+        }
+        claims.add(claim);
     }
 
     public void addItem(Item item, boolean update) {
@@ -123,6 +133,13 @@ public class OdyseeCollection {
             items.add(new Item(thisItemString, ++itemOrder));
         }
         this.items = new ArrayList<>(items);
+    }
+
+    public Claim getCurrentlyPlayingClaim() {
+        if (claims != null && claims.size() > currentlyPlayingIndex) {
+            return claims.get(currentlyPlayingIndex);
+        }
+        return null;
     }
 
     public static OdyseeCollection createPrivatePlaylist(String title) {
