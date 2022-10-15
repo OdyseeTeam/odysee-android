@@ -5750,7 +5750,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) playlistLayout.getLayoutParams();
         layoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.setMargins(0, getScaledValue(240), 0, 0);
+        layoutParams.setMargins(0, getScaledValue(244), 0, 0);
 
         playlistLayout.setVisibility(View.VISIBLE);
         playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setVisibility(View.GONE);

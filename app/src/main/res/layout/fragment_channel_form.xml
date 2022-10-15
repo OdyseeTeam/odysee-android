@@ -46,7 +46,7 @@
 
             <LinearLayout
                 android:id="@+id/channel_form_upload_progress"
-                android:background="@color/channelCoverBackground"
+                android:background="@color/overlayBackground"
                 android:layout_alignParentEnd="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
