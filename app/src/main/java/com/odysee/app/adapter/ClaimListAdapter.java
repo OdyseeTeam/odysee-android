@@ -194,6 +194,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         notifyItemInserted(0);
     }
 
+    public void addSingleItem(Claim claim) {
+        items.add(claim);
+        notifyItemInserted(items.size() - 1);
+    }
+
     public void addItems(List<Claim> claims) {
         for (Claim claim : claims) {
             if (claim != null) {
@@ -341,7 +346,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 if (contextGroupId != BlockedAndMutedFragment.BLOCKED_AND_MUTED_CONTEXT_GROUP_ID) {
                     if (claimListAdapter.isOwnCollection) {
                         contextMenu.add(contextGroupId, R.id.action_remove_from_list, Menu.NONE, R.string.remove_from_list);
-                    } else if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    } else if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType()) && item.isPlayable()) {
+                        contextMenu.add(contextGroupId, R.id.action_add_to_queue, Menu.NONE, R.string.add_to_queue);
                         contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
                         contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
                         contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
@@ -593,6 +599,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    setPosition(vh.getAbsoluteAdapterPosition());
                     setCurrentPosition(vh.getAbsoluteAdapterPosition());
                     view.showContextMenu();
                 }

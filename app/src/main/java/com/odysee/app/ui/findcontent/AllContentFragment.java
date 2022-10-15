@@ -806,6 +806,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                         activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     } else if (item.getItemId() == R.id.action_add_to_lists) {
                         activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
                     }
                 }
             }

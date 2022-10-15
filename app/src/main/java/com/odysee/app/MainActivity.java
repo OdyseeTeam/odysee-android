@@ -320,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // NOTE: This is only used for building a dynamic "Now Playing" queue.
     // Regular playlists should NEVER be assigned to this.
-    public static OdyseeCollection nowPlayingQueuePlaylist;
+    private OdyseeCollection nowPlayingQueuePlaylist;
 
     // This is different from nowPlayingQueue, as we use this to determine what is displayed
     // in the overlay containing playlist items, which is contained in the main activity layout.
@@ -2130,6 +2130,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         castHelper.removeCastStateListener();
         if (!enteringPIPMode && !inPictureInPictureMode && playerManager != null && !isBackgroundPlaybackEnabled()) {
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
+        }
+        if (nowPlayingQueuePlaylist != null) {
+            nowPlayingQueuePlaylist = null;
         }
         super.onPause();
     }
@@ -4435,6 +4438,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (playerManager != null) {
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
+
+        // if we're clearing the currently playing claim, all currently active playlists should also be cleared at this point
+        clearCurrentPlaylist();
+        nowPlayingQueuePlaylist = null;
     }
 
     public void hideSearchBar() {
@@ -5207,7 +5214,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         openFragment(PlaylistFragment.class, true, params);
     }
 
-    public void addToNowPlaying(Claim claim) {
+    public void handleAddToNowPlayingQueue(Claim claim) {
+        if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
+            return;
+        }
+
         boolean isNewQueue = false;
         if (nowPlayingQueuePlaylist == null) {
             nowPlayingQueuePlaylist = new OdyseeCollection();
@@ -5216,12 +5227,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             isNewQueue = true;
         }
 
-        nowPlayingQueuePlaylist.addClaim(claim);
-
         if (isNewQueue) {
             // we need to navigate to FileViewFragment in this instance
-        } else {
+            nowPlayingQueuePlaylist.addClaim(claim);
+            openPrivatePlaylist(nowPlayingQueuePlaylist);
+        } else if (currentPlaylist != null){
             // otherwise, refresh the playlist items display
+            currentPlaylist.getClaims().add(claim);
+
+            // update the adapter
+            playlistOverlayItemsAdapter.addSingleItem(claim);
+            didAddItemToNowPlayingQueue();
+
+            Fragment fragment = getCurrentFragment();
+            if (fragment instanceof FileViewFragment) {
+                FileViewFragment fvFragment = (FileViewFragment) fragment;
+                // make sure that we have the same collection reference before shuffling
+                if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
+                    // update the items in the fragment
+                    fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
+                }
+            }
         }
     }
 
@@ -5731,9 +5757,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
+        updatePlaylistOverlayTitleAndSummary();
+    }
+
+    private void didAddItemToNowPlayingQueue() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        updatePlaylistOverlayTitleAndSummary();
+    }
+
+    private void updatePlaylistOverlayTitleAndSummary() {
         Claim currentPlaylistItem = currentPlaylist.getCurrentlyPlayingClaim();
         View playlistLayout = findViewById(R.id.playlist_overlay);
         TextView playlistOverlayTitle = playlistLayout.findViewById(R.id.playlist_overlay_title);
+        TextView playlistSummaryTitle = playlistLayout.findViewById(R.id.playlist_summary_playlist_title);
         TextView playlistSummaryCurrentlyPlaying = playlistLayout.findViewById(R.id.playlist_summary_now_playing);
 
         playlistSummaryCurrentlyPlaying.setText(currentPlaylistItem != null ? currentPlaylistItem.getTitle() : null);
@@ -5743,6 +5782,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 String.valueOf(currentPlaylist.getCurrentlyPlayingIndex() + 1),
                 String.valueOf(currentPlaylist.getClaims().size()));
 
+        playlistSummaryTitle.setText(value);
         playlistOverlayTitle.setText(value);
     }
 

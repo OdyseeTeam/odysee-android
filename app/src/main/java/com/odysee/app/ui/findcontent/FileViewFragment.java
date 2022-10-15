@@ -575,7 +575,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void handlePlayCollection(Map<String, Object> params) {
         OdyseeCollection collection = (OdyseeCollection) params.get("collection");
-        playlistClaims = new ArrayList< >(collection.getClaims());
+        playlistClaims = new ArrayList<>(collection.getClaims());
         playlistResolved = true;
         currentCollectionId = collection.getId();
         currentPlaylistTitle = collection.getName();
@@ -584,18 +584,6 @@ public class FileViewFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             ((MainActivity) context).setCurrentPlaylist(collection);
         }
-
-        // TODO: Remove this block after properly testing playlist overlay
-        /*
-            relatedContentAdapter = new ClaimListAdapter(playlistClaims, getContext());
-            relatedContentAdapter.setListener(FileViewFragment.this);
-
-            View root = getView();
-            if (root != null) {
-                RecyclerView relatedContentList = root.findViewById(R.id.file_view_related_content_list);
-                relatedContentList.setAdapter(relatedContentAdapter);
-            }
-        */
 
         if (playlistClaims.size() > 0) {
             if (params.containsKey("item") && params.containsKey("itemIndex")) {
@@ -4501,6 +4489,28 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
             return true;
+        }
+
+        if (item.getGroupId() ==  FILE_CONTEXT_GROUP_ID)  {
+            if (relatedContentAdapter != null) {
+                int position = relatedContentAdapter.getPosition();
+                Claim claim = relatedContentAdapter.getItems().get(position);
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
+                    }
+                }
+            }
         }
 
         Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
