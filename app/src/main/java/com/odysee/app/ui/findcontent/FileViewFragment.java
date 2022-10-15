@@ -13,7 +13,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -78,8 +77,8 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
+import com.google.android.exoplayer2.trackselection.TrackSelectionParameters;
 import com.google.android.exoplayer2.ui.StyledPlayerControlView;
 import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
@@ -169,7 +168,6 @@ import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.lbryinc.CreatorSetting;
 import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.runnable.ReactToComment;
-import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
 import com.odysee.app.exceptions.ApiCallException;
@@ -219,7 +217,6 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 import com.odysee.app.utils.PlayerManager;
-import com.odysee.app.utils.Predefined;
 import com.odysee.app.utils.Utils;
 import com.odysee.app.checkers.CommentEnabledCheck;
 import com.odysee.app.views.MediaRelativeLayout;
@@ -246,10 +243,8 @@ public class FileViewFragment extends BaseFragment implements
     private static final String TAG = "OdyseeFile";
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
-    private static final String DEFAULT_PLAYBACK_SPEED = "1x";
     @StringRes
     private static final int AUTO_QUALITY_STRING = R.string.auto_quality;
-    private static final int AUTO_QUALITY_ID = 0;
     public static final String CDN_PREFIX = "https://cdn.lbryplayer.xyz";
 
     private boolean loadingNewClaim;
@@ -276,7 +271,6 @@ public class FileViewFragment extends BaseFragment implements
 
     private NestedScrollView scrollView;
     private long elapsedDuration = 0;
-    private long totalDuration = 0;
     private boolean elapsedPlaybackScheduled;
     private boolean playbackStarted;
     private long startTimeMillis;
@@ -466,7 +460,6 @@ public class FileViewFragment extends BaseFragment implements
 
                 if (playbackState == Player.STATE_READY) {
                     elapsedDuration = currentPlayer.getCurrentPosition();
-                    totalDuration = currentPlayer.getDuration() < 0 ? 0 : currentPlayer.getDuration();
                     if (!playbackStarted) {
                         logPlay(currentUrl, startTimeMillis);
                         playbackStarted = true;
@@ -1037,7 +1030,7 @@ public class FileViewFragment extends BaseFragment implements
                 if (playerView.getPlayer() == null) {
                     playerView.setPlayer(MainActivity.playerManager.getCurrentPlayer());
                 }
-                updateQualityView();
+                updateQualityView(root);
             }
 
             loadAndScheduleDurations();
@@ -1582,7 +1575,7 @@ public class FileViewFragment extends BaseFragment implements
             public void onVisibilityChanged(int visibility) {
                 if (visibility == View.VISIBLE) {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.VISIBLE);
-                    updateQualityView();
+                    updateQualityView(root);
                } else {
                     ((ViewGroup)playbackQuality.getParent()).setVisibility(View.GONE);
                }
@@ -1967,11 +1960,14 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void updateQualityView() {
-        if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
-            ((TextView) playbackQuality).setText(AUTO_QUALITY_STRING);
-        } else {
-            ((TextView) playbackQuality).setText(String.format("%sp", MainActivity.videoQuality));
+    private void updateQualityView(View root) {
+        if (root != null) {
+            TextView textQuality = root.findViewById(R.id.player_quality);
+            if (MainActivity.videoQuality == MainActivity.AUTO_QUALITY_ID) {
+                textQuality.setText(AUTO_QUALITY_STRING);
+            } else {
+                textQuality.setText(String.format("%sp", MainActivity.videoQuality));
+            }
         }
     }
 
@@ -2441,6 +2437,7 @@ public class FileViewFragment extends BaseFragment implements
 
             if (MainActivity.playerManager == null) {
                 MainActivity.playerManager = new PlayerManager(activity);
+                activity.setNetworkCallback();
 
                 MainActivity.playerCache =
                         new SimpleCache(context.getCacheDir(),
@@ -2476,11 +2473,16 @@ public class FileViewFragment extends BaseFragment implements
             StyledPlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
             view.setPlayer(currentPlayer);
-            view.getPlayer().addListener(new Player.Listener() {
+            currentPlayer.addListener(new Player.Listener() {
                 @Override
                 public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
                     isPlaying = playWhenReady;
                     Player.Listener.super.onPlayWhenReadyChanged(playWhenReady, reason);
+                }
+
+                @Override
+                public void onTrackSelectionParametersChanged(@NotNull TrackSelectionParameters parameters) {
+                    updateQualityView(getView());
                 }
             });
             view.setUseController(true);
@@ -2660,7 +2662,11 @@ public class FileViewFragment extends BaseFragment implements
             int quality = isOnMobileNetwork ?
                     ((MainActivity) context).mobileDefaultQuality() :
                     ((MainActivity) context).wifiDefaultQuality();
-            setPlayerQuality(MainActivity.playerManager.getCurrentPlayer(), quality);
+            ((MainActivity) context).setPlayerQuality(MainActivity.playerManager.getCurrentPlayer(), quality);
+
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                updateQualityView(getView());
+            }
         }
     }
 
@@ -2671,34 +2677,6 @@ public class FileViewFragment extends BaseFragment implements
             return false;
         }
         return connectivityManager.isActiveNetworkMetered();
-    }
-
-    private void setPlayerQuality(Player player, int quality) {
-        for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
-            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) {
-                continue;
-            }
-
-            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
-                player.setTrackSelectionParameters(
-                        player.getTrackSelectionParameters()
-                                .buildUpon()
-                                .clearVideoSizeConstraints()
-                                .build()
-                );
-            } else {
-                player.setTrackSelectionParameters(
-                        player.getTrackSelectionParameters()
-                                .buildUpon()
-                                .setMaxVideoSize(Integer.MAX_VALUE, quality+1)
-                                .build()
-                );
-            }
-
-            MainActivity.videoQuality = quality;
-            updateQualityView();
-            break;
-        }
     }
 
     private void resetViewCount() {
@@ -4044,67 +4022,40 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void scheduleElapsedPlayback() {
-        if (!elapsedPlaybackScheduled) {
-            Activity a = getActivity();
-            if (a != null) {
-                futureElapsedPlayback = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
-                    @Override
-                    public void run() {
-                        Context context = getContext();
-                        if (context instanceof MainActivity) {
-                            ((MainActivity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
-                                    if (currentPlayer != null) {
-                                        elapsedDuration = currentPlayer.getCurrentPosition();
-                                        int elapsedSeconds = Double.valueOf(elapsedDuration / 1000.0).intValue();
-                                        if (elapsedDuration > 0 && elapsedSeconds % 5 == 0 && elapsedSeconds != lastPositionSaved) {
-                                            // save playback position every 5 seconds
-                                            savePlaybackPosition();
-                                            lastPositionSaved = elapsedSeconds;
-                                        }
-
+        Activity a = getActivity();
+        if (!elapsedPlaybackScheduled && a != null) {
+            futureElapsedPlayback = ((OdyseeApp) a.getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
+                                if (currentPlayer != null) {
+                                    elapsedDuration = currentPlayer.getCurrentPosition();
+                                    int elapsedSeconds = Double.valueOf(elapsedDuration / 1000.0).intValue();
+                                    if (elapsedDuration > 0 && elapsedSeconds % 5 == 0 && elapsedSeconds != lastPositionSaved) {
+                                        // save playback position every 5 seconds
+                                        savePlaybackPosition();
+                                        lastPositionSaved = elapsedSeconds;
                                     }
+
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
-                }, 0, 500, TimeUnit.MILLISECONDS);
-                elapsedPlaybackScheduled = true;
-            }
+                }
+            }, 0, 500, TimeUnit.MILLISECONDS);
+            elapsedPlaybackScheduled = true;
         }
-    }
-
-    private void resetPlayer() {
-        elapsedDuration = 0;
-        totalDuration = 0;
-
-        elapsedPlaybackScheduled = false;
-        if (seekOverlayHandler != null) {
-            seekOverlayHandler.removeCallbacksAndMessages(null);
-            seekOverlayHandler = null;
-        }
-
-        playbackStarted = false;
-        startTimeMillis = 0;
-        isPlaying = false;
-
-        // TODO: Remove (when deciding about resetPlayer())
-//        if (MainActivity.appPlayer != null) {
-//            MainActivity.appPlayer.stop(true);
-//            MainActivity.appPlayer.removeListener(fileViewPlayerListener);
-//            PlaybackParameters params = new PlaybackParameters(1.0f);
-//            MainActivity.appPlayer.setPlaybackParameters(params);
-//            MainActivity.videoIsTranscoded = false;
-//        }
     }
 
     private void loadAndScheduleDurations() {
         Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
         if (currentPlayer != null && playbackStarted) {
             elapsedDuration = currentPlayer.getCurrentPosition() < 0 ? 0 : currentPlayer.getCurrentPosition();
-            totalDuration = currentPlayer.getDuration() < 0 ? 0 : currentPlayer.getDuration();
 
             scheduleElapsedPlayback();
         }
@@ -4425,9 +4376,14 @@ public class FileViewFragment extends BaseFragment implements
         } else if (item.getGroupId() == Helper.QUALITIES_GROUP_ID) {
             loadingQualityChanged = true;
             int quality = item.getItemId();
+            MainActivity activity = (MainActivity) getActivity();
 
-            if (currentPlayer != null) {
-                setPlayerQuality(currentPlayer, quality);
+            if (currentPlayer != null && activity != null) {
+                activity.setPlayerQuality(currentPlayer, quality);
+
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                    updateQualityView(getView());
+                }
                 return true;
             }
         }
