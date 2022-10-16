@@ -4834,21 +4834,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             remoteNotifcationsLastLoaded = new Date();
 
                             loadUnseenNotificationsCount();
-                            loadLocalNotifications();
-                            if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
-                                markNotificationsSeen();
-                            }
-
-                            if (notificationsSwipeContainer != null) {
-                                notificationsSwipeContainer.setRefreshing(false);
-                            }
-                        } else {
-                            loadLocalNotifications();
-                            if (notificationsSwipeContainer != null) {
-                                notificationsSwipeContainer.setRefreshing(false);
-                            }
                         }
 
+                        loadLocalNotifications();
+
+                        if (notifications != null && markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
+                            markNotificationsSeen();
+                        }
+
+                        if (notificationsSwipeContainer != null) {
+                            notificationsSwipeContainer.setRefreshing(false);
+                        }
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
