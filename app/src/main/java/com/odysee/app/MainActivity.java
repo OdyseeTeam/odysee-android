@@ -130,6 +130,7 @@ import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.model.lbryinc.RewardVerified;
+import com.odysee.app.callable.SaveSharedUserState;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
@@ -231,11 +232,13 @@ import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
 import com.odysee.app.tasks.localdata.FetchRecentUrlHistoryTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
 import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
-import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelFormFragment;
+import com.odysee.app.ui.channel.ChannelFragment;
+import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.other.BlockedAndMutedFragment;
@@ -3201,19 +3204,42 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!userSyncEnabled()) {
             return;
         }
-        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, this, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
-            @Override
-            public void onSuccess() {
-                // push wallet sync changes
-                pushCurrentWalletSync();
-            }
 
+        AccountManager am = AccountManager.get(this);
+        String channelName = am.getUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name");
+
+        // If default channel name has not yet been set and there is only a single channel, set it as the default one
+        if (channelName == null && Lbry.ownChannels.size() == 1) {
+            channelName = Lbry.ownChannels.get(0).getName();
+            am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", channelName);
+        }
+
+        Future<Boolean> future = ((OdyseeApp)getApplication()).getExecutor().submit(new SaveSharedUserState(Lbryio.AUTH_TOKEN, MainActivity.getDatabaseHelper().getReadableDatabase(), channelName));
+
+        // Saving state is run on its own thread, but in order to get the result, future.get() runs on the calling thread.
+        // That's why it needs to be on a different than main thread.
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onError(Exception error) {
-                // pass
+            public void run() {
+                if (future != null) {
+                    try {
+                        boolean result = future.get();
+
+                        if (result) {
+                            pushCurrentWalletSync();
+                        }
+                    } catch (ExecutionException | InterruptedException e) {
+                        Throwable throwable = e.getCause();
+                        if (throwable != null) {
+                            throwable.printStackTrace();
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
             }
         });
-        saveTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     private void loadSharedUserState() {
