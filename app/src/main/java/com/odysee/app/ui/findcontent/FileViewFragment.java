@@ -64,6 +64,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.mediarouter.app.MediaRouteButton;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -79,8 +80,8 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
-import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.ui.StyledPlayerControlView;
+import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.flexbox.FlexboxLayoutManager;
@@ -371,6 +372,8 @@ public class FileViewFragment extends BaseFragment implements
 
     // Playlist items pseudo-pagination
     int playlistPos = 0, oldPlaylistPos = 0;
+    MediaRouteButton mediaRouteButton;
+    View playbackQuality;
 
     @Override
     public void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -439,6 +442,8 @@ public class FileViewFragment extends BaseFragment implements
         layoutRelatedContentArea = root.findViewById(R.id.file_view_related_content_area);
         dividerDescriptionArea = root.findViewById(R.id.file_view_divider_description_area);
         dividerRelatedContentArea = root.findViewById(R.id.file_view_divider_related_content_area);
+        mediaRouteButton = root.findViewById(R.id.player_media_route_button);
+        playbackQuality = root.findViewById(R.id.player_quality);
 
         initUi(root);
         initLiveChatTippingArea();
@@ -471,9 +476,7 @@ public class FileViewFragment extends BaseFragment implements
                             currentPlayer.seekTo(lastPosition);
                         }
                     }
-                    renderTotalDuration();
                     scheduleElapsedPlayback();
-                    hideBuffering();
                     setPlayerSurfaceVisibility(View.VISIBLE);
 
                     if (loadingNewClaim) {
@@ -508,8 +511,6 @@ public class FileViewFragment extends BaseFragment implements
 
                     loadingQualityChanged = false;
 
-                    showBuffering();
-
                     if (isLivestream) {
                         Timeline.Window window = currentPlayer.getCurrentTimeline()
                                 .getWindow(currentPlayer.getCurrentMediaItemIndex(), new Timeline.Window());
@@ -521,8 +522,6 @@ public class FileViewFragment extends BaseFragment implements
                     }
                 } else if (playbackState == Player.STATE_ENDED) {
                     playNextItemInPlaylist();
-                } else {
-                    hideBuffering();
                 }
             }
 
@@ -1034,14 +1033,13 @@ public class FileViewFragment extends BaseFragment implements
 
             View root = getView();
             if (root != null) {
-                PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+                StyledPlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
                 if (playerView.getPlayer() == null) {
                     playerView.setPlayer(MainActivity.playerManager.getCurrentPlayer());
                 }
+                updateQualityView();
             }
 
-            updatePlaybackSpeedView(root);
-            updateQualityView(root);
             loadAndScheduleDurations();
         }
 
@@ -1138,14 +1136,14 @@ public class FileViewFragment extends BaseFragment implements
     private void setPlayerForPlayerView() {
         View root = getView();
         if (root != null) {
-            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
+            StyledPlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setVisibility(View.VISIBLE);
             Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
             view.setPlayer(null);
             view.setPlayer(currentPlayer);
             view.setControllerHideOnTouch(currentPlayer instanceof ExoPlayer);
             view.setControllerShowTimeoutMs(currentPlayer instanceof ExoPlayer
-                    ? PlayerControlView.DEFAULT_SHOW_TIMEOUT_MS : 0);
+                    ? StyledPlayerControlView.DEFAULT_SHOW_TIMEOUT_MS : 0);
             // This hack shouldn't be needed (the code without it works in the ExoPlayer demo)
             setPlayerSurfaceVisibility(currentPlayer instanceof ExoPlayer ? View.VISIBLE : View.INVISIBLE);
         }
@@ -1154,7 +1152,7 @@ public class FileViewFragment extends BaseFragment implements
     private void setPlayerSurfaceVisibility(int visibility) {
         View root = getView();
         if (root != null) {
-            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
+            StyledPlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             View surfaceView = view.getVideoSurfaceView();
             if (surfaceView != null) {
                 surfaceView.setVisibility(visibility);
@@ -1545,34 +1543,27 @@ public class FileViewFragment extends BaseFragment implements
         });
 
         MediaRelativeLayout mediaContainer = root.findViewById(R.id.file_view_media_container);
-        PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-        TextView playbackSpeed = playerView.findViewById(R.id.player_playback_speed);
-        TextView playbackQuality = playerView.findViewById(R.id.player_quality);
-        playbackSpeed.setText(DEFAULT_PLAYBACK_SPEED);
-        playbackQuality.setText(AUTO_QUALITY_STRING);
+        StyledPlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
 
         Context context = getContext();
+
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.playerMediaRouteButton = playerView.findViewById(R.id.player_media_route_button);
+            activity.playerMediaRouteButton = mediaRouteButton;
+
             if (activity.mediaRouteButtonVisible) {
                 activity.playerMediaRouteButton.setVisibility(View.VISIBLE);
             }
+
             activity.getCastHelper().setUpCastButton(activity.playerMediaRouteButton);
         }
 
-        playbackSpeed.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+        playbackQuality.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-                Helper.buildPlaybackSpeedMenu(contextMenu);
-            }
-        });
-        playbackSpeed.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 Context context = getContext();
                 if (context instanceof MainActivity) {
-                    ((MainActivity) context).openContextMenu(playbackSpeed);
+                    ((MainActivity) context).openContextMenu(playbackQuality);
                 }
             }
         });
@@ -1585,21 +1576,23 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
         });
-        playbackQuality.setOnClickListener(new View.OnClickListener() {
+
+        playerView.setControllerVisibilityListener(new StyledPlayerView.ControllerVisibilityListener() {
             @Override
-            public void onClick(View v) {
-                Context context = getContext();
-                if (context instanceof MainActivity) {
-                    ((MainActivity) context).openContextMenu(playbackQuality);
-                }
-            }
+            public void onVisibilityChanged(int visibility) {
+                if (visibility == View.VISIBLE) {
+                    ((ViewGroup)playbackQuality.getParent()).setVisibility(View.VISIBLE);
+                    updateQualityView();
+               } else {
+                    ((ViewGroup)playbackQuality.getParent()).setVisibility(View.GONE);
+               }
+             }
         });
 
-        playerView.findViewById(R.id.player_toggle_fullscreen).setOnClickListener(new View.OnClickListener() {
+        playerView.setFullscreenButtonClickListener(new StyledPlayerView.FullscreenButtonClickListener() {
             @Override
-            public void onClick(View view) {
-                // check full screen mode
-                if (isInFullscreenMode()) {
+            public void onFullscreenButtonClick(boolean isFullScreen) {
+                if (!isFullScreen) {
                     disableFullScreenMode();
                     smoothScrollToLastChatMessage(); // If there are no chat messages or claim is not for a livestream, this will do nothing
                 } else {
@@ -1607,25 +1600,6 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
         });
-        playerView.findViewById(R.id.player_skip_back_10).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
-                if (currentPlayer != null) {
-                    currentPlayer.seekTo(Math.max(0, currentPlayer.getCurrentPosition() - 10000));
-                }
-            }
-        });
-        playerView.findViewById(R.id.player_skip_forward_10).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
-                if (currentPlayer != null) {
-                    currentPlayer.seekTo(currentPlayer.getCurrentPosition() + 10000);
-                }
-            }
-        });
-
         root.findViewById(R.id.file_view_publisher_info_area).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -1887,7 +1861,7 @@ public class FileViewFragment extends BaseFragment implements
                 }
 
                 if (seekOverlayHandler == null) {
-                    seekOverlayHandler = new Handler();
+                    seekOverlayHandler = new Handler(Looper.getMainLooper());
                 } else {
                     seekOverlayHandler.removeCallbacksAndMessages(null); // Clear pending messages
                 }
@@ -1993,26 +1967,11 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void updatePlaybackSpeedView(View root) {
-        if (root != null) {
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            TextView textPlaybackSpeed = playerView.findViewById(R.id.player_playback_speed);
-            Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
-            textPlaybackSpeed.setText(currentPlayer != null ?
-                    Helper.getDisplayValueForPlaybackSpeed((double) currentPlayer.getPlaybackParameters().speed) :
-                    DEFAULT_PLAYBACK_SPEED);
-        }
-    }
-
-    private void updateQualityView(View root) {
-        if (root != null) {
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            TextView textQuality = playerView.findViewById(R.id.player_quality);
-            if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
-                textQuality.setText(AUTO_QUALITY_STRING);
-            } else {
-                textQuality.setText(String.format("%sp", MainActivity.videoQuality));
-            }
+    private void updateQualityView() {
+        if (MainActivity.videoQuality == AUTO_QUALITY_ID) {
+            ((TextView) playbackQuality).setText(AUTO_QUALITY_STRING);
+        } else {
+            ((TextView) playbackQuality).setText(String.format("%sp", MainActivity.videoQuality));
         }
     }
 
@@ -2514,7 +2473,7 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
 
-            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
+            StyledPlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
             view.setShutterBackgroundColor(Color.TRANSPARENT);
             view.setPlayer(currentPlayer);
             view.getPlayer().addListener(new Player.Listener() {
@@ -2553,7 +2512,6 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             if (currentPlayer != null) {
-                showBuffering();
                 if (fileViewPlayerListener != null) {
                     currentPlayer.addListener(fileViewPlayerListener);
                 }
@@ -2627,12 +2585,6 @@ public class FileViewFragment extends BaseFragment implements
                         }
 
                         new Handler(Looper.getMainLooper()).post(() -> {
-                            View root = getView();
-                            if (root != null) {
-                                root.findViewById(R.id.player_quality).setVisibility(
-                                        MainActivity.videoIsTranscoded ? View.VISIBLE : View.GONE);
-                            }
-
                             if (MainActivity.playerManager != null) { // null pointer check
                                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                                 MainActivity.playerManager.initializeCurrentPlayer(
@@ -2699,8 +2651,6 @@ public class FileViewFragment extends BaseFragment implements
     private void setPlaybackSpeed(Player player, int speedId) {
         float speed = speedId / 100.0f;
         player.setPlaybackSpeed(speed);
-
-        updatePlaybackSpeedView(getView());
     }
 
     private void setPlayerQualityToDefault() {
@@ -2725,7 +2675,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private void setPlayerQuality(Player player, int quality) {
         for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
-            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
+            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) {
+                continue;
+            }
 
             if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
                 player.setTrackSelectionParameters(
@@ -2744,7 +2696,7 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             MainActivity.videoQuality = quality;
-            updateQualityView(getView());
+            updateQualityView();
             break;
         }
     }
@@ -4052,9 +4004,6 @@ public class FileViewFragment extends BaseFragment implements
                 ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
                 globalLayout.addView(exoplayerContainer);
 
-                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen_exit);
-
                 MainActivity activity = (MainActivity) context;
                 activity.enterFullScreenMode();
 
@@ -4077,8 +4026,6 @@ public class FileViewFragment extends BaseFragment implements
                 ((ViewGroup) exoplayerContainer.getParent()).removeView(exoplayerContainer);
                 mediaContainer.addView(exoplayerContainer);
 
-                View playerView = root.findViewById(R.id.file_view_exoplayer_view);
-                ((ImageView) playerView.findViewById(R.id.player_image_full_screen_toggle)).setImageResource(R.drawable.ic_fullscreen);
                 exoplayerContainer.setPadding(0, 0, 0, 0);
 
                 activity.exitFullScreenMode();
@@ -4118,7 +4065,6 @@ public class FileViewFragment extends BaseFragment implements
                                             lastPositionSaved = elapsedSeconds;
                                         }
 
-                                        renderElapsedDuration();
                                     }
                                 }
                             });
@@ -4133,8 +4079,6 @@ public class FileViewFragment extends BaseFragment implements
     private void resetPlayer() {
         elapsedDuration = 0;
         totalDuration = 0;
-        renderElapsedDuration();
-        renderTotalDuration();
 
         elapsedPlaybackScheduled = false;
         if (seekOverlayHandler != null) {
@@ -4156,54 +4100,12 @@ public class FileViewFragment extends BaseFragment implements
 //        }
     }
 
-    private void showBuffering() {
-        View root = getView();
-        if (root != null) {
-            root.findViewById(R.id.player_buffering_progress).setVisibility(View.VISIBLE);
-
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            playerView.findViewById(R.id.player_play_pause).setVisibility(View.INVISIBLE);
-            playerView.findViewById(R.id.player_skip_back_10).setVisibility(View.INVISIBLE);
-            playerView.findViewById(R.id.player_skip_forward_10).setVisibility(View.INVISIBLE);
-        }
-    }
-
-    private void hideBuffering() {
-        View root = getView();
-        if (root != null) {
-            root.findViewById(R.id.player_buffering_progress).setVisibility(View.INVISIBLE);
-
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
-            playerView.findViewById(R.id.player_play_pause).setVisibility(View.VISIBLE);
-            playerView.findViewById(R.id.player_skip_back_10).setVisibility(View.VISIBLE);
-            playerView.findViewById(R.id.player_skip_forward_10).setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void renderElapsedDuration() {
-        View view = getView();
-        if (view != null) {
-            Helper.setViewText(view.findViewById(R.id.player_duration_elapsed), Helper.formatDuration(Double.valueOf(elapsedDuration / 1000.0).longValue()));
-        }
-    }
-
-    private void renderTotalDuration() {
-        View view = getView();
-        if (view != null) {
-            Helper.setViewText(view.findViewById(R.id.player_duration_total), isLivestream
-                    ? getResources().getString(R.string.live_duration)
-                    : Helper.formatDuration(Double.valueOf(totalDuration / 1000.0).longValue()));
-        }
-    }
-
     private void loadAndScheduleDurations() {
         Player currentPlayer = MainActivity.playerManager.getCurrentPlayer();
         if (currentPlayer != null && playbackStarted) {
             elapsedDuration = currentPlayer.getCurrentPosition() < 0 ? 0 : currentPlayer.getCurrentPosition();
             totalDuration = currentPlayer.getDuration() < 0 ? 0 : currentPlayer.getDuration();
 
-            renderElapsedDuration();
-            renderTotalDuration();
             scheduleElapsedPlayback();
         }
     }
@@ -4556,7 +4458,7 @@ public class FileViewFragment extends BaseFragment implements
     public void onEnterPIPMode() {
         View root = getView();
         if (root != null) {
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            StyledPlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
             playerView.setVisibility(View.GONE);
         }
     }
@@ -4564,7 +4466,7 @@ public class FileViewFragment extends BaseFragment implements
     public void onExitPIPMode() {
         View root = getView();
         if (root != null) {
-            PlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
+            StyledPlayerView playerView = root.findViewById(R.id.file_view_exoplayer_view);
             playerView.setVisibility(View.VISIBLE);
         }
     }

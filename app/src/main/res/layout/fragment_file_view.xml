@@ -137,18 +137,15 @@
                 android:background="@android:color/black"
                 android:visibility="gone">
 
-                <com.google.android.exoplayer2.ui.PlayerView
+                <com.google.android.exoplayer2.ui.StyledPlayerView
                     android:id="@+id/file_view_exoplayer_view"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    app:controller_layout_id="@layout/exo_playback_control_view" />
+                    app:show_buffering="always"
+                    app:show_shuffle_button="false"
+                    app:scrubber_color="@color/colorPrimary"
+                    app:played_color="@color/colorPrimary" />
 
-                <ProgressBar
-                    android:id="@+id/player_buffering_progress"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_centerInParent="true"
-                    android:visibility="gone" />
 
                 <ImageView
                     android:id="@+id/seek_overlay"
@@ -162,6 +159,39 @@
                     android:visibility="gone"
                     tools:visibility="visible"
                     tools:ignore="UseAppTint" />
+
+                <RelativeLayout
+                    android:background="@color/playerControlsBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <androidx.mediarouter.app.MediaRouteButton
+                        android:id="@+id/player_media_route_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_alignParentTop="true"
+                        android:layout_alignParentStart="true"
+                        android:padding="16dp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/player_quality"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentTop="true"
+                        android:layout_alignParentEnd="true"
+                        android:fontFamily="@font/inter"
+                        android:letterSpacing="0.05"
+                        android:padding="16dp"
+                        android:singleLine="true"
+                        android:text="@string/auto_quality"
+                        android:textColor="@color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                </RelativeLayout>
+
             </RelativeLayout>
 
             <RelativeLayout

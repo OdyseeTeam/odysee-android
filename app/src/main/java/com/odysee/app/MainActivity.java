@@ -79,7 +79,7 @@ import com.bumptech.glide.request.transition.Transition;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
-import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -1813,7 +1813,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         dismissActiveDialogs();
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
-        PlayerView pipPlayer = findViewById(R.id.pip_player);
+        StyledPlayerView pipPlayer = findViewById(R.id.pip_player);
         pipPlayer.setPlayer(playerManager.getCurrentPlayer());
         pipPlayer.setUseController(false);
         pipPlayerContainer.setVisibility(View.VISIBLE);
@@ -1857,7 +1857,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
-        PlayerView pipPlayer = findViewById(R.id.pip_player);
+        StyledPlayerView pipPlayer = findViewById(R.id.pip_player);
         pipPlayer.setPlayer(null);
         pipPlayerContainer.setVisibility(View.GONE);
         playerReassigned = true;
@@ -1868,7 +1868,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void setPlayerForMiniPlayerView() {
-        PlayerView view = findViewById(R.id.global_now_playing_player_view);
+        StyledPlayerView view = findViewById(R.id.global_now_playing_player_view);
         if (view != null) {
             view.setVisibility(View.VISIBLE);
             view.setPlayer(null);
@@ -2522,7 +2522,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
         if (playerManager != null && !playerReassigned) {
-            PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
+            StyledPlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
             playerView.setPlayer(playerManager.getCurrentPlayer());
             playerView.setUseController(false);
