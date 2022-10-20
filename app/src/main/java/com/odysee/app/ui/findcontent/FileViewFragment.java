@@ -2670,13 +2670,17 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    // Taken from NewPipe: https://github.com/TeamNewPipe/NewPipe/blob/5459a55406ae72783584f84c1a8410e10903ba8a/app/src/main/java/org/schabi/newpipe/util/ListHelper.java#L552-L566
     private boolean isMeteredNetwork(Context context) {
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (connectivityManager != null && connectivityManager.getActiveNetwork() == null) {
+                return false;
+            }
+        } else if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
             return false;
         }
-        return connectivityManager.isActiveNetworkMetered();
+        return connectivityManager != null && connectivityManager.isActiveNetworkMetered();
     }
 
     private void resetViewCount() {

@@ -1344,6 +1344,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initPlaylistOverlay();
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
     public void setNetworkCallback() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback == null) {
             networkCallback = new OdyseeNetworkCallback();
@@ -1351,7 +1352,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             // If minAPIVersion is 26 (Android Oreo) or higher, replace this with a call to registerDefaultNetworkCallback(NetworkCallback, Handler)
-            // being the handler one for the UI-thread and on OdyseeNetworkCallback class make the call to setPlayerQuality() directly
+            // being the handler one for the UI-thread and on OdyseeNetworkCallback class make the call directly to setPlayerQuality()
             connectivityManager.registerDefaultNetworkCallback(networkCallback);
         }
     }
