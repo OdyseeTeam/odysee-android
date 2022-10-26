@@ -7,6 +7,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -28,6 +29,9 @@ import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -76,8 +80,11 @@ import androidx.annotation.AnyThread;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionParameters;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.cache.Cache;
@@ -287,6 +294,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final int SOURCE_NOW_PLAYING_FILE = 1;
     public static final int SOURCE_NOW_PLAYING_SHUFFLE = 2;
+    public static final int AUTO_QUALITY_ID = 0;
     public static MainActivity instance;
     private int pendingSourceTabId;
 
@@ -521,6 +529,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private static final int DEFAULT_MINI_PLAYER_MARGIN = 4;
 
     private boolean readyToDraw = false;
+
+    OdyseeNetworkCallback networkCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1334,6 +1344,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initPlaylistOverlay();
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
+    public void setNetworkCallback() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback == null) {
+            networkCallback = new OdyseeNetworkCallback();
+            networkCallback.setActivityAndPlayerManager(this, playerManager);
+
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            // If minAPIVersion is 26 (Android Oreo) or higher, replace this with a call to registerDefaultNetworkCallback(NetworkCallback, Handler)
+            // being the handler one for the UI-thread and on OdyseeNetworkCallback class make the call directly to setPlayerQuality()
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        }
+    }
+
     public static DatabaseHelper getDatabaseHelper() {
         return dbHelper;
     }
@@ -2137,6 +2160,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (nowPlayingQueuePlaylist != null) {
             nowPlayingQueuePlaylist = null;
         }
+
+        // If user watched some media content, a NetworkCallback was created and registered and it needs to be unregistered
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback != null) {
+            ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
+
         super.onPause();
     }
 
@@ -5545,6 +5575,25 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
     }
 
+    public void setPlayerQuality(Player player, int quality) {
+        for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
+            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
+
+            TrackSelectionParameters.Builder trackselectionparemetersBuilder = player.getTrackSelectionParameters().buildUpon();
+
+            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
+                trackselectionparemetersBuilder.clearVideoSizeConstraints();
+            } else {
+                trackselectionparemetersBuilder.setMaxVideoSize(Integer.MAX_VALUE, quality + 1);
+            }
+
+            player.setTrackSelectionParameters(trackselectionparemetersBuilder.build());
+
+            MainActivity.videoQuality = quality;
+            break;
+        }
+    }
+
     public void blockChannel(Claim channel, Claim modChannel) {
         ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
@@ -5955,5 +6004,31 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    class OdyseeNetworkCallback extends ConnectivityManager.NetworkCallback {
+        MainActivity mainActivity;
+        PlayerManager playerManager;
+
+        public void setActivityAndPlayerManager(MainActivity a, PlayerManager manager) {
+            mainActivity = a;
+            playerManager = manager;
+        }
+
+        @Override
+        public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) {
+            if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
+                MainActivity.videoQuality = wifiDefaultQuality();
+            } else {
+                MainActivity.videoQuality = mobileDefaultQuality();
+            }
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    mainActivity.setPlayerQuality(playerManager.getCurrentPlayer(), MainActivity.videoQuality);
+                }
+            });
+        }
     }
 }
