@@ -2789,10 +2789,6 @@ public class FileViewFragment extends BaseFragment implements
             futureReactions.cancel(true);
         }
 
-        if (c.isLive()) {
-            return;
-        }
-
         Activity a = getActivity();
 
         if (a != null) {
