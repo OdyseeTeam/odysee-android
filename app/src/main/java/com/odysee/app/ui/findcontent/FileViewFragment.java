@@ -1016,6 +1016,7 @@ public class FileViewFragment extends BaseFragment implements
             activity.findViewById(R.id.appbar).setFitsSystemWindows(false);
             activity.checkIfPlaylistOverlayShouldDisplay();
             activity.refreshChannelCreationRequired(getView());
+            activity.updateMiniPlayerMargins(false);
         }
 
         if (MainActivity.playerManager != null) {
@@ -4388,11 +4389,6 @@ public class FileViewFragment extends BaseFragment implements
             }
         }
         return false;
-    }
-
-    @Override
-    public boolean shouldHideGlobalPlayer() {
-        return true;
     }
 
     private void checkOwnClaim() {
