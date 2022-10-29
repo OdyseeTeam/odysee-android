@@ -116,6 +116,7 @@ public class PublishFormFragment extends BaseFragment implements
     private boolean editMode;
     @Getter
     private boolean saveInProgress;
+    private String pendingStatusUploadUrl;
     private String currentFilter;
     private boolean publishFileChecked;
     private boolean fetchingChannels;
@@ -1268,12 +1269,22 @@ public class PublishFormFragment extends BaseFragment implements
 
             @Override
             public void onError(Exception error) {
+                if (error instanceof TusPublishTask.CheckStatusException) {
+                    pendingStatusUploadUrl = ((TusPublishTask.CheckStatusException) error).getUploadUrl();
+                    postSave();
+                    showMessage(error.getMessage());
+                    Helper.setViewText(buttonPublish, R.string.check_status);
+                    return;
+                }
+
                 showError(error.getMessage());
                 postSave();
             }
         };
+
         if (!editMode) {
-            TusPublishTask task = new TusPublishTask(claim, finalFilePath, progressPublish, Lbryio.AUTH_TOKEN, handler);
+            TusPublishTask task = new TusPublishTask(claim, finalFilePath,
+                    pendingStatusUploadUrl, progressPublish, Lbryio.AUTH_TOKEN, handler);
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         } else  {
             PublishClaimTask task = new PublishClaimTask(claim, progressPublish, Lbryio.AUTH_TOKEN, handler);
