@@ -23,6 +23,7 @@ import com.google.android.material.chip.ChipGroup;
 
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.ChannelLiveStatus;
+import com.odysee.app.callable.GetAllLivestreams;
 import com.odysee.app.callable.Search;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -653,11 +654,21 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
-                List<String> channelIds = Arrays.asList(currentChannelIdList);
+                Map<String, JSONObject> activeJsonData;
+                Callable<Map<String, JSONObject>> callable;
+                Future<Map<String, JSONObject>> futureActive;
 
-                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(channelIds, false, true);
-                Future<Map<String, JSONObject>> futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
-                Map<String, JSONObject> activeJsonData = futureActive.get();
+                if (currentCategoryId != wildWestIndex) {
+                    List<String> channelIds = Arrays.asList(currentChannelIdList);
+
+                    callable = new ChannelLiveStatus(channelIds, false, true);
+                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                } else {
+                    callable = new GetAllLivestreams();
+                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+                }
+
+                activeJsonData = futureActive.get();
 
                 if (activeJsonData != null && activeJsonData.size() > 0) {
                     List<String> claimIds = new ArrayList<>();
@@ -732,7 +743,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 null,
-                Arrays.asList(currentChannelIdList),
+                currentCategoryId != wildWestIndex ? Arrays.asList(currentChannelIdList) : null,
                 Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds()),
                 null,
                 null,
