@@ -43,4 +43,10 @@
         android:title="@string/mute_channel"
         app:iconTint="@color/actionBarForeground"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_report"
+        android:icon="@drawable/ic_report"
+        android:title="@string/report"
+        app:iconTint="@color/actionBarForeground"
+        app:showAsAction="always" />
 </menu>

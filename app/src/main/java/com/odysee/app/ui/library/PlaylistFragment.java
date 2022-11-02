@@ -264,7 +264,6 @@ public class PlaylistFragment extends BaseFragment implements
                 collection.setClaims(new ArrayList<>(playlistClaimMap.values()));
 
                 adapter = new ClaimListAdapter(collection.getClaims(), ClaimListAdapter.STYLE_SMALL_LIST, getContext());
-                adapter.setLongClickForContextMenu(true);
                 adapter.setOwnCollection(true);
                 adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                     @Override
@@ -352,6 +351,24 @@ public class PlaylistFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
+        if (currentCollection != null && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
+            int position = adapter.getCurrentPosition();
+            Claim claim = adapter.getItems().get(position);
+            if (claim != null && claim.getSigningChannel() != null) {
+                Claim channel = claim.getSigningChannel();
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_block) {
+                        activity.handleBlockChannel(channel, null);
+                    } else {
+                        activity.handleMuteChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
         if (currentCollection != null && item.getItemId() == R.id.action_remove_from_list) {
             String id = currentCollection.getId();
             int position = adapter.getCurrentPosition();
@@ -372,6 +389,17 @@ public class PlaylistFragment extends BaseFragment implements
                 }
             }
         }
+
+        if (currentCollection != null && item.getItemId() == R.id.action_report) {
+            int position = adapter.getCurrentPosition();
+            Claim claim = adapter.getItems().get(position);
+            Context context = getContext();
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).handleReportClaim(claim);
+            }
+            return true;
+        }
+
         return super.onContextItemSelected(item);
     }
 

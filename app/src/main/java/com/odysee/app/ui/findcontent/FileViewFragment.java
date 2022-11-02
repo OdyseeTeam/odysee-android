@@ -4329,7 +4329,7 @@ public class FileViewFragment extends BaseFragment implements
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getGroupId() == FILE_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (relatedContentAdapter != null) {
-                int position = relatedContentAdapter.getPosition();
+                int position = relatedContentAdapter.getCurrentPosition();
                 Claim claim = relatedContentAdapter.getItems().get(position);
                 if (claim != null && claim.getSigningChannel() != null) {
                     Claim channel = claim.getSigningChannel();
@@ -4345,9 +4345,21 @@ public class FileViewFragment extends BaseFragment implements
             return true;
         }
 
+        if (item.getGroupId() == FILE_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
+            if (relatedContentAdapter != null) {
+                int position = relatedContentAdapter.getCurrentPosition();
+                Claim claim = relatedContentAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
         if (item.getGroupId() ==  FILE_CONTEXT_GROUP_ID)  {
             if (relatedContentAdapter != null) {
-                int position = relatedContentAdapter.getPosition();
+                int position = relatedContentAdapter.getCurrentPosition();
                 Claim claim = relatedContentAdapter.getItems().get(position);
                 String url = claim.getPermanentUrl();
 

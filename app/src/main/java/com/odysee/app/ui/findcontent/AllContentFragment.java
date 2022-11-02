@@ -773,7 +773,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (contentListAdapter != null) {
-                int position = contentListAdapter.getPosition();
+                int position = contentListAdapter.getCurrentPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
                 if (claim != null && claim.getSigningChannel() != null) {
                     Claim channel = claim.getSigningChannel();
@@ -791,9 +791,21 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             return true;
         }
 
-        if (item.getGroupId() ==  ALL_CONTENT_CONTEXT_GROUP_ID)  {
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
             if (contentListAdapter != null) {
-                int position = contentListAdapter.getPosition();
+                int position = contentListAdapter.getCurrentPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID)  {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getCurrentPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
                 String url = claim.getPermanentUrl();
 
