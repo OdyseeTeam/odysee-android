@@ -172,7 +172,7 @@ public class BlockedAndMutedFragment extends BaseFragment {
 
                             JSONObject result = Helper.getJSONObject("result", jsonResponse);
                             if (!result.has("blocked_channels") || result.isNull("blocked_channels")) {
-                                throw new ApiCallException("missing blocked_channels key from json response");
+                                continue;
                             }
 
                             JSONArray items = result.getJSONArray("blocked_channels");
@@ -318,10 +318,9 @@ public class BlockedAndMutedFragment extends BaseFragment {
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getGroupId() == BLOCKED_AND_MUTED_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (adapter != null) {
-                int position = adapter.getPosition();
-                Claim claim = adapter.getItems().get(position);
-                if (claim != null && claim.getSigningChannel() != null) {
-                    Claim channel = claim.getSigningChannel();
+                int position = adapter.getCurrentPosition();
+                Claim channel = adapter.getItems().get(position);
+                if (channel != null) {
                     boolean isBlocked = Lbryio.isChannelBlocked(channel);
                     boolean isMuted = Lbryio.isChannelMuted(channel);
 
@@ -329,14 +328,14 @@ public class BlockedAndMutedFragment extends BaseFragment {
                     if (context instanceof MainActivity) {
                         MainActivity activity = (MainActivity) context;
                         if (item.getItemId() == R.id.action_block) {
-                            if (!isBlocked) {
+                            if (isBlocked) {
                                 activity.handleUnblockChannel(channel, null);
                             } else {
                                 activity.handleBlockChannel(channel, null);
                             }
                         } else {
-                            if (!isMuted) {
-                                activity.handleMuteChannel(channel);
+                            if (isMuted) {
+                                activity.handleUnmuteChannel(channel);
                             } else {
                                 activity.handleMuteChannel(channel);
                             }
