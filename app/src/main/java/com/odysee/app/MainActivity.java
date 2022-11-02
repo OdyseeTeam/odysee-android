@@ -107,6 +107,8 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -5575,6 +5577,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 }
             }
         });
+    }
+
+    public void handleReportClaim(final Claim claim) {
+        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+        ctcspb.setToolbarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+        CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+        CustomTabsIntent intent = builder.build();
+        intent.launchUrl(this, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
     }
 
     public void setPlayerQuality(Player player, int quality) {

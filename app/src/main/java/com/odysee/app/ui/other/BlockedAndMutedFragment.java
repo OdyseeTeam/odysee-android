@@ -347,6 +347,18 @@ public class BlockedAndMutedFragment extends BaseFragment {
             return true;
         }
 
+        if (item.getGroupId() == BLOCKED_AND_MUTED_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
+            if (adapter != null) {
+                int position = adapter.getCurrentPosition();
+                Claim claim = adapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
         return super.onContextItemSelected(item);
     }
 

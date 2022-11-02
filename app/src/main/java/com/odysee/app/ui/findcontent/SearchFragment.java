@@ -45,6 +45,7 @@ import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
 import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.ui.BaseFragment;
@@ -257,19 +258,59 @@ public class SearchFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (resultListAdapter != null) {
-                int position = resultListAdapter.getPosition();
+                int position = resultListAdapter.getCurrentPosition();
                 Claim claim = resultListAdapter.getItems().get(position);
-                if (claim != null && claim.getSigningChannel() != null) {
-                    Claim channel = claim.getSigningChannel();
+                if (claim != null) {
+                    Claim channel = claim.getSigningChannel() != null ? claim.getSigningChannel() : claim;
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleMuteChannel(channel);
+                        MainActivity activity = (MainActivity) context;
+                        if (item.getItemId() == R.id.action_block) {
+                            activity.handleBlockChannel(channel, null);
+                        } else {
+                            activity.handleMuteChannel(channel);
+                        }
                     }
                 }
             }
             return true;
+        }
+
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
+            if (resultListAdapter != null) {
+                int position = resultListAdapter.getCurrentPosition();
+                Claim claim = resultListAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID)  {
+            if (resultListAdapter != null) {
+                int position = resultListAdapter.getCurrentPosition();
+                Claim claim = resultListAdapter.getItems().get(position);
+
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
+                    }
+                }
+            }
         }
 
         return super.onContextItemSelected(item);

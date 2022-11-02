@@ -62,11 +62,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     private float scale;
 
-    /**
-     * Note: This is only a flag to check for certain conditions and handle the behaviour differently on the playlist fragment
-     */
-    @Setter
-    private boolean longClickForContextMenu;
     @Getter
     @Setter
     private boolean inPlaylistOverlay;
@@ -360,6 +355,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, isBlocked ? R.string.unblock_channel : R.string.block_channel);
             contextMenu.add(contextGroupId, R.id.action_mute, Menu.NONE, isMuted ? R.string.unmute_channel : R.string.mute_channel);
+            contextMenu.add(contextGroupId, R.id.action_report, Menu.NONE, R.string.report);
         }
     }
 
@@ -547,10 +543,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         vh.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                if (longClickForContextMenu) {
-                    setCurrentPosition(vh.getAbsoluteAdapterPosition());
-                    return false;
-                }
+                setCurrentPosition(vh.getAbsoluteAdapterPosition());
 
                 if (!canEnterSelectionMode) {
                     return false;
