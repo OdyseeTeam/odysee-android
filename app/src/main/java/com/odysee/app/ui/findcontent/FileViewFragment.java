@@ -20,7 +20,6 @@ import android.graphics.PorterDuff;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,7 +30,6 @@ import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.util.Base64;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
@@ -141,7 +139,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -2703,23 +2700,14 @@ public class FileViewFragment extends BaseFragment implements
                     ((MainActivity) context).wifiDefaultQuality();
             ((MainActivity) context).setPlayerQuality(MainActivity.playerManager.getCurrentPlayer(), quality);
 
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                updateQualityView(getView());
-            }
+            updateQualityView(getView());
         }
     }
 
     private boolean isMeteredNetwork(Context context) {
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-            if (connectivityManager != null && connectivityManager.getActiveNetwork() == null) {
-                return false;
-            }
-        } else if (connectivityManager == null || connectivityManager.getActiveNetworkInfo() == null) {
-            return false;
-        }
-        return connectivityManager != null && connectivityManager.isActiveNetworkMetered();
+        return connectivityManager != null && connectivityManager.getActiveNetwork() != null && connectivityManager.isActiveNetworkMetered();
     }
 
     private void resetViewCount() {
@@ -2974,25 +2962,13 @@ public class FileViewFragment extends BaseFragment implements
                         JSONObject jsonResult = jsonResponse.getJSONObject("result");
                         if (jsonResult.has("others_reactions")) {
                             JSONObject responseOthersReactions = jsonResult.getJSONObject("others_reactions");
-                            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                                responseOthersReactions.keys().forEachRemaining(key -> {
-                                    try {
-                                        result.put(key, getMyReactions(jsonResult, responseOthersReactions, key));
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
-                                });
-                            } else { // Android versions prior to API 24 lack forEachRemaining()
-                                Iterator<String> itr = responseOthersReactions.keys();
-                                while (itr.hasNext()) {
-                                    try {
-                                        String nextKey = itr.next();
-                                        result.put(nextKey, getMyReactions(jsonResult, responseOthersReactions, nextKey));
-                                    } catch (JSONException e) {
-                                        Log.e(TAG, "loadReactions for Comment: ".concat(e.getLocalizedMessage()));
-                                    }
+                            responseOthersReactions.keys().forEachRemaining(key -> {
+                                try {
+                                    result.put(key, getMyReactions(jsonResult, responseOthersReactions, key));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
                                 }
-                            }
+                            });
                         }
                     }
                 } catch (IOException e) {
@@ -4064,70 +4040,41 @@ public class FileViewFragment extends BaseFragment implements
             }
 
             Activity activity = getActivity();
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                Supplier<Boolean> s = new Supplier<Boolean>() {
-                    @Override
-                    public Boolean get() {
-                        try {
-                            Lbryio.call("file", "view", options,  null).close();
-                            return true;
-                        } catch (LbryioRequestException | LbryioResponseException ex) {
-                            return false;
-                        }
+            Supplier<Boolean> s = new Supplier<Boolean>() {
+                @Override
+                public Boolean get() {
+                    try {
+                        Lbryio.call("file", "view", options,  null).close();
+                        return true;
+                    } catch (LbryioRequestException | LbryioResponseException ex) {
+                        return false;
                     }
-                };
+                }
+            };
 
-                CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(s);
-                cf.whenComplete((result, ex) -> {
-                    if (result) {
+            CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(s);
+            cf.whenComplete((result, ex) -> {
+                if (result) {
+                    if (activity != null) {
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                claimEligibleRewards();
+                            }
+                        });
+                    }
+                    if (ex != null) {
                         if (activity != null) {
                             activity.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    claimEligibleRewards();
+                                    showError(ex.getMessage());
                                 }
                             });
                         }
-                        if (ex != null) {
-                            if (activity != null) {
-                                activity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        showError(ex.getMessage());
-                                    }
-                                });
-                            }
-                        }
                     }
-                });
-            } else {
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Lbryio.call("file", "view", options,  null).close();
-                            if (activity != null) {
-                                activity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        claimEligibleRewards();
-                                    }
-                                });
-                            }
-                        } catch (LbryioRequestException | LbryioResponseException ex) {
-                            if (activity != null) {
-                                activity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        showError(ex.getMessage());
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
-                t.start();
-            }
+                }
+            });
         }
     }
 
@@ -4325,9 +4272,7 @@ public class FileViewFragment extends BaseFragment implements
             if (currentPlayer != null && activity != null) {
                 activity.setPlayerQuality(currentPlayer, quality);
 
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    updateQualityView(getView());
-                }
+                updateQualityView(getView());
                 return true;
             }
         }
@@ -5107,10 +5052,7 @@ public class FileViewFragment extends BaseFragment implements
                     }
 
                     protected void onSetSSLParameters(SSLParameters sslParameters) {
-                        // don't call setEndpointIdentificationAlgorithm for API level < 24
-                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
-                        }
+                        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
                     }
                 };
                 webSocketClient.connect();

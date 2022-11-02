@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -392,12 +391,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
         Reactions commentReactions = comment.getReactions();
         if (commentReactions != null) {
             int countTextColor;
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                countTextColor = context.getResources().getColor(R.color.foreground, null);
-            } else {
-                //noinspection deprecation
-                countTextColor = context.getResources().getColor(R.color.foreground);
-            }
+            countTextColor = context.getResources().getColor(R.color.foreground, null);
 
             String likesAmount = String.valueOf(commentReactions.getOthersLikes());
             String dislikesAmount = String.valueOf(commentReactions.getOthersDislikes());
@@ -405,12 +399,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             if (commentReactions.isLiked()) {
                 int fireActive;
 
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                    fireActive = context.getResources().getColor(R.color.fireActive, null);
-                } else {
-                    //noinspection deprecation
-                    fireActive = context.getResources().getColor(R.color.fireActive);
-                }
+                fireActive = context.getResources().getColor(R.color.fireActive, null);
 
                 holder.likesCount.setText(String.valueOf(Integer.parseInt(likesAmount) + 1));
                 holder.likesCount.setTextColor(fireActive);
@@ -434,12 +423,7 @@ public class CommentListAdapter extends RecyclerView.Adapter<CommentListAdapter.
             if (commentReactions.isDisliked()) {
                 int slimeActive;
 
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-                    slimeActive = context.getResources().getColor(R.color.slimeActive, null);
-                } else {
-                    //noinspection deprecation
-                    slimeActive = context.getResources().getColor(R.color.slimeActive);
-                }
+                slimeActive = context.getResources().getColor(R.color.slimeActive, null);
 
                 holder.dislikesCount.setText(String.valueOf(Integer.parseInt(dislikesAmount) + 1));
                 holder.dislikesCount.setTextColor(slimeActive);

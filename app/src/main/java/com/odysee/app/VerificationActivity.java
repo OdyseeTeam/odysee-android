@@ -3,7 +3,6 @@ package com.odysee.app;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -15,7 +14,6 @@ import android.view.View;
 import android.view.WindowInsetsController;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.FragmentActivity;
-import androidx.preference.PreferenceManager;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -52,11 +50,12 @@ public class VerificationActivity extends FragmentActivity implements Verificati
 
         // Change status bar text color depending on Night mode when app is running
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
+                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
-        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+        } else {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             if (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {

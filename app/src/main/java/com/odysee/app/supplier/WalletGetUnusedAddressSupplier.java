@@ -1,15 +1,10 @@
 package com.odysee.app.supplier;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.utils.Lbry;
 
 import java.util.function.Supplier;
 
-@RequiresApi(api = Build.VERSION_CODES.N)
 public class WalletGetUnusedAddressSupplier implements Supplier<String> {
     String authToken;
 
