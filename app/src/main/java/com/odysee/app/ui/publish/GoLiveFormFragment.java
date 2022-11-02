@@ -668,7 +668,7 @@ public class GoLiveFormFragment extends BaseFragment implements
         fetchingChannels = true;
         disableChannelSpinner();
         Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
-        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
@@ -692,14 +692,6 @@ public class GoLiveFormFragment extends BaseFragment implements
 
     private void enableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, true);
-        if (channelSpinner != null) {
-            Claim selectedClaim = (Claim) channelSpinner.getSelectedItem();
-            if (selectedClaim != null) {
-                if (selectedClaim.isPlaceholder()) {
-                    showChannelCreator();
-                }
-            }
-        }
     }
 
     private void showChannelCreator() {
