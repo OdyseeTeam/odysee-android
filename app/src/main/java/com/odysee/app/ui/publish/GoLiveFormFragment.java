@@ -169,7 +169,6 @@ public class GoLiveFormFragment extends BaseFragment implements
     private String uploadedThumbnailUrl;
     private boolean storageRefusedOnce;
     private boolean editFieldsLoaded;
-    private boolean editChannelSpinnerLoaded;
     private boolean editMode;
     private boolean modeLivestream = true;
     private boolean anytimeStream = true;
@@ -732,12 +731,11 @@ public class GoLiveFormFragment extends BaseFragment implements
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (editMode) {
-                if (currentClaim.getSigningChannel() != null && !editChannelSpinnerLoaded) {
+                if (currentClaim.getSigningChannel() != null) {
                     int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
                     if (position > -1) {
                         channelSpinner.setSelection(position);
                     }
-                    editChannelSpinnerLoaded = true;
                 }
             } else {
                 if (channelSpinnerAdapter.getCount() > 1) {

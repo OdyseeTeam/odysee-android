@@ -175,7 +175,6 @@ public class PublishFormFragment extends BaseFragment implements
     private String lastSelectedThumbnailFile;
     private String uploadedThumbnailUrl;
     private boolean editFieldsLoaded;
-    private boolean editChannelSpinnerLoaded;
     private Claim currentClaim;
     private GalleryItem currentGalleryItem;
     private String currentFilePath;
@@ -1071,17 +1070,14 @@ public class PublishFormFragment extends BaseFragment implements
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (editMode) {
-                if (!editChannelSpinnerLoaded) {
-                    if (currentClaim.getSigningChannel() != null) {
-                        int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
-                        if (position > -1) {
-                            channelSpinner.setSelection(position);
-                        }
-                    } else {
-                        // select anonymous
-                        channelSpinner.setSelection(1);
+                if (currentClaim.getSigningChannel() != null) {
+                    int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
+                    if (position > -1) {
+                        channelSpinner.setSelection(position);
                     }
-                    editChannelSpinnerLoaded = true;
+                } else {
+                    // select anonymous
+                    channelSpinner.setSelection(1);
                 }
             } else {
                 if (channelSpinnerAdapter.getCount() > 2) {
