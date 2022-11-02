@@ -429,6 +429,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED = "com.odysee.app.preference.userinterface.PlaybackDefaultSpeed";
+    public static final String PREFERENCE_KEY_INTERNAL_DOWNLOAD_WIFI_ONLY = "com.odysee.app.preference.userinterface.DownloadWifiOnly";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -1466,6 +1467,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public int playbackDefaultSpeed() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED, "100"));
+    }
+
+    public boolean downloadWifiOnly() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_DOWNLOAD_WIFI_ONLY, true);
     }
 
     public boolean initialSubscriptionMergeDone() {
@@ -4018,7 +4024,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Uri fileUri = data.getData();
                 String filePath = Helper.getRealPathFromURI_API19(this, fileUri);
                 for (FilePickerListener listener : filePickerListeners) {
-                    listener.onFilePicked(filePath);
+                    listener.onFilePicked(filePath, fileUri);
                 }
             } else {
                 for (FilePickerListener listener : filePickerListeners) {

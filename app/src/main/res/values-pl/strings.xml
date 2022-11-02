@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Plik w \"%1$s\" nie istnieje.</string>
     <string name="confirm_purchase">Potwierdź zakup</string>
-    <string name="unable_to_view_url">Nie udało się załadować %1$s. Spróbuj ponownie później.</string>
     <string name="delete_content">Usunąć zawartość?</string>
     <string name="confirm_delete_content_message">Czy na pewno chcesz cofnąć publikację tej zawartości? Żadne pliki nie zostaną usunięte z Twojego urządzenia.</string>
     <string name="content_deleted">Treść została pomyślnie usunięta z blockchaina.</string>

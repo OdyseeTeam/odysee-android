@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">位於「%1$s」的檔案不存在。</string>
     <string name="confirm_purchase">確認購買</string>
-    <string name="unable_to_view_url">載入 %1$s 失敗。請稍後再試。</string>
     <string name="delete_content">刪除內容？</string>
     <string name="confirm_delete_content_message">你確定要取消發佈這內容嗎？這不會移除裝置上的檔案。</string>
     <string name="content_deleted">該內容已成功自區塊鏈移除。</string>

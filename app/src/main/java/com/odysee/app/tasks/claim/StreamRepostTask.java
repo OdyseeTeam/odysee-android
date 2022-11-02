@@ -25,15 +25,17 @@ public class StreamRepostTask extends AsyncTask<Void, Void, Claim> {
     private final String claimId;
     private final String channelId;
     private final View progressView;
+    private final String authToken;
     private final ClaimResultHandler handler;
     private Exception error;
 
-    public StreamRepostTask(String name, BigDecimal bid, String claimId, String channelId, View progressView, ClaimResultHandler handler) {
+    public StreamRepostTask(String name, BigDecimal bid, String claimId, String channelId, View progressView, String authToken, ClaimResultHandler handler) {
         this.name = name;
         this.bid = bid;
         this.claimId = claimId;
         this.channelId = channelId;
         this.progressView = progressView;
+        this.authToken = authToken;
         this.handler = handler;
     }
 
@@ -46,7 +48,7 @@ public class StreamRepostTask extends AsyncTask<Void, Void, Claim> {
             options.put("claim_id", claimId);
             options.put("channel_id", channelId);
 
-            JSONObject result = (JSONObject) Lbry.genericApiCall(Lbry.METHOD_STREAM_REPOST, options);
+            JSONObject result = (JSONObject) Lbry.authenticatedGenericApiCall(Lbry.METHOD_STREAM_REPOST, options, authToken);
             if (result.has("outputs")) {
                 JSONArray outputs = result.getJSONArray("outputs");
                 for (int i = 0; i < outputs.length(); i++) {

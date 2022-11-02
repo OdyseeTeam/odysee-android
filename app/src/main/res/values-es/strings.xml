@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">El archivo en \"%1$s\" no existe.</string>
     <string name="confirm_purchase">Confirmar compra</string>
-    <string name="unable_to_view_url">Falló al cargar %1$s. Por favor, inténtelo de nuevo más tarde.</string>
     <string name="delete_content">¿Eliminar contenido?</string>
     <string name="confirm_delete_content_message">¿Estás seguro de que deseas publicar este contenido? No se eliminarán archivos de su dispositivo.</string>
     <string name="content_deleted">El contenido se eliminó con éxito de la cadena de bloques.</string>

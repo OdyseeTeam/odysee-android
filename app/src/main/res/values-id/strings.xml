@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">File di \"%1$s\" tidak ada.</string>
     <string name="confirm_purchase">Konfirmasi pembelian</string>
-    <string name="unable_to_view_url">Gagal untuk memuat %1$s. Silakan coba lagi nanti.</string>
     <string name="delete_content">Hapus konten?</string>
     <string name="confirm_delete_content_message">Apakah Anda yakin ingin membatalkan publikasi konten ini? Tidak ada file yang akan dihapus dari perangkat Anda.</string>
     <string name="content_deleted">Konten berhasil dihapus dari blockchain.</string>

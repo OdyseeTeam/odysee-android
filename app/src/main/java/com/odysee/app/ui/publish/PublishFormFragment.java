@@ -1448,7 +1448,7 @@ public class PublishFormFragment extends BaseFragment implements
     }
 
     @Override
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         if (Helper.isNullOrEmpty(filePath)) {
             View view = getView();
             if (view != null) {

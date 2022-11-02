@@ -196,23 +196,8 @@
                     android:textSize="11sp"
                     android:textStyle="italic"
                     android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/claim_file_size"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    style="@style/TextView_Light"
-                    android:textSize="11sp" />
             </RelativeLayout>
-            <!-- download progress bar -->
-            <ProgressBar
-                android:id="@+id/claim_download_progress"
-                android:layout_width="match_parent"
-                android:layout_height="4dp"
-                android:layout_marginTop="4dp"
-                android:visibility="invisible"
-                style="?android:progressBarStyleHorizontal" />
+
             <TextView
                 android:id="@+id/claim_view_device"
                 android:layout_width="wrap_content"
