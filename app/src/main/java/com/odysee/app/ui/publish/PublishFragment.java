@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -405,7 +406,7 @@ public class PublishFragment extends BaseFragment implements
     }
 
     @Override
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         Context context = getContext();
         if (context instanceof MainActivity) {
             Map<String, Object> params = new HashMap<>();

@@ -287,8 +287,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final View repostedLabel;
         protected final View selectedOverlayView;
         protected final TextView viewCountView;
-        protected final TextView fileSizeView;
-        protected final ProgressBar downloadProgressView;
         protected final TextView deviceView;
         protected final ImageButton optionsMenuView;
 
@@ -315,8 +313,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             repostedLabel = v.findViewById(R.id.reposted_label);
             selectedOverlayView = v.findViewById(R.id.claim_selected_overlay);
             viewCountView = v.findViewById(R.id.claim_view_count);
-            fileSizeView = v.findViewById(R.id.claim_file_size);
-            downloadProgressView = v.findViewById(R.id.claim_download_progress);
             deviceView = v.findViewById(R.id.claim_view_device);
             optionsMenuView = v.findViewById(R.id.claim_overflow_menu_icon);
 
@@ -729,25 +725,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         vh.durationView.setCompoundDrawablePadding(8);
                     }
 
-                    LbryFile claimFile = item.getFile();
-                    boolean isDownloading = false;
-                    int progress = 0;
-                    String fileSizeString = claimFile == null ? null : Helper.formatBytes(claimFile.getTotalBytes(), false);
-                    if (claimFile != null &&
-                            !Helper.isNullOrEmpty(claimFile.getDownloadPath()) &&
-                            !claimFile.isCompleted() &&
-                            claimFile.getWrittenBytes() < claimFile.getTotalBytes()) {
-                        isDownloading = true;
-                        progress = claimFile.getTotalBytes() > 0 ?
-                                Double.valueOf(((double) claimFile.getWrittenBytes() / (double) claimFile.getTotalBytes()) * 100.0).intValue() : 0;
-                        fileSizeString = String.format("%s / %s",
-                                Helper.formatBytes(claimFile.getWrittenBytes(), false),
-                                Helper.formatBytes(claimFile.getTotalBytes(), false));
-                    }
-
-                    Helper.setViewText(vh.fileSizeView, claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath()) ? fileSizeString : null);
-                    Helper.setViewVisibility(vh.downloadProgressView, isDownloading ? View.VISIBLE : View.INVISIBLE);
-                    Helper.setViewProgress(vh.downloadProgressView, progress);
                     Helper.setViewText(vh.deviceView, item.getDevice());
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;

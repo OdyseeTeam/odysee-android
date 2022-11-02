@@ -172,7 +172,7 @@
     <string name="auto_quality">Auto</string>
     <string name="claim_file_not_found">The file at "%1$s" does not exist.</string>
     <string name="confirm_purchase">Confirm Purchase</string>
-    <string name="unable_to_view_url">Failed to load %1$s. Please try again later.</string>
+    <string name="unable_to_download_claim">Failed to download the claim. Please try again later.</string>
     <string name="cast_introductory_overlay_text">Touch to cast media to your TV</string>
     <string name="delete_content">Confirm Removal</string>
     <string name="confirm_delete_content_message">Are you sure you want to remove this?\n\nThis will prevent others from accessing the content you published. It will return the deposited Credits to your spendable balance.\n\n<font color="#ff0000">FINAL WARNING: This action is permanent and cannot be undone.</font></string>
@@ -382,6 +382,7 @@
     <string name="wifi_default_quality">Default quality</string>
     <string name="mobile_default_quality">Default quality when using mobile data</string>
     <string name="playback_default_speed">Default playback speed</string>
+    <string name="download_wifi_only">Only download content over Wi-Fi</string>
     <string name="enable_dark_mode">Enable dark theme</string>
     <string name="darkmode_setting">Dark mode setting (applies when exiting this Settings UI)</string>
     <string name="enable_autosearch">Perform search while typing</string>
@@ -789,7 +790,7 @@
     <string name="at">\@</string>
     <string name="deposit">Deposit</string>
     <string name="deposit_remains_yours">The credits remains yours. It is a deposit to reserve the name and can be undone at any time.</string>
-    <string name="storage_permission_rationale_download">LBRY requires access to download content to your device.</string>
+    <string name="storage_permission_rationale_download">Odysee requires access to download content to your device.</string>
     <string name="storage_permission_rationale_images">Odysee requires access to load images from your device storage.</string>
     <string name="select_thumbnail">Select thumbnail</string>
     <string name="select_cover">Select cover image</string>

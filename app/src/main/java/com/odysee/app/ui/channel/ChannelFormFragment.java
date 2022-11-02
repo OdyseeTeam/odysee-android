@@ -411,7 +411,7 @@ public class ChannelFormFragment extends BaseFragment implements
         thumbnailFilePickerActive = false;
     }
 
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         if (Helper.isNullOrEmpty(filePath)) {
             View rootView = getView();
             Context context = getContext();

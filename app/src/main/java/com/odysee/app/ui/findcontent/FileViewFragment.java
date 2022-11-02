@@ -5,12 +5,16 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.ConnectivityManager;
@@ -20,6 +24,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.DocumentsContract;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -44,7 +49,6 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -115,6 +119,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -147,6 +152,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -164,6 +170,7 @@ import com.odysee.app.callable.LighthouseSearch;
 import com.odysee.app.callable.BuildCommentReactOptions;
 import com.odysee.app.exceptions.LbryRequestException;
 import com.odysee.app.exceptions.LbryResponseException;
+import com.odysee.app.listener.FilePickerListener;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.lbryinc.CreatorSetting;
 import com.odysee.app.model.lbryinc.CustomBlockRule;
@@ -203,7 +210,6 @@ import com.odysee.app.tasks.claim.PurchaseListTask;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.tasks.file.FileListTask;
-import com.odysee.app.tasks.file.GetFileTask;
 import com.odysee.app.tasks.lbryinc.ChannelSubscribeTask;
 import com.odysee.app.tasks.lbryinc.ClaimRewardTask;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
@@ -234,6 +240,7 @@ import okhttp3.ResponseBody;
 public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
         ClaimListAdapter.ClaimListItemListener,
+        FilePickerListener,
         DownloadActionListener,
         FetchClaimsListener,
         PIPModeListener,
@@ -249,10 +256,9 @@ public class FileViewFragment extends BaseFragment implements
 
     private boolean loadingNewClaim;
     private boolean loadingQualityChanged = false;
-//    private boolean startDownloadPending;
-//    private boolean fileGetPending;
     private boolean downloadInProgress;
     private boolean downloadRequested;
+    private boolean startingFilePicker;
 //    private boolean loadFilePending;
     private boolean isPlaying;
 //    private boolean resolving;
@@ -262,6 +268,9 @@ public class FileViewFragment extends BaseFragment implements
     private String currentPlaylistTitle;
     private String currentUrl;
     private String currentMediaSourceUrl;
+    // Stores URL to original (non transcoded) media. Only set in "get" request before download. Do not use otherwise.
+    private String currentMediaSourceOriginalUrl;
+    private long currentDownloadId;
     private TextView relatedContentTitle;
     private ClaimListAdapter relatedContentAdapter;
     private CommentEnabledCheck commentEnabledCheck;
@@ -274,7 +283,6 @@ public class FileViewFragment extends BaseFragment implements
     private boolean elapsedPlaybackScheduled;
     private boolean playbackStarted;
     private long startTimeMillis;
-    private GetFileTask getFileTask;
     private Handler seekOverlayHandler;
 
     private boolean storagePermissionRefusedOnce;
@@ -314,6 +322,7 @@ public class FileViewFragment extends BaseFragment implements
     ScheduledFuture<?> futureElapsedPlayback;
     ScheduledFuture<?> scheduledStartPlaying;
     ScheduledFuture<?> scheduledStopPlaying;
+    ScheduledExecutorService downloadProgressScheduler;
     private long livestreamStartingMillis = 0; // Stores the time when livestream will start or when it started
 
     private boolean postingComment;
@@ -555,6 +564,7 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity activity = (MainActivity) context;
             activity.hideToolbar();
             activity.setBackPressInterceptor(this);
+            activity.addFilePickerListener(this);
             activity.addDownloadActionListener(this);
             activity.addFetchClaimsListener(this);
             activity.addPIPModeListener(this);
@@ -736,8 +746,6 @@ public class FileViewFragment extends BaseFragment implements
                     }
                 }
             }
-
-            checkIsFileComplete();
         } catch (Exception ex){
             android.util.Log.e(TAG, ex.getMessage(), ex);
         }
@@ -923,7 +931,6 @@ public class FileViewFragment extends BaseFragment implements
             public void onSuccess(List<LbryFile> files, boolean hasReachedEnd) {
                 if (files.size() > 0) {
                     actualClaim.setFile(files.get(0));
-                    checkIsFileComplete();
                     if (!actualClaim.isPlayable() && !actualClaim.isViewable()) {
                         showUnsupportedView();
                     }
@@ -996,6 +1003,13 @@ public class FileViewFragment extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
+
+        // Skip init if resuming from file picker
+        if (startingFilePicker) {
+            startingFilePicker = MainActivity.startingFilePickerActivity;
+            return;
+        }
+
         checkParams();
         leavingFileView = false;
 
@@ -1076,6 +1090,11 @@ public class FileViewFragment extends BaseFragment implements
             activity.checkNowPlaying();
 
             activity.resetCurrentDisplayFragment();
+
+            startingFilePicker = MainActivity.startingFilePickerActivity;
+            if (!MainActivity.startingFilePickerActivity) {
+                activity.removeFilePickerListener(this);
+            }
         }
 
         closeWebView();
@@ -1390,6 +1409,7 @@ public class FileViewFragment extends BaseFragment implements
                 }
             }
         });
+
         root.findViewById(R.id.file_view_action_dislike).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -1402,30 +1422,6 @@ public class FileViewFragment extends BaseFragment implements
                     MainActivity a = (MainActivity) getActivity();
                     if (a != null) {
                         a.driveUserSignIn();
-                    }
-                }
-            }
-        });
-        root.findViewById(R.id.file_view_action_share).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-                if (actualClaim != null) {
-                    try {
-                        String shareUrl = LbryUri.parse(
-                                !Helper.isNullOrEmpty(actualClaim.getCanonicalUrl()) ? actualClaim.getCanonicalUrl() :
-                                        (!Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl())).toOdyseeString();
-                        Intent shareIntent = new Intent();
-                        shareIntent.setAction(Intent.ACTION_SEND);
-                        shareIntent.setType("text/plain");
-                        shareIntent.putExtra(Intent.EXTRA_TEXT, shareUrl);
-
-                        MainActivity.startingShareActivity = true;
-                        Intent shareUrlIntent = Intent.createChooser(shareIntent, getString(R.string.share_lbry_content));
-                        shareUrlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(shareUrlIntent);
-                    } catch (LbryUriException ex) {
-                        // pass
                     }
                 }
             }
@@ -1454,6 +1450,45 @@ public class FileViewFragment extends BaseFragment implements
                 } else {
                     if (activity != null) {
                         activity.simpleSignIn(0);
+                    }
+                }
+            }
+        });
+
+        root.findViewById(R.id.file_view_action_save).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                if (activity != null) {
+                    Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                    if (actualClaim != null) {
+                        activity.handleAddUrlToList(actualClaim.getPermanentUrl(), null);
+                    }
+                }
+            }
+        });
+
+        root.findViewById(R.id.file_view_action_share).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+                if (actualClaim != null) {
+                    try {
+                        String shareUrl = LbryUri.parse(
+                                !Helper.isNullOrEmpty(actualClaim.getCanonicalUrl()) ? actualClaim.getCanonicalUrl() :
+                                        (!Helper.isNullOrEmpty(actualClaim.getShortUrl()) ? actualClaim.getShortUrl() : actualClaim.getPermanentUrl())).toOdyseeString();
+                        Intent shareIntent = new Intent();
+                        shareIntent.setAction(Intent.ACTION_SEND);
+                        shareIntent.setType("text/plain");
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, shareUrl);
+
+                        MainActivity.startingShareActivity = true;
+                        Intent shareUrlIntent = Intent.createChooser(shareIntent, getString(R.string.share_lbry_content));
+                        shareUrlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(shareUrlIntent);
+                    } catch (LbryUriException ex) {
+                        // pass
                     }
                 }
             }
@@ -1511,7 +1546,7 @@ public class FileViewFragment extends BaseFragment implements
                 Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
                 if (actualClaim != null) {
                     if (downloadInProgress) {
-                        onDownloadAborted();
+                        abortDownload();
                     } else {
                         checkStoragePermissionAndStartDownload();
                     }
@@ -1999,6 +2034,34 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
+    private void downloadCurrentClaim() {
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
+            String mediaType = actualClaim.getMediaType();
+            Executor executor = Executors.newSingleThreadExecutor();
+            executor.execute(() -> {
+                try {
+                    // Get the streaming URL
+                    Map<String, Object> params = new HashMap<>();
+                    params.put("uri", actualClaim.getPermanentUrl());
+                    JSONObject result = (JSONObject) Lbry.parseResponse(Lbry.apiCall(Lbry.METHOD_GET, params));
+                    currentMediaSourceOriginalUrl = (String) result.get("streaming_url");
+
+                    // Show file picker
+                    MainActivity.startingFilePickerActivity = true;
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(mediaType);
+                    intent.putExtra(Intent.EXTRA_TITLE, actualClaim.getTitleOrName());
+                    ((MainActivity) context).startActivityForResult(intent, MainActivity.REQUEST_FILE_PICKER);
+                } catch (LbryRequestException | LbryResponseException | JSONException ex) {
+                    ex.printStackTrace();
+                }
+            });
+        }
+    }
+
     private void checkStoragePermissionAndStartDownload() {
         Context context = getContext();
         if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
@@ -2010,7 +2073,6 @@ public class FileViewFragment extends BaseFragment implements
                 return;
             }
 
-//            startDownloadPending = true;
             MainActivity.requestPermission(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
@@ -2020,40 +2082,12 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void checkStoragePermissionAndFileGet() {
-        Context context = getContext();
-        if (!MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
-            if (storagePermissionRefusedOnce) {
-                showStoragePermissionRefusedError();
-                restoreMainActionButton();
-                return;
-            }
-
-            try {
-                if (context != null) {
-//                    fileGetPending = true;
-                    MainActivity.requestPermission(
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            MainActivity.REQUEST_STORAGE_PERMISSION,
-                            getString(R.string.storage_permission_rationale_download),
-                            context,
-                            true);
-                }
-            } catch (IllegalStateException ex) {
-                // pass
-            }
-        } else {
-            fileGet(true);
-        }
-    }
-
     public void onStoragePermissionGranted() {
-
+        startDownload();
     }
+
     public void onStoragePermissionRefused() {
         storagePermissionRefusedOnce = true;
-//        fileGetPending = false;
-//        startDownloadPending = false;
         onDownloadAborted();
 
         showStoragePermissionRefusedError();
@@ -2074,8 +2108,18 @@ public class FileViewFragment extends BaseFragment implements
             onMainActionButtonClicked();
         } else {
             // download the file
-            fileGet(true);
+            downloadCurrentClaim();
         }
+    }
+
+    private void abortDownload() {
+        Context context = getContext();
+        if (context != null) {
+            DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+            manager.remove(currentDownloadId);
+        }
+
+        onDownloadAborted();
     }
 
     private void setLivestreamChatEnabled(boolean enabled) {
@@ -2335,15 +2379,6 @@ public class FileViewFragment extends BaseFragment implements
         } else {
             restoreMainActionButton();
         }
-
-        /*if (Lbry.SDK_READY && !claimToRender.isPlayable() && !claimToRender.isViewable() && Helper.isNullOrEmpty(commentHash)) {
-            if (claimToRender.getFile() == null) {
-                loadFile();
-            } else {
-                // file already loaded, but it's unsupported
-                showUnsupportedView();
-            }
-        }*/
 
         checkRewardsDriver();
         checkOwnClaim();
@@ -3097,31 +3132,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void tryOpenFileOrFileGet() {
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        if (actualClaim != null) {
-            String claimId = actualClaim.getClaimId();
-            FileListTask task = new FileListTask(claimId, null, new FileListTask.FileListResultHandler() {
-                @Override
-                public void onSuccess(List<LbryFile> files, boolean hasReachedEnd) {
-                    if (files.size() > 0) {
-                        actualClaim.setFile(files.get(0));
-                        handleMainActionForClaim();
-                        checkIsFileComplete();
-                    } else {
-                        checkStoragePermissionAndFileGet();
-                    }
-                }
-
-                @Override
-                public void onError(Exception error) {
-                    checkStoragePermissionAndFileGet();
-                }
-            });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
-    }
-
     private void resolvePlaylistClaimsAndPlayFirst() {
         if (playlistResolved) {
             return;
@@ -3243,116 +3253,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private void fileGet(boolean save) {
-        if (getFileTask != null && getFileTask.getStatus() != AsyncTask.Status.FINISHED) {
-            return;
-        }
-
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        getFileTask = new GetFileTask(actualClaim.getPermanentUrl(), save, null, new GetFileTask.GetFileHandler() {
-            @Override
-            public void beforeStart() {
-
-            }
-
-            @Override
-            public void onSuccess(LbryFile file, boolean saveFile) {
-                // queue the download
-                if (actualClaim != null) {
-                    if (actualClaim.isFree()) {
-                        // paid is handled differently
-                        Bundle bundle = new Bundle();
-                        bundle.putString("uri", currentUrl);
-                        bundle.putString("paid", "false");
-                        LbryAnalytics.logEvent(LbryAnalytics.EVENT_PURCHASE_URI, bundle);
-                    }
-
-                    if (!actualClaim.isPlayable()) {
-                        logFileView(actualClaim.getPermanentUrl(), 0);
-                    }
-
-                    actualClaim.setFile(file);
-                    playOrViewMedia();
-                }
-            }
-
-            @Override
-            public void onError(Exception error, boolean saveFile) {
-                try {
-                    showError(getString(R.string.unable_to_view_url, currentUrl));
-                    if (saveFile) {
-                        onDownloadAborted();
-                    }
-                    restoreMainActionButton();
-                } catch (IllegalStateException ex) {
-                    // pass
-                }
-            }
-        });
-        getFileTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    private void playOrViewMedia() {
-        boolean handled = false;
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        String mediaType = actualClaim.getMediaType();
-        if (!Helper.isNullOrEmpty(mediaType)) {
-            if (actualClaim.isPlayable()) {
-                startTimeMillis = System.currentTimeMillis();
-                showExoplayerView();
-                playMedia();
-                handled = true;
-            } else if (actualClaim.isViewable()) {
-                // check type and display
-                boolean fileExists = false;
-                LbryFile claimFile = actualClaim.getFile();
-                Uri fileUri  = null;
-                if (claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath())) {
-                    File file = new File(claimFile.getDownloadPath());
-                    fileUri = Uri.fromFile(file);
-                    fileExists = file.exists();
-                }
-                if (!fileExists) {
-                    showError(getString(R.string.claim_file_not_found, claimFile != null ? claimFile.getDownloadPath() : ""));
-                } else if (fileUri != null) {
-                    View root = getView();
-                    Context context = getContext();
-                    if (root != null) {
-                        if (mediaType.startsWith("image")) {
-                            // display the image
-                            View container = root.findViewById(R.id.file_view_imageviewer_container);
-                            PhotoView photoView = root.findViewById(R.id.file_view_imageviewer);
-
-                            if (context != null) {
-                                Glide.with(context.getApplicationContext()).load(fileUri).centerInside().into(photoView);
-                            }
-                            container.setVisibility(View.VISIBLE);
-                        } else if (mediaType.startsWith("text")) {
-                            // show web view (and parse markdown too)
-                            View container = root.findViewById(R.id.file_view_webview_container);
-                            initWebView(root);
-                            applyThemeToWebView();
-
-                            if (Arrays.asList("text/markdown", "text/md").contains(mediaType.toLowerCase())) {
-                                loadMarkdownFromFile(claimFile.getDownloadPath());
-                            } else {
-                                webView.loadUrl(fileUri.toString());
-                            }
-                            container.setVisibility(View.VISIBLE);
-                        }
-                    }
-                    handled = true;
-                }
-            } else {
-                openClaimExternally(actualClaim, mediaType);
-            }
-        }
-
-        if (!handled) {
-            showUnsupportedView();
-        }
-    }
-
     private long loadLastPlaybackPosition() {
         long position = -1;
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
@@ -3389,24 +3289,6 @@ public class FileViewFragment extends BaseFragment implements
                 ex.printStackTrace();
             }
         }
-    }
-
-    private void loadMarkdownFromFile(String filePath) {
-        ReadTextFileTask task = new ReadTextFileTask(filePath, new ReadTextFileTask.ReadTextFileHandler() {
-            @Override
-            public void onSuccess(String text) {
-                if (webView != null) {
-                    String html = buildMarkdownHtml(text);
-                    webView.loadData(Base64.encodeToString(html.getBytes(), Base64.NO_PADDING), "text/html", "base64");
-                }
-            }
-
-            @Override
-            public void onError(Exception error) {
-                showError(error.getMessage());
-            }
-        });
-        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private String buildMarkdownHtml(String markdown) {
@@ -3589,6 +3471,94 @@ public class FileViewFragment extends BaseFragment implements
 
             activity.openFileUrl(claimItem.getPermanentUrl()); //openClaimUrl(claim.getPermanentUrl());
         }
+    }
+
+    // Perform the download
+    @Override
+    public void onFilePicked(String filePath, Uri intentData) {
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity) {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(currentMediaSourceOriginalUrl));
+            request.setDestinationUri(Uri.fromFile(new File(filePath)));
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+
+            request.setAllowedOverMetered(!((MainActivity) activity).downloadWifiOnly());
+            request.setAllowedOverRoaming(!((MainActivity) activity).downloadWifiOnly());
+
+            try {
+                DocumentsContract.deleteDocument(activity.getContentResolver(), intentData);
+            } catch (FileNotFoundException ex) {
+                ex.printStackTrace();
+            }
+
+            DownloadManager manager = (DownloadManager) activity.getSystemService(Context.DOWNLOAD_SERVICE);
+            currentDownloadId = manager.enqueue(request);
+
+            View root = getView();
+            if (root != null) {
+                downloadProgressScheduler = Executors.newSingleThreadScheduledExecutor();
+                downloadProgressScheduler.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        DownloadManager.Query query = new DownloadManager.Query();
+                        query.setFilterById(currentDownloadId);
+
+                        Cursor cursor = manager.query(query);
+                        if (cursor.moveToFirst()) {
+                            int totalColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+                            int downloadedSoFarColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+                            int statusColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                            if (totalColumnIndex > -1 && downloadedSoFarColumnIndex > -1 && statusColumnIndex > -1) {
+                                int total = cursor.getInt(totalColumnIndex);
+                                int downloadedSoFar = cursor.getInt(downloadedSoFarColumnIndex);
+
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        switch (cursor.getInt(statusColumnIndex)) {
+                                            case DownloadManager.STATUS_FAILED:
+                                                showError(getString(R.string.unable_to_download_claim));
+                                                onDownloadAborted();
+                                                break;
+
+                                            case DownloadManager.STATUS_RUNNING:
+                                                ProgressBar downloadProgressView = root.findViewById(R.id.file_view_download_progress);
+                                                downloadProgressView.setProgress((int) (((double) downloadedSoFar / total) * 100));
+                                                break;
+
+                                            case DownloadManager.STATUS_SUCCESSFUL:
+                                                showMessage(R.string.exo_download_completed);
+                                                ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_download);
+                                                Helper.setViewVisibility(root.findViewById(R.id.file_view_download_progress), View.GONE);
+                                                Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
+                                                downloadProgressScheduler.shutdown();
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }, 0, 1, TimeUnit.SECONDS);
+
+                BroadcastReceiver downloadCompleteReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        DownloadManager.Query query = new DownloadManager.Query();
+                        query.setFilterById(currentDownloadId);
+                        Cursor cursor = manager.query(query);
+                        if (cursor.getCount() == 0) { // Download was cancelled
+                            onDownloadAborted();
+                        }
+                    }
+                };
+                activity.registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
+        }
+    }
+
+    @Override
+    public void onFilePickerCancelled() {
+        onDownloadAborted();
     }
 
     @MainThread
@@ -4204,22 +4174,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     };
 
-    private void checkIsFileComplete() {
-        Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        if (actualClaim == null) {
-            return;
-        }
-        View root = getView();
-        if (root != null) {
-            if (actualClaim.getFile() != null && actualClaim.getFile().isCompleted()) {
-                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.GONE);
-            } else {
-//                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), View.VISIBLE);
-            }
-
-        }
-    }
-
     private void onDownloadAborted() {
         downloadInProgress = false;
 
@@ -4234,7 +4188,6 @@ public class FileViewFragment extends BaseFragment implements
             Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
         }
 
-        checkIsFileComplete();
         restoreMainActionButton();
     }
 
@@ -4302,26 +4255,6 @@ public class FileViewFragment extends BaseFragment implements
                 context.startActivity(intent);
             }
             return true;
-        }
-    }
-
-    private void onRelatedDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (relatedContentAdapter != null) {
-                relatedContentAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (relatedContentAdapter != null) {
-                relatedContentAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 
@@ -4407,14 +4340,15 @@ public class FileViewFragment extends BaseFragment implements
         Claim claimToCheck = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (claimToCheck != null) {
             boolean isOwnClaim = Lbry.ownClaims.contains(claimToCheck);
+            boolean downloadDisabled = claimToCheck.getTags().contains("c:disabled-download");
             View root = getView();
             if (root != null) {
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_report), isOwnClaim ? View.GONE : View.VISIBLE);
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_edit), isOwnClaim ? View.VISIBLE : View.GONE);
                 Helper.setViewVisibility(root.findViewById(R.id.file_view_action_delete), isOwnClaim ? View.VISIBLE : View.GONE);
 
-                LinearLayout fileViewActionsArea = root.findViewById(R.id.file_view_actions_area);
-                fileViewActionsArea.setWeightSum(isOwnClaim ? 6 : 5);
+                // Also check if downloads are disabled
+                Helper.setViewVisibility(root.findViewById(R.id.file_view_action_download), downloadDisabled ? View.GONE : View.VISIBLE);
             }
         }
     }

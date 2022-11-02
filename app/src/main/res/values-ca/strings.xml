@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">El fitxer a \"%1$s\" no existeix.</string>
     <string name="confirm_purchase">Confirma la compra</string>
-    <string name="unable_to_view_url">Error en carregar %1$s. Sisplau, torna a intentar-ho més tard.</string>
     <string name="delete_content">Eliminar contingut?</string>
     <string name="confirm_delete_content_message">Segur que vols deixar de publicar aquest contingut? No s\'esborrarà cap fitxer del teu dispositiu.</string>
     <string name="content_deleted">El contingut s\'ha eliminat correctament de la cadena de blocs</string>
