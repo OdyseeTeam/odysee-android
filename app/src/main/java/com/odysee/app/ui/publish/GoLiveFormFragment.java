@@ -23,6 +23,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -333,7 +334,10 @@ public class GoLiveFormFragment extends BaseFragment implements
                     } else {
                         textAddressChannel.setText(getString(R.string.url_channel_prefix, claim.getName()));
                     }
-                    fetchLivestreamReplays();
+
+                    if (!modeLivestream) {
+                        fetchLivestreamReplays();
+                    }
                 }
             }
 
@@ -349,6 +353,10 @@ public class GoLiveFormFragment extends BaseFragment implements
                 modeLivestream = checkedId == R.id.go_live_form_new_livestream;
                 layoutLivestreamDate.setVisibility(modeLivestream ? View.VISIBLE : View.GONE);
                 layoutLivestreamReplays.setVisibility(modeLivestream ? View.GONE : View.VISIBLE);
+
+                if (!modeLivestream) {
+                    fetchLivestreamReplays();
+                }
             }
         });
 
@@ -835,33 +843,36 @@ public class GoLiveFormFragment extends BaseFragment implements
         LivestreamReplaysTask task = new LivestreamReplaysTask(channel, progressLoadingReplays, Lbryio.AUTH_TOKEN, new LivestreamReplaysResultHandler() {
             @Override
             public void onSuccess(List<LivestreamReplay> replays) {
-                if (replays.size() != 0) {
-                    layoutLivestreamReplaysList.setVisibility(View.VISIBLE);
-                    textReplaysTitle.setText(R.string.select_replay);
-                } else {
-                    layoutLivestreamReplaysList.setVisibility(View.GONE);
-                    textReplaysTitle.setText(R.string.no_replays);
-                    return;
+                FragmentActivity activity = getActivity();
+                if (activity != null) {
+                    if (replays.size() != 0) {
+                        layoutLivestreamReplaysList.setVisibility(View.VISIBLE);
+                        textReplaysTitle.setText(R.string.select_replay);
+                    } else {
+                        layoutLivestreamReplaysList.setVisibility(View.GONE);
+                        textReplaysTitle.setText(R.string.no_replays);
+                        return;
+                    }
+
+                    replaysAdapter = new ReplaysPagerAdapter(activity, replays, new ReplaysPagerAdapter.SelectedReplayManager() {
+                        @Override
+                        public LivestreamReplay getSelectedReplay() {
+                            return selectedLivestreamReplay;
+                        }
+
+                        @Override
+                        public void setSelectedReplay(LivestreamReplay replay) {
+                            selectedLivestreamReplay = replay;
+                        }
+                    });
+                    replaysViewPager.setAdapter(replaysAdapter);
+                    new TabLayoutMediator(replaysTabLayout, replaysViewPager, new TabLayoutMediator.TabConfigurationStrategy() {
+                        @Override
+                        public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                            tab.setText(String.valueOf(position + 1));
+                        }
+                    }).attach();
                 }
-
-                replaysAdapter = new ReplaysPagerAdapter(getActivity(), replays, new ReplaysPagerAdapter.SelectedReplayManager() {
-                    @Override
-                    public LivestreamReplay getSelectedReplay() {
-                        return selectedLivestreamReplay;
-                    }
-
-                    @Override
-                    public void setSelectedReplay(LivestreamReplay replay) {
-                        selectedLivestreamReplay = replay;
-                    }
-                });
-                replaysViewPager.setAdapter(replaysAdapter);
-                new TabLayoutMediator(replaysTabLayout, replaysViewPager, new TabLayoutMediator.TabConfigurationStrategy() {
-                    @Override
-                    public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                        tab.setText(String.valueOf(position + 1));
-                    }
-                }).attach();
             }
 
             @Override
