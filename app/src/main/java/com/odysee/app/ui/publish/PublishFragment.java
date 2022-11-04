@@ -24,7 +24,6 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Arrays;
@@ -40,11 +39,9 @@ import com.odysee.app.listener.CameraPermissionListener;
 import com.odysee.app.listener.FilePickerListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.model.GalleryItem;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.localdata.LoadGalleryItemsTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 
 public class PublishFragment extends BaseFragment implements
@@ -196,12 +193,12 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchFilePickerPending = false;
             launchFilePicker();
         } else {
             launchFilePickerPending = true;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -262,14 +259,14 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLoadVideos() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             loadGalleryItems();
         } else {
             loadGalleryItemsPending = true;
             MainActivity.requestPermission(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
-                    getString(R.string.storage_permission_rationale_download),
+                    getString(R.string.storage_permission_rationale_videos),
                     context,
                     true);
         }
