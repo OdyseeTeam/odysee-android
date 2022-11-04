@@ -318,7 +318,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static Cache playerCache;
     public static boolean playerReassigned;
     public boolean mediaRouteButtonVisible;
-    public MediaRouteButton appBarMediaRouteButton;
     public MediaRouteButton playerMediaRouteButton;
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
@@ -667,18 +666,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // TODO: Check Google Play Services availability
         // Listener here is not called in foss build
-        appBarMediaRouteButton = findViewById(R.id.app_bar_media_route_button);
-        castHelper = new CastHelper(this, appBarMediaRouteButton, new CastHelper.Listener() {
+        castHelper = new CastHelper(this, new CastHelper.Listener() {
             @Override
             public void updateMediaRouteButtonVisibility(boolean isVisible) {
                 mediaRouteButtonVisible = isVisible;
-                appBarMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
                 if (playerMediaRouteButton != null) {
                     playerMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
                 }
             }
         });
-        castHelper.setUpCastButton(appBarMediaRouteButton);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.content_main), new OnApplyWindowInsetsListener() {
             @Override
