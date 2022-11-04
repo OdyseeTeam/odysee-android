@@ -1013,7 +1013,7 @@ public final class Helper {
                     // only apply eu-google check if the app was installed from the Play Store.
                     if (CustomBlockRule.Scope.special == rule.getScope() &&
                             "eu-google".equalsIgnoreCase(rule.getId()) &&
-                            locale.isEuMember() &&
+                            (locale.isEuMember() || locale.isGoogleLimited()) &&
                             isInstallationSourcePlayStore(context)) {
                         status.setBlocked(true);
                         status.setMessage(rule.getMessage());

@@ -2987,7 +2987,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         OdyseeLocale locale = new OdyseeLocale(
                                 Helper.getJSONString("country", "", localeObject),
                                 Helper.getJSONString("continent", "", localeObject),
-                                Helper.getJSONBoolean("is_eu_member", false, localeObject)
+                                Helper.getJSONBoolean("is_eu_member", false, localeObject),
+                                Helper.getJSONBoolean("is_google_limited", false, localeObject)
                         );
 
                         // load custom blocking rules
