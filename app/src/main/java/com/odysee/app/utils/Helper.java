@@ -1000,7 +1000,7 @@ public final class Helper {
     }
 
     public static CustomBlockRule.CustomBlockStatus getCustomBlockedStatus(
-            String claimId, Map<String, List<CustomBlockRule>> rules, OdyseeLocale locale) {
+            String claimId, Map<String, List<CustomBlockRule>> rules, OdyseeLocale locale, Context context) {
         if (rules == null || locale == null) {
             return null;
         }
@@ -1010,6 +1010,16 @@ public final class Helper {
             List<CustomBlockRule> ruleList = rules.get(claimId);
             if (ruleList != null) {
                 for (CustomBlockRule rule : ruleList) {
+                    // only apply eu-google check if the app was installed from the Play Store.
+                    if (CustomBlockRule.Scope.special == rule.getScope() &&
+                            "eu-google".equalsIgnoreCase(rule.getId()) &&
+                            locale.isEuMember() &&
+                            isInstallationSourcePlayStore(context)) {
+                        status.setBlocked(true);
+                        status.setMessage(rule.getMessage());
+                        break;
+                    }
+
                     if (CustomBlockRule.Scope.special == rule.getScope() &&
                             "eu-only".equalsIgnoreCase(rule.getId()) && locale.isEuMember()) {
                         status.setBlocked(true);
@@ -1077,5 +1087,18 @@ public final class Helper {
         }
 
         return options;
+    }
+
+    /**
+     * Check if the package was installed by the Play Store.
+     */
+    public static boolean isInstallationSourcePlayStore(Context context) {
+        if (context == null) {
+            return false;
+        }
+
+        List<String> sources = Arrays.asList("com.android.vending", "com.google.android.feedback");
+        String installedBy = context.getPackageManager().getInstallerPackageName(context.getPackageName());
+        return installedBy != null && sources.contains(installedBy);
     }
 }

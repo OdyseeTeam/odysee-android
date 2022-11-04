@@ -728,7 +728,8 @@ public class FileViewFragment extends BaseFragment implements
                     status = Helper.getCustomBlockedStatus(
                             actualClaim.getClaimId(),
                             activity.getCustomBlockingRulesMap(),
-                            activity.getOdyseeLocale());
+                            activity.getOdyseeLocale(),
+                            getContext());
                 }
 
                 if ((status != null && status.isBlocked()) || Helper.isClaimBlocked(actualClaim)) {
@@ -1328,7 +1329,8 @@ public class FileViewFragment extends BaseFragment implements
                         status = Helper.getCustomBlockedStatus(
                                 fileClaim.getClaimId(),
                                 activity.getCustomBlockingRulesMap(),
-                                activity.getOdyseeLocale());
+                                activity.getOdyseeLocale(),
+                                getContext());
                     }
 
                     if ((status != null && status.isBlocked()) || Helper.isClaimBlocked(fileClaim)) {
