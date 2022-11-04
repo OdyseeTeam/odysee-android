@@ -1065,6 +1065,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 final boolean isSignedIn = odyseeAccount != null;
 
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonBlockedAndMuted.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonCreatorSettings.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonPublishes.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonLivestreams.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
