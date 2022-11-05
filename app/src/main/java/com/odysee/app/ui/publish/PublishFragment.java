@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -193,6 +194,28 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
+
+        // Android 13 granular media permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_AUDIO, context) &&
+                    MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context) &&
+                    MainActivity.hasPermission(Manifest.permission.READ_MEDIA_VIDEO, context)) {
+                launchFilePickerPending = false;
+                launchFilePicker();
+            } else {
+                launchFilePickerPending = true;
+                MainActivity.requestPermissions(
+                        new String[] { Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_videos),
+                        context,
+                        true);
+            }
+
+            return;
+        }
+
+        // Android 12 and below
         if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchFilePickerPending = false;
             launchFilePicker();
@@ -229,7 +252,6 @@ public class PublishFragment extends BaseFragment implements
             activity.addFilePickerListener(this);
             activity.addStoragePermissionListener(this);
 
-
             if (cameraAvailable() && MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
                 showCameraPreview();
             }
@@ -259,6 +281,27 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLoadVideos() {
         Context context = getContext();
+
+        // Android 13 granular media permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_AUDIO, context) &&
+                MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context) &&
+                MainActivity.hasPermission(Manifest.permission.READ_MEDIA_VIDEO, context)) {
+                loadGalleryItems();
+            } else {
+                loadGalleryItemsPending = true;
+                MainActivity.requestPermissions(
+                        new String[] { Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_videos),
+                        context,
+                        true);
+            }
+
+            return;
+        }
+
+        // Android 12 and below
         if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             loadGalleryItems();
         } else {
