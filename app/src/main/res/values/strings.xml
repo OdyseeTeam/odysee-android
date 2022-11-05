@@ -248,9 +248,9 @@
     <string name="upload_file">Upload a file</string>
     <string name="no_videos_found">We could not find any videos on your device. Take a photo or record a video to get started.</string>
     <string name="loading_videos">Please wait while we load your videos…</string>
-    <string name="storage_permission_rationale_videos">LBRY requires access to be able to display and publish your videos, images and other files from your device.</string>
-    <string name="camera_permission_rationale_record">LBRY requires access to your camera to record videos.</string>
-    <string name="camera_permission_rationale_photo">LBRY requires access to your camera to take photos.</string>
+    <string name="storage_permission_rationale_videos">Odysee requires access to be able to display and publish your videos, images and other files from your device.</string>
+    <string name="camera_permission_rationale_record">Odysee requires access to your camera to record videos.</string>
+    <string name="camera_permission_rationale_photo">Odysee requires access to your camera to take photos.</string>
     <string name="edit_upload">Edit upload</string>
     <string name="mature_tags">Mature tags</string>
     <string name="thumbnail">Thumbnail</string>
@@ -394,7 +394,7 @@
     <string name="mini_player_bottom_spacing">Mini-player bottom spacing</string>
 
     <string name="participate_in_data_network">Participate in the data network (requires app and background service restart)</string>
-    <string name="send_buffering_events">Send buffering events to LBRY servers</string>
+    <string name="send_buffering_events">Send buffering events to Odysee servers</string>
 
     <!-- Creator Settings -->
     <string name="no_channel_for_creator_settings">You have not created a channel yet. Create a new channel first in order to access Creator Settings.</string>
@@ -560,7 +560,7 @@
 
     <string name="account_recommended">Account Recommended</string>
     <string name="wallet_account_desc">An Odysee account allows you to earn rewards, backup your wallet, and keep everything in sync.</string>
-    <string name="wallet_without_account">Without an account, you assume all responsibility for securing your wallet and LBRY data.</string>
+    <string name="wallet_without_account">Without an account, you assume all responsibility for securing your wallet and Odysee data.</string>
     <string name="skip_account">Skip Account</string>
     <string name="sign_up">Sign up</string>
     <string name="address_copied">Address copied</string>
@@ -714,8 +714,8 @@
     <string name="please_enter_valid_phone">Please enter a valid phone number.</string>
     <string name="please_enter_verification_code">Please enter the verification code sent to your phone number.</string>
     <string name="fetch_current_user_error">User account could not be retrieved at this time. Please try again later.</string>
-    <string name="purchase_request_pending">Your purchase request is still being processed. Please send an email to support@lbry.com.</string>
-    <string name="purchase_request_failed_error">Your purchase request could not be completed at this time. Please send an email to support@lbry.com.</string>
+    <string name="purchase_request_pending">Your purchase request is still being processed. Please send an email to hello@odysee.com.</string>
+    <string name="purchase_request_failed_error">Your purchase request could not be completed at this time. Please send an email to hello@odysee.com.</string>
     <string name="twitter_account_ineligible">Your Twitter account is not eligible at this time: %1$s</string>
     <string name="twitter_verification_not_approved">Your account was not approved for the rewards program. Please try again later.</string>
     <string name="twitter_verification_failed">Twitter verification failed. Please try again later.</string>
@@ -866,8 +866,8 @@
     </plurals>
 
     <!-- Invites -->
-    <string name="lbry_invite_program">LBRY Invite Program</string>
-    <string name="earn_extra_credits_invites">You can earn extra credits for each person you invite to use LBRY.</string>
+    <string name="lbry_invite_program">Odysee Invite Program</string>
+    <string name="earn_extra_credits_invites">You can earn extra credits for each person you invite to use Odysee.</string>
     <string name="invites_learn_more">&lt;a href="https://lbry.com/faq/invites"&gt;Learn more&lt;/a&gt;.</string>
     <string name="invite_link">Invite Link</string>
     <string name="share_this_link">Share this link with friends (or enemies) and get credits when they join Odysee.</string>
@@ -917,7 +917,7 @@
     </plurals>
 
     <!-- About -->
-    <string name="about_lbry">About LBRY</string>
+    <string name="about_lbry">About Odysee</string>
     <string name="content_freedom">Content Freedom</string>
     <string name="about_paragraph">LBRY is a free, open, and community-run digital marketplace. It is a decentralized peer-to-peer content distribution platform for creators to upload and share content, and earn LBRY credits for their effort. Users will be able to find a wide selection of videos, music, ebooks and other digital content they are interested in.</string>
     <string name="get_social">Get Social</string>

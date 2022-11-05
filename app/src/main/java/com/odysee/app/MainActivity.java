@@ -5732,6 +5732,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public static void requestPermissions(String[] permissions, int requestCode, String rationale, Context context, boolean forceRequest) {
+        List<String> permissionsRequired = new ArrayList<>();
+        for (int i = 0; i < permissions.length; i++) {
+            if (ContextCompat.checkSelfPermission(context, permissions[i]) != PackageManager.PERMISSION_GRANTED) {
+                permissionsRequired.add(permissions[i]);
+            }
+        }
+
+        int numRationales = 0;
+        if (!forceRequest) {
+            for (String permission : permissionsRequired) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) context, permission)) {
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).showMessage(rationale);
+                    }
+                    numRationales++;
+                }
+            }
+        }
+
+        if (!forceRequest && (numRationales == permissionsRequired.size())) {
+            return;
+        }
+
+        startingPermissionRequest = true;
+        ActivityCompat.requestPermissions((Activity) context, permissionsRequired.toArray(new String[permissionsRequired.size()]), requestCode);
+    }
+
     public static boolean hasPermission(String permission, Context context) {
         if (context == null) {
             return false;
