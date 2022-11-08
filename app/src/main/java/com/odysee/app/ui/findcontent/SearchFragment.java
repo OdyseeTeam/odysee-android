@@ -24,8 +24,6 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.common.collect.Ordering;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.LighthouseSearch;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,10 +39,8 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.exceptions.LbryUriException;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
-import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
@@ -58,7 +54,7 @@ import com.odysee.app.utils.Lbryio;
 import lombok.Setter;
 
 public class SearchFragment extends BaseFragment implements
-        ClaimListAdapter.ClaimListItemListener, DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+        ClaimListAdapter.ClaimListItemListener, SharedPreferences.OnSharedPreferenceChangeListener {
     public static final int SEARCH_CONTEXT_GROUP_ID = 3;
     private static final int PAGE_SIZE = 25;
 
@@ -325,7 +321,6 @@ public class SearchFragment extends BaseFragment implements
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
                 LbryAnalytics.setCurrentScreen(activity, "Search", "Search");
-                activity.addDownloadActionListener(this);
                 activity.updateCurrentDisplayFragment(this);
                 activity.updateMiniPlayerMargins(false);
             }
@@ -346,7 +341,6 @@ public class SearchFragment extends BaseFragment implements
         Context context = getContext();
         if (context != null) {
             MainActivity activity = (MainActivity) context;
-            activity.removeDownloadActionListener(this);
             activity.updateMiniPlayerMargins(true);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
@@ -690,26 +684,6 @@ public class SearchFragment extends BaseFragment implements
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT)) {
             search(currentQuery, currentFrom);
-        }
-    }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (resultListAdapter != null) {
-                resultListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (resultListAdapter != null) {
-                resultListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 }

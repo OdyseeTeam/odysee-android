@@ -181,7 +181,6 @@ import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.PIPModeListener;
 import com.odysee.app.listener.ScreenOrientationListener;
@@ -241,7 +240,6 @@ public class FileViewFragment extends BaseFragment implements
         MainActivity.BackPressInterceptor,
         ClaimListAdapter.ClaimListItemListener,
         FilePickerListener,
-        DownloadActionListener,
         FetchClaimsListener,
         PIPModeListener,
         ScreenOrientationListener,
@@ -565,7 +563,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.hideToolbar();
             activity.setBackPressInterceptor(this);
             activity.addFilePickerListener(this);
-            activity.addDownloadActionListener(this);
             activity.addFetchClaimsListener(this);
             activity.addPIPModeListener(this);
             activity.addScreenOrientationListener(this);
@@ -1081,7 +1078,6 @@ public class FileViewFragment extends BaseFragment implements
         Context context = getContext();
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
-            activity.removeDownloadActionListener(this);
             activity.removeFetchClaimsListener(this);
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
@@ -4204,11 +4200,6 @@ public class FileViewFragment extends BaseFragment implements
             root.findViewById(R.id.file_view_main_action_loading).setVisibility(View.INVISIBLE);
             root.findViewById(R.id.file_view_main_action_button).setVisibility(View.VISIBLE);
         }
-    }
-
-    @Override
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

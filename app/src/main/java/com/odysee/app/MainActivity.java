@@ -208,7 +208,6 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.CameraPermissionListener;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchChannelsListener;
 import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.FilePickerListener;
@@ -488,7 +487,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private List<WalletSync> pendingSyncSetQueue;
     private static DatabaseHelper dbHelper;
     private List<CameraPermissionListener> cameraPermissionListeners;
-    private List<DownloadActionListener> downloadActionListeners;
     private List<FilePickerListener> filePickerListeners;
     private List<PIPModeListener> pipModeListeners;
     private List<ScreenOrientationListener> screenOrientationListeners;
@@ -733,7 +731,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         pendingSyncSetQueue = new ArrayList<>();
 
         cameraPermissionListeners = new ArrayList<>();
-        downloadActionListeners = new ArrayList<>();
         fetchChannelsListeners = new ArrayList<>();
         fetchClaimsListeners = new ArrayList<>();
         filePickerListeners = new ArrayList<>();
@@ -1547,16 +1544,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void removeScreenOrientationListener(ScreenOrientationListener listener) {
         screenOrientationListeners.remove(listener);
-    }
-
-    public void addDownloadActionListener(DownloadActionListener listener) {
-        if (!downloadActionListeners.contains(listener)) {
-            downloadActionListeners.add(listener);
-        }
-    }
-
-    public void removeDownloadActionListener(DownloadActionListener listener) {
-        downloadActionListeners.remove(listener);
     }
 
     public void addFilePickerListener(FilePickerListener listener) {
