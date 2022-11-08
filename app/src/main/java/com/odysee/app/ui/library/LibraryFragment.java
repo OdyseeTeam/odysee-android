@@ -35,7 +35,6 @@ import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.runnable.DeleteViewHistoryItem;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +49,6 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.LbryFile;
@@ -71,8 +69,7 @@ import com.odysee.app.utils.LbryAnalytics;
 import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
-public class LibraryFragment extends BaseFragment implements
-        ActionMode.Callback, DownloadActionListener, SelectionModeListener {
+public class LibraryFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
     private static final int FILTER_DOWNLOADS = 1;
     private static final int FILTER_PURCHASES = 2;
@@ -280,7 +277,6 @@ public class LibraryFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "Library", "Library");
-            //activity.addDownloadActionListener(this);
         }
 
         // renderFilter(); // Show tab according to selected filter
@@ -351,15 +347,6 @@ public class LibraryFragment extends BaseFragment implements
             playlistsList.setAdapter(adapter);
         }
         Helper.setViewVisibility(playlistsLoading, View.INVISIBLE);
-    }
-
-    public void onPause() {
-        Context context = getContext();
-        if (context instanceof MainActivity) {
-            MainActivity activity = (MainActivity) context;
-            activity.removeDownloadActionListener(this);
-        }
-        super.onPause();
     }
 
     public void onDestroy() {
@@ -615,26 +602,6 @@ public class LibraryFragment extends BaseFragment implements
         } else {
             checkListEmpty();
             contentListLoading = false;
-        }
-    }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (contentListAdapter != null) {
-                contentListAdapter.clearFileForClaimOrUrl(outpoint, uri, currentFilter == FILTER_DOWNLOADS);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (contentListAdapter != null) {
-                contentListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri, true);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 

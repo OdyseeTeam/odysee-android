@@ -51,9 +51,7 @@ import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.dialog.DiscoverDialogFragment;
 import com.odysee.app.exceptions.LbryUriException;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.lbryinc.Subscription;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
@@ -74,7 +72,6 @@ import com.odysee.app.utils.Predefined;
 public class FollowingFragment extends BaseFragment implements
         FetchSubscriptionsTask.FetchSubscriptionsHandler,
         ChannelItemSelectionListener,
-        DownloadActionListener,
         SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static boolean resetClaimSearchContent;
@@ -404,7 +401,6 @@ public class FollowingFragment extends BaseFragment implements
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
                 LbryAnalytics.setCurrentScreen(activity, "Subscriptions", "Subscriptions");
-                activity.addDownloadActionListener(this);
             }
         }
 
@@ -426,7 +422,6 @@ public class FollowingFragment extends BaseFragment implements
     public void onPause() {
         Context context = getContext();
         if (context instanceof MainActivity) {
-            ((MainActivity) context).removeDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
 
             // Store current state of the channel filter as a preference
@@ -1188,26 +1183,6 @@ public class FollowingFragment extends BaseFragment implements
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT)) {
             fetchClaimSearchContent(true);
-        }
-    }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (contentListAdapter != null) {
-                contentListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (contentListAdapter != null) {
-                contentListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 }

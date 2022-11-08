@@ -45,10 +45,8 @@ import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentScopeDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.dialog.CustomizeTagsDialogFragment;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.TagListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
@@ -65,7 +63,7 @@ import com.odysee.app.utils.Predefined;
 import lombok.Getter;
 
 // TODO: Similar code to FollowingFragment and Channel page fragment. Probably make common operations (sorting/filtering) into a control
-public class AllContentFragment extends BaseFragment implements DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+public class AllContentFragment extends BaseFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static int ALL_CONTENT_CONTEXT_GROUP_ID = 1;
 
@@ -442,7 +440,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             } else {
                 LbryAnalytics.setCurrentScreen(activity, "All Content", "AllContent");
             }
-            activity.addDownloadActionListener(this);
 
             if (activity.isInitialCategoriesLoaded()) {
                 buildAndDisplayContentCategories();
@@ -460,7 +457,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     public void onPause() {
         Context context = getContext();
         if (context != null) {
-            ((MainActivity) context).removeDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
         contentCategoriesDisplayed = false;
@@ -758,27 +754,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             fetchClaimSearchContent(true);
         }
     }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (contentListAdapter != null) {
-                contentListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (contentListAdapter != null) {
-                contentListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
-        }
-    }
-
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {

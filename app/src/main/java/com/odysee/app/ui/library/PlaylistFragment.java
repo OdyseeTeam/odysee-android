@@ -31,7 +31,6 @@ import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.dialog.PublishPlaylistDialogFragment;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
@@ -55,8 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-public class PlaylistFragment extends BaseFragment implements
-        ActionMode.Callback, DownloadActionListener, SelectionModeListener {
+public class PlaylistFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
     private ClaimListAdapter adapter;
     private RecyclerView playlistList;
@@ -326,11 +324,6 @@ public class PlaylistFragment extends BaseFragment implements
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
-
-    }
-
-    @Override
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
 
     }
 
