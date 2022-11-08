@@ -2355,6 +2355,11 @@ public class FileViewFragment extends BaseFragment implements
                     // claim already playing
                     showExoplayerView();
                     playMedia();
+
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).hideGlobalNowPlaying();
+                    }
                 } else {
                     String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
                     if (MainActivity.nowPlayingClaim == null) {
