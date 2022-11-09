@@ -462,8 +462,13 @@ public class SignInFragment extends Fragment {
 
     private void setCurrentEmail(String email) {
         this.currentEmail = email;
-        View view = getView();
-        ((TextView) view.findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                View view = getView();
+                ((TextView) view.findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+            }
+        });
     }
 
     private void signUpOrSignIn() {

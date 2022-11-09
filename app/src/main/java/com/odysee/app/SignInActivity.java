@@ -476,7 +476,13 @@ public class SignInActivity extends AppCompatActivity {
 
     private void setCurrentEmail(String email) {
         this.currentEmail = email;
-        ((TextView) findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                ((TextView) findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+            }
+        });
     }
 
     private void signUpOrSignIn() {
