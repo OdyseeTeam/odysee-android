@@ -471,7 +471,7 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdsForCategory = null;
+        List<String> channelIdsForCategory;
         List<String> excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
 
         if (currentChannelIdList != null) {
@@ -526,6 +526,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         contentClaimSearchLoading = true;
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
+        claimSearchOptions.put("has_source", true);
+        // TODO Use a Search callable instead of this AsyncTask
         contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.API_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
