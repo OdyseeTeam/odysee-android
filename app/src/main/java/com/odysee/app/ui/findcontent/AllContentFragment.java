@@ -587,6 +587,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                 activeClaimsListAdapter.clearItems();
             }
 
+            activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
+
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -626,6 +628,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
 
                                 livestreamingClaimsFetched = true;
 
+                                activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
+
                                 if (livestreamsList != null && livestreamsList.getAdapter() == null) {
                                     livestreamsList.setAdapter(activeClaimsListAdapter);
                                 }
@@ -650,6 +654,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
+                a.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Helper.setViewVisibility(activeLivestreamsLayout, View.VISIBLE);
+                    }
+                });
+
                 Map<String, JSONObject> activeJsonData;
                 Callable<Map<String, JSONObject>> callable;
                 Future<Map<String, JSONObject>> futureActive;
@@ -658,11 +669,11 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                     List<String> channelIds = Arrays.asList(currentChannelIdList);
 
                     callable = new ChannelLiveStatus(channelIds, false, true);
-                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
                 } else {
                     callable = new GetAllLivestreams();
-                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
                 }
+
+                futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
                 activeJsonData = futureActive.get();
 
@@ -709,6 +720,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                             throw new RuntimeException(e);
                         }
                     }
+                } else {
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Helper.setViewVisibility(activeLivestreamsLayout, View.GONE);
+                        }
+                    });
                 }
             } catch (InterruptedException | ExecutionException e) {
                 Throwable cause = e.getCause();
