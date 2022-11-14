@@ -305,6 +305,9 @@ public class ChannelContentFragment extends Fragment implements SharedPreference
         Activity a = getActivity();
 
         if (a != null) {
+            scheduledLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
+            scheduledLivestreamsLayout.setVisibility(View.VISIBLE);
+
             Collection<Callable<Page>> callables = new ArrayList<>(2);
             callables.add(() -> new Page(findActiveStream(), true /* ignored */));
             callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
@@ -349,6 +352,8 @@ public class ChannelContentFragment extends Fragment implements SharedPreference
                                     } else {
                                         scheduledClaimsListAdapter.addItems(finalScheduledClaims);
                                     }
+
+                                    scheduledLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
 
                                     if (scheduledStreamsList != null && scheduledStreamsList.getAdapter() == null) {
                                         scheduledStreamsList.setAdapter(scheduledClaimsListAdapter);

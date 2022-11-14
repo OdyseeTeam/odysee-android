@@ -471,7 +471,7 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdsForCategory = null;
+        List<String> channelIdsForCategory;
         List<String> excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
 
         if (currentChannelIdList != null) {
@@ -526,6 +526,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         contentClaimSearchLoading = true;
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
+        claimSearchOptions.put("has_source", true);
+        // TODO Use a Search callable instead of this AsyncTask
         contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.API_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
@@ -587,6 +589,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                 activeClaimsListAdapter.clearItems();
             }
 
+            activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
+
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -626,6 +630,8 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
 
                                 livestreamingClaimsFetched = true;
 
+                                activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
+
                                 if (livestreamsList != null && livestreamsList.getAdapter() == null) {
                                     livestreamsList.setAdapter(activeClaimsListAdapter);
                                 }
@@ -650,6 +656,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
+                a.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Helper.setViewVisibility(activeLivestreamsLayout, View.VISIBLE);
+                    }
+                });
+
                 Map<String, JSONObject> activeJsonData;
                 Callable<Map<String, JSONObject>> callable;
                 Future<Map<String, JSONObject>> futureActive;
@@ -658,11 +671,11 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                     List<String> channelIds = Arrays.asList(currentChannelIdList);
 
                     callable = new ChannelLiveStatus(channelIds, false, true);
-                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
                 } else {
                     callable = new GetAllLivestreams();
-                    futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
                 }
+
+                futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
 
                 activeJsonData = futureActive.get();
 
@@ -709,6 +722,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                             throw new RuntimeException(e);
                         }
                     }
+                } else {
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Helper.setViewVisibility(activeLivestreamsLayout, View.GONE);
+                        }
+                    });
                 }
             } catch (InterruptedException | ExecutionException e) {
                 Throwable cause = e.getCause();
