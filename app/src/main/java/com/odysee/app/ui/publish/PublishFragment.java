@@ -10,6 +10,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.GalleryGridAdapter;
@@ -200,8 +203,17 @@ public class PublishFragment extends BaseFragment implements
             if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_AUDIO, context) &&
                     MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context) &&
                     MainActivity.hasPermission(Manifest.permission.READ_MEDIA_VIDEO, context)) {
-                launchFilePickerPending = false;
-                launchFilePicker();
+                if (!Environment.isExternalStorageManager()) {
+                    // request for file access
+                    launchFilePickerPending = true;
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).setManageExternalStoragePending(true);
+                    }
+                    requestManageExternalStorage();
+                } else {
+                    launchFilePickerPending = false;
+                    launchFilePicker();
+                }
             } else {
                 launchFilePickerPending = true;
                 MainActivity.requestPermissions(
@@ -234,7 +246,7 @@ public class PublishFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity.startingFilePickerActivity = true;
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("video/*");
+            intent.setType("*/*");
             ((MainActivity) context).startActivityForResult(
                     Intent.createChooser(intent, getString(R.string.upload_file)),
                     MainActivity.REQUEST_FILE_PICKER);
@@ -410,8 +422,51 @@ public class PublishFragment extends BaseFragment implements
             loadGalleryItems();
         }
         if (launchFilePickerPending) {
-            launchFilePickerPending = false;
-            launchFilePicker();
+            // one more permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (!Environment.isExternalStorageManager()) {
+                    launchFilePickerPending = true;
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).setManageExternalStoragePending(true);
+                    }
+                    requestManageExternalStorage();
+                } else {
+                    launchFilePickerPending = false;
+                    launchFilePicker();
+                }
+            } else {
+                launchFilePickerPending = false;
+                launchFilePicker();
+            }
+        }
+    }
+
+    private void requestManageExternalStorage() {
+        try {
+            // if for some reason, the package uri
+            Uri packageUri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, packageUri);
+            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+        } catch (Exception ex){
+            // If for some reason, the package uri was not found and it results in an error, show the screen for all permissions
+            Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+        }
+    }
+
+    @Override
+    public void onManageExternalStoragePermissionGranted() {
+        launchFilePickerPending = false;
+        launchFilePicker();
+    }
+
+    @Override
+    public void onManageExternalStoragePermissionRefused() {
+        storagePermissionRefusedOnce = true;
+        View root = getView();
+        if (root != null) {
+            showError(getString(R.string.storage_permission_rationale_videos));
         }
     }
 

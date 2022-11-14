@@ -251,6 +251,7 @@
     <string name="storage_permission_rationale_videos">Odysee requires access to be able to display and publish your videos, images and other files from your device.</string>
     <string name="camera_permission_rationale_record">Odysee requires access to your camera to record videos.</string>
     <string name="camera_permission_rationale_photo">Odysee requires access to your camera to take photos.</string>
+    <string name="storage_permission_rationale_files">Odysee requires access to be able to access files that you wish to upload.</string>
     <string name="edit_upload">Edit upload</string>
     <string name="mature_tags">Mature tags</string>
     <string name="thumbnail">Thumbnail</string>

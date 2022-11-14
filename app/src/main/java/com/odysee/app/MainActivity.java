@@ -36,6 +36,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -311,6 +312,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private boolean unlockingTips;
 
+    // Use this since activity result doesn't work as expected?
+    @Setter
+    private boolean manageExternalStoragePending;
+
     private VerificationSkipQueue verificationSkipQueue;
 
     public static PlayerManager playerManager;
@@ -390,6 +395,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final int REQUEST_STORAGE_PERMISSION = 1001;
     public static final int REQUEST_CAMERA_PERMISSION = 1002;
+    public static final int REQUEST_MANAGE_STORAGE_PERMISSION = 1003;
     public static final int REQUEST_SIMPLE_SIGN_IN = 2001;
     public static final int REQUEST_WALLET_SYNC_SIGN_IN = 2002;
     public static final int REQUEST_REWARDS_VERIFY_SIGN_IN = 2003;
@@ -2101,6 +2107,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
          */
         initialiseUserInstall();
         // checkPendingOpens();
+
+        checkManageExternalStoragePending();
     }
 
     public void displayCurrentlyPlayingVideo() {
@@ -4052,6 +4060,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 openFragment(PublishFormFragment.class, true, params);
             }
             cameraOutputFilename = null;
+        } else if (requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
+            if (resultCode == RESULT_OK && Environment.isExternalStorageManager()) {
+                for (StoragePermissionListener listener : storagePermissionListeners) {
+                    listener.onManageExternalStoragePermissionGranted();
+                }
+            } else {
+                for (StoragePermissionListener listener : storagePermissionListeners) {
+                    listener.onManageExternalStoragePermissionRefused();
+                }
+            }
+        }
+    }
+
+    private void checkManageExternalStoragePending() {
+        if (!manageExternalStoragePending) {
+            return;
+        }
+        manageExternalStoragePending = false;
+
+        if (Environment.isExternalStorageManager()) {
+            for (StoragePermissionListener listener : storagePermissionListeners) {
+                listener.onManageExternalStoragePermissionGranted();
+            }
+        } else {
+            for (StoragePermissionListener listener : storagePermissionListeners) {
+                listener.onManageExternalStoragePermissionRefused();
+            }
         }
     }
 

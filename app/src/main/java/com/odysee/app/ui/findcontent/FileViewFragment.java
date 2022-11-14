@@ -2062,6 +2062,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndStartDownload() {
         Context context = getContext();
+        // TODO: Use StorageAccessFramework on Android 13+?
         if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
             startDownload();
         } else {
@@ -2089,6 +2090,14 @@ public class FileViewFragment extends BaseFragment implements
         onDownloadAborted();
 
         showStoragePermissionRefusedError();
+    }
+
+    public void onManageExternalStoragePermissionGranted() {
+        // pass
+    }
+
+    public void onManageExternalStoragePermissionRefused() {
+        // pass
     }
 
     public void startDownload() {
