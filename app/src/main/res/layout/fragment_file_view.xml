@@ -928,7 +928,7 @@
                             android:layout_centerInParent="true"
                             android:contentDescription="@string/settings"
                             android:src="@drawable/ic_settings"
-                            app:tint="@color/lightForeground" />
+                            app:tint="@color/darkForeground" />
                     </RelativeLayout>
                     <RelativeLayout
                         android:id="@+id/chat_header_close_button"
@@ -947,7 +947,7 @@
                             android:layout_centerInParent="true"
                             android:contentDescription="@string/close"
                             android:src="@drawable/ic_close"
-                            app:tint="@color/lightForeground" />
+                            app:tint="@color/darkForeground" />
                     </RelativeLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
