@@ -69,7 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Het bestand \"%1$s\" bestaat niet.</string>
     <string name="confirm_purchase">Bevestig Aankoop</string>
-    <string name="unable_to_view_url">%1$s kan niet worden geladen. Probeer het later opnieuw.</string>
     <string name="delete_content">Verwijder inhoud?</string>
     <string name="confirm_delete_content_message">Weet u zeker dat u de publicatie van deze inhoud ongedaan wilt maken? Er worden geen bestanden van uw apparaat verwijderd.</string>
     <string name="content_deleted">De inhoud is met succes verwijderd van de blockchain.</string>

@@ -64,6 +64,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     @Getter
     @Setter
+    private boolean inPlaylistOverlay;
+
+    @Getter
+    @Setter
     private int contextGroupId;
     @Getter
     @Setter
@@ -91,6 +95,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Getter
     @Setter
     private int position;
+    @Getter
+    @Setter
+    private int currentPosition;
     @Setter
     private boolean isOwnCollection;
 
@@ -127,6 +134,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     }
     public boolean isClaimSelected(Claim claim) {
         return selectedItems.contains(claim);
+    }
+
+    public List<Claim> getUnderlyingItems() {
+        return this.items;
     }
 
     public List<Claim> getItems() {
@@ -176,6 +187,11 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     public void addFeaturedItem(Claim claim) {
         items.add(0, claim);
         notifyItemInserted(0);
+    }
+
+    public void addSingleItem(Claim claim) {
+        items.add(claim);
+        notifyItemInserted(items.size() - 1);
     }
 
     public void addItems(List<Claim> claims) {
@@ -271,8 +287,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final View repostedLabel;
         protected final View selectedOverlayView;
         protected final TextView viewCountView;
-        protected final TextView fileSizeView;
-        protected final ProgressBar downloadProgressView;
         protected final TextView deviceView;
         protected final ImageButton optionsMenuView;
 
@@ -299,8 +313,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             repostedLabel = v.findViewById(R.id.reposted_label);
             selectedOverlayView = v.findViewById(R.id.claim_selected_overlay);
             viewCountView = v.findViewById(R.id.claim_view_count);
-            fileSizeView = v.findViewById(R.id.claim_file_size);
-            downloadProgressView = v.findViewById(R.id.claim_download_progress);
             deviceView = v.findViewById(R.id.claim_view_device);
             optionsMenuView = v.findViewById(R.id.claim_overflow_menu_icon);
 
@@ -325,7 +337,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 if (contextGroupId != BlockedAndMutedFragment.BLOCKED_AND_MUTED_CONTEXT_GROUP_ID) {
                     if (claimListAdapter.isOwnCollection) {
                         contextMenu.add(contextGroupId, R.id.action_remove_from_list, Menu.NONE, R.string.remove_from_list);
-                    } else if (!Claim.TYPE_COLLECTION.equalsIgnoreCase(item.getValueType())) {
+                    } else if (Claim.TYPE_STREAM.equalsIgnoreCase(item.getValueType()) && item.isPlayable()) {
+                        contextMenu.add(contextGroupId, R.id.action_add_to_queue, Menu.NONE, R.string.add_to_queue);
                         contextMenu.add(contextGroupId, R.id.action_add_to_watch_later, Menu.NONE, R.string.watch_later);
                         contextMenu.add(contextGroupId, R.id.action_add_to_favorites, Menu.NONE, R.string.favorites);
                         contextMenu.add(contextGroupId, R.id.action_add_to_lists, Menu.NONE, R.string.add_to_lists);
@@ -338,6 +351,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
             contextMenu.add(contextGroupId, R.id.action_block, Menu.NONE, isBlocked ? R.string.unblock_channel : R.string.block_channel);
             contextMenu.add(contextGroupId, R.id.action_mute, Menu.NONE, isMuted ? R.string.unmute_channel : R.string.mute_channel);
+            contextMenu.add(contextGroupId, R.id.action_report, Menu.NONE, R.string.report);
         }
     }
 
@@ -444,6 +458,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     @Override
     public void onViewRecycled(ViewHolder holder) {
+        holder.itemView.setOnLongClickListener(null);
         if (holder.optionsMenuView != null) {
             holder.optionsMenuView.setOnClickListener(null);
         }
@@ -524,6 +539,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         vh.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
+                setCurrentPosition(vh.getAbsoluteAdapterPosition());
+
                 if (!canEnterSelectionMode) {
                     return false;
                 }
@@ -534,6 +551,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         selectionModeListener.onEnterSelectionMode();
                     }
                 }
+
                 toggleSelectedClaim(original);
                 return true;
             }
@@ -570,7 +588,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             vh.optionsMenuView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    setPosition(vh.getBindingAdapterPosition());
+                    setPosition(vh.getAbsoluteAdapterPosition());
+                    setCurrentPosition(vh.getAbsoluteAdapterPosition());
                     view.showContextMenu();
                 }
             });
@@ -706,25 +725,6 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                         vh.durationView.setCompoundDrawablePadding(8);
                     }
 
-                    LbryFile claimFile = item.getFile();
-                    boolean isDownloading = false;
-                    int progress = 0;
-                    String fileSizeString = claimFile == null ? null : Helper.formatBytes(claimFile.getTotalBytes(), false);
-                    if (claimFile != null &&
-                            !Helper.isNullOrEmpty(claimFile.getDownloadPath()) &&
-                            !claimFile.isCompleted() &&
-                            claimFile.getWrittenBytes() < claimFile.getTotalBytes()) {
-                        isDownloading = true;
-                        progress = claimFile.getTotalBytes() > 0 ?
-                                Double.valueOf(((double) claimFile.getWrittenBytes() / (double) claimFile.getTotalBytes()) * 100.0).intValue() : 0;
-                        fileSizeString = String.format("%s / %s",
-                                Helper.formatBytes(claimFile.getWrittenBytes(), false),
-                                Helper.formatBytes(claimFile.getTotalBytes(), false));
-                    }
-
-                    Helper.setViewText(vh.fileSizeView, claimFile != null && !Helper.isNullOrEmpty(claimFile.getDownloadPath()) ? fileSizeString : null);
-                    Helper.setViewVisibility(vh.downloadProgressView, isDownloading ? View.VISIBLE : View.INVISIBLE);
-                    Helper.setViewProgress(vh.downloadProgressView, progress);
                     Helper.setViewText(vh.deviceView, item.getDevice());
 
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -813,6 +813,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                     + context.getString(R.string.short_thousand);
         } else {
             return numberFormat.format(value);
+        }
+    }
+
+    /**
+     * This method should be called after drag/drop or user reordering in the recycler view.
+     */
+    public void recalculateItemOrders() {
+        int itemOrder = 0;
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).setItemOrder(++itemOrder);
         }
     }
 

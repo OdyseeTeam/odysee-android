@@ -69,7 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Fişierul de la „%1$s” nu există.</string>
     <string name="confirm_purchase">Confirmare achiziţie</string>
-    <string name="unable_to_view_url">Eşuare încărcare „%1$s”. Reîncearcă mai târziu.</string>
     <string name="delete_content">Ștergi conținutul?</string>
     <string name="confirm_delete_content_message">Confirmi anularea conținutului publicat? Nu va fi șters niciun fișier din dispozitiv.</string>
     <string name="content_deleted">Conținutul a fost șters cu succes din rețea.</string>

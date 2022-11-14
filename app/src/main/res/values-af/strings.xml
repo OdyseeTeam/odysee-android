@@ -69,7 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Die lêer by \"%1$s\" bestaan nie.</string>
     <string name="confirm_purchase">Bevestig die aankoop</string>
-    <string name="unable_to_view_url">Kon nie laai nie %1$s. Probeer asseblief weer later.</string>
     <string name="delete_content">Vee inhoud uit?</string>
     <string name="confirm_delete_content_message">Is u seker dat u hierdie inhoud wil publiseer? Geen lêers sal van u toestel verwyder word nie.</string>
     <string name="content_deleted">Die inhoud is suksesvol uit die blockchain verwyder.</string>

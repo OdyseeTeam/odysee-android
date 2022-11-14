@@ -5,7 +5,7 @@ import android.app.Activity;
 import androidx.mediarouter.app.MediaRouteButton;
 
 public class CastHelper {
-    public CastHelper(Activity context, MediaRouteButton introductoryOverlayButton, Listener listener) { }
+    public CastHelper(Activity context, Listener listener) { }
 
     public void setUpCastButton(MediaRouteButton mediaRouteButton) { }
 

@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -175,7 +176,6 @@ public class PublishFormFragment extends BaseFragment implements
     private String lastSelectedThumbnailFile;
     private String uploadedThumbnailUrl;
     private boolean editFieldsLoaded;
-    private boolean editChannelSpinnerLoaded;
     private Claim currentClaim;
     private GalleryItem currentGalleryItem;
     private String currentFilePath;
@@ -637,12 +637,27 @@ public class PublishFormFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context)) {
+                launchPickerPending = false;
+                launchFilePicker();
+            } else {
+                launchPickerPending = true;
+                MainActivity.requestPermission(Manifest.permission.READ_MEDIA_IMAGES,
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_images),
+                        context,
+                        true);
+            }
+            return;
+        }
+
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchPickerPending = false;
             launchFilePicker();
         } else {
             launchPickerPending = true;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -1011,7 +1026,7 @@ public class PublishFormFragment extends BaseFragment implements
         fetchingChannels = true;
         disableChannelSpinner();
         Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
-        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
@@ -1033,14 +1048,6 @@ public class PublishFormFragment extends BaseFragment implements
     }
     private void enableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, true);
-        if (channelSpinner != null) {
-            Claim selectedClaim = (Claim) channelSpinner.getSelectedItem();
-            if (selectedClaim != null) {
-                if (selectedClaim.isPlaceholder()) {
-                    showChannelCreator();
-                }
-            }
-        }
     }
     private void showChannelCreator() {
         MainActivity activity = (MainActivity) getActivity();
@@ -1071,17 +1078,14 @@ public class PublishFormFragment extends BaseFragment implements
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (editMode) {
-                if (!editChannelSpinnerLoaded) {
-                    if (currentClaim.getSigningChannel() != null) {
-                        int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
-                        if (position > -1) {
-                            channelSpinner.setSelection(position);
-                        }
-                    } else {
-                        // select anonymous
-                        channelSpinner.setSelection(1);
+                if (currentClaim.getSigningChannel() != null) {
+                    int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
+                    if (position > -1) {
+                        channelSpinner.setSelection(position);
                     }
-                    editChannelSpinnerLoaded = true;
+                } else {
+                    // select anonymous
+                    channelSpinner.setSelection(1);
                 }
             } else {
                 if (channelSpinnerAdapter.getCount() > 2) {
@@ -1448,7 +1452,17 @@ public class PublishFormFragment extends BaseFragment implements
     }
 
     @Override
-    public void onFilePicked(String filePath) {
+    public void onManageExternalStoragePermissionGranted() {
+        // pass
+    }
+
+    @Override
+    public void onManageExternalStoragePermissionRefused() {
+        // pass
+    }
+
+    @Override
+    public void onFilePicked(String filePath, Uri intentData) {
         if (Helper.isNullOrEmpty(filePath)) {
             View view = getView();
             if (view != null) {
@@ -1498,7 +1512,17 @@ public class PublishFormFragment extends BaseFragment implements
             if (channelSpinner.getAdapter() == null) {
                 channelSpinner.setAdapter(channelSpinnerAdapter);
             }
-            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+
+            int adapterCount = channelSpinnerAdapter.getCount();
+
+            if (adapterCount == 1) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.saveSharedUserState();
+                }
+            }
+
+            channelSpinner.setSelection(adapterCount - 1);
         }
     }
 

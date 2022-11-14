@@ -19,17 +19,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.data.DatabaseHelper;
 import com.odysee.app.dialog.PublishPlaylistDialogFragment;
 import com.odysee.app.dialog.RepostClaimDialogFragment;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
@@ -45,13 +46,15 @@ import com.odysee.app.utils.LbryUri;
 import com.odysee.app.utils.Lbryio;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
-public class PlaylistFragment extends BaseFragment implements
-        ActionMode.Callback, DownloadActionListener, SelectionModeListener {
+public class PlaylistFragment extends BaseFragment implements ActionMode.Callback, SelectionModeListener {
 
     private ClaimListAdapter adapter;
     private RecyclerView playlistList;
@@ -76,6 +79,7 @@ public class PlaylistFragment extends BaseFragment implements
         playlistList = root.findViewById(R.id.playlist_items);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         playlistList.setLayoutManager(llm);
+        setupDragAndDropForReordering();
 
         playButton = root.findViewById(R.id.playlist_play);
         publishButton = root.findViewById(R.id.playlist_publish);
@@ -116,6 +120,47 @@ public class PlaylistFragment extends BaseFragment implements
         return root;
     }
 
+    private void setupDragAndDropForReordering() {
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                return makeFlag(ItemTouchHelper.ACTION_STATE_DRAG,
+                        ItemTouchHelper.DOWN | ItemTouchHelper.UP | ItemTouchHelper.START | ItemTouchHelper.END);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                if (adapter != null) {
+                    Collections.swap(adapter.getUnderlyingItems(), viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
+                    adapter.notifyItemMoved(viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
+                    adapter.recalculateItemOrders();
+
+                    if (currentCollection != null) {
+                        currentCollection.setItemsFromStringList(adapter.getItems().stream().map(claim -> claim.getPermanentUrl()).collect(Collectors.toList()));
+
+                        // save the collection
+                        Context context = getContext();
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).handleSaveCollection(currentCollection);
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+
+            }
+        };
+
+        ItemTouchHelper helper = new ItemTouchHelper(callback);
+        helper.attachToRecyclerView(playlistList);
+    }
+
     private void removeFromEditedCollections(String claimId) {
 
     }
@@ -127,36 +172,55 @@ public class PlaylistFragment extends BaseFragment implements
             collectionIdParam = (String) params.get("collectionId");
         }
 
+        Context context = getContext();
         final String collectionId = collectionIdParam;
-        if (Lbry.isOwnedCollection(collectionId)) {
-            // Check if it's edited and return the updated one, otherwise, just get what we have
 
-            OdyseeCollection collection = Lbry.getOwnCollectionById(collectionId);
-            if (collection != null) {
-                onPlaylistLoaded(collection);
-            }
-        } else {
-            Context context = getContext();
-            if (context instanceof MainActivity) {
-                Executors.newSingleThreadExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
-                            OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
+        if (context instanceof MainActivity) {
+            ExecutorService executor = ((OdyseeApp) ((MainActivity) context).getApplication()).getExecutor();
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // Try to load from local state first
+                        SQLiteDatabase db = MainActivity.getDatabaseHelper().getReadableDatabase();
+                        OdyseeCollection collection = DatabaseHelper.loadCollection(collectionId, db);
 
-                            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                @Override
-                                public void run() {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                boolean playlistFound = false;
+                                if (collection != null) {
+                                    // Additionally, get the actualClaim if it's a published playlist and we have an existing reference
+                                    if (collection.getVisibility() == OdyseeCollection.VISIBILITY_PUBLIC &&
+                                            Lbry.isOwnedCollection(collectionId)) {
+                                        OdyseeCollection remoteCollection = Lbry.getOwnCollectionById(collectionId);
+                                        if (remoteCollection != null) {
+                                            collection.setActualClaim(remoteCollection.getActualClaim());
+                                        }
+                                    }
+
                                     onPlaylistLoaded(collection);
+                                    playlistFound = true;
+                                } else {
+                                    if (Lbry.isOwnedCollection(collectionId)) {
+                                        OdyseeCollection collection = Lbry.getOwnCollectionById(collectionId);
+                                        if (collection != null) {
+                                            onPlaylistLoaded(collection);
+                                            playlistFound = true;
+                                        }
+                                    }
                                 }
-                            });
-                        } catch (SQLiteException ex) {
-                            showError(getString(R.string.could_not_load_playlist));
-                        }
+
+                                if (!playlistFound) {
+                                    showError(getString(R.string.could_not_load_playlist));
+                                }
+                            }
+                        });
+                    } catch (SQLiteException ex) {
+                        showError(getString(R.string.could_not_load_playlist));
                     }
-                });
-            }
+                }
+            });
         }
     }
 
@@ -172,15 +236,16 @@ public class PlaylistFragment extends BaseFragment implements
         checkCanPublishPlaylist();
 
         // load the claims
-        ResolveTask task = new ResolveTask(collection.getItems(), Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
+        List<String> collectionItemUrls = collection.getItems().stream().map(OdyseeCollection.Item::getUrl).collect(Collectors.toList());
+        ResolveTask task = new ResolveTask(collectionItemUrls, Lbry.API_CONNECTION_STRING, playlistItemsLoading, new ResolveResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims) {
                 // reorder the claims based on the order in the playlist collection, TODO: find a more efficient way to do this
                 Map<String, Claim> playlistClaimMap = new LinkedHashMap<>();
                 List<String> claimIds = new ArrayList<>();
-                List<String> collectionItems = collection.getItems();
+                List<OdyseeCollection.Item> collectionItems = collection.getItems();
                 for (int i = 0; i < collectionItems.size(); i++) {
-                    LbryUri url = LbryUri.tryParse(collectionItems.get(i));
+                    LbryUri url = LbryUri.tryParse(collectionItems.get(i).getUrl());
                     if (url != null) {
                         claimIds.add(url.getClaimId());
                     }
@@ -263,11 +328,6 @@ public class PlaylistFragment extends BaseFragment implements
     }
 
     @Override
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-
-    }
-
-    @Override
     public void onEnterSelectionMode() {
 
     }
@@ -284,9 +344,27 @@ public class PlaylistFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
+        if (currentCollection != null && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
+            int position = adapter.getCurrentPosition();
+            Claim claim = adapter.getItems().get(position);
+            if (claim != null && claim.getSigningChannel() != null) {
+                Claim channel = claim.getSigningChannel();
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_block) {
+                        activity.handleBlockChannel(channel, null);
+                    } else {
+                        activity.handleMuteChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
         if (currentCollection != null && item.getItemId() == R.id.action_remove_from_list) {
             String id = currentCollection.getId();
-            int position = adapter.getPosition();
+            int position = adapter.getCurrentPosition();
             Claim claim = adapter.getItems().get(position);
             String url = claim.getPermanentUrl();
 
@@ -304,6 +382,17 @@ public class PlaylistFragment extends BaseFragment implements
                 }
             }
         }
+
+        if (currentCollection != null && item.getItemId() == R.id.action_report) {
+            int position = adapter.getCurrentPosition();
+            Claim claim = adapter.getItems().get(position);
+            Context context = getContext();
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).handleReportClaim(claim);
+            }
+            return true;
+        }
+
         return super.onContextItemSelected(item);
     }
 

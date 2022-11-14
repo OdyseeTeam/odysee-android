@@ -18,33 +18,36 @@
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="90dp">
-            <com.google.android.exoplayer2.ui.PlayerView
+            <com.google.android.exoplayer2.ui.StyledPlayerView
                 android:id="@+id/global_now_playing_player_view"
                 android:layout_width="160dp"
                 android:layout_height="90dp" />
+
             <LinearLayout
-                android:layout_toEndOf="@id/global_now_playing_player_view"
-                android:layout_toStartOf="@id/global_now_playing_close"
-                android:layout_marginStart="8dp"
-                android:layout_centerVertical="true"
-                android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="8dp"
+                android:layout_toStartOf="@id/global_now_playing_close"
+                android:layout_toEndOf="@id/global_now_playing_player_view"
+                android:orientation="vertical">
+
                 <TextView
                     android:id="@+id/global_now_playing_title"
-                    android:fontFamily="@font/inter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxLines="2"
                     android:ellipsize="end"
-                    android:textSize="12sp"  />
+                    android:fontFamily="@font/inter"
+                    android:maxLines="2"
+                    android:textSize="12sp" />
+
                 <TextView
                     android:id="@+id/global_now_playing_channel_title"
-                    android:fontFamily="@font/inter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:ellipsize="end"
+                    android:fontFamily="@font/inter"
                     android:singleLine="true"
                     android:textSize="10sp" />
             </LinearLayout>
@@ -53,14 +56,18 @@
                 android:background="?attr/selectableItemBackground"
                 android:layout_height="match_parent"
                 android:layout_width="36dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:layout_alignParentEnd="true"
                 android:clickable="true"
+                android:focusable="true"
                 android:layout_marginStart="8dp">
+
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_close"
                     android:layout_centerInParent="true"
+                    android:src="@drawable/ic_close"
                     app:tint="@color/foreground" />
             </RelativeLayout>
         </RelativeLayout>

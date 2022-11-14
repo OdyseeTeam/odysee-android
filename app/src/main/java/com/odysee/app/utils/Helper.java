@@ -104,26 +104,12 @@ public final class Helper {
 
     public static final int PLAYBACK_SPEEDS_GROUP_ID = 0;
     public static final int QUALITIES_GROUP_ID = 1;
-    public static final List<Double> PLAYBACK_SPEEDS = Arrays.asList(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0);
 
     public static boolean isNull(String value) {
         return value == null;
     }
     public static boolean isNullOrEmpty(String value) {
         return value == null || value.trim().length() == 0;
-    }
-
-    public static void buildPlaybackSpeedMenu(ContextMenu menu) {
-        int order = 0;
-        DecimalFormat formatter = new DecimalFormat("0.##");
-        for (Double speed : PLAYBACK_SPEEDS) {
-            menu.add(PLAYBACK_SPEEDS_GROUP_ID, Double.valueOf(speed * 100).intValue(), ++order, String.format("%sx", formatter.format(speed)));
-        }
-    }
-
-    public static String getDisplayValueForPlaybackSpeed(Double speed) {
-        DecimalFormat formatter = new DecimalFormat("0.##");
-        return String.format("%sx", formatter.format(speed));
     }
 
     public static void buildQualityMenu(ContextMenu menu, Player player, boolean isTranscoded) {
@@ -1014,7 +1000,7 @@ public final class Helper {
     }
 
     public static CustomBlockRule.CustomBlockStatus getCustomBlockedStatus(
-            String claimId, Map<String, List<CustomBlockRule>> rules, OdyseeLocale locale) {
+            String claimId, Map<String, List<CustomBlockRule>> rules, OdyseeLocale locale, Context context) {
         if (rules == null || locale == null) {
             return null;
         }
@@ -1024,6 +1010,16 @@ public final class Helper {
             List<CustomBlockRule> ruleList = rules.get(claimId);
             if (ruleList != null) {
                 for (CustomBlockRule rule : ruleList) {
+                    // only apply eu-google check if the app was installed from the Play Store.
+                    if (CustomBlockRule.Scope.special == rule.getScope() &&
+                            "eu-google".equalsIgnoreCase(rule.getId()) &&
+                            (locale.isEuMember() || locale.isGoogleLimited()) &&
+                            isInstallationSourcePlayStore(context)) {
+                        status.setBlocked(true);
+                        status.setMessage(rule.getMessage());
+                        break;
+                    }
+
                     if (CustomBlockRule.Scope.special == rule.getScope() &&
                             "eu-only".equalsIgnoreCase(rule.getId()) && locale.isEuMember()) {
                         status.setBlocked(true);
@@ -1091,5 +1087,18 @@ public final class Helper {
         }
 
         return options;
+    }
+
+    /**
+     * Check if the package was installed by the Play Store.
+     */
+    public static boolean isInstallationSourcePlayStore(Context context) {
+        if (context == null) {
+            return false;
+        }
+
+        List<String> sources = Arrays.asList("com.android.vending", "com.google.android.feedback");
+        String installedBy = context.getPackageManager().getInstallerPackageName(context.getPackageName());
+        return installedBy != null && sources.contains(installedBy);
     }
 }

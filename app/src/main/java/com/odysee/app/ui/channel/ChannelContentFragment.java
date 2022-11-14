@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -45,9 +46,8 @@ import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.callable.Search;
 import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Page;
 import com.odysee.app.tasks.lbryinc.FetchStatCountTask;
 import com.odysee.app.utils.Helper;
@@ -55,7 +55,8 @@ import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.Predefined;
 import lombok.Setter;
 
-public class ChannelContentFragment extends Fragment implements DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+public class ChannelContentFragment extends Fragment implements SharedPreferences.OnSharedPreferenceChangeListener {
+    public static int CHANNEL_CONTENT_CONTEXT_GROUP_ID = 4;
 
     @Setter
     private String channelId;
@@ -230,7 +231,6 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         super.onResume();
         Context context = getContext();
         if (context != null) {
-            ((MainActivity) context).addDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
         }
 
@@ -244,7 +244,6 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
     public void onPause() {
         Context context = getContext();
         if (context != null) {
-            ((MainActivity) context).removeDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
         super.onPause();
@@ -306,6 +305,9 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         Activity a = getActivity();
 
         if (a != null) {
+            scheduledLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
+            scheduledLivestreamsLayout.setVisibility(View.VISIBLE);
+
             Collection<Callable<Page>> callables = new ArrayList<>(2);
             callables.add(() -> new Page(findActiveStream(), true /* ignored */));
             callables.add(() -> Lbry.claimSearch(claimSearchOptions, Lbry.API_CONNECTION_STRING));
@@ -350,6 +352,8 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                     } else {
                                         scheduledClaimsListAdapter.addItems(finalScheduledClaims);
                                     }
+
+                                    scheduledLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
 
                                     if (scheduledStreamsList != null && scheduledStreamsList.getAdapter() == null) {
                                         scheduledStreamsList.setAdapter(scheduledClaimsListAdapter);
@@ -420,6 +424,7 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
                                     Context context = getContext();
                                     if (context != null) {
                                         contentListAdapter = new ClaimListAdapter(finalItems, context);
+                                        contentListAdapter.setContextGroupId(CHANNEL_CONTENT_CONTEXT_GROUP_ID);
                                         contentListAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
                                             @Override
                                             public void onClaimClicked(Claim claim, int position) {
@@ -650,29 +655,66 @@ public class ChannelContentFragment extends Fragment implements DownloadActionLi
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    @Override
+    public boolean onContextItemSelected(@NonNull MenuItem item) {
+        if (item.getGroupId() == CHANNEL_CONTENT_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getCurrentPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                if (claim != null && claim.getSigningChannel() != null) {
+                    Claim channel = claim.getSigningChannel();
+                    Context context = getContext();
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_block) {
+                        activity.handleBlockChannel(channel, null);
+                    } else {
+                        activity.handleMuteChannel(channel);
+                    }
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == CHANNEL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getCurrentPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == CHANNEL_CONTENT_CONTEXT_GROUP_ID) {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getCurrentPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
+                    }
+                }
+            }
+        }
+
+        return super.onContextItemSelected(item);
+    }
+
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT)) {
             fetchClaimSearchContent(true);
-        }
-    }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (contentListAdapter != null) {
-                contentListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (contentListAdapter != null) {
-                contentListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 }

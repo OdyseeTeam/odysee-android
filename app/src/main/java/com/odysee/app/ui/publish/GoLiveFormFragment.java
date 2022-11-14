@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -23,6 +24,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -169,7 +171,6 @@ public class GoLiveFormFragment extends BaseFragment implements
     private String uploadedThumbnailUrl;
     private boolean storageRefusedOnce;
     private boolean editFieldsLoaded;
-    private boolean editChannelSpinnerLoaded;
     private boolean editMode;
     private boolean modeLivestream = true;
     private boolean anytimeStream = true;
@@ -334,7 +335,10 @@ public class GoLiveFormFragment extends BaseFragment implements
                     } else {
                         textAddressChannel.setText(getString(R.string.url_channel_prefix, claim.getName()));
                     }
-                    fetchLivestreamReplays();
+
+                    if (!modeLivestream) {
+                        fetchLivestreamReplays();
+                    }
                 }
             }
 
@@ -350,6 +354,10 @@ public class GoLiveFormFragment extends BaseFragment implements
                 modeLivestream = checkedId == R.id.go_live_form_new_livestream;
                 layoutLivestreamDate.setVisibility(modeLivestream ? View.VISIBLE : View.GONE);
                 layoutLivestreamReplays.setVisibility(modeLivestream ? View.GONE : View.VISIBLE);
+
+                if (!modeLivestream) {
+                    fetchLivestreamReplays();
+                }
             }
         });
 
@@ -669,7 +677,7 @@ public class GoLiveFormFragment extends BaseFragment implements
         fetchingChannels = true;
         disableChannelSpinner();
         Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
-        ClaimListTask task = new ClaimListTask(options, progressLoadingChannels, new ClaimListResultHandler() {
+        ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, progressLoadingChannels, new ClaimListResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
                 Lbry.ownChannels = new ArrayList<>(claims);
@@ -693,14 +701,6 @@ public class GoLiveFormFragment extends BaseFragment implements
 
     private void enableChannelSpinner() {
         Helper.setViewEnabled(channelSpinner, true);
-        if (channelSpinner != null) {
-            Claim selectedClaim = (Claim) channelSpinner.getSelectedItem();
-            if (selectedClaim != null) {
-                if (selectedClaim.isPlaceholder()) {
-                    showChannelCreator();
-                }
-            }
-        }
     }
 
     private void showChannelCreator() {
@@ -732,12 +732,11 @@ public class GoLiveFormFragment extends BaseFragment implements
 
         if (channelSpinnerAdapter != null && channelSpinner != null) {
             if (editMode) {
-                if (currentClaim.getSigningChannel() != null && !editChannelSpinnerLoaded) {
+                if (currentClaim.getSigningChannel() != null) {
                     int position = channelSpinnerAdapter.getItemPosition(currentClaim.getSigningChannel());
                     if (position > -1) {
                         channelSpinner.setSelection(position);
                     }
-                    editChannelSpinnerLoaded = true;
                 }
             } else {
                 if (channelSpinnerAdapter.getCount() > 1) {
@@ -845,33 +844,36 @@ public class GoLiveFormFragment extends BaseFragment implements
         LivestreamReplaysTask task = new LivestreamReplaysTask(channel, progressLoadingReplays, Lbryio.AUTH_TOKEN, new LivestreamReplaysResultHandler() {
             @Override
             public void onSuccess(List<LivestreamReplay> replays) {
-                if (replays.size() != 0) {
-                    layoutLivestreamReplaysList.setVisibility(View.VISIBLE);
-                    textReplaysTitle.setText(R.string.select_replay);
-                } else {
-                    layoutLivestreamReplaysList.setVisibility(View.GONE);
-                    textReplaysTitle.setText(R.string.no_replays);
-                    return;
+                FragmentActivity activity = getActivity();
+                if (activity != null) {
+                    if (replays.size() != 0) {
+                        layoutLivestreamReplaysList.setVisibility(View.VISIBLE);
+                        textReplaysTitle.setText(R.string.select_replay);
+                    } else {
+                        layoutLivestreamReplaysList.setVisibility(View.GONE);
+                        textReplaysTitle.setText(R.string.no_replays);
+                        return;
+                    }
+
+                    replaysAdapter = new ReplaysPagerAdapter(activity, replays, new ReplaysPagerAdapter.SelectedReplayManager() {
+                        @Override
+                        public LivestreamReplay getSelectedReplay() {
+                            return selectedLivestreamReplay;
+                        }
+
+                        @Override
+                        public void setSelectedReplay(LivestreamReplay replay) {
+                            selectedLivestreamReplay = replay;
+                        }
+                    });
+                    replaysViewPager.setAdapter(replaysAdapter);
+                    new TabLayoutMediator(replaysTabLayout, replaysViewPager, new TabLayoutMediator.TabConfigurationStrategy() {
+                        @Override
+                        public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                            tab.setText(String.valueOf(position + 1));
+                        }
+                    }).attach();
                 }
-
-                replaysAdapter = new ReplaysPagerAdapter(getActivity(), replays, new ReplaysPagerAdapter.SelectedReplayManager() {
-                    @Override
-                    public LivestreamReplay getSelectedReplay() {
-                        return selectedLivestreamReplay;
-                    }
-
-                    @Override
-                    public void setSelectedReplay(LivestreamReplay replay) {
-                        selectedLivestreamReplay = replay;
-                    }
-                });
-                replaysViewPager.setAdapter(replaysAdapter);
-                new TabLayoutMediator(replaysTabLayout, replaysViewPager, new TabLayoutMediator.TabConfigurationStrategy() {
-                    @Override
-                    public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                        tab.setText(String.valueOf(position + 1));
-                    }
-                }).attach();
             }
 
             @Override
@@ -1068,12 +1070,28 @@ public class GoLiveFormFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context)) {
+                launchPickerPending = false;
+                launchFilePicker();
+            } else {
+                launchPickerPending = true;
+                MainActivity.requestPermission(Manifest.permission.READ_MEDIA_IMAGES,
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_images),
+                        context,
+                        true);
+            }
+            return;
+        }
+
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchPickerPending = false;
             launchFilePicker();
         } else {
             launchPickerPending = true;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -1198,7 +1216,7 @@ public class GoLiveFormFragment extends BaseFragment implements
 
     // region: Callbacks
     @Override
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         if (Helper.isNullOrEmpty(filePath)) {
             View view = getView();
             if (view != null) {
@@ -1247,6 +1265,14 @@ public class GoLiveFormFragment extends BaseFragment implements
         launchPickerPending = false;
     }
 
+    public void onManageExternalStoragePermissionGranted() {
+        // pass
+    }
+
+    public void onManageExternalStoragePermissionRefused() {
+        // pass
+    }
+
     @Override
     public void onTagClicked(Tag tag, int customizeMode) {
         if (customizeMode == TagListAdapter.CUSTOMIZE_MODE_ADD) {
@@ -1277,7 +1303,17 @@ public class GoLiveFormFragment extends BaseFragment implements
             if (channelSpinner.getAdapter() == null) {
                 channelSpinner.setAdapter(channelSpinnerAdapter);
             }
-            channelSpinner.setSelection(channelSpinnerAdapter.getCount() - 1);
+
+            int adapterCount = channelSpinnerAdapter.getCount();
+
+            if (adapterCount == 1) {
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.saveSharedUserState();
+                }
+            }
+
+            channelSpinner.setSelection(adapterCount - 1);
         }
     }
     // endregion

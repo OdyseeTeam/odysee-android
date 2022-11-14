@@ -24,8 +24,6 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.common.collect.Ordering;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.LighthouseSearch;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,10 +39,9 @@ import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.exceptions.LbryUriException;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
-import com.odysee.app.model.LbryFile;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.tasks.claim.ResolveTask;
 import com.odysee.app.ui.BaseFragment;
@@ -57,7 +54,7 @@ import com.odysee.app.utils.Lbryio;
 import lombok.Setter;
 
 public class SearchFragment extends BaseFragment implements
-        ClaimListAdapter.ClaimListItemListener, DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+        ClaimListAdapter.ClaimListItemListener, SharedPreferences.OnSharedPreferenceChangeListener {
     public static final int SEARCH_CONTEXT_GROUP_ID = 3;
     private static final int PAGE_SIZE = 25;
 
@@ -257,19 +254,59 @@ public class SearchFragment extends BaseFragment implements
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_block) {
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (resultListAdapter != null) {
-                int position = resultListAdapter.getPosition();
+                int position = resultListAdapter.getCurrentPosition();
                 Claim claim = resultListAdapter.getItems().get(position);
-                if (claim != null && claim.getSigningChannel() != null) {
-                    Claim channel = claim.getSigningChannel();
+                if (claim != null) {
+                    Claim channel = claim.getSigningChannel() != null ? claim.getSigningChannel() : claim;
                     Context context = getContext();
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).handleMuteChannel(channel);
+                        MainActivity activity = (MainActivity) context;
+                        if (item.getItemId() == R.id.action_block) {
+                            activity.handleBlockChannel(channel, null);
+                        } else {
+                            activity.handleMuteChannel(channel);
+                        }
                     }
                 }
             }
             return true;
+        }
+
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
+            if (resultListAdapter != null) {
+                int position = resultListAdapter.getCurrentPosition();
+                Claim claim = resultListAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == SEARCH_CONTEXT_GROUP_ID)  {
+            if (resultListAdapter != null) {
+                int position = resultListAdapter.getCurrentPosition();
+                Claim claim = resultListAdapter.getItems().get(position);
+
+                String url = claim.getPermanentUrl();
+
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    MainActivity activity = (MainActivity) context;
+                    if (item.getItemId() == R.id.action_add_to_watch_later) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_WATCHLATER);
+                    } else if (item.getItemId() == R.id.action_add_to_favorites) {
+                        activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
+                    } else if (item.getItemId() == R.id.action_add_to_lists) {
+                        activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
+                    }
+                }
+            }
         }
 
         return super.onContextItemSelected(item);
@@ -284,7 +321,6 @@ public class SearchFragment extends BaseFragment implements
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
                 LbryAnalytics.setCurrentScreen(activity, "Search", "Search");
-                activity.addDownloadActionListener(this);
                 activity.updateCurrentDisplayFragment(this);
                 activity.updateMiniPlayerMargins(false);
             }
@@ -305,7 +341,6 @@ public class SearchFragment extends BaseFragment implements
         Context context = getContext();
         if (context != null) {
             MainActivity activity = (MainActivity) context;
-            activity.removeDownloadActionListener(this);
             activity.updateMiniPlayerMargins(true);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
@@ -649,26 +684,6 @@ public class SearchFragment extends BaseFragment implements
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
         if (key.equalsIgnoreCase(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT)) {
             search(currentQuery, currentFrom);
-        }
-    }
-
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (resultListAdapter != null) {
-                resultListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (resultListAdapter != null) {
-                resultListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
         }
     }
 }

@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -38,6 +39,7 @@ import com.odysee.app.tasks.claim.StreamRepostTask;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryUri;
+import com.odysee.app.utils.Lbryio;
 
 public class RepostClaimDialogFragment extends BottomSheetDialogFragment implements WalletBalanceListener {
     public static final String TAG = "RepostClaimDialog";
@@ -207,6 +209,17 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
         }
         if (channelSpinner != null && channelSpinnerAdapter != null) {
             channelSpinner.setAdapter(channelSpinnerAdapter);
+
+            Context context = getContext();
+            if (context != null) {
+                String defaultChannelName = Helper.getDefaultChannelName(context);
+                List<Claim> defaultChannel = channels.stream()
+                        .filter(c -> c != null && c.getName().equalsIgnoreCase(defaultChannelName))
+                        .collect(Collectors.toList());
+                if (defaultChannel.size() > 0) {
+                    channelSpinner.setSelection(channels.indexOf(defaultChannel.get(0)));
+                }
+            }
         }
     }
 
@@ -247,7 +260,7 @@ public class RepostClaimDialogFragment extends BottomSheetDialogFragment impleme
             return;
         }
 
-        StreamRepostTask task = new StreamRepostTask(name, bid, claim.getClaimId(), channel.getClaimId(), repostProgress, new ClaimResultHandler() {
+        StreamRepostTask task = new StreamRepostTask(name, bid, claim.getClaimId(), channel.getClaimId(), repostProgress, Lbryio.AUTH_TOKEN, new ClaimResultHandler() {
             @Override
             public void beforeStart() {
                 startLoading();

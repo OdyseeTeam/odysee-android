@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -376,7 +377,29 @@ public class ChannelFormFragment extends BaseFragment implements
 
     public void checkPermissionsAndLaunchFilePicker(boolean isCover) {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context)) {
+                launchCoverSelectPending = false;
+                launchThumbnailSelectPending = false;
+
+                coverFilePickerActive = isCover;
+                thumbnailFilePickerActive = !isCover;
+                launchFilePicker();
+            } else {
+                launchCoverSelectPending = isCover;
+                launchThumbnailSelectPending = !isCover;
+                MainActivity.requestPermission(Manifest.permission.READ_MEDIA_IMAGES,
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_images),
+                        context,
+                        true);
+            }
+
+            return;
+        }
+
+
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchCoverSelectPending = false;
             launchThumbnailSelectPending = false;
 
@@ -386,7 +409,7 @@ public class ChannelFormFragment extends BaseFragment implements
         } else {
             launchCoverSelectPending = isCover;
             launchThumbnailSelectPending = !isCover;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -411,7 +434,7 @@ public class ChannelFormFragment extends BaseFragment implements
         thumbnailFilePickerActive = false;
     }
 
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         if (Helper.isNullOrEmpty(filePath)) {
             View rootView = getView();
             Context context = getContext();
@@ -494,6 +517,13 @@ public class ChannelFormFragment extends BaseFragment implements
         if (ctx != null) {
             showError(ctx.getResources().getString(R.string.storage_permission_rationale_images));
         }
+    }
+
+    public void onManageExternalStoragePermissionGranted() {
+        // pass
+    }
+    public void onManageExternalStoragePermissionRefused() {
+        // pass
     }
 
     @Override

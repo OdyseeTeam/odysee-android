@@ -71,7 +71,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Fail \"%1$s\" tidak wujud.</string>
     <string name="confirm_purchase">Sahkan Pembelian</string>
-    <string name="unable_to_view_url">%1$s gagal dimuatkan. Sila cuba sebentar lagi.</string>
     <string name="delete_content">Padamkan kandungan?</string>
     <string name="confirm_delete_content_message">Adakah anda pasti ingin membatalkan penerbitan kandungan ini? Fail akan masih kekal dalam peranti anda.</string>
     <string name="content_deleted">Kandungan telah dipadamkan daripada blockchain.</string>

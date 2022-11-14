@@ -462,8 +462,13 @@ public class SignInFragment extends Fragment {
 
     private void setCurrentEmail(String email) {
         this.currentEmail = email;
-        View view = getView();
-        ((TextView) view.findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                View view = getView();
+                ((TextView) view.findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+            }
+        });
     }
 
     private void signUpOrSignIn() {
@@ -701,7 +706,7 @@ public class SignInFragment extends Fragment {
 
     private void addOdyseeAccountExplicitly(String currentEmail) {
         // Add account explicitly
-        Account account = new Account("odysee", ARG_ACCOUNT_TYPE);
+        Account account = new Account(currentEmail, ARG_ACCOUNT_TYPE);
         Context context = getContext();
         if (context == null) {
             context = getActivity();

@@ -69,7 +69,6 @@
     <string name="zero_duration">0:00</string>
     <string name="claim_file_not_found">Die Datei bei \"%1$s\" existiert nicht.</string>
     <string name="confirm_purchase">Bestätige den Kauf</string>
-    <string name="unable_to_view_url">Laden fehlgeschlagen %1$s. Bitte versuche es später erneut.</string>
     <string name="delete_content">Inhalt löschen?</string>
     <string name="confirm_delete_content_message">Möchten Sie diesen Inhalt wirklich nicht veröffentlichen? Es werden keine Dateien von Ihrem Gerät entfernt.</string>
     <string name="content_deleted">Der Inhalt wurde erfolgreich aus der Blockchain gelöscht.</string>

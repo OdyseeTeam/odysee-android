@@ -54,6 +54,12 @@
             app:singleLineTitle="false"
             app:summary="%s"
             app:title="@string/playback_default_speed" />
+        <SwitchPreferenceCompat
+            app:key="com.odysee.app.preference.userinterface.DownloadWifiOnly"
+            app:defaultValue="true"
+            app:title="@string/download_wifi_only"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:key="com.odysee.app.preference.userinterface.DarkModeSetting"
             app:defaultValue="system"

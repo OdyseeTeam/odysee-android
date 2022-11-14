@@ -476,7 +476,13 @@ public class SignInActivity extends AppCompatActivity {
 
     private void setCurrentEmail(String email) {
         this.currentEmail = email;
-        ((TextView) findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                ((TextView) findViewById(R.id.verification_email_added_address)).setText(currentEmail);
+            }
+        });
     }
 
     private void signUpOrSignIn() {
@@ -706,7 +712,7 @@ public class SignInActivity extends AppCompatActivity {
 
     private void addOdyseeAccountExplicitly(String currentEmail) {
         // Add account explicitly
-        Account account = new Account("odysee", ARG_ACCOUNT_TYPE);
+        Account account = new Account(currentEmail, ARG_ACCOUNT_TYPE);
         AccountManager accountManager = AccountManager.get(getApplicationContext());
         try {
             Bundle bundle = new Bundle();

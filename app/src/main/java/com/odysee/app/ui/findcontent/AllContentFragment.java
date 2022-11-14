@@ -37,6 +37,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.odysee.app.BuildConfig;
 import com.odysee.app.OdyseeApp;
 import com.odysee.app.callable.ChannelLiveStatus;
+import com.odysee.app.callable.GetAllLivestreams;
 import com.odysee.app.callable.Search;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -68,10 +69,8 @@ import com.odysee.app.dialog.ContentFromDialogFragment;
 import com.odysee.app.dialog.ContentScopeDialogFragment;
 import com.odysee.app.dialog.ContentSortDialogFragment;
 import com.odysee.app.dialog.CustomizeTagsDialogFragment;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.TagListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.LbryFile;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.Tag;
 import com.odysee.app.tasks.claim.ClaimSearchResultHandler;
@@ -88,7 +87,7 @@ import com.odysee.app.utils.Predefined;
 import lombok.Getter;
 
 // TODO: Similar code to FollowingFragment and Channel page fragment. Probably make common operations (sorting/filtering) into a control
-public class AllContentFragment extends BaseFragment implements DownloadActionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+public class AllContentFragment extends BaseFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static int ALL_CONTENT_CONTEXT_GROUP_ID = 1;
 
@@ -476,7 +475,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             } else {
                 LbryAnalytics.setCurrentScreen(activity, "All Content", "AllContent");
             }
-            activity.addDownloadActionListener(this);
 
             if (activity.isInitialCategoriesLoaded()) {
                 buildAndDisplayContentCategories();
@@ -497,7 +495,6 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
     public void onPause() {
         Context context = getContext();
         if (context != null) {
-            ((MainActivity) context).removeDownloadActionListener(this);
             PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
         }
         contentCategoriesDisplayed = false;
@@ -671,7 +668,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             canShowMatureContent = sp.getBoolean(MainActivity.PREFERENCE_KEY_SHOW_MATURE_CONTENT, false);
         }
 
-        List<String> channelIdsForCategory = null;
+        List<String> channelIdsForCategory;
         List<String> excludedChannelIdsForCategory = Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds());
 
         if (currentChannelIdList != null) {
@@ -726,6 +723,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         contentClaimSearchLoading = true;
         Helper.setViewVisibility(noContentView, View.GONE);
         Map<String, Object> claimSearchOptions = buildContentOptions();
+        claimSearchOptions.put("has_source", true);
+        // TODO Use a Search callable instead of this AsyncTask
         contentClaimSearchTask = new ClaimSearchTask(claimSearchOptions, Lbry.API_CONNECTION_STRING, getLoadingView(), new ClaimSearchResultHandler() {
             @Override
             public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
@@ -787,6 +786,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 activeClaimsListAdapter.clearItems();
             }
 
+            activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
+
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -826,6 +827,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
 
                                 livestreamingClaimsFetched = true;
 
+                                activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
+
                                 if (livestreamsList != null && livestreamsList.getAdapter() == null) {
                                     livestreamsList.setAdapter(activeClaimsListAdapter);
                                 }
@@ -850,11 +853,28 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
-                List<String> channelIds = Arrays.asList(currentChannelIdList);
+                a.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Helper.setViewVisibility(activeLivestreamsLayout, View.VISIBLE);
+                    }
+                });
 
-                Callable<Map<String, JSONObject>> callable = new ChannelLiveStatus(channelIds, false, true);
-                Future<Map<String, JSONObject>> futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
-                Map<String, JSONObject> activeJsonData = futureActive.get();
+                Map<String, JSONObject> activeJsonData;
+                Callable<Map<String, JSONObject>> callable;
+                Future<Map<String, JSONObject>> futureActive;
+
+                if (currentCategoryId != wildWestIndex) {
+                    List<String> channelIds = Arrays.asList(currentChannelIdList);
+
+                    callable = new ChannelLiveStatus(channelIds, false, true);
+                } else {
+                    callable = new GetAllLivestreams();
+                }
+
+                futureActive = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
+
+                activeJsonData = futureActive.get();
 
                 if (activeJsonData != null && activeJsonData.size() > 0) {
                     List<String> claimIds = new ArrayList<>();
@@ -899,6 +919,13 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                             throw new RuntimeException(e);
                         }
                     }
+                } else {
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Helper.setViewVisibility(activeLivestreamsLayout, View.GONE);
+                        }
+                    });
                 }
             } catch (InterruptedException | ExecutionException e) {
                 Throwable cause = e.getCause();
@@ -929,7 +956,7 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                 null,
                 canShowMatureContent ? null : new ArrayList<>(Predefined.MATURE_TAGS),
                 null,
-                Arrays.asList(currentChannelIdList),
+                currentCategoryId != wildWestIndex ? Arrays.asList(currentChannelIdList) : null,
                 Arrays.asList(dynamicCategories.get(currentCategoryId).getExcludedChannelIds()),
                 null,
                 null,
@@ -945,32 +972,11 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
         }
     }
 
-    public void onDownloadAction(String downloadAction, String uri, String outpoint, String fileInfoJson, double progress) {
-        if ("abort".equals(downloadAction)) {
-            if (contentListAdapter != null) {
-                contentListAdapter.clearFileForClaimOrUrl(outpoint, uri);
-            }
-            return;
-        }
-
-        try {
-            JSONObject fileInfo = new JSONObject(fileInfoJson);
-            LbryFile claimFile = LbryFile.fromJSONObject(fileInfo);
-            String claimId = claimFile.getClaimId();
-            if (contentListAdapter != null) {
-                contentListAdapter.updateFileForClaimByIdOrUrl(claimFile, claimId, uri);
-            }
-        } catch (JSONException ex) {
-            // invalid file info for download
-        }
-    }
-
-
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && (item.getItemId() == R.id.action_block || item.getItemId() == R.id.action_mute)) {
             if (contentListAdapter != null) {
-                int position = contentListAdapter.getPosition();
+                int position = contentListAdapter.getCurrentPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
                 if (claim != null && claim.getSigningChannel() != null) {
                     Claim channel = claim.getSigningChannel();
@@ -988,9 +994,21 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
             return true;
         }
 
-        if (item.getGroupId() ==  ALL_CONTENT_CONTEXT_GROUP_ID)  {
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID && item.getItemId() == R.id.action_report) {
             if (contentListAdapter != null) {
-                int position = contentListAdapter.getPosition();
+                int position = contentListAdapter.getCurrentPosition();
+                Claim claim = contentListAdapter.getItems().get(position);
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleReportClaim(claim);
+                }
+            }
+            return true;
+        }
+
+        if (item.getGroupId() == ALL_CONTENT_CONTEXT_GROUP_ID)  {
+            if (contentListAdapter != null) {
+                int position = contentListAdapter.getCurrentPosition();
                 Claim claim = contentListAdapter.getItems().get(position);
                 String url = claim.getPermanentUrl();
 
@@ -1003,6 +1021,8 @@ public class AllContentFragment extends BaseFragment implements DownloadActionLi
                         activity.handleAddUrlToList(url, OdyseeCollection.BUILT_IN_ID_FAVORITES);
                     } else if (item.getItemId() == R.id.action_add_to_lists) {
                         activity.handleAddUrlToList(url, null);
+                    } else if (item.getItemId() == R.id.action_add_to_queue) {
+                        activity.handleAddToNowPlayingQueue(claim);
                     }
                 }
             }

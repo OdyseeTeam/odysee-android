@@ -6,8 +6,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +27,6 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Arrays;
@@ -32,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.GalleryGridAdapter;
@@ -39,11 +43,9 @@ import com.odysee.app.listener.CameraPermissionListener;
 import com.odysee.app.listener.FilePickerListener;
 import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.model.GalleryItem;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.tasks.localdata.LoadGalleryItemsTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
-import com.odysee.app.utils.Lbry;
 import com.odysee.app.utils.LbryAnalytics;
 
 public class PublishFragment extends BaseFragment implements
@@ -58,13 +60,13 @@ public class PublishFragment extends BaseFragment implements
     private View loading;
 
     private View buttonRecord;
-//    private View buttonTakePhoto;
+    private View buttonTakePhoto;
     private View buttonUpload;
 
     private boolean loadGalleryItemsPending;
     private boolean launchFilePickerPending;
     private boolean recordPending;
-//    private boolean takePhotoPending;
+    private boolean takePhotoPending;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ProcessCameraProvider cameraProvider;
 
@@ -84,7 +86,7 @@ public class PublishFragment extends BaseFragment implements
                 3, Helper.getScaledValue(3, context.getResources().getDisplayMetrics().density)));
 
         buttonRecord = root.findViewById(R.id.publish_record_button);
-//        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
+        buttonTakePhoto = root.findViewById(R.id.publish_photo_button);
         buttonUpload = root.findViewById(R.id.publish_upload_button);
 
         buttonRecord.setOnClickListener(new View.OnClickListener() {
@@ -93,12 +95,12 @@ public class PublishFragment extends BaseFragment implements
                 checkCameraPermissionAndRecord();
             }
         });
-        /*buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
+        buttonTakePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 checkCameraPermissionAndTakePhoto();
             }
-        });*/
+        });
         buttonUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -116,7 +118,7 @@ public class PublishFragment extends BaseFragment implements
 
     private void showCameraPreview() {
         buttonRecord.setBackgroundColor(Color.TRANSPARENT);
-//        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
+        buttonTakePhoto.setBackgroundColor(Color.TRANSPARENT);
         displayPreviewWithCameraX();
     }
 
@@ -162,7 +164,7 @@ public class PublishFragment extends BaseFragment implements
         }
     }
 
-    /*private void checkCameraPermissionAndTakePhoto() {
+    private void checkCameraPermissionAndTakePhoto() {
         Context context = getContext();
         if (!MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
             takePhotoPending = true;
@@ -183,7 +185,7 @@ public class PublishFragment extends BaseFragment implements
             takePhotoPending = false;
             ((MainActivity) context).requestTakePhoto();
         }
-    }*/
+    }
 
     private void record() {
         Context context = getContext();
@@ -195,12 +197,43 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+
+        // Android 13 granular media permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_AUDIO, context) &&
+                    MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context) &&
+                    MainActivity.hasPermission(Manifest.permission.READ_MEDIA_VIDEO, context)) {
+                if (!Environment.isExternalStorageManager()) {
+                    // request for file access
+                    launchFilePickerPending = true;
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).setManageExternalStoragePending(true);
+                    }
+                    requestManageExternalStorage();
+                } else {
+                    launchFilePickerPending = false;
+                    launchFilePicker();
+                }
+            } else {
+                launchFilePickerPending = true;
+                MainActivity.requestPermissions(
+                        new String[] { Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_videos),
+                        context,
+                        true);
+            }
+
+            return;
+        }
+
+        // Android 12 and below
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchFilePickerPending = false;
             launchFilePicker();
         } else {
             launchFilePickerPending = true;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -213,7 +246,7 @@ public class PublishFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             MainActivity.startingFilePickerActivity = true;
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("video/*");
+            intent.setType("*/*");
             ((MainActivity) context).startActivityForResult(
                     Intent.createChooser(intent, getString(R.string.upload_file)),
                     MainActivity.REQUEST_FILE_PICKER);
@@ -230,7 +263,6 @@ public class PublishFragment extends BaseFragment implements
             activity.addCameraPermissionListener(this);
             activity.addFilePickerListener(this);
             activity.addStoragePermissionListener(this);
-
 
             if (cameraAvailable() && MainActivity.hasPermission(Manifest.permission.CAMERA, context)) {
                 showCameraPreview();
@@ -261,14 +293,35 @@ public class PublishFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLoadVideos() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+
+        // Android 13 granular media permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_AUDIO, context) &&
+                MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context) &&
+                MainActivity.hasPermission(Manifest.permission.READ_MEDIA_VIDEO, context)) {
+                loadGalleryItems();
+            } else {
+                loadGalleryItemsPending = true;
+                MainActivity.requestPermissions(
+                        new String[] { Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_videos),
+                        context,
+                        true);
+            }
+
+            return;
+        }
+
+        // Android 12 and below
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             loadGalleryItems();
         } else {
             loadGalleryItemsPending = true;
             MainActivity.requestPermission(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
-                    getString(R.string.storage_permission_rationale_download),
+                    getString(R.string.storage_permission_rationale_videos),
                     context,
                     true);
         }
@@ -369,8 +422,51 @@ public class PublishFragment extends BaseFragment implements
             loadGalleryItems();
         }
         if (launchFilePickerPending) {
-            launchFilePickerPending = false;
-            launchFilePicker();
+            // one more permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (!Environment.isExternalStorageManager()) {
+                    launchFilePickerPending = true;
+                    Context context = getContext();
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).setManageExternalStoragePending(true);
+                    }
+                    requestManageExternalStorage();
+                } else {
+                    launchFilePickerPending = false;
+                    launchFilePicker();
+                }
+            } else {
+                launchFilePickerPending = false;
+                launchFilePicker();
+            }
+        }
+    }
+
+    private void requestManageExternalStorage() {
+        try {
+            // if for some reason, the package uri
+            Uri packageUri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, packageUri);
+            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+        } catch (Exception ex){
+            // If for some reason, the package uri was not found and it results in an error, show the screen for all permissions
+            Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+        }
+    }
+
+    @Override
+    public void onManageExternalStoragePermissionGranted() {
+        launchFilePickerPending = false;
+        launchFilePicker();
+    }
+
+    @Override
+    public void onManageExternalStoragePermissionRefused() {
+        storagePermissionRefusedOnce = true;
+        View root = getView();
+        if (root != null) {
+            showError(getString(R.string.storage_permission_rationale_videos));
         }
     }
 
@@ -405,7 +501,7 @@ public class PublishFragment extends BaseFragment implements
     }
 
     @Override
-    public void onFilePicked(String filePath) {
+    public void onFilePicked(String filePath, Uri intentData) {
         Context context = getContext();
         if (context instanceof MainActivity) {
             Map<String, Object> params = new HashMap<>();

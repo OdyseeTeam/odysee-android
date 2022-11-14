@@ -7,6 +7,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -28,10 +29,14 @@ import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -76,10 +81,13 @@ import androidx.annotation.AnyThread;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionParameters;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
-import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -100,6 +108,8 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ActionMode;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -121,6 +131,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
 import com.odysee.app.callable.WalletBalanceFetch;
 import com.odysee.app.dialog.AddToListsDialogFragment;
@@ -129,6 +140,7 @@ import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.model.lbryinc.RewardVerified;
+import com.odysee.app.callable.SaveSharedUserState;
 import com.odysee.app.tasks.RewardVerifiedHandler;
 import com.odysee.app.tasks.claim.ResolveResultHandler;
 import com.odysee.app.ui.channel.*;
@@ -166,9 +178,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -195,7 +209,6 @@ import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.listener.CameraPermissionListener;
-import com.odysee.app.listener.DownloadActionListener;
 import com.odysee.app.listener.FetchChannelsListener;
 import com.odysee.app.listener.FetchClaimsListener;
 import com.odysee.app.listener.FilePickerListener;
@@ -228,11 +241,13 @@ import com.odysee.app.tasks.lbryinc.NotificationDeleteTask;
 import com.odysee.app.tasks.localdata.FetchRecentUrlHistoryTask;
 import com.odysee.app.tasks.wallet.DefaultSyncTaskHandler;
 import com.odysee.app.tasks.wallet.LoadSharedUserStateTask;
-import com.odysee.app.tasks.wallet.SaveSharedUserStateTask;
 import com.odysee.app.tasks.wallet.SyncApplyTask;
 import com.odysee.app.tasks.wallet.SyncGetTask;
 import com.odysee.app.tasks.wallet.SyncSetTask;
 import com.odysee.app.ui.BaseFragment;
+import com.odysee.app.ui.channel.ChannelFormFragment;
+import com.odysee.app.ui.channel.ChannelFragment;
+import com.odysee.app.ui.channel.ChannelManagerFragment;
 import com.odysee.app.ui.findcontent.FileViewFragment;
 import com.odysee.app.ui.findcontent.FollowingFragment;
 import com.odysee.app.ui.other.BlockedAndMutedFragment;
@@ -281,6 +296,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final int SOURCE_NOW_PLAYING_FILE = 1;
     public static final int SOURCE_NOW_PLAYING_SHUFFLE = 2;
+    public static final int AUTO_QUALITY_ID = 0;
     public static MainActivity instance;
     private int pendingSourceTabId;
 
@@ -296,13 +312,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Getter
     private boolean unlockingTips;
 
+    // Use this since activity result doesn't work as expected?
+    @Setter
+    private boolean manageExternalStoragePending;
+
     private VerificationSkipQueue verificationSkipQueue;
 
     public static PlayerManager playerManager;
     public static Cache playerCache;
     public static boolean playerReassigned;
     public boolean mediaRouteButtonVisible;
-    public MediaRouteButton appBarMediaRouteButton;
     public MediaRouteButton playerMediaRouteButton;
     public static int nowPlayingSource;
     public static Claim nowPlayingClaim;
@@ -313,6 +332,27 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static boolean startingShareActivity = false;
     public static boolean startingPermissionRequest = false;
     public static final boolean startingSignInFlowActivity = false;
+
+
+    // NOTE: This is only used for building a dynamic "Now Playing" queue.
+    // Regular playlists should NEVER be assigned to this.
+    private OdyseeCollection nowPlayingQueuePlaylist;
+
+    // This is different from nowPlayingQueue, as we use this to determine what is displayed
+    // in the overlay containing playlist items, which is contained in the main activity layout.
+    private OdyseeCollection currentPlaylist;
+
+    private ClaimListAdapter playlistOverlayItemsAdapter;
+    private RecyclerView playlistOverlayItemsList;
+    @Getter
+    private int playlistOverlayState;
+    private int lastPlaylistOverlayState;
+    @Getter
+    private boolean playlistLoopEnabled;
+
+    public static final int PLAYLIST_OVERLAY_STATE_HIDDEN = 0;
+    public static final int PLAYLIST_OVERLAY_STATE_MINIMIZED = 1;
+    public static final int PLAYLIST_OVERLAY_STATE_MAXIMIZED = 2;
 
     @Getter
     private boolean userInstallInitialised;
@@ -355,6 +395,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public static final int REQUEST_STORAGE_PERMISSION = 1001;
     public static final int REQUEST_CAMERA_PERMISSION = 1002;
+    public static final int REQUEST_MANAGE_STORAGE_PERMISSION = 1003;
     public static final int REQUEST_SIMPLE_SIGN_IN = 2001;
     public static final int REQUEST_WALLET_SYNC_SIGN_IN = 2002;
     public static final int REQUEST_REWARDS_VERIFY_SIGN_IN = 2003;
@@ -394,6 +435,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public static final String PREFERENCE_KEY_INTERNAL_WIFI_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.WifiDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_MOBILE_DEFAULT_QUALITY = "com.odysee.app.preference.userinterface.MobileDefaultQuality";
     public static final String PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED = "com.odysee.app.preference.userinterface.PlaybackDefaultSpeed";
+    public static final String PREFERENCE_KEY_INTERNAL_DOWNLOAD_WIFI_ONLY = "com.odysee.app.preference.userinterface.DownloadWifiOnly";
     public static final String PREFERENCE_KEY_DARK_MODE = "com.odysee.app.preference.userinterface.DarkMode";
     public static final String PREFERENCE_KEY_SHOW_MATURE_CONTENT = "com.odysee.app.preference.userinterface.ShowMatureContent";
     public static final String PREFERENCE_KEY_SHOW_URL_SUGGESTIONS = "com.odysee.app.preference.userinterface.UrlSuggestions";
@@ -451,7 +493,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private List<WalletSync> pendingSyncSetQueue;
     private static DatabaseHelper dbHelper;
     private List<CameraPermissionListener> cameraPermissionListeners;
-    private List<DownloadActionListener> downloadActionListeners;
     private List<FilePickerListener> filePickerListeners;
     private List<PIPModeListener> pipModeListeners;
     private List<ScreenOrientationListener> screenOrientationListeners;
@@ -495,6 +536,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     private boolean readyToDraw = false;
 
+    OdyseeNetworkCallback networkCallback;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
@@ -502,9 +545,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         setContentView(R.layout.activity_main);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            //noinspection deprecation
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
         } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             findViewById(R.id.root).getViewTreeObserver().addOnPreDrawListener(
                 new ViewTreeObserver.OnPreDrawListener() {
                     @Override
@@ -626,18 +671,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // TODO: Check Google Play Services availability
         // Listener here is not called in foss build
-        appBarMediaRouteButton = findViewById(R.id.app_bar_media_route_button);
-        castHelper = new CastHelper(this, appBarMediaRouteButton, new CastHelper.Listener() {
+        castHelper = new CastHelper(this, new CastHelper.Listener() {
             @Override
             public void updateMediaRouteButtonVisibility(boolean isVisible) {
                 mediaRouteButtonVisible = isVisible;
-                appBarMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
                 if (playerMediaRouteButton != null) {
                     playerMediaRouteButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
                 }
             }
         });
-        castHelper.setUpCastButton(appBarMediaRouteButton);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.content_main), new OnApplyWindowInsetsListener() {
             @Override
@@ -695,7 +737,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         pendingSyncSetQueue = new ArrayList<>();
 
         cameraPermissionListeners = new ArrayList<>();
-        downloadActionListeners = new ArrayList<>();
         fetchChannelsListeners = new ArrayList<>();
         fetchClaimsListeners = new ArrayList<>();
         filePickerListeners = new ArrayList<>();
@@ -1027,6 +1068,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 final boolean isSignedIn = odyseeAccount != null;
 
                 buttonChannels.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+                buttonBlockedAndMuted.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonCreatorSettings.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonPublishes.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
                 buttonLivestreams.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
@@ -1303,6 +1345,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
 
         accountManager = AccountManager.get(this);
+
+        initPlaylistOverlay();
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    public void setNetworkCallback() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback == null) {
+            networkCallback = new OdyseeNetworkCallback();
+            networkCallback.setActivityAndPlayerManager(this, playerManager);
+
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            // If minAPIVersion is 26 (Android Oreo) or higher, replace this with a call to registerDefaultNetworkCallback(NetworkCallback, Handler)
+            // being the handler one for the UI-thread and on OdyseeNetworkCallback class make the call directly to setPlayerQuality()
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        }
     }
 
     public static DatabaseHelper getDatabaseHelper() {
@@ -1414,6 +1471,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return Integer.parseInt(sp.getString(PREFERENCE_KEY_INTERNAL_PLAYBACK_DEFAULT_SPEED, "100"));
     }
 
+    public boolean downloadWifiOnly() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getBoolean(PREFERENCE_KEY_INTERNAL_DOWNLOAD_WIFI_ONLY, true);
+    }
+
     public boolean initialSubscriptionMergeDone() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         return sp.getBoolean(PREFERENCE_KEY_INTERNAL_INITIAL_SUBSCRIPTION_MERGE_DONE, false);
@@ -1488,16 +1550,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void removeScreenOrientationListener(ScreenOrientationListener listener) {
         screenOrientationListeners.remove(listener);
-    }
-
-    public void addDownloadActionListener(DownloadActionListener listener) {
-        if (!downloadActionListeners.contains(listener)) {
-            downloadActionListeners.add(listener);
-        }
-    }
-
-    public void removeDownloadActionListener(DownloadActionListener listener) {
-        downloadActionListeners.remove(listener);
     }
 
     public void addFilePickerListener(FilePickerListener listener) {
@@ -1784,7 +1836,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         dismissActiveDialogs();
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
-        PlayerView pipPlayer = findViewById(R.id.pip_player);
+        StyledPlayerView pipPlayer = findViewById(R.id.pip_player);
         pipPlayer.setPlayer(playerManager.getCurrentPlayer());
         pipPlayer.setUseController(false);
         pipPlayerContainer.setVisibility(View.VISIBLE);
@@ -1828,7 +1880,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         View pipPlayerContainer = findViewById(R.id.pip_player_container);
-        PlayerView pipPlayer = findViewById(R.id.pip_player);
+        StyledPlayerView pipPlayer = findViewById(R.id.pip_player);
         pipPlayer.setPlayer(null);
         pipPlayerContainer.setVisibility(View.GONE);
         playerReassigned = true;
@@ -1839,7 +1891,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void setPlayerForMiniPlayerView() {
-        PlayerView view = findViewById(R.id.global_now_playing_player_view);
+        StyledPlayerView view = findViewById(R.id.global_now_playing_player_view);
         if (view != null) {
             view.setVisibility(View.VISIBLE);
             view.setPlayer(null);
@@ -2055,6 +2107,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
          */
         initialiseUserInstall();
         // checkPendingOpens();
+
+        checkManageExternalStoragePending();
     }
 
     public void displayCurrentlyPlayingVideo() {
@@ -2105,6 +2159,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!enteringPIPMode && !inPictureInPictureMode && playerManager != null && !isBackgroundPlaybackEnabled()) {
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
+        if (nowPlayingQueuePlaylist != null) {
+            nowPlayingQueuePlaylist = null;
+        }
+
+        // If user watched some media content, a NetworkCallback was created and registered and it needs to be unregistered
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback != null) {
+            ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
+
         super.onPause();
     }
 
@@ -2490,7 +2554,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             ((TextView) findViewById(R.id.global_now_playing_channel_title)).setText(nowPlayingClaim.getPublisherTitle());
         }
         if (playerManager != null && !playerReassigned) {
-            PlayerView playerView = findViewById(R.id.global_now_playing_player_view);
+            StyledPlayerView playerView = findViewById(R.id.global_now_playing_player_view);
             playerView.setPlayer(null);
             playerView.setPlayer(playerManager.getCurrentPlayer());
             playerView.setUseController(false);
@@ -2919,7 +2983,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         OdyseeLocale locale = new OdyseeLocale(
                                 Helper.getJSONString("country", "", localeObject),
                                 Helper.getJSONString("continent", "", localeObject),
-                                Helper.getJSONBoolean("is_eu_member", false, localeObject)
+                                Helper.getJSONBoolean("is_eu_member", false, localeObject),
+                                Helper.getJSONBoolean("is_google_limited", false, localeObject)
                         );
 
                         // load custom blocking rules
@@ -3172,19 +3237,42 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (!userSyncEnabled()) {
             return;
         }
-        SaveSharedUserStateTask saveTask = new SaveSharedUserStateTask(Lbryio.AUTH_TOKEN, this, new SaveSharedUserStateTask.SaveSharedUserStateHandler() {
-            @Override
-            public void onSuccess() {
-                // push wallet sync changes
-                pushCurrentWalletSync();
-            }
 
+        AccountManager am = AccountManager.get(this);
+        String channelName = am.getUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name");
+
+        // If default channel name has not yet been set and there is only a single channel, set it as the default one
+        if (channelName == null && Lbry.ownChannels.size() == 1) {
+            channelName = Lbry.ownChannels.get(0).getName();
+            am.setUserData(Helper.getOdyseeAccount(am.getAccounts()), "default_channel_name", channelName);
+        }
+
+        Future<Boolean> future = ((OdyseeApp)getApplication()).getExecutor().submit(new SaveSharedUserState(Lbryio.AUTH_TOKEN, MainActivity.getDatabaseHelper().getReadableDatabase(), channelName));
+
+        // Saving state is run on its own thread, but in order to get the result, future.get() runs on the calling thread.
+        // That's why it needs to be on a different than main thread.
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void onError(Exception error) {
-                // pass
+            public void run() {
+                if (future != null) {
+                    try {
+                        boolean result = future.get();
+
+                        if (result) {
+                            pushCurrentWalletSync();
+                        }
+                    } catch (ExecutionException | InterruptedException e) {
+                        Throwable throwable = e.getCause();
+                        if (throwable != null) {
+                            throwable.printStackTrace();
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
             }
         });
-        saveTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        t.start();
     }
 
     private void loadSharedUserState() {
@@ -3931,7 +4019,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 Uri fileUri = data.getData();
                 String filePath = Helper.getRealPathFromURI_API19(this, fileUri);
                 for (FilePickerListener listener : filePickerListeners) {
-                    listener.onFilePicked(filePath);
+                    listener.onFilePicked(filePath, fileUri);
                 }
             } else {
                 for (FilePickerListener listener : filePickerListeners) {
@@ -3972,6 +4060,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 openFragment(PublishFormFragment.class, true, params);
             }
             cameraOutputFilename = null;
+        } else if (requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
+            if (resultCode == RESULT_OK && Environment.isExternalStorageManager()) {
+                for (StoragePermissionListener listener : storagePermissionListeners) {
+                    listener.onManageExternalStoragePermissionGranted();
+                }
+            } else {
+                for (StoragePermissionListener listener : storagePermissionListeners) {
+                    listener.onManageExternalStoragePermissionRefused();
+                }
+            }
+        }
+    }
+
+    private void checkManageExternalStoragePending() {
+        if (!manageExternalStoragePending) {
+            return;
+        }
+        manageExternalStoragePending = false;
+
+        if (Environment.isExternalStorageManager()) {
+            for (StoragePermissionListener listener : storagePermissionListeners) {
+                listener.onManageExternalStoragePermissionGranted();
+            }
+        } else {
+            for (StoragePermissionListener listener : storagePermissionListeners) {
+                listener.onManageExternalStoragePermissionRefused();
+            }
         }
     }
 
@@ -4409,6 +4524,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         if (playerManager != null) {
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
+
+        // if we're clearing the currently playing claim, all currently active playlists should also be cleared at this point
+        clearCurrentPlaylist();
+        nowPlayingQueuePlaylist = null;
     }
 
     public void hideSearchBar() {
@@ -4801,21 +4920,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             remoteNotifcationsLastLoaded = new Date();
 
                             loadUnseenNotificationsCount();
-                            loadLocalNotifications();
-                            if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
-                                markNotificationsSeen();
-                            }
-
-                            if (notificationsSwipeContainer != null) {
-                                notificationsSwipeContainer.setRefreshing(false);
-                            }
-                        } else {
-                            loadLocalNotifications();
-                            if (notificationsSwipeContainer != null) {
-                                notificationsSwipeContainer.setRefreshing(false);
-                            }
                         }
 
+                        loadLocalNotifications();
+
+                        if (notifications != null && markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
+                            markNotificationsSeen();
+                        }
+
+                        if (notificationsSwipeContainer != null) {
+                            notificationsSwipeContainer.setRefreshing(false);
+                        }
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
@@ -5074,7 +5189,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             }
 
                             OdyseeCollection collection = OdyseeCollection.createPrivatePlaylist(title);
-                            collection.setItems(Arrays.asList(url));
+                            collection.setItemsFromStringList(Arrays.asList(url));
                             handleAddUrlToList(url, collection, true);
                             if (dialog != null) {
                                 dialog.dismiss();
@@ -5110,9 +5225,35 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     saveSharedUserState();
                 } catch (SQLiteException ex) {
                     // failed
-                    if (showMessage) {
-                        showError(getString(R.string.could_not_add_to_list, collection.getName()));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (showMessage) {
+                                showError(getString(R.string.could_not_add_to_list, collection.getName()));
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void handleSaveCollection(final OdyseeCollection collection) {
+        ExecutorService executor = ((OdyseeApp) getApplication()).getExecutor();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    if (!Helper.isNullOrEmpty(collection.getId())) {
+                        DatabaseHelper.saveCollection(collection, db);
+
+                        // initiate sync afterwards
+                        saveSharedUserState();
                     }
+                } catch (SQLiteException ex) {
+                    // failed
+                    showError(getString(R.string.could_not_save_list, collection.getName()));
                 }
             }
         });
@@ -5153,6 +5294,43 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Map<String, Object> params = new HashMap<>();
         params.put("collectionId", playlistId);
         openFragment(PlaylistFragment.class, true, params);
+    }
+
+    public void handleAddToNowPlayingQueue(Claim claim) {
+        if (claim == null || Helper.isNullOrEmpty(claim.getClaimId())) {
+            return;
+        }
+
+        boolean isNewQueue = false;
+        if (nowPlayingQueuePlaylist == null) {
+            nowPlayingQueuePlaylist = new OdyseeCollection();
+            nowPlayingQueuePlaylist.setId(OdyseeCollection.PLACEHOLDER_ID_NOW_PLAYING);
+            nowPlayingQueuePlaylist.setName(getString(R.string.now_playing));
+            isNewQueue = true;
+        }
+
+        if (isNewQueue) {
+            // we need to navigate to FileViewFragment in this instance
+            nowPlayingQueuePlaylist.addClaim(claim);
+            openPrivatePlaylist(nowPlayingQueuePlaylist);
+        } else if (currentPlaylist != null){
+            // otherwise, refresh the playlist items display
+            currentPlaylist.getClaims().add(claim);
+
+            // update the adapter
+            playlistOverlayItemsAdapter.addSingleItem(claim);
+            didAddItemToNowPlayingQueue();
+
+            Fragment fragment = getCurrentFragment();
+            if (fragment instanceof FileViewFragment) {
+                FileViewFragment fvFragment = (FileViewFragment) fragment;
+                // make sure that we have the same collection reference before shuffling
+                if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
+                    // update the items in the fragment
+                    fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
+                }
+            }
+        }
     }
 
     public void handleAddUrlToList(String url, String builtInId) {
@@ -5427,6 +5605,35 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         });
     }
 
+    public void handleReportClaim(final Claim claim) {
+        CustomTabColorSchemeParams.Builder ctcspb = new CustomTabColorSchemeParams.Builder();
+        ctcspb.setToolbarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+        CustomTabColorSchemeParams ctcsp = ctcspb.build();
+
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder().setDefaultColorSchemeParams(ctcsp);
+        CustomTabsIntent intent = builder.build();
+        intent.launchUrl(this, Uri.parse(String.format("https://odysee.com/$/report_content?claimId=%s", claim.getClaimId())));
+    }
+
+    public void setPlayerQuality(Player player, int quality) {
+        for (Tracks.Group trackGroup : player.getCurrentTracks().getGroups()) {
+            if (trackGroup.getType() != C.TRACK_TYPE_VIDEO) continue;
+
+            TrackSelectionParameters.Builder trackselectionparemetersBuilder = player.getTrackSelectionParameters().buildUpon();
+
+            if (quality == AUTO_QUALITY_ID || !MainActivity.videoIsTranscoded) {
+                trackselectionparemetersBuilder.clearVideoSizeConstraints();
+            } else {
+                trackselectionparemetersBuilder.setMaxVideoSize(Integer.MAX_VALUE, quality + 1);
+            }
+
+            player.setTrackSelectionParameters(trackselectionparemetersBuilder.build());
+
+            MainActivity.videoQuality = quality;
+            break;
+        }
+    }
+
     public void blockChannel(Claim channel, Claim modChannel) {
         ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
@@ -5549,6 +5756,34 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    public static void requestPermissions(String[] permissions, int requestCode, String rationale, Context context, boolean forceRequest) {
+        List<String> permissionsRequired = new ArrayList<>();
+        for (int i = 0; i < permissions.length; i++) {
+            if (ContextCompat.checkSelfPermission(context, permissions[i]) != PackageManager.PERMISSION_GRANTED) {
+                permissionsRequired.add(permissions[i]);
+            }
+        }
+
+        int numRationales = 0;
+        if (!forceRequest) {
+            for (String permission : permissionsRequired) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) context, permission)) {
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).showMessage(rationale);
+                    }
+                    numRationales++;
+                }
+            }
+        }
+
+        if (!forceRequest && (numRationales == permissionsRequired.size())) {
+            return;
+        }
+
+        startingPermissionRequest = true;
+        ActivityCompat.requestPermissions((Activity) context, permissionsRequired.toArray(new String[permissionsRequired.size()]), requestCode);
+    }
+
     public static boolean hasPermission(String permission, Context context) {
         if (context == null) {
             return false;
@@ -5562,6 +5797,232 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public void resetCurrentDisplayFragment() {
         currentDisplayFragment = null;
+    }
+
+    public void setCurrentPlaylist(OdyseeCollection collection) {
+        this.currentPlaylist = collection;
+        didSetCurrentPlaylist();
+    }
+
+    public void setCurrentPlaylistIndex(int index) {
+        if (this.currentPlaylist != null) {
+            this.currentPlaylist.setCurrentlyPlayingIndex(index);
+        }
+        didSetCurrentPlaylistIndex();
+    }
+
+    public void addItemToNowPlayingQueue(Claim claim) {
+        if (claim == null || claim.isChannel()) {
+            return;
+        }
+    }
+
+    private void initPlaylistOverlay() {
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        playlistOverlayItemsList = findViewById(R.id.playlist_overlay_playlist_items);
+
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        playlistOverlayItemsList.setLayoutManager(llm);
+
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                maximizePlaylistOverlay();
+            }
+        });
+
+        playlistLayout.findViewById(R.id.playlist_control_loop).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                togglePlaylistLoopEnabled();
+            }
+        });
+
+        playlistLayout.findViewById(R.id.playlist_control_shuffle).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                performPlaylistShuffle();
+            }
+        });
+
+        playlistLayout.findViewById(R.id.playlist_layout_close).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                minimizePlaylistOverlay();
+            }
+        });
+
+        lastPlaylistOverlayState = -1;
+    }
+
+    private void initPlaylistOverlayAdapter(List<Claim> claims) {
+        playlistOverlayItemsAdapter = new ClaimListAdapter(claims, ClaimListAdapter.STYLE_SMALL_LIST, this);
+        playlistOverlayItemsAdapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+            @Override
+            public void onClaimClicked(Claim claim, int position) {
+                Fragment fragment = getCurrentFragment();
+                if (fragment instanceof FileViewFragment) {
+                    ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
+                }
+            }
+        });
+        playlistOverlayItemsList.setAdapter(playlistOverlayItemsAdapter);
+    }
+
+    private void didSetCurrentPlaylist() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        // update the playlist view
+        Claim currentPlaylistItem = currentPlaylist.getCurrentlyPlayingClaim();
+
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        TextView playlistSummaryCurrentlyPlaying = playlistLayout.findViewById(R.id.playlist_summary_now_playing);
+        TextView playlistSummaryTitle = playlistLayout.findViewById(R.id.playlist_summary_playlist_title);
+        TextView playlistOverlayTitle = playlistLayout.findViewById(R.id.playlist_overlay_title);
+
+        playlistSummaryCurrentlyPlaying.setText(currentPlaylistItem != null ? currentPlaylistItem.getTitle() : null);
+        playlistSummaryTitle.setText(currentPlaylist.getName());
+        playlistOverlayTitle.setText(currentPlaylist.getName());
+
+        initPlaylistOverlayAdapter(currentPlaylist.getClaims());
+
+        checkIfPlaylistOverlayShouldDisplay();
+    }
+
+    private void didSetCurrentPlaylistIndex() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        updatePlaylistOverlayTitleAndSummary();
+    }
+
+    private void didAddItemToNowPlayingQueue() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        updatePlaylistOverlayTitleAndSummary();
+    }
+
+    private void updatePlaylistOverlayTitleAndSummary() {
+        Claim currentPlaylistItem = currentPlaylist.getCurrentlyPlayingClaim();
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        TextView playlistOverlayTitle = playlistLayout.findViewById(R.id.playlist_overlay_title);
+        TextView playlistSummaryTitle = playlistLayout.findViewById(R.id.playlist_summary_playlist_title);
+        TextView playlistSummaryCurrentlyPlaying = playlistLayout.findViewById(R.id.playlist_summary_now_playing);
+
+        playlistSummaryCurrentlyPlaying.setText(currentPlaylistItem != null ? currentPlaylistItem.getTitle() : null);
+
+        String value = getString(R.string.playlist_position_tracker,
+                currentPlaylist.getName(),
+                String.valueOf(currentPlaylist.getCurrentlyPlayingIndex() + 1),
+                String.valueOf(currentPlaylist.getClaims().size()));
+
+        playlistSummaryTitle.setText(value);
+        playlistOverlayTitle.setText(value);
+    }
+
+    public void checkIfPlaylistOverlayShouldDisplay() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        Fragment fragment = getCurrentFragment();
+        boolean inFileView = fragment instanceof FileViewFragment;
+        if (!inFileView) {
+            return;
+        }
+
+        if (playlistOverlayState != PLAYLIST_OVERLAY_STATE_MAXIMIZED && playlistOverlayState != PLAYLIST_OVERLAY_STATE_MINIMIZED) {
+            switch (lastPlaylistOverlayState) {
+                case PLAYLIST_OVERLAY_STATE_MAXIMIZED: default: maximizePlaylistOverlay(); break;
+                case PLAYLIST_OVERLAY_STATE_MINIMIZED: minimizePlaylistOverlay(); break;
+            }
+        }
+    }
+
+    public void maximizePlaylistOverlay() {
+        if (playlistOverlayState == PLAYLIST_OVERLAY_STATE_MAXIMIZED) {
+            return;
+        }
+
+        // TODO: Bottom-sheet animate upwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) playlistLayout.getLayoutParams();
+        layoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.setMargins(0, getScaledValue(244), 0, 0);
+
+        playlistLayout.setVisibility(View.VISIBLE);
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setVisibility(View.GONE);
+        playlistLayout.findViewById(R.id.playlist_overlay_card_layout).setVisibility(View.VISIBLE);
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_MAXIMIZED;
+    }
+
+    public void minimizePlaylistOverlay() {
+        if (playlistOverlayState == PLAYLIST_OVERLAY_STATE_MINIMIZED) {
+            return;
+        }
+
+        // TODO: Bottom-sheet animate downwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) playlistLayout.getLayoutParams();
+        layoutParams.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.setMargins(0, 0, 0, 0);
+
+        playlistLayout.setVisibility(View.VISIBLE);
+        playlistLayout.findViewById(R.id.playlist_overlay_card_layout).setVisibility(View.GONE);
+        playlistLayout.findViewById(R.id.playlist_overlay_summary_layout).setVisibility(View.VISIBLE);
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_MINIMIZED;
+    }
+
+    public void hidePlaylistOverlay() {
+        // TODO: Animate downwards?
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        playlistLayout.setVisibility(View.GONE);
+        lastPlaylistOverlayState = playlistOverlayState;
+        playlistOverlayState = PLAYLIST_OVERLAY_STATE_HIDDEN;
+    }
+
+    public void clearCurrentPlaylist() {
+        hidePlaylistOverlay();
+        currentPlaylist = null;
+        lastPlaylistOverlayState = -1;
+    }
+
+    private void performPlaylistShuffle() {
+        if (currentPlaylist == null) {
+            return;
+        }
+
+        Fragment fragment = getCurrentFragment();
+        if (fragment instanceof FileViewFragment) {
+            FileViewFragment fvFragment = (FileViewFragment) fragment;
+
+            // make sure that we have the same collection reference before shuffling
+            if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
+                // do the shuffle
+                List<Claim> currentClaims = currentPlaylist.getClaims();
+                Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
+                currentPlaylist.setClaims(currentClaims);
+                initPlaylistOverlayAdapter(currentPlaylist.getClaims());
+
+                // update the fragment and play from the beginning
+                fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
+                fvFragment.playFirstItemInCollection();
+            }
+        }
+    }
+
+    private void togglePlaylistLoopEnabled() {
+        View playlistLayout = findViewById(R.id.playlist_overlay);
+        View loopOnceIndicator = playlistLayout.findViewById(R.id.playlist_loop_indicator);
+        playlistLoopEnabled = !playlistLoopEnabled;
+        loopOnceIndicator.setVisibility(playlistLoopEnabled ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
@@ -5611,5 +6072,31 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    class OdyseeNetworkCallback extends ConnectivityManager.NetworkCallback {
+        MainActivity mainActivity;
+        PlayerManager playerManager;
+
+        public void setActivityAndPlayerManager(MainActivity a, PlayerManager manager) {
+            mainActivity = a;
+            playerManager = manager;
+        }
+
+        @Override
+        public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) {
+            if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
+                MainActivity.videoQuality = wifiDefaultQuality();
+            } else {
+                MainActivity.videoQuality = mobileDefaultQuality();
+            }
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    mainActivity.setPlayerQuality(playerManager.getCurrentPlayer(), MainActivity.videoQuality);
+                }
+            });
+        }
     }
 }
