@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -1069,12 +1070,28 @@ public class GoLiveFormFragment extends BaseFragment implements
 
     private void checkStoragePermissionAndLaunchFilePicker() {
         Context context = getContext();
-        if (MainActivity.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, context)) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (MainActivity.hasPermission(Manifest.permission.READ_MEDIA_IMAGES, context)) {
+                launchPickerPending = false;
+                launchFilePicker();
+            } else {
+                launchPickerPending = true;
+                MainActivity.requestPermission(Manifest.permission.READ_MEDIA_IMAGES,
+                        MainActivity.REQUEST_STORAGE_PERMISSION,
+                        getString(R.string.storage_permission_rationale_images),
+                        context,
+                        true);
+            }
+            return;
+        }
+
+        if (MainActivity.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, context)) {
             launchPickerPending = false;
             launchFilePicker();
         } else {
             launchPickerPending = true;
-            MainActivity.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            MainActivity.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
                     MainActivity.REQUEST_STORAGE_PERMISSION,
                     getString(R.string.storage_permission_rationale_images),
                     context,
@@ -1246,6 +1263,14 @@ public class GoLiveFormFragment extends BaseFragment implements
             storageRefusedOnce = true;
         }
         launchPickerPending = false;
+    }
+
+    public void onManageExternalStoragePermissionGranted() {
+        // pass
+    }
+
+    public void onManageExternalStoragePermissionRefused() {
+        // pass
     }
 
     @Override
