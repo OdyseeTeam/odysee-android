@@ -1217,6 +1217,7 @@
                         android:maxLength="300"
                         android:paddingLeft="12dp"
                         android:paddingRight="12dp"
+                        android:hint="@string/livechat_comment_here"
                         android:singleLine="true"
                         android:textSize="14sp" />
 
