@@ -21,18 +21,31 @@
                 android:fontFamily="@font/inter"
                 android:text="@string/blocked"
                 android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/blocked_muted_filter_muted"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="16dp"
                 android:layout_toEndOf="@id/blocked_muted_filter_blocked"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
                 android:fontFamily="@font/inter"
                 android:text="@string/muted"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/blocked_muted_filter_moderator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="16dp"
+                android:layout_toEndOf="@id/blocked_muted_filter_muted"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:fontFamily="@font/inter"
+                android:text="@string/moderator" />
             <ProgressBar
                 android:id="@+id/blocked_muted_loading"
                 android:layout_width="20dp"

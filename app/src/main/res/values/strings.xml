@@ -94,11 +94,15 @@
     <string name="channel_blocked">You have blocked this channel from commenting on content by %1$s</string>
     <string name="channel_unblocked">You have unblocked this channel from commenting on content by %1$s</string>
 
+    <string name="unblock">Unblock</string>
     <string name="blocked">Blocked</string>
     <string name="muted">Muted</string>
+    <string name="moderator">Moderator</string>
     <string name="blocked_and_muted">Blocked &amp; Muted List</string>
+    <string name="blocked_on_behalf_of">Blocked on behalf of</string>
     <string name="load_blocked_failed">The list of blocked channels could not be loaded at this time. Please try again later.</string>
     <string name="load_muted_failed">The list of muted channels could not be loaded at this time. Please try again later.</string>
+    <string name="load_moderator_failed">The list of moderated channels could not be loaded at this time. Please try again later.</string>
 
     <string name="now_playing">Now Playing: Queue</string>
     <string name="add_to_queue">Add to Queue</string>

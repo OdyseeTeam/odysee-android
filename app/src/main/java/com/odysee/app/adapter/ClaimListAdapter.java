@@ -101,6 +101,12 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     @Setter
     private boolean isOwnCollection;
 
+    @Getter
+    @Setter
+    private Map<String, BlockedAndMutedFragment.BlockedChannel> blockedChannelMap;
+
+
+
     public ClaimListAdapter(List<Claim> items, Context context) {
         this(items, STYLE_BIG_LIST, context);
     }
@@ -110,6 +116,7 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         this.style = style;
         List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
+        this.blockedChannelMap = new HashMap<>();
         for (Claim item : sortedItems) {
             if (item != null) {
                 this.items.add(item);
@@ -121,6 +128,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         quickClaimUrlMap = new HashMap<>();
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
+    }
+
+    public void setBlockedChannelInfoForClaim(String claimId, BlockedAndMutedFragment.BlockedChannel blockedChannel) {
+        blockedChannelMap.put(claimId, blockedChannel);
     }
 
     public List<Claim> getSelectedItems() {

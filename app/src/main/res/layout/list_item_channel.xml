@@ -121,46 +121,138 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:layout_toEndOf="@id/claim_media_container">
+            android:layout_toEndOf="@id/claim_media_container"
+            android:orientation="vertical">
+
             <TextView
                 android:id="@+id/claim_vanity_url"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="gone"/>
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/claim_title"
+                style="@style/TextView_SemiBold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxLines="2"
                 android:ellipsize="end"
-                style="@style/TextView_SemiBold"
+                android:maxLines="2"
                 android:textSize="14sp" />
+
             <TextView
                 android:id="@+id/claim_publisher"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/odyseePink"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/odyseePink"
                 android:textSize="12sp" />
+
             <TextView
                 android:id="@+id/claim_publish_time"
+                style="@style/TextView_Light"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                style="@style/TextView_Light"
                 android:textSize="11sp" />
+
             <TextView
                 android:id="@+id/claim_pending_text"
+                style="@style/TextView_Light"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/pending"
-                style="@style/TextView_Light"
                 android:textSize="11sp"
                 android:textStyle="italic"
                 android:visibility="gone" />
             <!-- download progress bar -->
+
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/moderator_on_behalf_of_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/blocked_on_behalf_of"
+                    android:textSize="11sp"
+                    android:textStyle="italic" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <RelativeLayout
+                        android:id="@+id/on_behalf_of_media_container"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp">
+
+                        <ImageView
+                            android:id="@+id/on_behalf_of_thumbnail"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_centerInParent="true" />
+
+                        <RelativeLayout
+                            android:id="@+id/on_behalf_of_no_thumbnail"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_centerInParent="true"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/bg_channel_icon">
+
+                            <TextView
+                                android:id="@+id/on_behalf_of_thumbnail_alpha"
+                                style="@style/TextView_Light"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerInParent="true"
+                                android:textAllCaps="true"
+                                android:textColor="@color/white"
+                                android:textSize="48sp" />
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_toEndOf="@id/on_behalf_of_media_container"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/on_behalf_of_title"
+                            style="@style/TextView_SemiBold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/on_behalf_of_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter"
+                            android:textColor="@color/odyseePink"
+                            android:textSize="12sp" />
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+                </RelativeLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter"
+                    android:textSize="12sp"
+                    android:text="@string/unblock" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
         </LinearLayout>
     </RelativeLayout>
 </LinearLayout>

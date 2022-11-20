@@ -133,6 +133,122 @@ public class BlockedAndMutedFragment extends BaseFragment {
         }
     }
 
+    private void loadModerated() {
+        if (loadInProgress) {
+            return;
+        }
+
+        loadInProgress = true;
+        Helper.setViewVisibility(blockedAndMutedLoading, View.VISIBLE);
+        blockedAndMutedList.setAdapter(null);
+
+        Context context = getContext();
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+
+            // perform moderation.BlockedList request for each channel in parallel
+            Collection<Callable<List<BlockedChannel>>> callables = new ArrayList<>(Lbry.ownChannels.size());
+            for (Claim modChannel : Lbry.ownChannels) {
+                callables.add(() -> {
+                    List<BlockedChannel> blockedChannels = new ArrayList<>();
+                    try {
+                        JSONObject params = new JSONObject();
+                        params.put("channel_id", modChannel.getClaimId());
+                        params.put("channel_name", modChannel.getName());
+                        params.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+                        JSONObject jsonChannelSign = Comments.channelSignName(params, modChannel.getClaimId(), modChannel.getName());
+
+                        Map<String, Object> options = new HashMap<>();
+                        options.put("mod_channel_id", modChannel.getClaimId());
+                        options.put("mod_channel_name", modChannel.getName());
+                        options.put("signature", Helper.getJSONString("signature", "", jsonChannelSign));
+                        options.put("signing_ts", Helper.getJSONString("signing_ts", "", jsonChannelSign));
+                        options.put(Lbryio.AUTH_TOKEN_PARAM, Lbryio.AUTH_TOKEN);
+
+                        Response response = Comments.performRequest(Lbry.buildJsonParams(options), "moderation.BlockedList");
+                        ResponseBody responseBody = response.body();
+                        JSONObject jsonResponse = new JSONObject(responseBody.string());
+                        if (!jsonResponse.has("result") || jsonResponse.isNull("result")) {
+                            throw new ApiCallException("invalid json response");
+                        }
+
+                        JSONObject result = Helper.getJSONObject("result", jsonResponse);
+                        if (!result.has("delegated_blocked_channels") || result.isNull("delegated_blocked_channels")) {
+                            return null;
+                        }
+
+                        JSONArray items = result.getJSONArray("delegated_blocked_channels");
+                        for (int i = 0; i < items.length(); i++) {
+                            JSONObject item = items.getJSONObject(i);
+                            BlockedChannel channel = new BlockedChannel(
+                                    Helper.getJSONString("blocked_channel_id", null, item),
+                                    Helper.getJSONString("blocked_channel_name", null, item)
+                            );
+                            if (!Helper.isNullOrEmpty(channel.getChannelId()) && !Helper.isNullOrEmpty(channel.getName())) {
+                                blockedChannels.add(channel);
+                            }
+                        }
+                    } catch (JSONException | ApiCallException | IOException ex) {
+                        // pass
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                didFailLoadingBlockedChannels();
+                            }
+                        });
+                    }
+                    return blockedChannels;
+                });
+            }
+
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // run moderation.BlockedList calls
+                        List<Future<List<BlockedChannel>>> results = ((OdyseeApp) activity.getApplication()).getExecutor().invokeAll(callables);
+                        List<BlockedChannel> allBlockedChannels = results.stream().map(f -> {
+                            try {
+                                return f.get();
+                            } catch (ExecutionException | InterruptedException ex) {
+                                ex.printStackTrace();
+                                return null;
+                            }
+                        }).filter(Objects::nonNull).flatMap(Collection::stream).collect(Collectors.toList());
+
+                        // next we need to resolve the channels
+                        List<String> blockedChannelUrls = new ArrayList<>();
+                        List<LbryUri> blockedChannelLbryUris = new ArrayList<>();
+                        for (BlockedChannel channel : allBlockedChannels) {
+                            LbryUri url = LbryUri.tryParse(String.format("lbry://%s:%s", channel.getName(), channel.getChannelId()));
+                            if (url != null) {
+                                blockedChannelLbryUris.add(url);
+                                blockedChannelUrls.add(url.toString());
+                            }
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Lbryio.blockedChannels = new ArrayList<>(blockedChannelLbryUris);
+                                didLoadBlockedChannelUrls(blockedChannelUrls);
+                            }
+                        });
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                didFailLoadingBlockedChannels();
+                            }
+                        });
+                    }
+                }
+            });
+            t.start();
+        }
+    }
+
     private void loadBlocked() {
         if (loadInProgress) {
             return;
@@ -394,9 +510,17 @@ public class BlockedAndMutedFragment extends BaseFragment {
     public static final class BlockedChannel {
         private String channelId;
         private String name;
+        private String onBehalfOfId;
+        private String onBehalfOfName;
         public BlockedChannel(String channelId, String name) {
             this.channelId = channelId;
             this.name = name;
+        }
+        public BlockedChannel(String channelId, String name, String onBehalfOfId, String onBehalfOfName) {
+            this.channelId = channelId;
+            this.name = name;
+            this.onBehalfOfId = onBehalfOfId;
+            this.onBehalfOfName = onBehalfOfName;
         }
     }
 }
