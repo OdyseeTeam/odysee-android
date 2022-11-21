@@ -2895,43 +2895,40 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void updateContentReactions() {
-        Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    int likes = reactions.isLiked() ? reactions.getOthersLikes() + 1 : reactions.getOthersLikes();
-                    int dislikes = reactions.isDisliked() ? reactions.getOthersDislikes() + 1 : reactions.getOthersDislikes();
-                    likeReactionAmount.setText(String.valueOf(likes));
-                    dislikeReactionAmount.setText(String.valueOf(dislikes));
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                int likes = reactions.isLiked() ? reactions.getOthersLikes() + 1 : reactions.getOthersLikes();
+                int dislikes = reactions.isDisliked() ? reactions.getOthersDislikes() + 1 : reactions.getOthersDislikes();
+                likeReactionAmount.setText(String.valueOf(likes));
+                dislikeReactionAmount.setText(String.valueOf(dislikes));
 
-                    int inactiveColor = 0;
-                    int fireActive = 0;
-                    int slimeActive = 0;
-                    Context context = getContext();
-                    if (context != null) {
-                        inactiveColor = ContextCompat.getColor(context, R.color.darkForeground);
-                        fireActive = ContextCompat.getColor(context, R.color.fireActive);
-                        slimeActive = ContextCompat.getColor(context, R.color.slimeActive);
-                    }
-                    if (reactions.isLiked()) {
-                        likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
-                        likeReactionAmount.setTextColor(fireActive);
-                    } else {
-                        likeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
-                        likeReactionAmount.setTextColor(inactiveColor);
-                    }
-
-                    if (reactions.isDisliked()) {
-                        dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
-                        dislikeReactionAmount.setTextColor(slimeActive);
-                    } else {
-                        dislikeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
-                        dislikeReactionAmount.setTextColor(inactiveColor);
-                    }
+                int inactiveColor = 0;
+                int fireActive = 0;
+                int slimeActive = 0;
+                Context context = getContext();
+                if (context != null) {
+                    inactiveColor = ContextCompat.getColor(context, R.color.darkForeground);
+                    fireActive = ContextCompat.getColor(context, R.color.fireActive);
+                    slimeActive = ContextCompat.getColor(context, R.color.slimeActive);
                 }
-            });
-        }
+                if (reactions.isLiked()) {
+                    likeReactionIcon.setColorFilter(fireActive, PorterDuff.Mode.SRC_IN);
+                    likeReactionAmount.setTextColor(fireActive);
+                } else {
+                    likeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                    likeReactionAmount.setTextColor(inactiveColor);
+                }
+
+                if (reactions.isDisliked()) {
+                    dislikeReactionIcon.setColorFilter(slimeActive, PorterDuff.Mode.SRC_IN);
+                    dislikeReactionAmount.setTextColor(slimeActive);
+                } else {
+                    dislikeReactionIcon.setColorFilter(inactiveColor, PorterDuff.Mode.SRC_IN);
+                    dislikeReactionAmount.setTextColor(inactiveColor);
+                }
+            }
+        });
     }
 
     private Map<String, Reactions> loadReactions(List<Comment> comments) {
