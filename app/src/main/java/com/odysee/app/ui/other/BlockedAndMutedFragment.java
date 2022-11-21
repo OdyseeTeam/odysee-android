@@ -59,6 +59,7 @@ public class BlockedAndMutedFragment extends BaseFragment {
     public static final int BLOCKED_AND_MUTED_CONTEXT_GROUP_ID = 21;
     private static final int FILTER_BLOCKED = 1;
     private static final int FILTER_MUTED = 2;
+    private static final int FILTER_MODERATED = 3;
 
     private boolean loadInProgress;
     private ProgressBar blockedAndMutedLoading;
@@ -67,7 +68,8 @@ public class BlockedAndMutedFragment extends BaseFragment {
     private ClaimListAdapter adapter;
     private TextView linkFilterBlocked;
     private TextView linkFilterMuted;
-    private int currentFilter; // 1 - blocked, 2 - muted
+    private TextView linkFilterModerated;
+    private int currentFilter; // 1 - blocked, 2 - muted, 3 - moderated
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -77,6 +79,7 @@ public class BlockedAndMutedFragment extends BaseFragment {
         blockedAndMutedList = root.findViewById(R.id.blocked_muted_item_list);
         linkFilterBlocked = root.findViewById(R.id.blocked_muted_filter_blocked);
         linkFilterMuted = root.findViewById(R.id.blocked_muted_filter_muted);
+        linkFilterModerated = root.findViewById(R.id.blocked_muted_filter_moderator);
 
         blockedAndMutedList.setLayoutManager(new LinearLayoutManager(getContext()));
 
@@ -102,6 +105,17 @@ public class BlockedAndMutedFragment extends BaseFragment {
             }
         });
 
+        linkFilterModerated.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (loadInProgress) {
+                    return;
+                }
+                updateCurrentFilter(FILTER_MODERATED);
+                loadModerated();
+            }
+        });
+
         return root;
     }
 
@@ -110,9 +124,15 @@ public class BlockedAndMutedFragment extends BaseFragment {
         if (filter == FILTER_BLOCKED) {
             linkFilterBlocked.setTypeface(null, Typeface.BOLD);
             linkFilterMuted.setTypeface(null, Typeface.NORMAL);
+            linkFilterModerated.setTypeface(null, Typeface.NORMAL);
         } else if (filter == FILTER_MUTED) {
             linkFilterBlocked.setTypeface(null, Typeface.NORMAL);
             linkFilterMuted.setTypeface(null, Typeface.BOLD);
+            linkFilterModerated.setTypeface(null, Typeface.NORMAL);
+        } else if (filter == FILTER_MODERATED) {
+            linkFilterBlocked.setTypeface(null, Typeface.NORMAL);
+            linkFilterMuted.setTypeface(null, Typeface.NORMAL);
+            linkFilterModerated.setTypeface(null, Typeface.BOLD);
         }
     }
 
@@ -124,11 +144,13 @@ public class BlockedAndMutedFragment extends BaseFragment {
             loadBlocked();
         } else if (currentFilter == FILTER_MUTED) {
             loadMuted();
+        } else if (currentFilter == FILTER_MODERATED) {
+            loadModerated();;
         }
     }
 
     private void checkFilter() {
-        if (currentFilter != FILTER_BLOCKED && currentFilter != FILTER_MUTED) {
+        if (currentFilter != FILTER_BLOCKED && currentFilter != FILTER_MUTED && currentFilter != FILTER_MODERATED) {
             updateCurrentFilter(FILTER_BLOCKED);
         }
     }
@@ -182,7 +204,9 @@ public class BlockedAndMutedFragment extends BaseFragment {
                             JSONObject item = items.getJSONObject(i);
                             BlockedChannel channel = new BlockedChannel(
                                     Helper.getJSONString("blocked_channel_id", null, item),
-                                    Helper.getJSONString("blocked_channel_name", null, item)
+                                    Helper.getJSONString("blocked_channel_name", null, item),
+                                    Helper.getJSONString("blocked_by_channel_id", null, item),
+                                    Helper.getJSONString("blocked_by_channel_name", null, item)
                             );
                             if (!Helper.isNullOrEmpty(channel.getChannelId()) && !Helper.isNullOrEmpty(channel.getName())) {
                                 blockedChannels.add(channel);
@@ -216,14 +240,27 @@ public class BlockedAndMutedFragment extends BaseFragment {
                             }
                         }).filter(Objects::nonNull).flatMap(Collection::stream).collect(Collectors.toList());
 
-                        // next we need to resolve the channels
+                        // next we need to resolve the channels and blocked_by channels
                         List<String> blockedChannelUrls = new ArrayList<>();
                         List<LbryUri> blockedChannelLbryUris = new ArrayList<>();
+                        List<String> onBehalfOfUrls = new ArrayList<>();
+                        List<LbryUri> onBehalfOfLbryUrls = new ArrayList<>();
+                        Map<String, String> urlBlockedByMap = new HashMap<>();
                         for (BlockedChannel channel : allBlockedChannels) {
                             LbryUri url = LbryUri.tryParse(String.format("lbry://%s:%s", channel.getName(), channel.getChannelId()));
                             if (url != null) {
                                 blockedChannelLbryUris.add(url);
                                 blockedChannelUrls.add(url.toString());
+                            }
+
+                            LbryUri obUrl = LbryUri.tryParse(String.format("lbry://%s:%s", channel.getOnBehalfOfName(), channel.getOnBehalfOfId()));
+                            if (obUrl != null) {
+                                onBehalfOfLbryUrls.add(obUrl);
+                                onBehalfOfUrls.add(obUrl.toString());
+                            }
+
+                            if (url != null && obUrl != null) {
+                                urlBlockedByMap.put(url.toString(), obUrl.toString());
                             }
                         }
 
@@ -231,7 +268,7 @@ public class BlockedAndMutedFragment extends BaseFragment {
                             @Override
                             public void run() {
                                 Lbryio.blockedChannels = new ArrayList<>(blockedChannelLbryUris);
-                                didLoadBlockedChannelUrls(blockedChannelUrls);
+                                didLoadModeratedBlockedChannelUrls(blockedChannelUrls, onBehalfOfUrls, urlBlockedByMap);
                             }
                         });
                     } catch (InterruptedException ex) {
@@ -429,6 +466,73 @@ public class BlockedAndMutedFragment extends BaseFragment {
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void didLoadModeratedBlockedChannelUrls(List<String> urls, List<String> obUrls, Map<String, String> urlBlockedOnBehalfOfMap) {
+        List<String> allUrls = new ArrayList<>(urls);
+        allUrls.addAll(obUrls);
+
+        final Map<Claim, Claim> claimsBlockedOnBehalfOf = new HashMap<>();
+
+        // resolve the urls
+        ResolveTask task = new ResolveTask(allUrls, Lbry.API_CONNECTION_STRING, blockedAndMutedLoading, new ResolveResultHandler() {
+            @Override
+            public void onSuccess(List<Claim> claims) {
+                Map<String, Claim> claimResultMap = new HashMap<>();
+                for (Claim claim : claims) {
+                    if (Helper.isNullOrEmpty(claim.getClaimId())) {
+                        continue;
+                    }
+
+                    LbryUri claimUrl = LbryUri.tryParse(claim.getPermanentUrl());
+                    if (claimUrl != null) {
+                        claimResultMap.put(claimUrl.toString(), claim);
+                    }
+                }
+
+                for (Map.Entry<String, String> entry : urlBlockedOnBehalfOfMap.entrySet()) {
+                    String blockedClaimUrl = entry.getKey();
+                    String blockedOnBehalfOfUrl = entry.getValue();
+                    if (claimResultMap.containsKey(blockedClaimUrl) && claimResultMap.containsKey(blockedOnBehalfOfUrl)) {
+                        claimsBlockedOnBehalfOf.put(claimResultMap.get(blockedClaimUrl), claimResultMap.get(blockedOnBehalfOfUrl));
+                    }
+                }
+
+                didLoadModeratedBlockedChannels(claimsBlockedOnBehalfOf);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                didFailLoadingBlockedChannels();
+            }
+        });
+        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    private void didLoadModeratedBlockedChannels(Map<Claim, Claim> claimsOnBehalfOf) {
+        loadInProgress = false;
+        Helper.setViewVisibility(blockedAndMutedLoading, View.GONE);
+
+        List<Claim> claimsData = new ArrayList<>(claimsOnBehalfOf.keySet());
+        adapter = new ClaimListAdapter(claimsData, getContext());
+        adapter.setContextGroupId(BLOCKED_AND_MUTED_CONTEXT_GROUP_ID);
+        adapter.setDelegatedUnblockListener(new ClaimListAdapter.DelegatedUnblockListener() {
+            public void onUnblockClicked(Claim channel, Claim onBehalfOfChannel) {
+                // TODO: Handle delegated unblock channel differently?
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).handleUnblockChannel(channel, onBehalfOfChannel);
+                }
+            }
+        });
+        blockedAndMutedList.setAdapter(adapter);
+
+        for (Claim claim : claimsData) {
+            if (claimsOnBehalfOf.containsKey(claim)) {
+                Claim blockedOnBehalfOf = claimsOnBehalfOf.get(claim);
+                adapter.setBlockedChannelInfoForClaim(claim.getClaimId(), blockedOnBehalfOf);
+            }
+        }
+    }
+
     private void didLoadBlockedChannels(List<Claim> claims) {
         loadInProgress = false;
         Helper.setViewVisibility(blockedAndMutedLoading, View.GONE);
@@ -512,6 +616,7 @@ public class BlockedAndMutedFragment extends BaseFragment {
         private String name;
         private String onBehalfOfId;
         private String onBehalfOfName;
+        private Claim onBehalfOfClaim;
         public BlockedChannel(String channelId, String name) {
             this.channelId = channelId;
             this.name = name;

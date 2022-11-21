@@ -247,6 +247,7 @@
                 </RelativeLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/on_behalf_of_unblock_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter"
