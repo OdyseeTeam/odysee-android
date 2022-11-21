@@ -31,6 +31,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -722,6 +723,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                             throw new RuntimeException(e);
                         }
                     }
+
+                    subscribedActiveClaims = subscribedActiveClaims.stream().sorted(new Comparator<Claim>() {
+                        @Override
+                        public int compare(Claim claim, Claim t1) {
+                            return Integer.compare(t1.getLivestreamViewers(), claim.getLivestreamViewers());
+                        }
+                    }).collect(Collectors.toList());
                 } else {
                     a.runOnUiThread(new Runnable() {
                         @Override
