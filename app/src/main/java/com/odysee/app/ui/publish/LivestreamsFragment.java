@@ -386,7 +386,7 @@ public class LivestreamsFragment extends BaseFragment implements ActionMode.Call
         if (context != null) {
             ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText(text.getHint(), text.getText());
-            if (sensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (sensitive) {
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putBoolean("android.content.extra.IS_SENSITIVE", true);
                 clip.getDescription().setExtras(bundle);

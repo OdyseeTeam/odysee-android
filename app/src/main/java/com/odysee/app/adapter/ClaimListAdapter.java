@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.icu.text.CompactDecimalFormat;
-import android.os.Build;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,7 +12,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
@@ -27,7 +25,6 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -862,28 +859,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return position;
     }
 
-    /**
-     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
-     */
     private String compactNumber(long number) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
-        }
-
-        double value =  (double) number;
-        NumberFormat numberFormat = NumberFormat.getInstance();
-        if (number >= 1000000000) {
-            return numberFormat.format(round(value / 1000000000, 1))
-                    + context.getString(R.string.short_billion);
-        } else if (number >= 1000000) {
-            return numberFormat.format(round(value / 1000000, 1))
-                    + context.getString(R.string.short_million);
-        } else if (number >= 1000) {
-            return numberFormat.format(round(value / 1000, 1))
-                    + context.getString(R.string.short_thousand);
-        } else {
-            return numberFormat.format(value);
-        }
+        return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
     }
 
     /**

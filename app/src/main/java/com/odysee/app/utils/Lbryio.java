@@ -351,6 +351,7 @@ public final class Lbryio {
 
     public static Map<String, String> buildSingleListParam(String key, List<String> values) {
         Map<String, String> params = new HashMap<>();
+        // String.join() was added in API Level 26
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
             params.put(key, String.join(",", values));
         } else {

@@ -8,7 +8,7 @@ import org.json.JSONObject;
 import java.util.concurrent.Callable;
 
 public class WalletBalanceFetch implements Callable<WalletBalance> {
-    private String authToken;
+    private final String authToken;
 
     public WalletBalanceFetch(String authToken) {
         this.authToken = authToken;

@@ -5,7 +5,6 @@ import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -36,12 +35,9 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.ClaimListAdapter;
 import com.odysee.app.listener.SelectionModeListener;
 import com.odysee.app.model.Claim;
-import com.odysee.app.model.NavMenuItem;
 import com.odysee.app.supplier.ClaimListSupplier;
 import com.odysee.app.tasks.claim.AbandonChannelTask;
 import com.odysee.app.tasks.claim.AbandonHandler;
-import com.odysee.app.tasks.claim.ClaimListResultHandler;
-import com.odysee.app.tasks.claim.ClaimListTask;
 import com.odysee.app.ui.BaseFragment;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.Lbry;
@@ -136,100 +132,61 @@ public class ChannelManagerFragment extends BaseFragment implements ActionMode.C
 
         final View progressView = getLoading();
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            progressView.setVisibility(View.VISIBLE);
-            Supplier<List<Claim>> s = new ClaimListSupplier(Collections.singletonList(Claim.TYPE_CHANNEL), authToken);
-            CompletableFuture<List<Claim>> cf = CompletableFuture.supplyAsync(s);
-            cf.whenComplete((result, e) -> {
-                if (e != null && activity != null) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Throwable t = e.getCause();
-                            if (t != null) {
-                                showError(t.getMessage());
-                            }
+        progressView.setVisibility(View.VISIBLE);
+        Supplier<List<Claim>> s = new ClaimListSupplier(Collections.singletonList(Claim.TYPE_CHANNEL), authToken);
+        CompletableFuture<List<Claim>> cf = CompletableFuture.supplyAsync(s);
+        cf.whenComplete((result, e) -> {
+            if (e != null && activity != null) {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Throwable t = e.getCause();
+                        if (t != null) {
+                            showError(t.getMessage());
                         }
-                    });
-                }
-
-                if (result != null && activity != null) {
-                    activity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(result));
-                            if (adapter == null) {
-                                Context context = getContext();
-                                if (context != null) {
-                                    adapter = new ClaimListAdapter(result, context);
-                                    adapter.setCanEnterSelectionMode(true);
-                                    adapter.setSelectionModeListener(ChannelManagerFragment.this);
-                                    adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                                        @Override
-                                        public void onClaimClicked(Claim claim, int position) {
-                                            if (context instanceof MainActivity) {
-                                                ((MainActivity) context).openChannelClaim(claim);
-                                            }
-                                        }
-                                    });
-                                    if (channelList != null) {
-                                        channelList.setAdapter(adapter);
-                                    }
-                                }
-                            } else {
-                                adapter.setItems(result);
-                            }
-
-                            checkNoChannels();
-                        }
-                    });
-                }
-
-                if (activity != null)
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            progressView.setVisibility(View.GONE);
-                        }
-                    });
-            });
-        } else {
-            Map<String, Object> options = Lbry.buildClaimListOptions(Claim.TYPE_CHANNEL, 1, 999, true);
-            ClaimListTask task = new ClaimListTask(options, Lbryio.AUTH_TOKEN, getLoading(), new ClaimListResultHandler() {
-                @Override
-                public void onSuccess(List<Claim> claims, boolean hasReachedEnd) {
-                    Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(claims));
-                    if (adapter == null) {
-                        Context context = getContext();
-                        if (context != null) {
-                            adapter = new ClaimListAdapter(claims, context);
-                            adapter.setCanEnterSelectionMode(true);
-                            adapter.setSelectionModeListener(ChannelManagerFragment.this);
-                            adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
-                                @Override
-                                public void onClaimClicked(Claim claim, int position) {
-                                    if (context instanceof MainActivity) {
-                                        ((MainActivity) context).openChannelClaim(claim);
-                                    }
-                                }
-                            });
-                            if (channelList != null) {
-                                channelList.setAdapter(adapter);
-                            }
-                        }
-                    } else {
-                        adapter.setItems(claims);
                     }
+                });
+            }
 
-                    checkNoChannels();
-                }
+            if (result != null && activity != null) {
+                activity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        Lbry.ownChannels = Helper.filterDeletedClaims(new ArrayList<>(result));
+                        if (adapter == null) {
+                            Context context = getContext();
+                            if (context != null) {
+                                adapter = new ClaimListAdapter(result, context);
+                                adapter.setCanEnterSelectionMode(true);
+                                adapter.setSelectionModeListener(ChannelManagerFragment.this);
+                                adapter.setListener(new ClaimListAdapter.ClaimListItemListener() {
+                                    @Override
+                                    public void onClaimClicked(Claim claim, int position) {
+                                        if (context instanceof MainActivity) {
+                                            ((MainActivity) context).openChannelClaim(claim);
+                                        }
+                                    }
+                                });
+                                if (channelList != null) {
+                                    channelList.setAdapter(adapter);
+                                }
+                            }
+                        } else {
+                            adapter.setItems(result);
+                        }
 
-                @Override
-                public void onError(Exception error) {
-                    checkNoChannels();
-                }
-            });
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
+                        checkNoChannels();
+                    }
+                });
+            }
+
+            if (activity != null)
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressView.setVisibility(View.GONE);
+                    }
+                });
+        });
     }
 
     public void onEnterSelectionMode() {

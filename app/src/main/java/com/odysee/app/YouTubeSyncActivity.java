@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,8 +48,6 @@ import org.json.JSONObject;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import lombok.SneakyThrows;
 
@@ -70,12 +69,12 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
         super.onCreate(savedInstanceState);
         // Change status bar text color depending on Night mode when app is running
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
                 //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
-        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+        } else {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             if (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
@@ -111,19 +110,18 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
         viewPager.setVisibility(View.INVISIBLE);
         mainProgress.setVisibility(View.VISIBLE);
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     JSONArray status = (JSONArray) Lbryio.parseResponse(Lbryio.call("yt", "transfer", null, Helper.METHOD_POST, null));
-                    if (status.length() > 0 && containsTransferableChannel(status)) {
+                    if (status != null && status.length() > 0 && containsTransferableChannel(status)) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 setFirstYouTubeSyncDone();
                                 viewPager.setCurrentItem(1); // show the status page
-                                new Handler().postDelayed(new Runnable() {
+                                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                                     @Override
                                     public void run() {
                                         mainProgress.setVisibility(View.GONE);
@@ -214,8 +212,7 @@ public class YouTubeSyncActivity extends AppCompatActivity implements YouTubeSyn
         Helper.setViewVisibility(progress, View.VISIBLE);
 
         final String desiredChannelName = channelName;
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
