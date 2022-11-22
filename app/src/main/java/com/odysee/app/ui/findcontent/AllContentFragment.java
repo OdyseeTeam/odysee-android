@@ -642,17 +642,9 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
             if (context != null) {
                 File file = new File(getContext().getExternalFilesDir(null).getAbsolutePath().concat("/odysee-android.apk"));
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                Uri downloaded_apk;
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    downloaded_apk = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
-                    context.grantUriPermission(context.getApplicationContext().getPackageName() + ".provider", downloaded_apk, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                } else {
-                    downloaded_apk = Uri.fromFile(file);
-                    intent.setAction(Intent.ACTION_VIEW);
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                }
+                Uri downloaded_apk = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
+                context.grantUriPermission(context.getApplicationContext().getPackageName() + ".provider", downloaded_apk, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 intent.setDataAndType(downloaded_apk, "application/vnd.android.package-archive");
                 startActivity(intent);
             }
