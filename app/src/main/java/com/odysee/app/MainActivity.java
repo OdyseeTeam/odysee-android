@@ -76,8 +76,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.AnyThread;
-
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -100,6 +98,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -130,20 +129,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
-import com.odysee.app.adapter.ClaimListAdapter;
-import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
-import com.odysee.app.callable.WalletBalanceFetch;
-import com.odysee.app.dialog.AddToListsDialogFragment;
-import com.odysee.app.listener.VerificationListener;
-import com.odysee.app.model.OdyseeCollection;
-import com.odysee.app.model.lbryinc.CustomBlockRule;
-import com.odysee.app.model.lbryinc.OdyseeLocale;
-import com.odysee.app.model.lbryinc.RewardVerified;
-import com.odysee.app.callable.SaveSharedUserState;
-import com.odysee.app.tasks.RewardVerifiedHandler;
-import com.odysee.app.tasks.claim.ResolveResultHandler;
-import com.odysee.app.ui.channel.*;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -195,6 +180,12 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLParameters;
 
+import com.odysee.app.adapter.ClaimListAdapter;
+import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
+import com.odysee.app.callable.WalletBalanceFetch;
+import com.odysee.app.callable.SaveSharedUserState;
+import com.odysee.app.dialog.AddToListsDialogFragment;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.adapter.NotificationListAdapter;
 import com.odysee.app.adapter.StartupStageAdapter;
 import com.odysee.app.adapter.UrlSuggestionListAdapter;
@@ -216,14 +207,18 @@ import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
+import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletSync;
 import com.odysee.app.model.lbryinc.LbryNotification;
+import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.model.lbryinc.Reward;
+import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.supplier.FetchRewardsSupplier;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
 import com.odysee.app.supplier.NotificationListSupplier;
@@ -263,6 +258,9 @@ import com.odysee.app.ui.findcontent.SearchFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
+import com.odysee.app.tasks.RewardVerifiedHandler;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.utils.CastHelper;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.ContentSources;
@@ -333,11 +331,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // NOTE: This is only used for building a dynamic "Now Playing" queue.
     // Regular playlists should NEVER be assigned to this.
+    @Getter
     private OdyseeCollection nowPlayingQueuePlaylist;
 
     // This is different from nowPlayingQueue, as we use this to determine what is displayed
     // in the overlay containing playlist items, which is contained in the main activity layout.
     private OdyseeCollection currentPlaylist;
+    @Setter
+    private PlaylistOverlayDelegate playlistOverlayDelegate;
 
     private ClaimListAdapter playlistOverlayItemsAdapter;
     private RecyclerView playlistOverlayItemsList;
@@ -5060,7 +5061,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // we need to navigate to FileViewFragment in this instance
             nowPlayingQueuePlaylist.addClaim(claim);
             openPrivatePlaylist(nowPlayingQueuePlaylist);
-        } else if (currentPlaylist != null){
+        } else if (currentPlaylist != null) {
             // otherwise, refresh the playlist items display
             currentPlaylist.getClaims().add(claim);
 
@@ -5068,14 +5069,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             playlistOverlayItemsAdapter.addSingleItem(claim);
             didAddItemToNowPlayingQueue();
 
-            Fragment fragment = getCurrentFragment();
-            if (fragment instanceof FileViewFragment) {
-                FileViewFragment fvFragment = (FileViewFragment) fragment;
-                // make sure that we have the same collection reference before shuffling
-                if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
-                    // update the items in the fragment
-                    fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
-                }
+            if (playlistOverlayDelegate != null && currentPlaylist.getId().equalsIgnoreCase(
+                    playlistOverlayDelegate.getCurrentCollectionId())) {
+                // update the items in the file view
+                playlistOverlayDelegate.setPlaylistClaims(currentPlaylist.getClaims());
             }
         }
     }
@@ -5608,6 +5605,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClaimClicked(Claim claim, int position) {
                 Fragment fragment = getCurrentFragment();
+                android.util.Log.d("#HELP", "CurrentFragment=" + fragment.getClass().toString());
                 if (fragment instanceof FileViewFragment) {
                     ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
                 }
@@ -5746,22 +5744,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        Fragment fragment = getCurrentFragment();
-        if (fragment instanceof FileViewFragment) {
-            FileViewFragment fvFragment = (FileViewFragment) fragment;
+        // make sure that we have the same collection reference before shuffling
+        if (playlistOverlayDelegate != null && currentPlaylist.getId().equalsIgnoreCase(playlistOverlayDelegate.getCurrentCollectionId())) {
+            // do the shuffle
+            List<Claim> currentClaims = currentPlaylist.getClaims();
+            Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
+            currentPlaylist.setClaims(currentClaims);
+            initPlaylistOverlayAdapter(currentPlaylist.getClaims());
 
-            // make sure that we have the same collection reference before shuffling
-            if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
-                // do the shuffle
-                List<Claim> currentClaims = currentPlaylist.getClaims();
-                Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
-                currentPlaylist.setClaims(currentClaims);
-                initPlaylistOverlayAdapter(currentPlaylist.getClaims());
-
-                // update the fragment and play from the beginning
-                fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
-                fvFragment.playFirstItemInCollection();
-            }
+            // update the fragment and play from the beginning
+            playlistOverlayDelegate.setPlaylistClaims(currentPlaylist.getClaims());
+            playlistOverlayDelegate.playFirstItemInCollection();
         }
     }
 
@@ -5819,6 +5812,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     public interface BackPressInterceptor {
         boolean onBackPressed();
+    }
+
+    public interface PlaylistOverlayDelegate {
+        void setCurrentCollectionId(String collectionId);
+        String getCurrentCollectionId();
+        void setPlaylistClaims(List<Claim> claims);
+        void onPlaylistOverlayClaimClicked(Claim claim, int position);
+        void playFirstItemInCollection();
     }
 
     class OdyseeNetworkCallback extends ConnectivityManager.NetworkCallback {
