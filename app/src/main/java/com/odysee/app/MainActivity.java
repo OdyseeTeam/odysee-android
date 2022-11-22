@@ -2102,7 +2102,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initialiseUserInstall();
         // checkPendingOpens();
 
-        checkManageExternalStoragePending();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            checkManageExternalStoragePending();
+        }
     }
 
     public void displayCurrentlyPlayingVideo() {
@@ -4029,7 +4031,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 openFragment(PublishFormFragment.class, true, params);
             }
             cameraOutputFilename = null;
-        } else if (requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q && requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
             if (resultCode == RESULT_OK && Environment.isExternalStorageManager()) {
                 for (StoragePermissionListener listener : storagePermissionListeners) {
                     listener.onManageExternalStoragePermissionGranted();
@@ -4042,6 +4044,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.R)
     private void checkManageExternalStoragePending() {
         if (!manageExternalStoragePending) {
             return;

@@ -2,6 +2,8 @@ package com.odysee.app.ui.publish;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import com.odysee.app.BuildConfig;
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.adapter.GalleryGridAdapter;
@@ -442,16 +443,20 @@ public class PublishFragment extends BaseFragment implements
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
     private void requestManageExternalStorage() {
-        try {
-            // if for some reason, the package uri
-            Uri packageUri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
-            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, packageUri);
-            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
-        } catch (Exception ex){
-            // If for some reason, the package uri was not found and it results in an error, show the screen for all permissions
-            Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-            startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+        Activity activity = getActivity();
+        if (activity != null) {
+            try {
+                // if for some reason, the package uri
+                Uri packageUri = Uri.parse("package:" + activity.getPackageName());
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, packageUri);
+                startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+            } catch (Exception ex){
+                // If for some reason, the package uri was not found and it results in an error, show the screen for all permissions
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent, MainActivity.REQUEST_MANAGE_STORAGE_PERMISSION);
+            }
         }
     }
 
