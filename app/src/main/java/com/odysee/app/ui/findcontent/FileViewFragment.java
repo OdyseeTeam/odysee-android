@@ -241,7 +241,8 @@ public class FileViewFragment extends BaseFragment implements
         PIPModeListener,
         ScreenOrientationListener,
         StoragePermissionListener,
-        ChannelCreateDialogFragment.ChannelCreateListener {
+        ChannelCreateDialogFragment.ChannelCreateListener,
+        MainActivity.PlaylistOverlayDelegate {
     private static final String TAG = "OdyseeFile";
     public static int FILE_CONTEXT_GROUP_ID = 2;
     private static final int RELATED_CONTENT_SIZE = 16;
@@ -366,6 +367,7 @@ public class FileViewFragment extends BaseFragment implements
 
     private Comment.CommenterClickHandler chatMemberClickHandler;
     @Getter
+    @Setter
     private String currentCollectionId;
 
     // Playlist items pseudo-pagination
@@ -1019,6 +1021,7 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity activity = (MainActivity) context;
             LbryAnalytics.setCurrentScreen(activity, "File", "File");
             activity.updateCurrentDisplayFragment(this);
+            activity.setPlaylistOverlayDelegate(this);
             if (actualClaim != null && actualClaim.isPlayable() && activity.isInFullscreenMode()) {
                 enableFullScreenMode();
             }
@@ -1026,6 +1029,15 @@ public class FileViewFragment extends BaseFragment implements
             activity.checkIfPlaylistOverlayShouldDisplay();
             activity.refreshChannelCreationRequired(getView());
             activity.updateMiniPlayerMargins(false);
+
+            OdyseeCollection nowPlayingCollection = activity.getNowPlayingQueuePlaylist();
+            if (nowPlayingCollection != null && (!nowPlayingCollection.getId().equalsIgnoreCase(currentCollectionId) ||
+                    playlistClaims == null || nowPlayingCollection.getClaims().size() != playlistClaims.size())) {
+                playlistClaims = new ArrayList<>(nowPlayingCollection.getClaims());
+                playlistResolved = true;
+                currentCollectionId = nowPlayingCollection.getId();
+                currentPlaylistTitle = nowPlayingCollection.getName();
+            }
         }
 
         if (MainActivity.playerManager != null) {
@@ -1061,6 +1073,7 @@ public class FileViewFragment extends BaseFragment implements
             MainActivity activity = (MainActivity) context;
             activity.hidePlaylistOverlay();
             activity.updateMiniPlayerMargins(true);
+            activity.setPlaylistOverlayDelegate(null);
         }
         leavingFileView = true;
         if (webSocketClient != null) {
@@ -3434,7 +3447,7 @@ public class FileViewFragment extends BaseFragment implements
 
     public void onPlaylistOverlayClaimClicked(Claim claimItem, int position) {
         if ((fileClaim != null && Claim.TYPE_COLLECTION.equalsIgnoreCase(fileClaim.getValueType())) ||
-                (collectionClaimItem != null && playlistClaims.size() > position)) {
+                (claimItem != null && playlistClaims.size() > position)) {
             playClaimFromCollection(claimItem, position);
             return;
         }
