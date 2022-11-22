@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.icu.text.CompactDecimalFormat;
-import android.os.Build;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,7 +12,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
@@ -22,11 +20,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.odysee.app.MainActivity;
 import com.odysee.app.R;
 import com.odysee.app.exceptions.LbryUriException;
 import com.odysee.app.listener.SelectionModeListener;
@@ -87,6 +86,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
     private final List<Claim> selectedItems;
     @Setter
     private ClaimListItemListener listener;
+    @Setter
+    private DelegatedUnblockListener delegatedUnblockListener;
     @Getter
     @Setter
     private boolean inSelectionMode;
@@ -105,11 +106,16 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         this(items, STYLE_BIG_LIST, context);
     }
 
+    @Getter
+    @Setter
+    private Map<String, Claim> blockedOnBehalfOfChannelMap;
+
     public ClaimListAdapter(List<Claim> items, int style, Context context) {
         this.context = context;
         this.style = style;
         List<Claim> sortedItems = Helper.sortingLivestreamingFirst(items);
         this.items = new ArrayList<>();
+        this.blockedOnBehalfOfChannelMap = new HashMap<>();
         for (Claim item : sortedItems) {
             if (item != null) {
                 this.items.add(item);
@@ -121,6 +127,10 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         quickClaimUrlMap = new HashMap<>();
         notFoundClaimIdMap = new HashMap<>();
         notFoundClaimUrlMap = new HashMap<>();
+    }
+
+    public void setBlockedChannelInfoForClaim(String claimId, Claim blockedChannel) {
+        blockedOnBehalfOfChannelMap.put(claimId, blockedChannel);
     }
 
     public List<Claim> getSelectedItems() {
@@ -290,6 +300,14 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         protected final TextView deviceView;
         protected final ImageButton optionsMenuView;
 
+        protected final View onBehalfOfContainer;
+        protected final TextView onBehalfOfTitleView;
+        protected final TextView onBehalfOfNameView;
+        protected final MaterialButton onBehalfOfUnblockButton;
+        protected final ImageView onBehalfOfThumbnailView;
+        protected final View onBehalfOfNoThumbnailView;
+        protected final TextView onBehalfOfAlphaView;
+
         protected final View loadingImagePlaceholder;
         protected final View loadingTextPlaceholder1;
         protected final View loadingTextPlaceholder2;
@@ -319,6 +337,14 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
             loadingImagePlaceholder = v.findViewById(R.id.claim_thumbnail_placeholder);
             loadingTextPlaceholder1 = v.findViewById(R.id.claim_text_loading_placeholder_1);
             loadingTextPlaceholder2 = v.findViewById(R.id.claim_text_loading_placeholder_2);
+
+            onBehalfOfContainer = v.findViewById(R.id.moderator_on_behalf_of_container);
+            onBehalfOfTitleView = v.findViewById(R.id.on_behalf_of_title);
+            onBehalfOfNameView = v.findViewById(R.id.on_behalf_of_name);
+            onBehalfOfThumbnailView = v.findViewById(R.id.on_behalf_of_thumbnail);
+            onBehalfOfUnblockButton = v.findViewById(R.id.on_behalf_of_unblock_button);
+            onBehalfOfNoThumbnailView = v.findViewById(R.id.on_behalf_of_no_thumbnail);
+            onBehalfOfAlphaView = v.findViewById(R.id.on_behalf_of_thumbnail_alpha);
 
             v.setOnCreateContextMenuListener(this);
         }
@@ -756,6 +782,47 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
                 vh.itemView.setVisibility(View.VISIBLE);
             }
         }
+
+        if (contextGroupId == BlockedAndMutedFragment.BLOCKED_AND_MUTED_CONTEXT_GROUP_ID &&
+                type == VIEW_TYPE_CHANNEL &&
+                blockedOnBehalfOfChannelMap.containsKey(item.getClaimId())) {
+            Claim onBehalfOf = blockedOnBehalfOfChannelMap.get(item.getClaimId());
+            String obThumbnailUrl = onBehalfOf.getThumbnailUrl(thumbnailWidth, thumbnailHeight, thumbnailQ);
+            int obBgColor = Helper.generateRandomColorForValue(onBehalfOf.getClaimId());
+            if (obBgColor == 0) {
+                obBgColor = Helper.generateRandomColorForValue(onBehalfOf.getName());
+            }
+
+            Helper.setViewVisibility(vh.onBehalfOfContainer, View.VISIBLE);
+            if (!Helper.isNullOrEmpty(obThumbnailUrl)) {
+                Glide.with(context.getApplicationContext()).
+                        load(obThumbnailUrl).
+                        centerCrop().
+                        placeholder(R.drawable.bg_thumbnail_placeholder).
+                        apply(RequestOptions.circleCropTransform()).
+                        into(vh.onBehalfOfThumbnailView);
+            }
+
+            Helper.setViewText(vh.onBehalfOfAlphaView, item.getName().substring(1, 2).toUpperCase());
+            Helper.setViewVisibility(vh.onBehalfOfNoThumbnailView, Helper.isNullOrEmpty(obThumbnailUrl) ? View.VISIBLE : View.GONE);
+            Helper.setIconViewBackgroundColor(vh.onBehalfOfNoThumbnailView, obBgColor, false, context);
+            Helper.setViewText(vh.onBehalfOfTitleView, !Helper.isNullOrEmpty(onBehalfOf.getTitle()) ? onBehalfOf.getTitle() : null);
+            Helper.setViewText(vh.onBehalfOfNameView, onBehalfOf.getName());
+
+            vh.onBehalfOfUnblockButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (delegatedUnblockListener != null) {
+                        delegatedUnblockListener.onUnblockClicked(item, onBehalfOf);
+                    }
+                }
+            });
+        } else {
+            Helper.setViewVisibility(vh.onBehalfOfContainer, View.GONE);
+            if (vh.onBehalfOfUnblockButton != null) {
+                vh.onBehalfOfUnblockButton.setOnClickListener(null);
+            }
+        }
     }
 
     private void toggleSelectedClaim(Claim claim) {
@@ -792,28 +859,8 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
         return position;
     }
 
-    /**
-     * Modified from NewPipe <a href="https://github.com/TeamNewPipe/NewPipe/blob/dev/app/src/main/java/org/schabi/newpipe/util/Localization.java">Localization.java</a>
-     */
     private String compactNumber(long number) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
-        }
-
-        double value =  (double) number;
-        NumberFormat numberFormat = NumberFormat.getInstance();
-        if (number >= 1000000000) {
-            return numberFormat.format(round(value / 1000000000, 1))
-                    + context.getString(R.string.short_billion);
-        } else if (number >= 1000000) {
-            return numberFormat.format(round(value / 1000000, 1))
-                    + context.getString(R.string.short_million);
-        } else if (number >= 1000) {
-            return numberFormat.format(round(value / 1000, 1))
-                    + context.getString(R.string.short_thousand);
-        } else {
-            return numberFormat.format(value);
-        }
+        return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(number);
     }
 
     /**
@@ -835,5 +882,9 @@ public class ClaimListAdapter extends RecyclerView.Adapter<ClaimListAdapter.View
 
     public interface ClaimListItemListener {
         void onClaimClicked(Claim claim, int position);
+    }
+
+    public interface DelegatedUnblockListener {
+        void onUnblockClicked(Claim channel, Claim onBehalfOfChannel);
     }
 }

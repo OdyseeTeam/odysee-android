@@ -76,8 +76,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.AnyThread;
-
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -100,6 +98,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -131,20 +130,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.odysee.app.adapter.ClaimListAdapter;
-import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
-import com.odysee.app.callable.WalletBalanceFetch;
-import com.odysee.app.dialog.AddToListsDialogFragment;
-import com.odysee.app.listener.VerificationListener;
-import com.odysee.app.model.OdyseeCollection;
-import com.odysee.app.model.lbryinc.CustomBlockRule;
-import com.odysee.app.model.lbryinc.OdyseeLocale;
-import com.odysee.app.model.lbryinc.RewardVerified;
-import com.odysee.app.callable.SaveSharedUserState;
-import com.odysee.app.tasks.RewardVerifiedHandler;
-import com.odysee.app.tasks.claim.ResolveResultHandler;
-import com.odysee.app.ui.channel.*;
-
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.NotNull;
@@ -167,8 +152,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -176,7 +159,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -198,6 +180,12 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLParameters;
 
+import com.odysee.app.adapter.ClaimListAdapter;
+import com.odysee.app.adapter.ProfileDefaultChannelAdapter;
+import com.odysee.app.callable.WalletBalanceFetch;
+import com.odysee.app.callable.SaveSharedUserState;
+import com.odysee.app.dialog.AddToListsDialogFragment;
+import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.adapter.NotificationListAdapter;
 import com.odysee.app.adapter.StartupStageAdapter;
 import com.odysee.app.adapter.UrlSuggestionListAdapter;
@@ -219,14 +207,18 @@ import com.odysee.app.listener.StoragePermissionListener;
 import com.odysee.app.listener.WalletBalanceListener;
 import com.odysee.app.model.Claim;
 import com.odysee.app.model.ClaimCacheKey;
+import com.odysee.app.model.lbryinc.CustomBlockRule;
 import com.odysee.app.model.StartupStage;
 import com.odysee.app.model.Tag;
 import com.odysee.app.model.UrlSuggestion;
 import com.odysee.app.model.WalletBalance;
 import com.odysee.app.model.WalletSync;
 import com.odysee.app.model.lbryinc.LbryNotification;
+import com.odysee.app.model.lbryinc.OdyseeLocale;
 import com.odysee.app.model.lbryinc.Reward;
+import com.odysee.app.model.lbryinc.RewardVerified;
 import com.odysee.app.model.lbryinc.Subscription;
+import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.supplier.FetchRewardsSupplier;
 import com.odysee.app.supplier.GetLocalNotificationsSupplier;
 import com.odysee.app.supplier.NotificationListSupplier;
@@ -266,6 +258,9 @@ import com.odysee.app.ui.findcontent.SearchFragment;
 import com.odysee.app.ui.wallet.InvitesFragment;
 import com.odysee.app.ui.wallet.RewardsFragment;
 import com.odysee.app.ui.wallet.WalletFragment;
+import com.odysee.app.tasks.RewardVerifiedHandler;
+import com.odysee.app.tasks.claim.ResolveResultHandler;
+import com.odysee.app.ui.channel.ChannelCreateDialogFragment;
 import com.odysee.app.utils.CastHelper;
 import com.odysee.app.utils.Comments;
 import com.odysee.app.utils.ContentSources;
@@ -336,11 +331,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // NOTE: This is only used for building a dynamic "Now Playing" queue.
     // Regular playlists should NEVER be assigned to this.
+    @Getter
     private OdyseeCollection nowPlayingQueuePlaylist;
 
     // This is different from nowPlayingQueue, as we use this to determine what is displayed
     // in the overlay containing playlist items, which is contained in the main activity layout.
     private OdyseeCollection currentPlaylist;
+    @Setter
+    private PlaylistOverlayDelegate playlistOverlayDelegate;
 
     private ClaimListAdapter playlistOverlayItemsAdapter;
     private RecyclerView playlistOverlayItemsList;
@@ -579,12 +577,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // Change status bar text color depending on Night mode when app is running
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
                 //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
-        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+        } else {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
@@ -1349,9 +1347,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initPlaylistOverlay();
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
     public void setNetworkCallback() {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback == null) {
+        if (networkCallback == null) {
             networkCallback = new OdyseeNetworkCallback();
             networkCallback.setActivityAndPlayerManager(this, playerManager);
 
@@ -2022,10 +2019,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 public void onError(Exception ex) { }
 
                 protected void onSetSSLParameters(SSLParameters sslParameters) {
-                    // don't call setEndpointIdentificationAlgorithm for API level < 24
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
-                    }
+                    sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
                 }
             };
             webSocketClient.connect();
@@ -2044,12 +2038,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         // Change status bar text color depending on Night mode when app is running
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
                 //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
-        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+        } else {
             int defaultNight = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NOTNIGHT) || (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_SYSTEM) && defaultNight == Configuration.UI_MODE_NIGHT_NO)) {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
@@ -2108,7 +2102,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         initialiseUserInstall();
         // checkPendingOpens();
 
-        checkManageExternalStoragePending();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            checkManageExternalStoragePending();
+        }
     }
 
     public void displayCurrentlyPlayingVideo() {
@@ -2164,7 +2160,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         // If user watched some media content, a NetworkCallback was created and registered and it needs to be unregistered
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M && networkCallback != null) {
+        if (networkCallback != null) {
             ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
@@ -2614,7 +2610,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
 
-            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
                 //noinspection deprecation
                 flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             }
@@ -2794,7 +2790,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1 && darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
+        if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         this.actionMode = null;
@@ -3778,33 +3774,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    Supplier<Boolean> task = new NotificationUpdateSupplier(options);
-                    CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
-                    cf.thenAcceptAsync(result -> {
-                        if (result) {
-                            SQLiteDatabase db = dbHelper.getWritableDatabase();
-                            DatabaseHelper.markNotificationsSeen(db);
-                            loadUnseenNotificationsCount();
-                        }
-                    }, ((OdyseeApp) getApplication()).getExecutor());
-                } else {
-                    Thread t = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Lbryio.call("notification", "edit", options, null);
-                                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                                DatabaseHelper.markNotificationsSeen(db);
-                                db.close();
-                                loadUnseenNotificationsCount();
-                            } catch (LbryioRequestException | LbryioResponseException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                    t.start();
-                }
+                Supplier<Boolean> task = new NotificationUpdateSupplier(options);
+                CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
+                cf.thenAcceptAsync(result -> {
+                    if (result) {
+                        SQLiteDatabase db = dbHelper.getWritableDatabase();
+                        DatabaseHelper.markNotificationsSeen(db);
+                        loadUnseenNotificationsCount();
+                    }
+                }, ((OdyseeApp) getApplication()).getExecutor());
             }
         }
     }
@@ -3923,14 +3901,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         Lbryio.currentUser = null;
         Lbryio.AUTH_TOKEN = "";
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
-            accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
-        } else {
-            // removeAccount() was deprecated on API Level 22. Any device running that version will take the other branch
-            // on this conditional
-            //noinspection deprecation
-            accountManager.removeAccount(Helper.getOdyseeAccount(accountManager.getAccounts()), null, null);
-        }
+        accountManager.removeAccountExplicitly(Helper.getOdyseeAccount(accountManager.getAccounts()));
 
         ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
@@ -4060,7 +4031,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 openFragment(PublishFormFragment.class, true, params);
             }
             cameraOutputFilename = null;
-        } else if (requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q && requestCode == REQUEST_MANAGE_STORAGE_PERMISSION) {
             if (resultCode == RESULT_OK && Environment.isExternalStorageManager()) {
                 for (StoragePermissionListener listener : storagePermissionListeners) {
                     listener.onManageExternalStoragePermissionGranted();
@@ -4073,6 +4044,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.R)
     private void checkManageExternalStoragePending() {
         if (!manageExternalStoragePending) {
             return;
@@ -4312,72 +4284,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             options.put("auth_token", authToken);
         }
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
-            CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
-            cf.exceptionally(e -> {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showError(e.getMessage());
-                    }
-                });
-                return null;
-            }).thenAccept(rewards -> {
-                Lbryio.updateRewardsLists(rewards);
-
-                if (Lbryio.totalUnclaimedRewardAmount > 0) {
-                    updateRewardsUsdValue();
-                }
-            });
-        } else {
-            Thread t = new Thread(new Runnable() {
+        Supplier<List<Reward>> supplier = new FetchRewardsSupplier(options);
+        CompletableFuture<List<Reward>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
+        cf.exceptionally(e -> {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Callable<List<Reward>> callable = new Callable<List<Reward>>() {
-                        @Override
-                        public List<Reward> call() {
-                            List<Reward> rewards = null;
-                            try {
-                                JSONArray results = (JSONArray) Lbryio.parseResponse(Lbryio.call("reward", "list", options, null));
-                                rewards = new ArrayList<>();
-                                if (results != null) {
-                                    for (int i = 0; i < results.length(); i++) {
-                                        rewards.add(Reward.fromJSONObject(results.getJSONObject(i)));
-                                    }
-                                }
-                            } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException ex) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        showError(ex.getMessage());
-                                    }
-                                });
-                            }
-
-                            return rewards;
-                        }
-                    };
-
-                    Future<List<Reward>> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
-
-                    try {
-                        List<Reward> rewards = future.get();
-
-                        if (rewards != null) {
-                            Lbryio.updateRewardsLists(rewards);
-
-                            if (Lbryio.totalUnclaimedRewardAmount > 0) {
-                                updateRewardsUsdValue();
-                            }
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
+                    showError(e.getMessage());
                 }
             });
-            t.start();
-        }
+            return null;
+        }).thenAccept(rewards -> {
+            Lbryio.updateRewardsLists(rewards);
+
+            if (Lbryio.totalUnclaimedRewardAmount > 0) {
+                updateRewardsUsdValue();
+            }
+        });
     }
 
     public void updateRewardsUsdValue() {
@@ -4743,39 +4666,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         AccountManager am = AccountManager.get(getApplicationContext());
         String authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            unlockingTips = true;
+        unlockingTips = true;
 
-            Supplier<Boolean> task = new UnlockingTipsSupplier(options, authToken);
-            CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
-            completableFuture.thenAccept(result -> unlockingTips = false);
-        } else {
-            Thread unlockingThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Callable<Boolean> callable = () -> {
-                        try {
-                            Lbry.directApiCall(Lbry.METHOD_TXO_SPEND, options, authToken);
-                            return true;
-                        } catch (ApiCallException | ClassCastException ex) {
-                            ex.printStackTrace();
-                            return false;
-                        }
-                    };
-
-                    Future<Boolean> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
-
-                    try {
-                        unlockingTips = true;
-                        future.get(); // This doesn't block main thread as it is called from a different thread
-                        unlockingTips = false;
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            unlockingThread.start();
-        }
+        Supplier<Boolean> task = new UnlockingTipsSupplier(options, authToken);
+        CompletableFuture<Boolean> completableFuture = CompletableFuture.supplyAsync(task, ((OdyseeApp) getApplication()).getExecutor());
+        completableFuture.thenAccept(result -> unlockingTips = false);
     }
 
     private void displayUnseenNotificationCount(int count) {
@@ -4818,126 +4713,33 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             options.put("auth_token", am.peekAuthToken(odyseeAccount, "auth_token_type"));
         }
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Activity activity = this;
-            Supplier<List<LbryNotification>> supplier = new NotificationListSupplier(options);
-            CompletableFuture<List<LbryNotification>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
-            cf.thenAcceptAsync(result -> {
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (notificationsSwipeContainer != null) {
-                            notificationsSwipeContainer.setRefreshing(false);
-                        }
-                    }
-                });
-                if (result != null) {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    for (LbryNotification notification : result) {
-                        DatabaseHelper.createOrUpdateNotification(notification, db);
-                    }
-                    remoteNotifcationsLastLoaded = new Date();
-
-                    loadUnseenNotificationsCount();
-                    loadLocalNotifications();
-                    if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
-                        markNotificationsSeen();
-                    }
-                }
-
-            }, ((OdyseeApp) activity.getApplication()).getExecutor());
-        } else {
-            Thread t = new Thread(new Runnable() {
+        Activity activity = this;
+        Supplier<List<LbryNotification>> supplier = new NotificationListSupplier(options);
+        CompletableFuture<List<LbryNotification>> cf = CompletableFuture.supplyAsync(supplier, ((OdyseeApp) getApplication()).getExecutor());
+        cf.thenAcceptAsync(result -> {
+            activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Callable<List<LbryNotification>> callable = new Callable<List<LbryNotification>>() {
-                        @Override
-                        public List<LbryNotification> call() {
-                            List<LbryNotification> notifications = new ArrayList<>();
-                            try {
-                                JSONArray array = (JSONArray) Lbryio.parseResponse(Lbryio.call("notification", "list", options, null));
-                                if (array != null) {
-                                    for (int i = 0; i < array.length(); i++) {
-                                        JSONObject item = array.getJSONObject(i);
-                                        if (item.has("notification_parameters")) {
-                                            LbryNotification notification = new LbryNotification();
-
-                                            JSONObject notificationParams = item.getJSONObject("notification_parameters");
-                                            if (notificationParams.has("device")) {
-                                                JSONObject device = notificationParams.getJSONObject("device");
-                                                notification.setTitle(Helper.getJSONString("title", null, device));
-                                                notification.setDescription(Helper.getJSONString("text", null, device));
-                                                notification.setTargetUrl(Helper.getJSONString("target", null, device));
-                                            }
-                                            if (notificationParams.has("dynamic") && !notificationParams.isNull("dynamic")) {
-                                                JSONObject dynamic = notificationParams.getJSONObject("dynamic");
-                                                if (dynamic.has("comment_author")) {
-                                                    notification.setAuthorThumbnailUrl(Helper.getJSONString("comment_author", null, dynamic));
-                                                }
-                                                if (dynamic.has("channelURI")) {
-                                                    String channelUrl = Helper.getJSONString("channelURI", null, dynamic);
-                                                    if (!Helper.isNullOrEmpty(channelUrl)) {
-                                                        notification.setTargetUrl(channelUrl);
-                                                    }
-                                                }
-                                                if (dynamic.has("hash") && "comment".equalsIgnoreCase(Helper.getJSONString("notification_rule", null, item))) {
-                                                    notification.setTargetUrl(String.format("%s?comment_hash=%s", notification.getTargetUrl(), dynamic.getString("hash")));
-                                                }
-                                            }
-
-                                            notification.setRule(Helper.getJSONString("notification_rule", null, item));
-                                            notification.setRemoteId(Helper.getJSONLong("id", 0, item));
-                                            notification.setRead(Helper.getJSONBoolean("is_read", false, item));
-                                            notification.setSeen(Helper.getJSONBoolean("is_seen", false, item));
-
-                                            try {
-                                                SimpleDateFormat dateFormat = new SimpleDateFormat(Helper.ISO_DATE_FORMAT_JSON, Locale.US);
-                                                notification.setTimestamp(dateFormat.parse(Helper.getJSONString("created_at", dateFormat.format(new Date()), item)));
-                                            } catch (ParseException ex) {
-                                                notification.setTimestamp(new Date());
-                                            }
-
-                                            if (notification.getRemoteId() > 0 && !Helper.isNullOrEmpty(notification.getDescription())) {
-                                                notifications.add(notification);
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (ClassCastException | LbryioRequestException | LbryioResponseException | JSONException | IllegalStateException ex) {
-                                ex.printStackTrace();
-                                return null;
-                            }
-
-                            return notifications;
-                        }
-                    };
-                    Future<List<LbryNotification>> future = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
-
-                    try {
-                        List<LbryNotification> notifications = future.get();
-
-                        if (notifications != null) {
-                            remoteNotifcationsLastLoaded = new Date();
-
-                            loadUnseenNotificationsCount();
-                        }
-
-                        loadLocalNotifications();
-
-                        if (notifications != null && markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
-                            markNotificationsSeen();
-                        }
-
-                        if (notificationsSwipeContainer != null) {
-                            notificationsSwipeContainer.setRefreshing(false);
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
+                    if (notificationsSwipeContainer != null) {
+                        notificationsSwipeContainer.setRefreshing(false);
                     }
                 }
             });
-            t.start();
-        }
+            if (result != null) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                for (LbryNotification notification : result) {
+                    DatabaseHelper.createOrUpdateNotification(notification, db);
+                }
+                remoteNotifcationsLastLoaded = new Date();
+
+                loadUnseenNotificationsCount();
+                loadLocalNotifications();
+                if (markRead && findViewById(R.id.notifications_container).getVisibility() == View.VISIBLE) {
+                    markNotificationsSeen();
+                }
+            }
+
+        }, ((OdyseeApp) activity.getApplication()).getExecutor());
     }
 
     @AnyThread
@@ -4952,54 +4754,16 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            Supplier<List<LbryNotification>> task = new GetLocalNotificationsSupplier();
-            CompletableFuture<List<LbryNotification>> completableFuture = CompletableFuture.supplyAsync(task);
-            completableFuture.thenAccept(n -> {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateLocalNotifications(n);
-                    }
-                });
-            });
-        } else {
-            Thread thread = new Thread(new Runnable() {
+        Supplier<List<LbryNotification>> task = new GetLocalNotificationsSupplier();
+        CompletableFuture<List<LbryNotification>> completableFuture = CompletableFuture.supplyAsync(task);
+        completableFuture.thenAccept(n -> {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Callable<List<LbryNotification>> callable = new Callable<List<LbryNotification>>() {
-                        @Override
-                        public List<LbryNotification> call() {
-                            List<LbryNotification> notifications = new ArrayList<>();
-
-                            try {
-                                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                                notifications = DatabaseHelper.getNotifications(db);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                            return notifications;
-                        }
-                    };
-
-                    Future<List<LbryNotification>> futureNotifications = ((OdyseeApp) getApplication()).getExecutor().submit(callable);
-                    try {
-                        List<LbryNotification> notifications = futureNotifications.get();
-
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateLocalNotifications(notifications);
-                            }
-                        });
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
+                    updateLocalNotifications(n);
                 }
             });
-
-            thread.start();
-        }
+        });
     }
 
     private void updateLocalNotifications(List<LbryNotification> notifications){
@@ -5039,22 +4803,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         options.put("auth_token", at);
                 }
 
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                    Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
-                    CompletableFuture.supplyAsync(supplier);
-                } else {
-                    Thread t = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Lbryio.call("notification", "edit", options, null);
-                            } catch (LbryioResponseException | LbryioRequestException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                    t.start();
-                }
+                Supplier<Boolean> supplier = new NotificationUpdateSupplier(options);
+                CompletableFuture.supplyAsync(supplier);
+
                 if (!notification.getTargetUrl().equalsIgnoreCase("lbry://?subscriptions")) {
                     markNotificationReadAndSeen(notification.getId());
                 }
@@ -5313,7 +5064,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // we need to navigate to FileViewFragment in this instance
             nowPlayingQueuePlaylist.addClaim(claim);
             openPrivatePlaylist(nowPlayingQueuePlaylist);
-        } else if (currentPlaylist != null){
+        } else if (currentPlaylist != null) {
             // otherwise, refresh the playlist items display
             currentPlaylist.getClaims().add(claim);
 
@@ -5321,14 +5072,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             playlistOverlayItemsAdapter.addSingleItem(claim);
             didAddItemToNowPlayingQueue();
 
-            Fragment fragment = getCurrentFragment();
-            if (fragment instanceof FileViewFragment) {
-                FileViewFragment fvFragment = (FileViewFragment) fragment;
-                // make sure that we have the same collection reference before shuffling
-                if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
-                    // update the items in the fragment
-                    fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
-                }
+            if (playlistOverlayDelegate != null && currentPlaylist.getId().equalsIgnoreCase(
+                    playlistOverlayDelegate.getCurrentCollectionId())) {
+                // update the items in the file view
+                playlistOverlayDelegate.setPlaylistClaims(currentPlaylist.getClaims());
             }
         }
     }
@@ -5861,6 +5608,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClaimClicked(Claim claim, int position) {
                 Fragment fragment = getCurrentFragment();
+                android.util.Log.d("#HELP", "CurrentFragment=" + fragment.getClass().toString());
                 if (fragment instanceof FileViewFragment) {
                     ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
                 }
@@ -5999,22 +5747,17 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        Fragment fragment = getCurrentFragment();
-        if (fragment instanceof FileViewFragment) {
-            FileViewFragment fvFragment = (FileViewFragment) fragment;
+        // make sure that we have the same collection reference before shuffling
+        if (playlistOverlayDelegate != null && currentPlaylist.getId().equalsIgnoreCase(playlistOverlayDelegate.getCurrentCollectionId())) {
+            // do the shuffle
+            List<Claim> currentClaims = currentPlaylist.getClaims();
+            Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
+            currentPlaylist.setClaims(currentClaims);
+            initPlaylistOverlayAdapter(currentPlaylist.getClaims());
 
-            // make sure that we have the same collection reference before shuffling
-            if (currentPlaylist.getId().equalsIgnoreCase(fvFragment.getCurrentCollectionId())) {
-                // do the shuffle
-                List<Claim> currentClaims = currentPlaylist.getClaims();
-                Collections.shuffle(currentClaims, new Random(System.currentTimeMillis()));
-                currentPlaylist.setClaims(currentClaims);
-                initPlaylistOverlayAdapter(currentPlaylist.getClaims());
-
-                // update the fragment and play from the beginning
-                fvFragment.setPlaylistClaims(currentPlaylist.getClaims());
-                fvFragment.playFirstItemInCollection();
-            }
+            // update the fragment and play from the beginning
+            playlistOverlayDelegate.setPlaylistClaims(currentPlaylist.getClaims());
+            playlistOverlayDelegate.playFirstItemInCollection();
         }
     }
 
@@ -6074,7 +5817,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         boolean onBackPressed();
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
+    public interface PlaylistOverlayDelegate {
+        void setCurrentCollectionId(String collectionId);
+        String getCurrentCollectionId();
+        void setPlaylistClaims(List<Claim> claims);
+        void onPlaylistOverlayClaimClicked(Claim claim, int position);
+        void playFirstItemInCollection();
+    }
+
     class OdyseeNetworkCallback extends ConnectivityManager.NetworkCallback {
         MainActivity mainActivity;
         PlayerManager playerManager;

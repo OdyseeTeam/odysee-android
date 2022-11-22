@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -53,7 +52,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -68,7 +66,6 @@ import com.odysee.app.R;
 import com.odysee.app.adapter.TransactionListAdapter;
 import com.odysee.app.adapter.WalletDetailAdapter;
 import com.odysee.app.callable.TransactionList;
-import com.odysee.app.callable.WalletGetUnusedAddress;
 import com.odysee.app.supplier.WalletGetUnusedAddressSupplier;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.listener.WalletBalanceListener;
@@ -629,53 +626,19 @@ public class WalletFragment extends BaseFragment implements WalletBalanceListene
     public void generateNewAddress() {
         Activity a = getActivity();
         if (a != null) {
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                AccountManager am = AccountManager.get(getContext());
-                Supplier<String> task = new WalletGetUnusedAddressSupplier(am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
-                CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(task, ((OdyseeApp) a.getApplication()).getExecutor());
-                completableFuture.thenAccept(addr -> {
-                    if (!Helper.isNullOrEmpty(addr)) {
-                        Context context = getContext();
-                        if (context != null) {
-                            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                            sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
-                        }
-                        Helper.setViewText(textWalletReceiveAddress, addr);
+            AccountManager am = AccountManager.get(getContext());
+            Supplier<String> task = new WalletGetUnusedAddressSupplier(am.peekAuthToken(Helper.getOdyseeAccount(am.getAccounts()), "auth_token_type"));
+            CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(task, ((OdyseeApp) a.getApplication()).getExecutor());
+            completableFuture.thenAccept(addr -> {
+                if (!Helper.isNullOrEmpty(addr)) {
+                    Context context = getContext();
+                    if (context != null) {
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                        sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
                     }
-                });
-            } else {
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        AccountManager am = AccountManager.get(getContext());
-                        String authToken = am.peekAuthToken(am.getAccounts()[0], "auth_token_type");
-
-                        Callable<String> callable = new WalletGetUnusedAddress(authToken);
-                        Future<String> future = ((OdyseeApp) a.getApplication()).getExecutor().submit(callable);
-                        try {
-                            String addr = future.get();
-
-                            if (!Helper.isNullOrEmpty(addr)) {
-                                Context context = getContext();
-                                if (context != null) {
-                                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                                    sp.edit().putString(MainActivity.PREFERENCE_KEY_INTERNAL_WALLET_RECEIVE_ADDRESS, addr).apply();
-                                    ((MainActivity)context).runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Helper.setViewText(textWalletReceiveAddress, addr);
-                                        }
-                                    });
-                                }
-                            }
-                        } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-
-                thread.start();
-            }
+                    Helper.setViewText(textWalletReceiveAddress, addr);
+                }
+            });
         }
     }
 
