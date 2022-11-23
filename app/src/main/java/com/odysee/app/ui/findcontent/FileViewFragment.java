@@ -1079,7 +1079,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
             activity.removeStoragePermissionListener(this);
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             activity.showAppBar();
             activity.checkNowPlaying();
 
@@ -3942,8 +3941,6 @@ public class FileViewFragment extends BaseFragment implements
                 activity.enterFullScreenMode();
 
                 exoplayerContainer.setPadding(0, 0, 0, 0);
-
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
             }
         }
     }
@@ -3963,7 +3960,6 @@ public class FileViewFragment extends BaseFragment implements
                 exoplayerContainer.setPadding(0, 0, 0, 0);
 
                 activity.exitFullScreenMode();
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             }
         }
     }
@@ -4162,11 +4158,10 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public void onPortraitOrientationEntered() {
-        // Skip this for now. User restores default view mode by pressing fullscreen toggle
-        /*Context context = getContext();
+        Context context = getContext();
         if (context instanceof MainActivity && ((MainActivity) context).isInFullscreenMode()) {
             disableFullScreenMode();
-        }*/
+        }
     }
 
     @Override
