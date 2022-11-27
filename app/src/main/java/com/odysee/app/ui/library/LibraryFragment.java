@@ -243,6 +243,10 @@ public class LibraryFragment extends BaseFragment implements ActionMode.Callback
             @Override
             public void onClick(View view) {
                 // open history fragment
+                Context context = getContext();
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).openFragment(HistoryFragment.class, true, null);
+                }
             }
         });
 
