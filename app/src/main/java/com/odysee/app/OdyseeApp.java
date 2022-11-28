@@ -52,6 +52,12 @@ public class OdyseeApp extends Application {
         }
     }
 
+    /**
+     * Executor instance creation is an expensive task. Use this method to use application globally available one.
+     * Recommended way to use it is by calling this method every time, instead of storing a local instance.<br/>
+     * Important: Do not close the returned object
+     * @return ExecutorService global instance created on the first call to this method
+     */
     public ExecutorService getExecutor() {
         int availableCores = Runtime.getRuntime().availableProcessors();
         if (executor == null) {
@@ -61,6 +67,12 @@ public class OdyseeApp extends Application {
         return executor;
     }
 
+    /**
+     * Executor instance creation is an expensive task. Use this method to use application globally available one.
+     * Recommended way to use it is by calling this method every time, instead of storing a local instance.<br/>
+     * Important: Do not close the returned object
+     * @return ScheduledExecutorService global instance created on the first call to this method
+     */
     public ScheduledExecutorService getScheduledExecutor() {
         int availableCores = Runtime.getRuntime().availableProcessors();
         if (scheduledExecutor == null) {
