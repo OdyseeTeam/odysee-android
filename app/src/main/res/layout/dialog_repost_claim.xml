@@ -176,6 +176,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/repost"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true" />
