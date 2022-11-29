@@ -24,10 +24,6 @@ import com.odysee.app.R;
 import com.odysee.app.listener.VerificationListener;
 import com.odysee.app.model.lbryinc.User;
 import com.odysee.app.tasks.lbryinc.FetchCurrentUserTask;
-import com.odysee.app.ui.rewards.RewardVerificationManualFragment;
-import com.odysee.app.ui.rewards.RewardVerificationPaidFragment;
-import com.odysee.app.ui.rewards.RewardVerificationPhoneFragment;
-import com.odysee.app.ui.rewards.RewardVerificationTwitterFragment;
 import com.odysee.app.utils.FirstRunStepHandler;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.LbryAnalytics;
@@ -40,7 +36,6 @@ public class RewardVerificationFragment extends Fragment implements Verification
     @Setter
     private FirstRunStepHandler firstRunStepHandler;
 
-    private View brandContainer;
     private TextView textSummary;
     private ViewPager2 optionsPager;
     private TabLayout optionsTabs;
@@ -49,7 +44,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_reward_verification, container, false);
 
-        brandContainer = root.findViewById(R.id.reward_verification_brand_container);
+        View brandContainer = root.findViewById(R.id.reward_verification_brand_container);
         textSummary = root.findViewById(R.id.first_run_reward_verification_desc);
         optionsPager = root.findViewById(R.id.reward_verification_options_view_pager);
         optionsPager.setSaveEnabled(false);
@@ -69,8 +64,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
                 switch (position) {
                     case 0: tab.setText(getString(R.string.phone)); break;
                     case 1: tab.setText(getString(R.string.twitter)); break;
-                    case 2: tab.setText(getString(R.string.paid)); break;
-                    case 3: tab.setText(getString(R.string.manual)); break;
+                    case 2: tab.setText(getString(R.string.manual)); break;
                 }
             }
         }).attach();
@@ -228,7 +222,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
 
         @Override
         public int getItemCount() {
-            return 4;
+            return 3;
         }
 
         @NonNull
@@ -250,12 +244,6 @@ public class RewardVerificationFragment extends Fragment implements Verification
                     }
                     return twitterFragment;
                 case 2:
-                    RewardVerificationPaidFragment paidFragment = RewardVerificationPaidFragment.class.newInstance();
-                    if (parent instanceof VerificationListener) {
-                        paidFragment.setListener((VerificationListener) parent);
-                    }
-                    return paidFragment;
-                case 3:
                     return RewardVerificationManualFragment.class.newInstance();
             }
         }
