@@ -64,6 +64,7 @@ public class RewardVerificationFragment extends Fragment implements Verification
                 switch (position) {
                     case 0: tab.setText(getString(R.string.phone)); break;
                     case 1: tab.setText(getString(R.string.twitter)); break;
+//                    case 2: tab.setText(getString(R.string.paid)); break;
                     case 2: tab.setText(getString(R.string.manual)); break;
                 }
             }
@@ -211,8 +212,8 @@ public class RewardVerificationFragment extends Fragment implements Verification
     }
 
     private static class RewardVerificationPagerAdapter extends FragmentStateAdapter {
-        private FragmentActivity activity;
-        private Fragment parent;
+        private final FragmentActivity activity;
+        private final Fragment parent;
 
         public RewardVerificationPagerAdapter(FragmentActivity activity, Fragment parent) {
             super(activity);
@@ -244,6 +245,12 @@ public class RewardVerificationFragment extends Fragment implements Verification
                     }
                     return twitterFragment;
                 case 2:
+//                    RewardVerificationPaidFragment paidFragment = RewardVerificationPaidFragment.class.newInstance();
+//                    if (parent instanceof VerificationListener) {
+//                        paidFragment.setListener((VerificationListener) parent);
+//                    }
+//                    return paidFragment;
+//                case 3:
                     return RewardVerificationManualFragment.class.newInstance();
             }
         }
