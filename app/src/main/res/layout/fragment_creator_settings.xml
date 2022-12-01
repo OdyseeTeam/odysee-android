@@ -304,6 +304,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:textColor="@color/white"
                     android:text="@string/add_moderator"
                     android:fontFamily="@font/inter"
                     android:textSize="12sp" />
@@ -365,6 +366,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:textColor="@color/white"
                     android:text="@string/add_words"
                     android:fontFamily="@font/inter"
                     android:textSize="12sp" />

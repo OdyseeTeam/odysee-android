@@ -252,6 +252,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter"
                     android:textSize="12sp"
+                    android:textColor="@color/white"
                     android:text="@string/unblock" />
             </androidx.appcompat.widget.LinearLayoutCompat>
         </LinearLayout>

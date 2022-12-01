@@ -199,6 +199,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="3"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/resend" />
 
             <View
@@ -313,6 +314,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/done" />
         </LinearLayout>
     </LinearLayout>

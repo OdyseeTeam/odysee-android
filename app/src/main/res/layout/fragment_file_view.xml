@@ -80,6 +80,7 @@
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
                     android:fontFamily="@font/inter"
+                    android:textColor="@color/white"
                     android:text="@string/play"
                     android:textSize="14sp"
                     android:visibility="invisible" />
@@ -239,6 +240,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter"
+                        android:textColor="@color/white"
                         android:text="@string/open"
                         android:textSize="14sp" />
                 </LinearLayout>

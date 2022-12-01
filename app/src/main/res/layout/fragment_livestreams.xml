@@ -114,6 +114,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:enabled="false"
+            android:textColor="@color/white"
             android:text="@string/start_streaming"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -170,6 +171,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:fontFamily="@font/inter"
+                    android:textColor="@color/white"
                     android:text="@string/create_livestream"  />
             </LinearLayout>
         </RelativeLayout>

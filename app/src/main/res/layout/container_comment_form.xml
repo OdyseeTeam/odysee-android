@@ -173,6 +173,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/comment_form_post" />
             <ProgressBar
                 android:id="@+id/comment_form_post_progress"
@@ -200,6 +201,7 @@
         <com.google.android.material.button.MaterialButton android:id="@+id/create_channel_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/white"
             android:text="@string/create_a_channel" />
     </LinearLayout>
     <LinearLayout android:id="@+id/user_not_signed_in"
@@ -218,6 +220,7 @@
         <com.google.android.material.button.MaterialButton android:id="@+id/sign_in_user_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/white"
             android:text="@string/sign_in" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

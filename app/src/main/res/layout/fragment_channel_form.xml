@@ -340,6 +340,7 @@
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:fontFamily="@font/inter"
+                            android:textColor="@color/white"
                             android:text="@string/save" />
                     </RelativeLayout>
                 </LinearLayout>
