@@ -144,6 +144,7 @@
         android:layout_centerVertical="true"
         android:layout_margin="36dp"
         android:orientation="vertical"
+        tools:visibility="visible"
         android:visibility="gone">
 
         <TextView
@@ -171,6 +172,7 @@
             android:ellipsize="middle"
             android:singleLine="true"
             android:textAlignment="center"
+            tools:text="example@example.org"
             android:textColor="@color/title_text"
             style="@style/TextView_Light"
             android:textSize="20sp" />
