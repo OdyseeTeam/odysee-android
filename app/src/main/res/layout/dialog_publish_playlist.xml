@@ -3,225 +3,232 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp">
-        <TextView
-            android:id="@+id/publish_playlist_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:fontFamily="@font/inter"
-            android:singleLine="true"
-            android:text="@string/publish_playlist"
-            android:textSize="20sp" />
-        <View
+        android:layout_height="match_parent">
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="@color/divider"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            style="@style/TextView_Light"
-            android:text="@string/channel"
-            android:textSize="14sp" />
-        <androidx.appcompat.widget.AppCompatSpinner
-            android:id="@+id/publish_playlist_channel_spinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            style="@style/TextView_Light"
-            android:text="@string/name"
-            android:textSize="14sp" />
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
             <TextView
-                android:id="@+id/publish_playlist_name_prefix"
+                android:id="@+id/publish_playlist_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                style="@style/TextView_Light"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter"
                 android:singleLine="true"
-                android:textColor="@color/lightGrey"
-                android:textSize="14sp" />
-
-            <EditText
-                android:id="@+id/publish_playlist_name_input"
+                android:text="@string/publish_playlist"
+                android:textSize="20sp" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:background="@color/divider"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 style="@style/TextView_Light"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/publish_playlist_name_prefix"
-                android:background="@android:color/transparent"
-                android:singleLine="true"
+                android:text="@string/channel"
                 android:textSize="14sp" />
-        </RelativeLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/title"
-            android:layout_marginTop="24dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/publish_playlist_title_input"
+            <androidx.appcompat.widget.AppCompatSpinner
+                android:id="@+id/publish_playlist_channel_spinner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 style="@style/TextView_Light"
+                android:text="@string/name"
                 android:textSize="14sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/description"
-            android:layout_marginTop="24dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/publish_playlist_desc_input"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minLines="3"
-                style="@style/TextView_Light"
-                android:textSize="14sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <LinearLayout
-            android:id="@+id/publish_playlist_advanced_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-            <androidx.appcompat.widget.LinearLayoutCompat
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginTop="4dp">
                 <TextView
+                    android:id="@+id/publish_playlist_name_prefix"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
                     style="@style/TextView_Light"
-                    android:text="@string/language"
+                    android:singleLine="true"
+                    android:textColor="@color/lightGrey"
                     android:textSize="14sp" />
 
-                <androidx.appcompat.widget.AppCompatSpinner
-                    android:id="@+id/publish_playlist_language_spinner"
+                <EditText
+                    android:id="@+id/publish_playlist_name_input"
+                    style="@style/TextView_Light"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp" />
-            </androidx.appcompat.widget.LinearLayoutCompat>
+                    android:layout_centerVertical="true"
+                    android:layout_toEndOf="@id/publish_playlist_name_prefix"
+                    android:background="@android:color/transparent"
+                    android:singleLine="true"
+                    android:textSize="14sp" />
+            </RelativeLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/title"
+                android:layout_marginTop="24dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/publish_playlist_title_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:imeOptions="actionNext"
+                    style="@style/TextView_Light"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/description"
+                android:layout_marginTop="24dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/publish_playlist_desc_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="3"
+                    android:imeOptions="actionNext"
+                    style="@style/TextView_Light"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:id="@+id/publish_playlist_advanced_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/TextView_Light"
+                        android:text="@string/language"
+                        android:textSize="14sp" />
+
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/publish_playlist_language_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp" />
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/publish_playlist_input_layout_amount"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/deposit"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/publish_playlist_input_deposit"
+                            android:fontFamily="@font/inter"
+                            android:textSize="14sp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:id="@+id/publish_playlist_input_currency"
+                        android:layout_toEndOf="@id/publish_playlist_input_layout_amount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="30dp"
+                        style="@style/TextView_Light"
+                        android:text="@string/lbc"
+                        android:textAllCaps="true"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:id="@+id/publish_playlist_inline_balance_container"
+                        android:layout_toEndOf="@id/publish_playlist_input_currency"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="28dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="invisible">
+                        <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_gravity="center_vertical"
+                            android:src="@drawable/ic_credits" />
+                        <TextView
+                            android:id="@+id/publish_playlist_inline_balance_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            style="@style/TextView_Light"
+                            android:layout_marginStart="2dp" />
+                    </LinearLayout>
+                </RelativeLayout>
+            </LinearLayout>
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/publish_playlist_input_layout_amount"
-                    android:layout_width="100dp"
+                android:layout_marginTop="24dp">
+                <TextView
+                    android:id="@+id/publish_playlist_cancel_link"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:hint="@string/deposit"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/publish_playlist_input_deposit"
-                        android:fontFamily="@font/inter"
-                        android:textSize="14sp"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_centerVertical="true"
+                    style="@style/TextView_Light"
+                    android:text="@string/cancel"
+                    android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/publish_playlist_input_currency"
-                    android:layout_toEndOf="@id/publish_playlist_input_layout_amount"
+                    android:id="@+id/publish_playlist_toggle_advanced"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginTop="30dp"
-                    style="@style/TextView_Light"
-                    android:text="@string/lbc"
-                    android:textAllCaps="true"
-                    android:textSize="11sp" />
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="24dp"
+                    android:layout_toStartOf="@id/publish_playlist_button"
+                    android:fontFamily="@font/inter"
+                    android:textSize="14sp"
+                    android:text="@string/show_advanced" />
+                <ProgressBar
+                    android:id="@+id/publish_playlist_progress"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_toStartOf="@id/publish_playlist_button"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:visibility="gone" />
 
-                <LinearLayout
-                    android:id="@+id/publish_playlist_inline_balance_container"
-                    android:layout_toEndOf="@id/publish_playlist_input_currency"
-                    android:layout_marginStart="24dp"
-                    android:layout_marginTop="28dp"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/publish_playlist_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:visibility="invisible">
-                    <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_credits" />
-                    <TextView
-                        android:id="@+id/publish_playlist_inline_balance_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        style="@style/TextView_Light"
-                        android:layout_marginStart="2dp" />
-                </LinearLayout>
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="@font/inter"
+                    android:text="@string/publish" />
             </RelativeLayout>
         </LinearLayout>
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp">
-            <TextView
-                android:id="@+id/publish_playlist_cancel_link"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                style="@style/TextView_Light"
-                android:text="@string/cancel"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/publish_playlist_toggle_advanced"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="24dp"
-                android:layout_toStartOf="@id/publish_playlist_button"
-                android:fontFamily="@font/inter"
-                android:textSize="14sp"
-                android:text="@string/show_advanced" />
-            <ProgressBar
-                android:id="@+id/publish_playlist_progress"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_toStartOf="@id/publish_playlist_button"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="8dp"
-                android:visibility="gone" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/publish_playlist_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:fontFamily="@font/inter"
-                android:text="@string/publish" />
-        </RelativeLayout>
-    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
