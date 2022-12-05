@@ -355,6 +355,8 @@ public class FileViewFragment extends BaseFragment implements
     private TextView labelTipCredits;
     private TextInputEditText inputTipAmount;
 
+    // Flag to be used if we're playing from a playlist
+    private boolean alwaysAutoplay;
     private boolean leavingFileView;
     private WebSocketClient webSocketClient;
 
@@ -869,6 +871,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndResetNowPlayingClaim() {
+        checkAndResetNowPlayingClaim(false);
+    }
+
+    private void checkAndResetNowPlayingClaim(boolean fromPlaylist) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (MainActivity.nowPlayingClaim != null
                 && actualClaim != null &&
@@ -876,7 +882,9 @@ public class FileViewFragment extends BaseFragment implements
             Context context = getContext();
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
-                activity.clearNowPlayingClaim();
+                // only clear the playlist if this didn't get played from an active playlist
+                boolean shouldClearPlaylist = !fromPlaylist;
+                activity.clearNowPlayingClaim(shouldClearPlaylist);
                 if (actualClaim != null && !actualClaim.isPlayable()) {
                     MainActivity.stopExoplayer();
                 }
@@ -2376,20 +2384,25 @@ public class FileViewFragment extends BaseFragment implements
                         ((MainActivity) context).hideGlobalNowPlaying();
                     }
                 } else {
-                    String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
-                    if (MainActivity.nowPlayingClaim == null) {
-                        if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
-                            onMainActionButtonClicked();
-                        } else if (claimToRender.isPlayable()) {
-                            if (root != null) {
-                                root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
-                            }
-                        }
+                    if (alwaysAutoplay) {
+                        onMainActionButtonClicked(true);
+                        alwaysAutoplay = false;
                     } else {
-                        if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
-                            onMainActionButtonClicked();
-                        } else if (claimToRender.isViewable()) {
-                            restoreMainActionButton();
+                        String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
+                        if (MainActivity.nowPlayingClaim == null) {
+                            if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
+                                onMainActionButtonClicked();
+                            } else if (claimToRender.isPlayable()) {
+                                if (root != null) {
+                                    root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
+                                }
+                            }
+                        } else {
+                            if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
+                                onMainActionButtonClicked();
+                            } else if (claimToRender.isViewable()) {
+                                restoreMainActionButton();
+                            }
                         }
                     }
                 }
@@ -3032,8 +3045,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void onMainActionButtonClicked() {
+        onMainActionButtonClicked(false);
+    }
+
+    private void onMainActionButtonClicked(boolean fromPlaylist) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        checkAndResetNowPlayingClaim();
+        checkAndResetNowPlayingClaim(fromPlaylist);
 
         // Check if the claim is free
         Claim.GenericMetadata metadata = actualClaim.getValue();
@@ -3348,6 +3365,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void playClaimFromCollection(Claim theClaim, int index) {
+        alwaysAutoplay = true;
         collectionClaimItem = theClaim;
         renderClaim();
 

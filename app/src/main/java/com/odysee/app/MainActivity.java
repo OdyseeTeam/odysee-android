@@ -4438,6 +4438,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void clearNowPlayingClaim() {
+        clearNowPlayingClaim(false);
+    }
+
+    public void clearNowPlayingClaim(boolean clearPlaylist) {
         nowPlayingClaim = null;
         nowPlayingClaimUrl = null;
         nowPlayingClaimBitmap = null;
@@ -4448,9 +4452,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
 
-        // if we're clearing the currently playing claim, all currently active playlists should also be cleared at this point
-        clearCurrentPlaylist();
-        nowPlayingQueuePlaylist = null;
+        if (clearPlaylist) {
+            // the now playing claim can be cleared when a new piece of content is loaded on the file view
+            // so we make this a flag and check if we're coming from an active playlist or not before clearing
+            clearCurrentPlaylist();
+            nowPlayingQueuePlaylist = null;
+        }
     }
 
     public void hideSearchBar() {
@@ -5608,7 +5615,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClaimClicked(Claim claim, int position) {
                 Fragment fragment = getCurrentFragment();
-                android.util.Log.d("#HELP", "CurrentFragment=" + fragment.getClass().toString());
                 if (fragment instanceof FileViewFragment) {
                     ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
                 }
