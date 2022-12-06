@@ -39,6 +39,7 @@ public class OdyseeCollection {
     private String claimId;
     private String claimName;
     private String permanentUrl;
+    private String firstItemThumbnailUrl;
 
     private int currentlyPlayingIndex;
 
@@ -79,6 +80,21 @@ public class OdyseeCollection {
 
     public long getUpdatedAtTimestamp() {
         return Double.valueOf((double) updatedAt.getTime() / 1000.0).longValue();
+    }
+
+    public String getThumbnailUrl() {
+        if (actualClaim != null && !Helper.isNullOrEmpty(actualClaim.getThumbnailUrl())) {
+            return actualClaim.getThumbnailUrl();
+        }
+
+        if (Helper.isNullOrEmpty(firstItemThumbnailUrl) && claims != null && claims.size() > 0) {
+            Claim firstClaim = claims.get(0);
+            if (!Helper.isNullOrEmpty(firstClaim.getThumbnailUrl())) {
+                return firstClaim.getThumbnailUrl();
+            }
+        }
+
+        return firstItemThumbnailUrl;
     }
 
     public JSONObject toJSONObject() {

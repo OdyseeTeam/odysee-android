@@ -26,10 +26,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
-
 import com.odysee.app.OdyseeApp;
-import com.odysee.app.adapter.CollectionListAdapter;
 import com.odysee.app.adapter.PlaylistCollectionListAdapter;
 import com.odysee.app.exceptions.ApiCallException;
 import com.odysee.app.model.OdyseeCollection;
@@ -39,11 +36,11 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import com.odysee.app.MainActivity;
 import com.odysee.app.R;
@@ -350,7 +347,62 @@ public class LibraryFragment extends BaseFragment implements ActionMode.Callback
         if (playlistsList != null) {
             playlistsList.setAdapter(adapter);
         }
+        resolvePlaylistThumbnails(collections);
         Helper.setViewVisibility(playlistsLoading, View.INVISIBLE);
+    }
+
+    private void resolvePlaylistThumbnails(List<OdyseeCollection> collections) {
+        Map<String, String> collectionIdFirstItemMap = new HashMap<>();
+        List<String> itemUrlsToResolve = new ArrayList<>();
+        for (OdyseeCollection collection : collections) {
+            List<OdyseeCollection.Item> items = collection.getItems();
+            if (items.size() > 0) {
+                LbryUri url = LbryUri.tryParse(items.get(0).getUrl());
+                if (url != null) {
+                    collectionIdFirstItemMap.put(collection.getId(), url.toString());
+                    itemUrlsToResolve.add(url.toString());
+                }
+            }
+        }
+
+        if (itemUrlsToResolve.size() > 0) {
+            ResolveTask task = new ResolveTask(itemUrlsToResolve, Lbry.API_CONNECTION_STRING, null, new ResolveResultHandler() {
+                @Override
+                public void onSuccess(List<Claim> claims) {
+                    Map<String, String> collectionIdThumbnailUrlMap = new HashMap<>();
+                    for (Claim claim : claims) {
+                        if (Helper.isNullOrEmpty(claim.getClaimId())) {
+                            continue;
+                        }
+
+                        for (Map.Entry<String, String> entry : collectionIdFirstItemMap.entrySet()) {
+                            String collectionId = entry.getKey();
+                            String originalItemUrl = entry.getValue();
+                            LbryUri thisClaimUrl = LbryUri.tryParse(claim.getPermanentUrl());
+                            if (thisClaimUrl != null && originalItemUrl.equalsIgnoreCase(thisClaimUrl.toString())) {
+                                String thumbnailUrl = claim.getThumbnailUrl();
+                                collectionIdThumbnailUrlMap.put(collectionId, thumbnailUrl);
+                                // Note: We don't break here because we might have the same claim URL appear more than once in different playlists
+                            }
+                        }
+                    }
+
+                    onCollectionThumbnailsResolved(collectionIdThumbnailUrlMap);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    // pass
+                }
+            });
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    private void onCollectionThumbnailsResolved(Map<String, String> collectionIdThumbnailUrlMap) {
+        if (playlistsList != null && playlistsList.getAdapter() != null) {
+            ((PlaylistCollectionListAdapter) playlistsList.getAdapter()).updateCollectionThumbnailUrls(collectionIdThumbnailUrlMap);
+        }
     }
 
     public void onDestroy() {
