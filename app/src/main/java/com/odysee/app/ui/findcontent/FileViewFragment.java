@@ -1001,9 +1001,15 @@ public class FileViewFragment extends BaseFragment implements
     public void onResume() {
         super.onResume();
 
+        Context context = getContext();
+
         // Skip init if resuming from file picker
         if (startingFilePicker) {
             startingFilePicker = MainActivity.startingFilePickerActivity;
+            setPlayerForPlayerView();
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).hideGlobalNowPlaying();
+            }
             return;
         }
 
@@ -1014,7 +1020,6 @@ public class FileViewFragment extends BaseFragment implements
             checkWebSocketClient();
         }
 
-        Context context = getContext();
         Helper.setWunderbarValue(currentUrl, context);
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (context instanceof MainActivity) {
