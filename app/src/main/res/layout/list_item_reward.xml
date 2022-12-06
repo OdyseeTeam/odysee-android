@@ -87,6 +87,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:textColor="@color/white"
                 android:text="@string/claim"
                 android:fontFamily="@font/inter"
                 style="@style/TextView_Light"

@@ -164,8 +164,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -637,7 +635,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         dbHelper = new DatabaseHelper(this);
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -4961,7 +4959,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleAddUrlToList(String url, OdyseeCollection collection, boolean showMessage) {
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -4997,8 +4995,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleSaveCollection(final OdyseeCollection collection) {
-        ExecutorService executor = ((OdyseeApp) getApplication()).getExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -5032,7 +5029,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleRemoveUrlFromList(String url, OdyseeCollection collection) {
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -5096,7 +5093,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {

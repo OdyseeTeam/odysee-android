@@ -55,6 +55,7 @@
                 android:layout_alignParentEnd="true"
                 android:enabled="false"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/invite" />
         </RelativeLayout>
     </LinearLayout>
