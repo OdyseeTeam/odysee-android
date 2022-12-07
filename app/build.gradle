@@ -54,14 +54,14 @@ android {
     }
 }
 
-task printVersionName {
+tasks.register('printVersionName') {
     doLast {
         println android.defaultConfig.versionName
     }
 }
 
 configurations {
-    all {
+    configureEach {
         exclude module: 'httpclient'
         exclude module: 'commons-logging'
     }
