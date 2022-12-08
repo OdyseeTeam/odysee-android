@@ -234,10 +234,6 @@ public class ChannelContentFragment extends Fragment implements SharedPreference
             PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
         }
 
-        if (contentReleaseTime == null) {
-            String relTime = String.valueOf(Double.valueOf(Math.floor(System.currentTimeMillis()) / 1000.0).intValue());
-            contentReleaseTime = "<=" + relTime;
-        }
         fetchClaimSearchContent();
     }
 
