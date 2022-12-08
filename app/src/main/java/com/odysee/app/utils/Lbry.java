@@ -13,6 +13,7 @@ import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -410,14 +411,18 @@ public final class Lbry {
         }
         options.put("page", page);
         options.put("page_size", pageSize);
-        if (!Helper.isNullOrEmpty(releaseTime)) {
-            options.put("release_time", releaseTime);
-        }
+
         if (maxDuration > 0) {
             options.put("duration", String.format("<%d", maxDuration));
         }
         if (limitClaimsPerChannel > 0) {
             options.put("limit_claims_per_channel", limitClaimsPerChannel);
+        }
+
+        if (notTags != null) {
+            notTags.add("c:unlisted");
+        } else {
+            notTags = Collections.singletonList("c:unlisted");
         }
 
         addClaimSearchListOption("any_tags", anyTags, options);
@@ -426,6 +431,13 @@ public final class Lbry {
         addClaimSearchListOption("channel_ids", channelIds, options);
         addClaimSearchListOption("not_channel_ids", notChannelIds, options);
         addClaimSearchListOption("order_by", orderBy, options);
+
+        String releaseTimeBeforeFuture =
+                String.valueOf(Double.valueOf(Math.floor(System.currentTimeMillis()) / 1000.0).intValue());
+        List<String> releaseTimeList = releaseTime != null ?
+                Arrays.asList(releaseTime, "<" + releaseTimeBeforeFuture) :
+                Collections.singletonList("<" + releaseTimeBeforeFuture);
+        addClaimSearchListOption("release_time", releaseTimeList, options);
 
         return options;
     }
