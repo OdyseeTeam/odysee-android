@@ -2144,6 +2144,7 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         onDownloadAborted();
+        downloadProgressScheduler.shutdown();
     }
 
     private void setLivestreamChatEnabled(boolean enabled) {
@@ -2328,10 +2329,12 @@ public class FileViewFragment extends BaseFragment implements
                     onMainActionButtonClicked();
                 }
             });
-            root.findViewById(R.id.file_view_open_external_button).setOnClickListener(new View.OnClickListener() {
+            root.findViewById(R.id.file_view_download_unsuported_button).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    openClaimExternally(claimToRender, claimToRender.getMediaType());
+                    if (!downloadInProgress) {
+                        checkStoragePermissionAndStartDownload();
+                    }
                 }
             });
 
@@ -2479,14 +2482,6 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.VISIBLE);
-            String fileNameString = "";
-            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-            if (actualClaim.getFile() != null && !Helper.isNullOrEmpty(actualClaim.getFile().getDownloadPath())) {
-                LbryFile lbryFile = actualClaim.getFile();
-                File file = new File(lbryFile.getDownloadPath());
-                fileNameString = String.format("\"%s\" ", file.getName());
-            }
-            ((TextView) root.findViewById(R.id.file_view_unsupported_text)).setText(getString(R.string.unsupported_content_desc, fileNameString));
         }
     }
 
@@ -3264,6 +3259,8 @@ public class FileViewFragment extends BaseFragment implements
             playMedia();
         } else if (actualClaim.isViewable()) {
             viewMedia();
+        } else {
+            showUnsupportedView();
         }
     }
 
@@ -3344,17 +3341,6 @@ public class FileViewFragment extends BaseFragment implements
                 "            </div>\n" +
                 "          </body>\n" +
                 "        </html>";
-    }
-
-    private void openClaimExternally(Claim claim, String mediaType) {
-        Uri fileUri = Uri.parse(claim.getFile().getDownloadPath());
-
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setDataAndType(fileUri, mediaType.toLowerCase());
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        Intent chooser = Intent.createChooser(intent, getString(R.string.choose_app));
-        startActivityForResult(chooser, 419);
     }
 
     public void playFirstItemInCollection() {
@@ -3534,6 +3520,7 @@ public class FileViewFragment extends BaseFragment implements
                                             case DownloadManager.STATUS_FAILED:
                                                 showError(getString(R.string.unable_to_download_claim));
                                                 onDownloadAborted();
+                                                downloadProgressScheduler.shutdown();
                                                 break;
 
                                             case DownloadManager.STATUS_RUNNING:
@@ -3545,7 +3532,7 @@ public class FileViewFragment extends BaseFragment implements
                                                 showMessage(R.string.exo_download_completed);
                                                 ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_download);
                                                 Helper.setViewVisibility(root.findViewById(R.id.file_view_download_progress), View.GONE);
-                                                Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
+                                                downloadInProgress = false;
                                                 downloadProgressScheduler.shutdown();
                                         }
                                     }
@@ -4168,7 +4155,6 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_download);
             Helper.setViewVisibility(root.findViewById(R.id.file_view_download_progress), View.GONE);
-            Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
         }
 
         restoreMainActionButton();
