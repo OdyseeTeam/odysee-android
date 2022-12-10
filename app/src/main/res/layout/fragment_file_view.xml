@@ -236,12 +236,12 @@
                         android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/file_view_open_external_button"
+                        android:id="@+id/file_view_download_unsuported_button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter"
                         android:textColor="@color/white"
-                        android:text="@string/open"
+                        android:text="@string/download"
                         android:textSize="14sp" />
                 </LinearLayout>
             </RelativeLayout>
