@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.odysee.app.MainActivity;
+import com.odysee.app.OdyseeApp;
 import com.odysee.app.R;
 import com.odysee.app.callable.ChannelLiveStatus;
 import com.odysee.app.dialog.CreateSupportDialogFragment;
@@ -662,53 +663,47 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
         }
 
         Activity a = getActivity();
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                try {
-                    final boolean hasScheduledStreams;
-                    Future<Map<String, JSONObject>> isLiveFuture = executorService.submit(new ChannelLiveStatus(Collections.singletonList(claim.getClaimId()), false));
+        if (a!= null) {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        final boolean hasScheduledStreams;
+                        Future<Map<String, JSONObject>> isLiveFuture = ((OdyseeApp) a.getApplication()).getExecutor().submit(new ChannelLiveStatus(Collections.singletonList(claim.getClaimId()), false));
 
-                    Map<String, JSONObject> livestreamingChannels = isLiveFuture.get();
+                        Map<String, JSONObject> livestreamingChannels = isLiveFuture.get();
 
-                    if (livestreamingChannels.size() > 0 && livestreamingChannels.containsKey(claim.getClaimId())) {
-                        JSONObject channelData = livestreamingChannels.get(claim.getClaimId());
+                        if (livestreamingChannels.size() > 0 && livestreamingChannels.containsKey(claim.getClaimId())) {
+                            JSONObject channelData = livestreamingChannels.get(claim.getClaimId());
 
-                        if (channelData != null && channelData.has("FutureClaims")) {
-                            JSONArray jsonClaimIds = channelData.optJSONArray("FutureClaims");
+                            if (channelData != null && channelData.has("FutureClaims")) {
+                                JSONArray jsonClaimIds = channelData.optJSONArray("FutureClaims");
 
-                            hasScheduledStreams = jsonClaimIds != null && jsonClaimIds.length() > 0;
+                                hasScheduledStreams = jsonClaimIds != null && jsonClaimIds.length() > 0;
+                            } else {
+                                hasScheduledStreams = false;
+                            }
                         } else {
                             hasScheduledStreams = false;
                         }
-                    } else {
-                        hasScheduledStreams = false;
-                    }
 
-                    if (a != null) {
                         a.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 if (tabPager.getAdapter() == null && context instanceof MainActivity) {
                                     tabPager.setAdapter(new ChannelPagerAdapter(claim, commentHash, hasScheduledStreams, (MainActivity) context));
-                                    if (!Helper.isNullOrEmpty(commentHash)) {
-                                        // set the Comments tab active if a comment hash is set
-                                        new Handler().postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
+                                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (!Helper.isNullOrEmpty(commentHash)) {
+                                                // set the Comments tab active if a comment hash is set
                                                 tabPager.setCurrentItem(3);
-                                            }
-                                        }, 500);
-                                    } else {
-                                        // switch to the previously shown fragment (i.e. before navigating away and back)
-                                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
+                                            } else {
+                                                // switch to the previously shown fragment (i.e. before navigating away and back)
                                                 tabPager.setCurrentItem(currentTab, false);
                                             }
-                                        }, 500);
-                                    }
+                                        }
+                                    }, 500);
                                 }
                                 new TabLayoutMediator(tabLayout, tabPager, new TabLayoutMediator.TabConfigurationStrategy() {
                                     @Override
@@ -723,16 +718,14 @@ public class ChannelFragment extends BaseFragment implements FetchChannelsListen
                                 }).attach();
                             }
                         });
+                    } catch (ExecutionException | InterruptedException | IllegalStateException ex) {
+                        // TODO: Fix why this is happening
+                        ex.printStackTrace();
                     }
-                } catch (ExecutionException | InterruptedException | IllegalStateException ex) {
-                    // TODO: Fix why this is happening
-                    ex.printStackTrace();
-                } finally {
-                    executorService.shutdown();
                 }
-            }
-        });
-        t.start();
+            });
+            t.start();
+        }
     }
 
     public void checkChannelBlocked() {

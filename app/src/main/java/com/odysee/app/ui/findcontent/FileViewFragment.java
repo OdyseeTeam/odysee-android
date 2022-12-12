@@ -355,6 +355,8 @@ public class FileViewFragment extends BaseFragment implements
     private TextView labelTipCredits;
     private TextInputEditText inputTipAmount;
 
+    // Flag to be used if we're playing from a playlist
+    private boolean alwaysAutoplay;
     private boolean leavingFileView;
     private WebSocketClient webSocketClient;
 
@@ -869,6 +871,10 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void checkAndResetNowPlayingClaim() {
+        checkAndResetNowPlayingClaim(false);
+    }
+
+    private void checkAndResetNowPlayingClaim(boolean fromPlaylist) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (MainActivity.nowPlayingClaim != null
                 && actualClaim != null &&
@@ -876,7 +882,9 @@ public class FileViewFragment extends BaseFragment implements
             Context context = getContext();
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
-                activity.clearNowPlayingClaim();
+                // only clear the playlist if this didn't get played from an active playlist
+                boolean shouldClearPlaylist = !fromPlaylist;
+                activity.clearNowPlayingClaim(shouldClearPlaylist);
                 if (actualClaim != null && !actualClaim.isPlayable()) {
                     MainActivity.stopExoplayer();
                 }
@@ -1001,9 +1009,15 @@ public class FileViewFragment extends BaseFragment implements
     public void onResume() {
         super.onResume();
 
+        Context context = getContext();
+
         // Skip init if resuming from file picker
         if (startingFilePicker) {
             startingFilePicker = MainActivity.startingFilePickerActivity;
+            setPlayerForPlayerView();
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).hideGlobalNowPlaying();
+            }
             return;
         }
 
@@ -1014,7 +1028,6 @@ public class FileViewFragment extends BaseFragment implements
             checkWebSocketClient();
         }
 
-        Context context = getContext();
         Helper.setWunderbarValue(currentUrl, context);
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         if (context instanceof MainActivity) {
@@ -1092,7 +1105,6 @@ public class FileViewFragment extends BaseFragment implements
             activity.removePIPModeListener(this);
             activity.removeScreenOrientationListener(this);
             activity.removeStoragePermissionListener(this);
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             activity.showAppBar();
             activity.checkNowPlaying();
 
@@ -2137,6 +2149,7 @@ public class FileViewFragment extends BaseFragment implements
         }
 
         onDownloadAborted();
+        downloadProgressScheduler.shutdown();
     }
 
     private void setLivestreamChatEnabled(boolean enabled) {
@@ -2321,10 +2334,12 @@ public class FileViewFragment extends BaseFragment implements
                     onMainActionButtonClicked();
                 }
             });
-            root.findViewById(R.id.file_view_open_external_button).setOnClickListener(new View.OnClickListener() {
+            root.findViewById(R.id.file_view_download_unsuported_button).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    openClaimExternally(claimToRender, claimToRender.getMediaType());
+                    if (!downloadInProgress) {
+                        checkStoragePermissionAndStartDownload();
+                    }
                 }
             });
 
@@ -2376,20 +2391,25 @@ public class FileViewFragment extends BaseFragment implements
                         ((MainActivity) context).hideGlobalNowPlaying();
                     }
                 } else {
-                    String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
-                    if (MainActivity.nowPlayingClaim == null) {
-                        if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
-                            onMainActionButtonClicked();
-                        } else if (claimToRender.isPlayable()) {
-                            if (root != null) {
-                                root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
-                            }
-                        }
+                    if (alwaysAutoplay) {
+                        onMainActionButtonClicked(true);
+                        alwaysAutoplay = false;
                     } else {
-                        if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
-                            onMainActionButtonClicked();
-                        } else if (claimToRender.isViewable()) {
-                            restoreMainActionButton();
+                        String mediaAutoplay = Objects.requireNonNull((MainActivity) (getActivity())).mediaAutoplayEnabled();
+                        if (MainActivity.nowPlayingClaim == null) {
+                            if (!mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_NEVER) || claimToRender.isViewable()) {
+                                onMainActionButtonClicked();
+                            } else if (claimToRender.isPlayable()) {
+                                if (root != null) {
+                                    root.findViewById(R.id.file_view_main_action_button).setVisibility(View.INVISIBLE);
+                                }
+                            }
+                        } else {
+                            if (mediaAutoplay.equals(MainActivity.APP_SETTING_AUTOPLAY_ALWAYS)) {
+                                onMainActionButtonClicked();
+                            } else if (claimToRender.isViewable()) {
+                                restoreMainActionButton();
+                            }
                         }
                     }
                 }
@@ -2467,14 +2487,6 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
             root.findViewById(R.id.file_view_unsupported_container).setVisibility(View.VISIBLE);
-            String fileNameString = "";
-            Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-            if (actualClaim.getFile() != null && !Helper.isNullOrEmpty(actualClaim.getFile().getDownloadPath())) {
-                LbryFile lbryFile = actualClaim.getFile();
-                File file = new File(lbryFile.getDownloadPath());
-                fileNameString = String.format("\"%s\" ", file.getName());
-            }
-            ((TextView) root.findViewById(R.id.file_view_unsupported_text)).setText(getString(R.string.unsupported_content_desc, fileNameString));
         }
     }
 
@@ -3032,8 +3044,12 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void onMainActionButtonClicked() {
+        onMainActionButtonClicked(false);
+    }
+
+    private void onMainActionButtonClicked(boolean fromPlaylist) {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
-        checkAndResetNowPlayingClaim();
+        checkAndResetNowPlayingClaim(fromPlaylist);
 
         // Check if the claim is free
         Claim.GenericMetadata metadata = actualClaim.getValue();
@@ -3248,6 +3264,8 @@ public class FileViewFragment extends BaseFragment implements
             playMedia();
         } else if (actualClaim.isViewable()) {
             viewMedia();
+        } else {
+            showUnsupportedView();
         }
     }
 
@@ -3330,17 +3348,6 @@ public class FileViewFragment extends BaseFragment implements
                 "        </html>";
     }
 
-    private void openClaimExternally(Claim claim, String mediaType) {
-        Uri fileUri = Uri.parse(claim.getFile().getDownloadPath());
-
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setDataAndType(fileUri, mediaType.toLowerCase());
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        Intent chooser = Intent.createChooser(intent, getString(R.string.choose_app));
-        startActivityForResult(chooser, 419);
-    }
-
     public void playFirstItemInCollection() {
         if (playlistClaims.size() > 0) {
             playClaimFromCollection(playlistClaims.get(0), 0);
@@ -3348,6 +3355,7 @@ public class FileViewFragment extends BaseFragment implements
     }
 
     private void playClaimFromCollection(Claim theClaim, int index) {
+        alwaysAutoplay = true;
         collectionClaimItem = theClaim;
         renderClaim();
 
@@ -3517,6 +3525,7 @@ public class FileViewFragment extends BaseFragment implements
                                             case DownloadManager.STATUS_FAILED:
                                                 showError(getString(R.string.unable_to_download_claim));
                                                 onDownloadAborted();
+                                                downloadProgressScheduler.shutdown();
                                                 break;
 
                                             case DownloadManager.STATUS_RUNNING:
@@ -3528,7 +3537,7 @@ public class FileViewFragment extends BaseFragment implements
                                                 showMessage(R.string.exo_download_completed);
                                                 ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_download);
                                                 Helper.setViewVisibility(root.findViewById(R.id.file_view_download_progress), View.GONE);
-                                                Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
+                                                downloadInProgress = false;
                                                 downloadProgressScheduler.shutdown();
                                         }
                                     }
@@ -3955,8 +3964,6 @@ public class FileViewFragment extends BaseFragment implements
                 activity.enterFullScreenMode();
 
                 exoplayerContainer.setPadding(0, 0, 0, 0);
-
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
             }
         }
     }
@@ -3976,7 +3983,6 @@ public class FileViewFragment extends BaseFragment implements
                 exoplayerContainer.setPadding(0, 0, 0, 0);
 
                 activity.exitFullScreenMode();
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
             }
         }
     }
@@ -4154,7 +4160,6 @@ public class FileViewFragment extends BaseFragment implements
         if (root != null) {
             ((ImageView) root.findViewById(R.id.file_view_action_download_icon)).setImageResource(R.drawable.ic_download);
             Helper.setViewVisibility(root.findViewById(R.id.file_view_download_progress), View.GONE);
-            Helper.setViewVisibility(root.findViewById(R.id.file_view_unsupported_container), View.GONE);
         }
 
         restoreMainActionButton();
@@ -4175,11 +4180,10 @@ public class FileViewFragment extends BaseFragment implements
 
     @Override
     public void onPortraitOrientationEntered() {
-        // Skip this for now. User restores default view mode by pressing fullscreen toggle
-        /*Context context = getContext();
+        Context context = getContext();
         if (context instanceof MainActivity && ((MainActivity) context).isInFullscreenMode()) {
             disableFullScreenMode();
-        }*/
+        }
     }
 
     @Override

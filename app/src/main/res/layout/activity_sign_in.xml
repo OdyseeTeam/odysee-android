@@ -144,6 +144,7 @@
         android:layout_centerVertical="true"
         android:layout_margin="36dp"
         android:orientation="vertical"
+        tools:visibility="visible"
         android:visibility="gone">
 
         <TextView
@@ -171,6 +172,7 @@
             android:ellipsize="middle"
             android:singleLine="true"
             android:textAlignment="center"
+            tools:text="example@example.org"
             android:textColor="@color/title_text"
             style="@style/TextView_Light"
             android:textSize="20sp" />
@@ -197,6 +199,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="3"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/resend" />
 
             <View
@@ -311,6 +314,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:fontFamily="@font/inter"
+                android:textColor="@color/white"
                 android:text="@string/done" />
         </LinearLayout>
     </LinearLayout>

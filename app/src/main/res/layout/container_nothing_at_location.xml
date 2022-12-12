@@ -35,6 +35,7 @@
             android:layout_marginTop="24dp"
             style="@style/TextView_Light"
             android:textSize="14sp"
+            android:textColor="@color/white"
             android:text="@string/publish_something_here"
             android:visibility="gone" />
     </LinearLayout>

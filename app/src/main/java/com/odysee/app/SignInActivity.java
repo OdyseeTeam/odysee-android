@@ -33,7 +33,6 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.odysee.app.callable.UserExistsWithPassword;
 import com.odysee.app.exceptions.LbryioRequestException;
 import com.odysee.app.exceptions.LbryioResponseException;
 import com.odysee.app.model.Tag;
@@ -60,12 +59,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -99,8 +92,6 @@ public class SignInActivity extends AppCompatActivity {
     private TextView textUseMagicLink;
 
     private String currentEmail;
-    private ScheduledExecutorService emailVerifyCheckScheduler;
-    private ExecutorService executor;
     private int sourceTabId;
 
     private boolean requestInProgress;
@@ -137,8 +128,6 @@ public class SignInActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_sign_in);
-
-        executor = ((OdyseeApp) getApplication()).getExecutor();
 
         layoutCollect = findViewById(R.id.signin_form);
         textTitle = findViewById(R.id.signin_title);
@@ -253,17 +242,6 @@ public class SignInActivity extends AppCompatActivity {
         }
     }
 
-    private boolean checkUserExistsWithPassword(String email) {
-        Callable<Boolean> callable = new UserExistsWithPassword(getApplicationContext(), email);
-        Future<Boolean> future = executor.submit(callable);
-        try {
-            return future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            Log.e(TAG, "checkUserExistsWithPassword: ".concat(e.getLocalizedMessage()));
-        }
-        return false;
-    }
-
     private void beforeSignInTransition() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
@@ -283,7 +261,7 @@ public class SignInActivity extends AppCompatActivity {
         if (!emailSignInChecked) {
             requestInProgress = true;
             beforeSignInTransition();
-            executor.execute(new Runnable() {
+            ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     Map<String, String> options = new HashMap<>();
@@ -343,7 +321,7 @@ public class SignInActivity extends AppCompatActivity {
 
         beforeSignInTransition();
         requestInProgress = true;
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 Map<String, String> options = new HashMap<>();
@@ -408,7 +386,7 @@ public class SignInActivity extends AppCompatActivity {
         requestInProgress = true;
         disableVerificationControls();
 
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 Map<String, String> options = new HashMap<>();
@@ -450,7 +428,7 @@ public class SignInActivity extends AppCompatActivity {
 
     private void handleUserSignInWithoutPassword(String email) {
         requestInProgress = true;
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 Map<String, String> options = new HashMap<>();
@@ -554,8 +532,7 @@ public class SignInActivity extends AppCompatActivity {
         updateControlsBeforeRequest();
         requestInProgress = true;
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -568,6 +545,8 @@ public class SignInActivity extends AppCompatActivity {
                         Bundle bundle = new Bundle();
                         bundle.putString("email", currentEmail);
                         LbryAnalytics.logEvent(LbryAnalytics.EVENT_EMAIL_ADDED, bundle);
+
+                        setCurrentEmail(email);
 
                         // wait for verification
                         waitForVerification();
@@ -610,11 +589,7 @@ public class SignInActivity extends AppCompatActivity {
     }
 
     private void scheduleEmailVerify() {
-        if (emailVerifyCheckScheduler == null) {
-            OdyseeApp app = (OdyseeApp) getApplication();
-            emailVerifyCheckScheduler = app.getScheduledExecutor();
-        }
-        emailVerifyFuture = emailVerifyCheckScheduler.scheduleAtFixedRate(new Runnable() {
+        emailVerifyFuture = ((OdyseeApp) getApplication()).getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 checkEmailVerified();

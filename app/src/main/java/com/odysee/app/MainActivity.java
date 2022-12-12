@@ -164,8 +164,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -637,7 +635,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
 
         dbHelper = new DatabaseHelper(this);
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -4438,6 +4436,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void clearNowPlayingClaim() {
+        clearNowPlayingClaim(false);
+    }
+
+    public void clearNowPlayingClaim(boolean clearPlaylist) {
         nowPlayingClaim = null;
         nowPlayingClaimUrl = null;
         nowPlayingClaimBitmap = null;
@@ -4448,9 +4450,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             playerManager.getCurrentPlayer().setPlayWhenReady(false);
         }
 
-        // if we're clearing the currently playing claim, all currently active playlists should also be cleared at this point
-        clearCurrentPlaylist();
-        nowPlayingQueuePlaylist = null;
+        if (clearPlaylist) {
+            // the now playing claim can be cleared when a new piece of content is loaded on the file view
+            // so we make this a flag and check if we're coming from an active playlist or not before clearing
+            clearCurrentPlaylist();
+            nowPlayingQueuePlaylist = null;
+        }
     }
 
     public void hideSearchBar() {
@@ -4954,7 +4959,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleAddUrlToList(String url, OdyseeCollection collection, boolean showMessage) {
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -4990,8 +4995,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleSaveCollection(final OdyseeCollection collection) {
-        ExecutorService executor = ((OdyseeApp) getApplication()).getExecutor();
-        executor.execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -5025,7 +5029,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     public void handleRemoveUrlFromList(String url, OdyseeCollection collection) {
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -5089,7 +5093,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             return;
         }
 
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ((OdyseeApp) getApplication()).getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -5608,7 +5612,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onClaimClicked(Claim claim, int position) {
                 Fragment fragment = getCurrentFragment();
-                android.util.Log.d("#HELP", "CurrentFragment=" + fragment.getClass().toString());
                 if (fragment instanceof FileViewFragment) {
                     ((FileViewFragment) fragment).onPlaylistOverlayClaimClicked(claim, position);
                 }

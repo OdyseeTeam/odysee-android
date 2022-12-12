@@ -23,6 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:fontFamily="@font/inter"
+            android:textColor="@color/white"
             android:text="@string/twitter_verify" />
     </androidx.appcompat.widget.LinearLayoutCompat>
     <RelativeLayout

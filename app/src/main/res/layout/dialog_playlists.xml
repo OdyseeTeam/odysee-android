@@ -92,6 +92,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="10dp"
+                android:textColor="@color/white"
                 android:text="@string/done"
                 app:icon="@drawable/ic_check" />
         </RelativeLayout>

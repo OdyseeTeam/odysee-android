@@ -9,11 +9,17 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.odysee.app.R;
+import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
+import com.odysee.app.utils.Helper;
+import com.odysee.app.utils.ImageCDNUrl;
+import com.odysee.app.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import lombok.Setter;
 
@@ -40,6 +46,17 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
 
     public int getItemCount() {
         return items != null ? items.size() : 0;
+    }
+
+    public void updateCollectionThumbnailUrls(Map<String, String> collectionIdThumbnailUrlMap) {
+        for (int i = 0; i < items.size(); i++) {
+            OdyseeCollection collection = items.get(i);
+            String collectionId = collection.getId();
+            if (collectionIdThumbnailUrlMap.containsKey(collectionId)) {
+                collection.setFirstItemThumbnailUrl(collectionIdThumbnailUrlMap.get(collectionId));
+            }
+        }
+        notifyDataSetChanged();
     }
 
     @Override
@@ -70,8 +87,17 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
         if (item.isNewPlaceholder()) {
             //vh.thumbnailView.setImageResource(R.drawable.ic_add);
         } else {
-            // TODO: Load the thumbnail of the first item in the collection (or use a placeholder image?)
-            //vh.thumbnailView.setImageDrawable(null);
+            String thumbnailUrl = item.getThumbnailUrl();
+            if (!Helper.isNullOrEmpty(thumbnailUrl)) {
+                ImageCDNUrl thumbnailCDNUrl = new ImageCDNUrl(
+                        Utils.STREAM_THUMBNAIL_WIDTH,
+                        Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q, null, thumbnailUrl);
+                Glide.with(context.getApplicationContext()).
+                        asBitmap().
+                        load(thumbnailCDNUrl.toString()).
+                        centerCrop().
+                        into(vh.thumbnailView);
+            }
         }
 
         vh.itemView.setOnClickListener(new View.OnClickListener() {

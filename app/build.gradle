@@ -6,7 +6,7 @@ android {
     flavorDimensions "default"
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
+        coreLibraryDesugaringEnabled true // TODO Switch this to false when minSDKVersion is 26 or higher
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -54,14 +54,14 @@ android {
     }
 }
 
-task printVersionName {
+tasks.register('printVersionName') {
     doLast {
         println android.defaultConfig.versionName
     }
 }
 
 configurations {
-    all {
+    configureEach {
         exclude module: 'httpclient'
         exclude module: 'commons-logging'
     }
@@ -70,6 +70,7 @@ configurations {
 dependencies {
     testImplementation project(path: ':app')
 //    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    // Version 1.1.5 is the last one for desugar-jdk-libs which can be used with Android Gradle Plugin 6
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     implementation 'androidx.appcompat:appcompat:1.3.1'
@@ -93,6 +94,7 @@ dependencies {
         exclude group: "com.android.support"
     }
     annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
+
     implementation 'com.squareup.okhttp3:okhttp:4.9.1'
 
     fullImplementation 'com.google.firebase:firebase-analytics:19.0.1'
@@ -153,9 +155,9 @@ apply plugin: 'com.google.firebase.crashlytics'
 googleServices { disableVersionCheck = true }
 ext { enableCrashlytics = true }
 
-android.applicationVariants.all { variant ->
+android.applicationVariants.configureEach { variant ->
     if (variant.name.contains('foss')) {
-        project.tasks.getByName('process' + variant.name.capitalize() + 'GoogleServices').enabled = false
-        project.tasks.getByName('injectCrashlyticsMappingFileId' + variant.name.capitalize()).enabled = false
+        project.tasks.named('process' + variant.name.capitalize() + 'GoogleServices').get().enabled = false
+        project.tasks.named('injectCrashlyticsMappingFileId' + variant.name.capitalize()).get().enabled = false
     }
 }

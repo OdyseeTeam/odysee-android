@@ -69,6 +69,7 @@
             android:layout_marginLeft="36dp"
             android:layout_marginRight="36dp"
             android:layout_marginBottom="24dp"
+            android:textColor="@color/white"
             android:text="@string/claim_channel" />
 
         <TextView
