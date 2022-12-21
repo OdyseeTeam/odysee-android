@@ -36,8 +36,9 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
     }
 
     public void clear() {
+        int itemsSize = items.size();
         items.clear();
-        notifyDataSetChanged();
+        notifyItemRangeRemoved(0, itemsSize);
     }
 
     public List<OdyseeCollection> getItems() {
@@ -54,9 +55,9 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
             String collectionId = collection.getId();
             if (collectionIdThumbnailUrlMap.containsKey(collectionId)) {
                 collection.setFirstItemThumbnailUrl(collectionIdThumbnailUrlMap.get(collectionId));
+                notifyItemChanged(i);
             }
         }
-        notifyDataSetChanged();
     }
 
     @Override
