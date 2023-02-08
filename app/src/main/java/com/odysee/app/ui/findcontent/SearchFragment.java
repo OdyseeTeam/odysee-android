@@ -434,7 +434,7 @@ public class SearchFragment extends BaseFragment implements
                     }
                     if (!featuredItem.isMature() || canShowMatureContent) {
                         List<Claim> items = resultListAdapter.getItems();
-                        items.removeIf(c -> !c.getClaimId().equals(featuredItem.getClaimId()));
+                        items.removeIf(c -> c.getClaimId() != null && !c.getClaimId().equals(featuredItem.getClaimId()));
                         resultListAdapter.removeItems(items);
                         resultListAdapter.addFeaturedItem(featuredItem);
                     }
