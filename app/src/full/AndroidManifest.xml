@@ -141,8 +141,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.odysee.app.ClearDataActivity" />
-        <activity
             android:name=".ComingSoon"
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
