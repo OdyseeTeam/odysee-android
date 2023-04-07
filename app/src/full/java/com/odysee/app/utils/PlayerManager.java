@@ -76,7 +76,7 @@ public class PlayerManager {
             }
 
             Map<String, String> requestProperties = new HashMap<>(1);
-            requestProperties.put("Referer", "https://odysee.com");
+            requestProperties.put("Referer", "https://odysee.com/");
             dataSourceFactory.setDefaultRequestProperties(requestProperties);
             // NOTE: Odysee Android is using default Google Cast receiver which doesn't allow to customize rquests headers. A custom web receiver should be implemented.
 

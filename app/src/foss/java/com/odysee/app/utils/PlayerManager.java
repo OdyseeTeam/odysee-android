@@ -50,7 +50,7 @@ public class PlayerManager {
         }
 
         Map<String, String> requestProperties = new HashMap<>(1);
-        requestProperties.put("Referer", "https://odysee.com");
+        requestProperties.put("Referer", "https://odysee.com/");
         dataSourceFactory.setDefaultRequestProperties(requestProperties);
 
         CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
