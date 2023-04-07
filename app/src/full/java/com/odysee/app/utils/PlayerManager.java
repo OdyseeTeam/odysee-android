@@ -28,6 +28,9 @@ import com.odysee.app.model.Claim;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class PlayerManager {
     private final ExoPlayer localPlayer;
     private final CastPlayer castPlayer;
@@ -71,6 +74,11 @@ public class PlayerManager {
             if (context != null) {
                 dataSourceFactory.setUserAgent(Util.getUserAgent(context, context.getString(R.string.app_name)));
             }
+
+            Map<String, String> requestProperties = new HashMap<>(1);
+            requestProperties.put("Referer", "https://odysee.com");
+            dataSourceFactory.setDefaultRequestProperties(requestProperties);
+            // NOTE: Odysee Android is using default Google Cast receiver which doesn't allow to customize rquests headers. A custom web receiver should be implemented.
 
             CacheDataSource.Factory cacheDataSourceFactory = new CacheDataSource.Factory();
             cacheDataSourceFactory.setUpstreamDataSourceFactory(dataSourceFactory);
