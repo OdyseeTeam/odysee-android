@@ -3828,13 +3828,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     findViewById(R.id.fragment_container_main_activity).setVisibility(View.VISIBLE);
                     showBottomNavigation();
                 }
-                findViewById(R.id.title).setVisibility(View.GONE);
-                findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
 
                 ActionBar actionBar = getSupportActionBar();
                 if (actionBar != null) {
+                    findViewById(R.id.title).setVisibility(View.GONE);
+                    findViewById(R.id.toolbar_balance_and_tools_layout).setVisibility(View.VISIBLE);
+
                     showActionBar();
-                    getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                    actionBar.setDisplayHomeAsUpEnabled(false);
                 }
             }
         } else if (!enterPIPMode()) {
