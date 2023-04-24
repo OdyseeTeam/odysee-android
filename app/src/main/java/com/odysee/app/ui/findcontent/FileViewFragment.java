@@ -915,19 +915,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private String getStreamingUrl() {
-        if (claimLivestreamUrl != null) {
-            return claimLivestreamUrl;
-        } else {
-            return buildLbryTvStreamingUrl();
-        }
-    }
-
-    // TODO: Deprecate
-    private String buildLbryTvStreamingUrl() {
-        return String.format("%s/content/claims/%s/%s/stream", CDN_PREFIX, fileClaim.getName(), fileClaim.getClaimId());
-    }
-
     private void loadFile() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         String claimId = actualClaim.getClaimId();
