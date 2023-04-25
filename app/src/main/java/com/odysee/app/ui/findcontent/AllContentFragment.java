@@ -464,6 +464,11 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         super.onPause();
     }
 
+    public void onStop() {
+        activeLivestreamsLayout.setVisibility(View.GONE);
+        super.onStop();
+    }
+
     private Map<String, Object> buildContentOptions() {
         Context context = getContext();
         boolean canShowMatureContent = false;
@@ -590,8 +595,6 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                 activeClaimsListAdapter.clearItems();
             }
 
-            activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.VISIBLE);
-
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -631,8 +634,6 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
 
                                 livestreamingClaimsFetched = true;
 
-                                activeLivestreamsLayout.findViewById(R.id.livestreams_progressbar).setVisibility(View.GONE);
-
                                 if (livestreamsList != null && livestreamsList.getAdapter() == null) {
                                     livestreamsList.setAdapter(activeClaimsListAdapter);
                                 }
@@ -657,13 +658,6 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
         List<Claim> subscribedActiveClaims = new ArrayList<>();
         if (a != null) {
             try {
-                a.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Helper.setViewVisibility(activeLivestreamsLayout, View.VISIBLE);
-                    }
-                });
-
                 Map<String, JSONObject> activeJsonData;
                 Callable<Map<String, JSONObject>> callable;
                 Future<Map<String, JSONObject>> futureActive;
@@ -681,6 +675,13 @@ public class AllContentFragment extends BaseFragment implements SharedPreference
                 activeJsonData = futureActive.get();
 
                 if (activeJsonData != null && activeJsonData.size() > 0) {
+                    a.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Helper.setViewVisibility(activeLivestreamsLayout, View.VISIBLE);
+                        }
+                    });
+
                     List<String> claimIds = new ArrayList<>();
 
                     activeJsonData.forEach((k, v) -> {
