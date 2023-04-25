@@ -541,7 +541,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         setContentView(R.layout.activity_main);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            //noinspection deprecation
             findViewById(R.id.root).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             findViewById(R.id.launch_splash).setVisibility(View.VISIBLE);
         } else {
@@ -577,7 +576,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
-                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else {
@@ -586,7 +584,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
-                    //noinspection deprecation
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
                 }
             } else {
@@ -2038,7 +2035,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
-                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else {
@@ -2047,7 +2043,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
-                    //noinspection deprecation
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
                 }
             }
@@ -2577,11 +2572,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             windowInsetsController.hide(WindowInsets.Type.systemBars());
         } else {
-            //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
                     View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                     View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-            //noinspection deprecation
             decorView.setSystemUiVisibility(flags);
         }
     }
@@ -2605,16 +2598,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
             windowInsetsController.show(WindowInsets.Type.systemBars());
         } else {
-            //noinspection deprecation
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
 
             if (!darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
-                //noinspection deprecation
                 flags = flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             }
 
             View decorView = getWindow().getDecorView();
-            //noinspection deprecation
             decorView.setSystemUiVisibility(flags);
         }
         inFullscreenMode = false;
@@ -2742,7 +2732,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         this.actionMode = mode;
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (darkModeAppSetting.equals(APP_SETTING_DARK_MODE_NIGHT)) {
-            //noinspection deprecation
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
 
