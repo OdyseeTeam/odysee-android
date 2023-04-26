@@ -32,9 +32,6 @@ android {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'lib/x86_64/darwin/libscrypt.dylib'
         exclude 'META-INF/androidx.*'
-        resources.excludes += [
-            "META-INF/com.android.graphics.injectLayers.enable"
-        ]
     }
 
     buildTypes {
@@ -162,5 +159,22 @@ android.applicationVariants.configureEach { variant ->
     if (variant.name.contains('foss')) {
         project.tasks.named('process' + variant.name.capitalize() + 'GoogleServices').get().enabled = false
         project.tasks.named('injectCrashlyticsMappingFileId' + variant.name.capitalize()).get().enabled = false
+    }
+    if (variant.buildType.name == 'release') {
+        variant.assemble.doLast {
+            def apkPath = variant.outputs.single().outputFile.absolutePath
+            def zip = new ZipFile(apkPath)
+            def tmpDir = new File(project.buildDir, "tmp")
+            def tmpApk = new File(tmpDir, "tmp.apk")
+            def zipBuilder = new ZipBuilder(tmpApk)
+            zip.entries().each { entry ->
+                if (entry.name != "META-INF/com.android.graphics.injectLayers.enable") {
+                    zipBuilder.add(entry, zip.getInputStream(entry))
+                }
+            }
+            zipBuilder.close()
+            new File(apkPath).delete()
+            tmpApk.renameTo(apkPath)
+        }
     }
 }
