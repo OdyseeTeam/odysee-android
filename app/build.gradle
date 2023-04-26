@@ -32,7 +32,11 @@ android {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'lib/x86_64/darwin/libscrypt.dylib'
         exclude 'META-INF/androidx.*'
-        exclude 'META-INF/com.android.graphics.injectLayers.enable'
+            resources {
+                excludes += [
+                     "META-INF/com.android.graphics.injectLayers.enable"
+                ]
+            }
     }
 
     buildTypes {
