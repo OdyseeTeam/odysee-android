@@ -111,8 +111,7 @@ public class GoLiveActivity extends AppCompatActivity {
 
         connection = new RtmpConnection();
         stream = new RtmpStream(connection);
-        Context context = getContext();
-        stream.attachAudio(new AudioRecordSource(context, true));
+        stream.attachAudio(new AudioRecordSource(this, true));
         cameraSource = new Camera2Source(this, false);
         stream.attachVideo(cameraSource);
         connection.addEventListener(Event.RTMP_STATUS, new IEventListener() {
