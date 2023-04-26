@@ -133,7 +133,7 @@ dependencies {
     implementation 'io.tus.java.client:tus-java-client:0.4.5'
     implementation 'io.tus.android.client:tus-android-client:0.1.10'
 
-    implementation 'com.github.shogo4405.HaishinKit~kt:haishinkit:0.9.4'
+    implementation 'com.github.shogo4405.HaishinKit~kt:haishinkit:0.10.4'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
 
