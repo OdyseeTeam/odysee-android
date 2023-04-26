@@ -78,6 +78,9 @@ jobs:
 
       - name: Install NDK version 21.0.6113669
         run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.0.6113669"
+        
+      - name: build bundle
+        run: ./gradlew app:bundleRelease
 
       - name: Build
         env:
@@ -92,6 +95,12 @@ jobs:
         with:
           name: app-release
           path: bin/*.apk
+          
+      - name: Upload Bundle
+        uses: actions/upload-artifact@v2
+        with:
+          name: Build Artifacts
+          path: app/build/outputs/
 
   build-foss:
     runs-on: ubuntu-latest
