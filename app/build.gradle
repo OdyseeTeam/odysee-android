@@ -33,6 +33,10 @@ android {
         exclude 'lib/x86_64/darwin/libscrypt.dylib'
         exclude 'META-INF/androidx.*'
     }
+    
+    aaptOptions {
+        ignoreAssetsPattern "com.android.graphics.injectLayers.enable"
+    }
 
     buildTypes {
         debug {
