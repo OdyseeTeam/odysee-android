@@ -1,9 +1,5 @@
 apply plugin: 'com.android.application'
 
-import java.util.zip.ZipFile
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
-
 android {
     compileSdkVersion 33
     buildToolsVersion "30.0.3"
@@ -159,31 +155,9 @@ apply plugin: 'com.google.firebase.crashlytics'
 googleServices { disableVersionCheck = true }
 ext { enableCrashlytics = true }
 
-import org.apache.commons.io.IOUtils
-
 android.applicationVariants.configureEach { variant ->
     if (variant.name.contains('foss')) {
         project.tasks.named('process' + variant.name.capitalize() + 'GoogleServices').get().enabled = false
         project.tasks.named('injectCrashlyticsMappingFileId' + variant.name.capitalize()).get().enabled = false
-    }
-    if (variant.buildType.name == 'release') {
-        variant.assemble.doLast {
-            def apkPath = variant.outputs.single().outputFile.absolutePath
-            def zip = new ZipFile(apkPath)
-            def tmpDir = new File(project.buildDir, "tmp")
-            def tmpApk = new File(tmpDir, "tmp.apk")
-            def zipOutputStream = new ZipOutputStream(tmpApk.newOutputStream())
-            zip.entries().each { entry ->
-                if (entry.name != "META-INF/com.android.graphics.injectLayers.enable") {
-                    ZipEntry newEntry = new ZipEntry(entry.name)
-                    zipOutputStream.putNextEntry(newEntry)
-                    IOUtils.copy(zip.getInputStream(entry), zipOutputStream)
-                    zipOutputStream.closeEntry()
-                }
-            }
-            zipOutputStream.close()
-            new File(apkPath).delete()
-            tmpApk.renameTo(apkPath)
-        }
     }
 }
