@@ -1039,4 +1039,7 @@
 
     <string name="fa_bell" translatable="false">&#xf0f3;</string>
     <string name="fa_bell_slash" translatable="false">&#xf1f6;</string>
+
+    <string name="clear_data_log_out">Clearing this app\'s data will also log out of your account</string>
+    <string name="clear_data">Clear Data</string>
 </resources>

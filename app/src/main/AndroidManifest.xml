@@ -32,6 +32,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:manageSpaceActivity="com.odysee.app.ClearDataActivity"
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -136,6 +137,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.odysee.app.ClearDataActivity" />
         <activity
             android:name=".ComingSoon"
             android:theme="@style/AppTheme.NoActionBar"/>
