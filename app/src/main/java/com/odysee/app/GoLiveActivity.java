@@ -63,7 +63,6 @@ public class GoLiveActivity extends AppCompatActivity {
         String darkModeAppSetting = ((OdyseeApp) getApplication()).getDarkModeAppSetting();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (!darkModeAppSetting.equals(MainActivity.APP_SETTING_DARK_MODE_NIGHT) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES) {
-                //noinspection deprecation
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         } else {
@@ -72,7 +71,6 @@ public class GoLiveActivity extends AppCompatActivity {
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                     getWindow().getDecorView().getWindowInsetsController().setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
                 } else {
-                    //noinspection deprecation
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
                 }
             } else {
