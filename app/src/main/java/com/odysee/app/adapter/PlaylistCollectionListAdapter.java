@@ -7,11 +7,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.odysee.app.R;
-import com.odysee.app.model.Claim;
 import com.odysee.app.model.OdyseeCollection;
 import com.odysee.app.utils.Helper;
 import com.odysee.app.utils.ImageCDNUrl;
@@ -59,14 +59,15 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
         notifyDataSetChanged();
     }
 
+    @NonNull
     @Override
-    public PlaylistCollectionListAdapter.ViewHolder onCreateViewHolder(ViewGroup root, int viewType) {
+    public PlaylistCollectionListAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup root, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.list_item_playlist, root, false);
         return new PlaylistCollectionListAdapter.ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(PlaylistCollectionListAdapter.ViewHolder vh, int position) {
+    public void onBindViewHolder(@NonNull PlaylistCollectionListAdapter.ViewHolder vh, int position) {
         final OdyseeCollection item = items.get(position);
 
         if (OdyseeCollection.BUILT_IN_ID_WATCHLATER.equalsIgnoreCase(item.getId())) {
@@ -104,7 +105,7 @@ public class PlaylistCollectionListAdapter extends RecyclerView.Adapter<Playlist
             @Override
             public void onClick(View view) {
                 if (listener != null) {
-                    listener.onClick(item, position);
+                    listener.onClick(items.get(vh.getAbsoluteAdapterPosition()), vh.getAbsoluteAdapterPosition());
                 }
             }
         });

@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -16,12 +17,9 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TimeZone;
 
 import com.odysee.app.R;
 import com.odysee.app.listener.SelectionModeListener;
@@ -168,8 +166,9 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         notifyDataSetChanged();
     }
 
+    @NonNull
     @Override
-    public NotificationListAdapter.ViewHolder onCreateViewHolder(ViewGroup root, int viewType) {
+    public NotificationListAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup root, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.list_item_notification, root, false);
         return new NotificationListAdapter.ViewHolder(v);
     }
@@ -229,7 +228,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             if (config.smallestScreenWidthDp > 359) {
                 ImageCDNUrl imageCDNUrl = new ImageCDNUrl(Utils.STREAM_THUMBNAIL_WIDTH, Utils.STREAM_THUMBNAIL_HEIGHT, Utils.STREAM_THUMBNAIL_Q, null, notification.getClaimThumbnailUrl());
 
-                String turl = imageCDNUrl.toString();;
+                String turl = imageCDNUrl.toString();
 
                 Glide.with(context.getApplicationContext()).asBitmap().load(turl).into(vh.claimThumbnailView);
                 vh.claimThumbnailView.setVisibility(View.VISIBLE);
@@ -249,14 +248,14 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             @Override
             public void onClick(View view) {
                 if (inSelectionMode) {
-                    toggleSelectedNotification(notification);
+                    toggleSelectedNotification(items.get(vh.getAbsoluteAdapterPosition()));
                 } else {
                     if (clickListener != null) {
-                        clickListener.onNotificationClicked(notification);
+                        clickListener.onNotificationClicked(items.get(vh.getAbsoluteAdapterPosition()));
                     }
-                    notification.setRead(true);
-                    notification.setSeen(true);
-                    notifyItemChanged(position);
+                    items.get(vh.getAbsoluteAdapterPosition()).setRead(true);
+                    items.get(vh.getAbsoluteAdapterPosition()).setSeen(true);
+                    notifyItemChanged(vh.getAbsoluteAdapterPosition());
                 }
             }
         });
@@ -269,7 +268,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
                         selectionModeListener.onEnterSelectionMode();
                     }
                 }
-                toggleSelectedNotification(notification);
+                toggleSelectedNotification(items.get(vh.getAbsoluteAdapterPosition()));
                 return true;
             }
         });
