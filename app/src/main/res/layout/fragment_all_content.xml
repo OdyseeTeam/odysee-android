@@ -16,26 +16,31 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <LinearLayout
-        android:orientation="vertical"
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator_root"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <HorizontalScrollView
+
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
-            android:clipToPadding="false"
-            android:scrollbars="none">
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/category_selection_chipgroup"
-                android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+            <HorizontalScrollView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:singleLine="true"
-                app:singleSelection="true"
-                app:selectionRequired="true" />
-        </HorizontalScrollView>
+                android:layout_marginBottom="8dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/category_selection_chipgroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleLine="true"
+                    app:singleSelection="true"
+                    app:selectionRequired="true" />
+            </HorizontalScrollView>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/active_livestreams_container"
@@ -50,29 +55,29 @@
             tools:visibility="visible"
             android:visibility="gone">
 
-            <TextView
-                android:id="@+id/active_livestreams_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                android:gravity="center_vertical"
-                android:text="@string/livestreaming_now"
-                style="@style/TextView_SemiBold" />
+                <TextView
+                    android:id="@+id/active_livestreams_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:gravity="center_vertical"
+                    android:text="@string/livestreaming_now"
+                    style="@style/TextView_SemiBold" />
 
-            <ImageButton android:id="@+id/expand_active_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
-                android:contentDescription="@string/active_expand_button_accessibility"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/active_livestreams_text"
-                app:layout_constraintBottom_toBottomOf="@id/active_livestreams_text"
-                app:tint="@color/colorPrimary"
-                android:background="?attr/selectableItemBackground"
-                android:src="@drawable/ic_expand"/>
+                <ImageButton android:id="@+id/expand_active_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:minWidth="48dp"
+                    android:contentDescription="@string/active_expand_button_accessibility"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/active_livestreams_text"
+                    app:layout_constraintBottom_toBottomOf="@id/active_livestreams_text"
+                    app:tint="@color/colorPrimary"
+                    android:background="?attr/selectableItemBackground"
+                    android:src="@drawable/ic_expand"/>
 
             <ProgressBar
                 android:id="@+id/livestreams_progressbar"
@@ -95,125 +100,127 @@
                 tools:listitem="@layout/list_item_gallery"
                 tools:itemCount="2"/>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <RelativeLayout
-            android:id="@+id/all_content_filter_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:visibility="visible">
-            <ProgressBar
-                android:id="@+id/all_content_load_progress"
-                android:visibility="gone"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true" />
-            <LinearLayout
-                android:layout_width="wrap_content"
+            <RelativeLayout
+                android:id="@+id/all_content_filter_container"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:orientation="horizontal">
+                android:layout_marginBottom="6dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:visibility="visible">
+                <ProgressBar
+                    android:id="@+id/all_content_load_progress"
+                    android:visibility="gone"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true" />
                 <LinearLayout
-                    android:id="@+id/all_content_sort_link"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <TextView
-                        android:id="@+id/all_content_sort_link_text"
+                    android:layout_centerVertical="true"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:id="@+id/all_content_sort_link"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        style="@style/TextView_Light"
-                        android:text="@string/trending" />
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
+                        android:minHeight="48dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <TextView
+                            android:id="@+id/all_content_sort_link_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            style="@style/TextView_Light"
+                            android:text="@string/trending" />
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginStart="2dp"
+                            android:layout_gravity="center_vertical"
+                            android:src="@drawable/ic_arrow_dropdown"
+                            app:tint="@color/foreground" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/all_content_from_prefix"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_marginStart="2dp"
                         android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_arrow_dropdown"
-                        app:tint="@color/foreground" />
+                        style="@style/TextView_Light"
+                        android:text="@string/from"
+                        tools:visibility="visible"
+                        android:visibility="gone" />
+                    <LinearLayout
+                        android:id="@+id/all_content_time_link"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:layout_gravity="center_vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginStart="2dp"
+                        tools:visibility="visible"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/all_content_time_link_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="4dp"
+                            style="@style/TextView_Light"
+                            android:text="@string/past_week" />
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginStart="2dp"
+                            android:layout_gravity="center_vertical"
+                            android:src="@drawable/ic_arrow_dropdown"
+                            app:tint="@color/foreground" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/all_content_from_prefix"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="2dp"
-                    android:layout_gravity="center_vertical"
-                    style="@style/TextView_Light"
-                    android:text="@string/from"
-                    tools:visibility="visible"
-                    android:visibility="gone" />
-                <LinearLayout
-                    android:id="@+id/all_content_time_link"
+                    android:id="@+id/all_content_customize_link"
+                    android:background="?attr/selectableItemBackground"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:minHeight="48dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:layout_gravity="center_vertical"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:gravity="center_vertical"
                     android:clickable="true"
                     android:focusable="true"
-                    android:layout_marginStart="2dp"
-                    tools:visibility="visible"
-                    android:visibility="gone">
-                    <TextView
-                        android:id="@+id/all_content_time_link_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginStart="4dp"
-                        style="@style/TextView_Light"
-                        android:text="@string/past_week" />
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_marginStart="2dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_arrow_dropdown"
-                        app:tint="@color/foreground" />
-                </LinearLayout>
-            </LinearLayout>
+                    style="@style/TextView_Light"
+                    android:text="@string/customize"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+            </RelativeLayout>
 
             <TextView
-                android:id="@+id/all_content_customize_link"
-                android:background="?attr/selectableItemBackground"
+                android:id="@+id/all_content_no_claim_search_content"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true"
+                android:layout_margin="16dp"
+                android:text="@string/no_claim_search_content"
                 style="@style/TextView_Light"
-                android:text="@string/customize"
-                android:visibility="gone"
-                tools:visibility="visible"/>
-        </RelativeLayout>
+                android:textSize="14sp"
+                android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/all_content_no_claim_search_content"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:text="@string/no_claim_search_content"
-            style="@style/TextView_Light"
-            android:textSize="14sp"
-            android:visibility="gone" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/all_content_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:scrollbars="none"
+                tools:listitem="@layout/list_item_stream" />
+        </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/all_content_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:scrollbars="none"
-            tools:listitem="@layout/list_item_stream" />
-    </LinearLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
