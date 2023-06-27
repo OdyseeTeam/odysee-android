@@ -100,34 +100,19 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         return selectedItems.contains(notification);
     }
 
-    public void insertNotification(LbryNotification notification, int index) {
-        if (!items.contains(notification)) {
-            items.add(index, notification);
-        }
-        notifyDataSetChanged();
-    }
-
-    public void addNotification(LbryNotification notification) {
-        if (!items.contains(notification)) {
-            items.add(notification);
-        }
-        notifyDataSetChanged();
-    }
     public void removeNotifications(List<LbryNotification> notifications) {
         for (LbryNotification notification : notifications) {
+            int itemPosition = getItems().indexOf(notification);
             items.remove(notification);
+            notifyItemRemoved(itemPosition);
         }
-        notifyDataSetChanged();
     }
 
     public void clearNotifications() {
-        // Using a for-each loop will throw an exception, so a simple for should be used
-        for (Iterator<LbryNotification> iterator = getItems().iterator(); iterator.hasNext();) {
-            LbryNotification notification = iterator.next();
-            iterator.remove();
-        }
+        int listSize = getItemCount();
+        getItems().clear();
 
-        notifyDataSetChanged();
+        notifyItemRangeRemoved(0, listSize);
     }
 
     public List<String> getAuthorUrls() {
@@ -293,7 +278,7 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
             }
         }
 
-        notifyDataSetChanged();
+        notifyItemChanged(items.indexOf(notification));
     }
 
     public interface NotificationClickListener {
