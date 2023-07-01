@@ -631,10 +631,13 @@
                 <ProgressBar
                     android:id="@+id/publish_form_publishing"
                     android:layout_centerVertical="true"
-                    android:layout_width="20dp"
+                    android:layout_width="0dp"
                     android:layout_height="20dp"
+                    android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
                     android:layout_toStartOf="@id/publish_form_publish_button"
+                    android:layout_toEndOf="@id/publish_form_cancel"
+                    style="?android:attr/progressBarStyleHorizontal"
                     android:visibility="gone" />
 
                 <com.google.android.material.button.MaterialButton
