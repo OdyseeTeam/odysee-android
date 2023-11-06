@@ -915,19 +915,6 @@ public class FileViewFragment extends BaseFragment implements
         }
     }
 
-    private String getStreamingUrl() {
-        if (claimLivestreamUrl != null) {
-            return claimLivestreamUrl;
-        } else {
-            return buildLbryTvStreamingUrl();
-        }
-    }
-
-    // TODO: Deprecate
-    private String buildLbryTvStreamingUrl() {
-        return String.format("%s/content/claims/%s/%s/stream", CDN_PREFIX, fileClaim.getName(), fileClaim.getClaimId());
-    }
-
     private void loadFile() {
         Claim actualClaim = collectionClaimItem != null ? collectionClaimItem : fileClaim;
         String claimId = actualClaim.getClaimId();
@@ -955,55 +942,6 @@ public class FileViewFragment extends BaseFragment implements
         });
         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
-/*
-    public void openClaimUrl(String url) {
-        resetViewCount();
-        resetFee();
-        currentUrl = url;
-
-        ClaimCacheKey key = new ClaimCacheKey();
-        key.setUrl(currentUrl);
-        Claim oldClaim = claim;
-        claim = null;
-        if (Lbry.claimCache.containsKey(key)) {
-            claim = Lbry.claimCache.get(key);
-            if (oldClaim != null && oldClaim.getClaimId().equalsIgnoreCase(claim.getClaimId())) {
-                // same claim
-                return;
-            }
-        } else {
-            resolveUrl(currentUrl);
-        }
-
-        resetMedia();
-        onNewClaim(currentUrl);
-        Helper.setWunderbarValue(currentUrl, getContext());
-
-        if (claim != null) {
-            Helper.saveViewHistory(url, claim);
-            if (Helper.isClaimBlocked(claim)) {
-                renderClaimBlocked();
-            } else {
-                checkAndLoadRelatedContent();
-                checkAndLoadComments();
-                renderClaim();
-            }
-        }
-    }
-
-    public void resetMedia() {
-        View root = getView();
-        if (root != null) {
-            PlayerView view = root.findViewById(R.id.file_view_exoplayer_view);
-            view.setShutterBackgroundColor(Color.BLACK);
-            root.findViewById(R.id.file_view_exoplayer_container).setVisibility(View.GONE);
-        }
-        if (MainActivity.appPlayer != null) {
-            MainActivity.appPlayer.stop();
-        }
-        resetPlayer();
-    }
-*/
 
     @Override
     public void onResume() {
