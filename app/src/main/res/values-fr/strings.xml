@@ -5,7 +5,7 @@
 
     <!-- Nav menu -->
     <string name="find_content">Trouver du contenu</string>
-    <string name="your_content">Votre contenue</string>
+    <string name="your_content">Votre contenu</string>
     <string name="wallet">Portefeuille </string>
     <string name="following">Suivez</string>
     <string name="editors_choice">Choix de l’éditeur</string>
@@ -20,13 +20,13 @@
     <string name="settings">Réglages</string>
     <string name="about">À propos de</string>
     <string name="sign_in">Se connecter</string>
-    <string name="startup_failed">Démarrage app a échoué. Veuillez vérifier votre connexion de données et réessayer. Si ce problème persiste, veuillez envoyer un courriel hello@lbry.com</string>
-    <string name="no_claim_search_content">Aucun contenu à afficher pour le moment. S’il vous plaît affiner votre sélection ou vérifier plus tard.</string>
+    <string name="startup_failed">Le démarrage de l'app a échoué. Veuillez vérifier votre connexion et réessayer. Si ce problème persiste, veuillez envoyer un courriel hello@lbry.com</string>
+    <string name="no_claim_search_content">Aucun contenu à afficher pour le moment. S’il vous plaît affinez votre sélection ou vérifiez plus tard.</string>
 
     <!-- Welcome Page -->
     <string name="welcome_to_lbry">Bienvenue à LBRY.</string>
     <string name="welcome_paragraph">LBRY est une plate-forme de contenu contrôlée par la communauté où vous pouvez trouver et publier des vidéos, de la musique, des livres, et plus encore.</string>
-    <string name="welcome_tos">En continuant, je suis d’accord pour le &lt;a href=\"https://lbry.com/termsofservice\"&gt;Terms of Service&lt;/a&gt; et de confirmer que je suis plus de l’âge de 13 ans.</string>
+    <string name="welcome_tos">En continuant, je valide les &lt;a href=\"https://lbry.com/termsofservice\"&gt;Conditions du Service&lt;/a&gt; et de confirmer que j'ai plus que 13 ans.</string>
     <string name="welcome_please_wait">Veuillez patienter pendant que nous préparons certaines choses…</string>
     <string name="use_odysee">Utilisez LBRY »</string>
 
@@ -36,8 +36,8 @@
     <!-- Following page -->
     <string name="find_channels_to_follow">Trouver des Chaînes  à suivre</string>
     <string name="discover">Découvrir</string>
-    <string name="lbry_works_better">LBRY fonctionne mieux si vous suivez au moins 5 créateurs que vous aimez. Connectez-vous pour montrer aux créateurs que vous suivez si vous avez déjà un compte.</string>
-    <string name="select_five_subscriptions">S’il vous plaît sélectionner jusqu’à 5 créateurs pour continuer.</string>
+    <string name="lbry_works_better">LBRY fonctionne mieux si vous suivez au moins 5 créateurs que vous aimez. Connectez-vous pour montrer aux créateurs que vous les suivez si vous avez déjà un compte.</string>
+    <string name="select_five_subscriptions">S’il vous plaît sélectionnez jusqu’à 5 créateurs pour continuer.</string>
     <string name="n_remaining">%1$drestant…</string>
     <string name="done">Fini</string>
     <string name="all">Tout</string>
@@ -110,7 +110,7 @@
     <string name="website">Site Internet</string>
     <string name="reposted">republié</string>
     <string name="receive_all_notifications">Vous recevrez toutes les notifications</string>
-    <string name="receive_no_notifications">Vous ne recevrez pas de notifications pour cette chaîne</string>
+    <string name="receive_no_notifications">Vous ne recevrez pas de notifications de cette chaîne</string>
     <plurals name="follower_count">
         <item quantity="one">%1$s suiveur</item>
         <item quantity="other">%1$s suiveurs</item>
@@ -118,9 +118,9 @@
 
     <!-- Publish -->
     <string name="no_publishes_created">Il semble que vous n\'ayez pas encore publié de contenu sur LBRY.</string>
-    <string name="record">Record</string>
+    <string name="record">Enregistrer</string>
     <string name="take_photo">Prendre une photo</string>
-    <string name="upload_file">Télécharger un fichier</string>
+    <string name="upload_file">Envoyez un fichier</string>
     <string name="no_videos_found">Nous n\'avons trouvé aucune vidéo sur votre appareil. Prenez une photo ou enregistrez une vidéo pour commencer.</string>
     <string name="loading_videos">Veuillez patienter pendant que nous chargeons vos vidéos…</string>
     <string name="storage_permission_rationale_videos">LBRY nécessite un accès pour pouvoir afficher et publier vos vidéos, images et autres fichiers depuis votre appareil.</string>
@@ -539,7 +539,7 @@
     <string name="invite_someone">Invitez quelqu\'un que vous connaissez par e-mail et gagnez des crédits en rejoignant lbry.tv.</string>
     <string name="invite_email_placeholder">imaginary@friend.com</string>
     <string name="invite">Inviter</string>
-    <string name="invite_history">Invitez l\'histoire</string>
+    <string name="invite_history">Historique des invitations</string>
     <string name="earn_credits_for_inviting">Gagnez des crédits en invitant un ami, un ennemi, un ennemi ou un ami. Tout le monde a besoin de liberté de contenu.</string>
     <string name="reward">Récompense</string>
     <string name="claimed">Revendiqué</string>
@@ -551,7 +551,7 @@
     <!-- Library -->
     <string name="downloads">Téléchargements</string>
     <string name="purchases">Achats</string>
-    <string name="history">Histoire</string>
+    <string name="history">Historique</string>
     <string name="library_no_downloads">Vous n\'avez téléchargé aucun contenu sur cet appareil.</string>
     <string name="library_no_history">Vous n\'avez vu aucun contenu sur cet appareil.</string>
     <string name="library_no_purchases">Vous n\'avez acheté aucun contenu sur votre compte.</string>
