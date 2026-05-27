@@ -1,0 +1,76 @@
+# Gradle / Kotlin / Android Studio
+*.iml
+.gradle/
+.kotlin/
+local.properties
+**/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# IntelliJ
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deploymentTargetSelector.xml
+.idea/migrations.xml
+.idea/misc.xml
+.idea/compiler.xml
+.idea/kotlinc.xml
+.idea/gradle.xml
+.idea/runConfigurations.xml
+.idea/jarRepositories.xml
+
+# Signing keys + secrets
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Firebase / Google services (flavor-specific, may contain API keys)
+**/google-services.json
+**/agconnect-services.json
+**/GoogleService-Info.plist
+
+# APK / AAB outputs
+*.apk
+*.aab
+*.apks
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Coverage / test reports
+/coverage/
+/jacoco.exec
+**/jacoco/
+
+# AI assistant artifacts
+.claude/
+CLAUDE.md
+.cursor/
+.cursorrules
+.aider*
+.windsurf/
+.codex/
+.continue/
+.github/copilot-*
+.copilot-instructions.md
+.opencode/
+.zed/
+.gemini/
+
+# Misc
+*.log
+*.tmp
+hs_err_pid*.log
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        MediaRouteButton's theme helper crashes when colorControlNormal /
+        windowBackground are translucent. Compose's theme leaves them empty,
+        so we wrap construction in this opaque-background theme.
+    -->
+    <style name="Theme.Odysee.MediaRouter" parent="Theme.AppCompat">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="colorControlNormal">@android:color/white</item>
+        <item name="colorPrimary">@color/odysee_pink</item>
+        <item name="colorAccent">@color/odysee_pink</item>
+    </style>
+</resources>
