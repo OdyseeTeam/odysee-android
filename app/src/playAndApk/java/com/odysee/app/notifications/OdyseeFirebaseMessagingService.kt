@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
+import kotlinx.coroutines.flow.first
 import com.google.firebase.messaging.RemoteMessage
 import com.odysee.app.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -14,6 +15,7 @@ import javax.inject.Inject
 class OdyseeFirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var poller: OdyseeNotificationPoller
+    @Inject lateinit var notificationPrefs: com.odysee.app.core.datastore.NotificationPreferences
 
     override fun onNewToken(token: String) {
         // The Cordova app stored this in localStorage without shipping anywhere;
@@ -26,6 +28,11 @@ class OdyseeFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        // Honour the master switch.
+        val enabled = kotlinx.coroutines.runBlocking {
+            runCatching { notificationPrefs.notificationsEnabled.first() }.getOrDefault(true)
+        }
+        if (!enabled) return
         // Ensure the channel exists. The simplest path is to delegate to the
         // poller which now has everything new and will post a notification for
         // the latest message just delivered.

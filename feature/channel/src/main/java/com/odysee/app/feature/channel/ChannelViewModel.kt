@@ -70,6 +70,7 @@ data class ChannelUiState(
     val featuredChannelsLoaded: Boolean = false,
     val isOwnChannel: Boolean = false,
     val isSubscribed: Boolean = false,
+    val isSignedIn: Boolean = false,
     val isBlocked: Boolean = false,
     val discussion: DiscussionState = DiscussionState.Idle,
     val followerCount: Long? = null,
@@ -118,8 +119,9 @@ class ChannelViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             authRepository.state.collect { auth ->
+                val signed = auth is AuthState.SignedIn
                 val mine = (auth as? AuthState.SignedIn)?.channels?.any { it.claimId == route.claimId } == true
-                _state.update { it.copy(isOwnChannel = mine) }
+                _state.update { it.copy(isOwnChannel = mine, isSignedIn = signed) }
             }
         }
         viewModelScope.launch {

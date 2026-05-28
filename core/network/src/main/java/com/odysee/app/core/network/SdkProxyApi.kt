@@ -108,4 +108,14 @@ interface SdkProxyApi {
     suspend fun purchaseCreate(
         @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.PurchaseCreateParams>,
     ): JsonRpcResponse<com.odysee.app.core.network.dto.PurchaseCreateResult>
+
+    @POST("api/v1/proxy")
+    suspend fun syncHash(
+        @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.SyncHashParams>,
+    ): JsonRpcResponse<String>
+
+    @POST("api/v1/proxy")
+    suspend fun syncApply(
+        @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.SyncApplyParams>,
+    ): JsonRpcResponse<com.odysee.app.core.network.dto.SyncApplyResult>
 }

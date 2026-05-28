@@ -21,6 +21,7 @@ data class NotificationsUiState(
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
+    private val lbryioApi: com.odysee.app.core.network.LbryioApi,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationsUiState())
@@ -56,6 +57,16 @@ class NotificationsViewModel @Inject constructor(
             _state.update { state ->
                 state.copy(items = state.items.map { if (it.id == id) it.copy(isRead = true) else it })
             }
+        }
+    }
+
+    /** Permanently dismiss a notification (matches web's `notification/delete`). */
+    fun dismiss(id: Long) {
+        // Optimistically remove from UI first; server roundtrip can fail and
+        // we still want a responsive list.
+        _state.update { state -> state.copy(items = state.items.filterNot { it.id == id }) }
+        viewModelScope.launch {
+            runCatching { lbryioApi.notificationDelete(notificationIds = id.toString()) }
         }
     }
 }

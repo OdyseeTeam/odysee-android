@@ -1,13 +1,19 @@
 package com.odysee.app.core.network.jsonrpc
 
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.serialization.Serializable
+
+private val rpcIdCounter = AtomicLong(0)
+
+/** Process-wide monotonic JSON-RPC request id. Spec recommends ids be unique per request. */
+internal fun nextJsonRpcId(): Long = rpcIdCounter.incrementAndGet()
 
 @Serializable
 data class JsonRpcRequest<P>(
     val jsonrpc: String = "2.0",
     val method: String,
     val params: P,
-    val id: Long = 1L,
+    val id: Long = nextJsonRpcId(),
 )
 
 @Serializable
@@ -15,7 +21,7 @@ data class JsonRpcResponse<R>(
     val jsonrpc: String = "2.0",
     val result: R? = null,
     val error: JsonRpcError? = null,
-    val id: Long = 1L,
+    val id: Long = 0L,
 )
 
 @Serializable

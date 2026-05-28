@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,6 +49,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -313,21 +317,31 @@ private fun ShortsInfoSheet(
             }
             short.channelClaimId?.let { cid ->
                 Spacer(Modifier.width(12.dp))
+                val canSubscribe = viewModel.state.collectAsStateWithLifecycle().value.isSignedIn
+                val bg = when {
+                    !canSubscribe -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    isSubscribed -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                val fg = when {
+                    !canSubscribe -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    isSubscribed -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> Color.White
+                }
                 Box(
                     modifier = Modifier
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                        .background(
-                            if (isSubscribed) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.primary,
-                        )
-                        .clickable { viewModel.toggleSubscribe(cid, short.channelName) }
+                        .background(bg)
+                        .clickable(enabled = canSubscribe) {
+                            viewModel.toggleSubscribe(cid, short.channelName)
+                        }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(
                         text = if (isSubscribed) "Following" else "Follow",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isSubscribed) MaterialTheme.colorScheme.onSurfaceVariant else Color.White,
+                        color = fg,
                     )
                 }
             }
@@ -465,11 +479,31 @@ private fun ShortPage(
     onNext: (() -> Unit)?,
     onChannelClick: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center,
+    ) {
         if (isCurrent) {
             // SurfaceView doesn't intercept the pager's swipe like PlayerView does.
+            // We size it to the actual video aspect so portrait shorts fill the
+            // screen but 16:9 / square clips letterbox cleanly instead of stretching.
+            var aspect by remember { mutableStateOf(9f / 16f) }
+            androidx.compose.runtime.DisposableEffect(viewModel.exoPlayer) {
+                val listener = object : androidx.media3.common.Player.Listener {
+                    override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) {
+                        if (size.width > 0 && size.height > 0) {
+                            val pixelRatio = size.pixelWidthHeightRatio.takeIf { it > 0f } ?: 1f
+                            aspect = (size.width * pixelRatio) / size.height
+                        }
+                    }
+                }
+                viewModel.exoPlayer.addListener(listener)
+                onDispose { viewModel.exoPlayer.removeListener(listener) }
+            }
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(aspect),
                 factory = { ctx ->
                     SurfaceView(ctx).apply {
                         viewModel.exoPlayer.setVideoSurfaceView(this)
@@ -656,7 +690,9 @@ private fun ShortPage(
                         .align(Alignment.BottomCenter)
                         .size(22.dp)
                         .clip(CircleShape)
-                        .clickable {
+                        .clickable(
+                            enabled = viewModel.state.collectAsStateWithLifecycle().value.isSignedIn,
+                        ) {
                             item.channelClaimId?.let {
                                 viewModel.toggleSubscribe(it, item.channelName)
                             }

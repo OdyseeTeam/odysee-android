@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 31
+        minSdk = 30
     }
 
     buildFeatures {
@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:data"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:network"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

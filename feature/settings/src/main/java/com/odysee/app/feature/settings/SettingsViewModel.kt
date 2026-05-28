@@ -41,6 +41,7 @@ class SettingsViewModel @Inject constructor(
     private val authPreferences: AuthPreferences,
     private val appUpdater: com.odysee.app.core.data.updater.AppUpdater,
     private val authRepository: com.odysee.app.core.data.auth.AuthRepository,
+    private val lbryioApi: com.odysee.app.core.network.LbryioApi,
 ) : ViewModel() {
 
     val updaterSupported: Boolean get() = appUpdater.isSupported
@@ -51,6 +52,19 @@ class SettingsViewModel @Inject constructor(
     }
     fun downloadUpdate() {
         viewModelScope.launch { appUpdater.downloadAndInstall() }
+    }
+
+    fun requestAccountDeletion(onResult: (success: Boolean, message: String?) -> Unit) {
+        viewModelScope.launch {
+            val result = authRepository.requestAccountDeletion()
+            when (result) {
+                is com.odysee.app.core.data.auth.SignInResult.Success ->
+                    onResult(true, null)
+                is com.odysee.app.core.data.auth.SignInResult.Failure ->
+                    onResult(false, result.message)
+                else -> onResult(false, "Couldn't send request")
+            }
+        }
     }
 
     private val appearanceFlow = combine(
@@ -144,7 +158,12 @@ class SettingsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
     fun setTheme(v: String) = launch { authPreferences.setThemePreference(v) }
-    fun setLanguage(v: String?) = launch { authPreferences.setLanguageOverride(v) }
+    fun setLanguage(v: String?) = launch {
+        authPreferences.setLanguageOverride(v)
+        // Mirror to lbryio so the preference follows the user across devices.
+        val pref = v ?: java.util.Locale.getDefault().language.takeIf { it.isNotBlank() } ?: "en"
+        runCatching { lbryioApi.userLanguage(pref) }
+    }
     fun setHomepageLanguage(v: String?) = launch { authPreferences.setHomepageLanguage(v) }
     fun setSearchInLanguage(v: Boolean) = launch { authPreferences.setSearchInLanguage(v) }
     fun setClock24h(v: Boolean) = launch { authPreferences.setClock24h(v) }

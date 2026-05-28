@@ -16,6 +16,7 @@ import javax.inject.Inject
 
 data class NotificationSettingsUiState(
     val pushSupported: Boolean = true,
+    val notificationsEnabled: Boolean = true,
     val mode: NotificationDeliveryMode = NotificationDeliveryMode.Poll,
     val pollIntervalMinutes: Int = NotificationPreferences.DEFAULT_POLL_INTERVAL_MIN,
 )
@@ -38,14 +39,21 @@ class NotificationSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val mode = prefs.deliveryMode.first() ?: flavorConfig.defaultDeliveryMode
             val interval = prefs.pollIntervalMinutes.first()
+            val enabled = prefs.notificationsEnabled.first()
             _state.update {
                 it.copy(
                     pushSupported = flavorConfig.pushSupported,
+                    notificationsEnabled = enabled,
                     mode = mode,
                     pollIntervalMinutes = interval,
                 )
             }
         }
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        _state.update { it.copy(notificationsEnabled = enabled) }
+        viewModelScope.launch { prefs.setNotificationsEnabled(enabled) }
     }
 
     fun setMode(mode: NotificationDeliveryMode) {

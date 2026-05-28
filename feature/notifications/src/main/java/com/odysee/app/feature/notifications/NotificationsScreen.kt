@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -124,6 +125,7 @@ fun NotificationsScreen(
                             viewModel.markRead(item.id)
                             item.target?.takeIf { it.isNotBlank() }?.let(onOpenTarget)
                         },
+                        onDismiss = { viewModel.dismiss(item.id) },
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 }
@@ -133,7 +135,11 @@ fun NotificationsScreen(
 }
 
 @Composable
-private fun NotificationRow(item: NotificationItem, onClick: () -> Unit) {
+private fun NotificationRow(
+    item: NotificationItem,
+    onClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -168,7 +174,7 @@ private fun NotificationRow(item: NotificationItem, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
             if (item.title.isNotBlank()) {
                 Text(
                     text = item.title,
@@ -188,6 +194,13 @@ private fun NotificationRow(item: NotificationItem, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+        androidx.compose.material3.IconButton(onClick = onDismiss) {
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Outlined.Close,
+                contentDescription = "Dismiss",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

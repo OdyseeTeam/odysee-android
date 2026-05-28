@@ -364,7 +364,7 @@ fun PlaylistsScreen(
 ) {
     BackHandler(onBack = onBack)
     val items by viewModel.playlists.collectAsStateWithLifecycle()
-    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     var menuTarget by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.PlaylistSummary?>(null)
     }
@@ -396,38 +396,50 @@ fun PlaylistsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        if (items.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "No playlists yet",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+        val pullState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
+            state = pullState,
+            modifier = Modifier.fillMaxSize().padding(padding),
+            indicator = {
+                androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    state = pullState,
+                    isRefreshing = isRefreshing,
                 )
-                Text(
-                    text = "Your synced collections will appear here.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = padding.calculateTopPadding(),
-                    bottom = padding.calculateBottomPadding() + 16.dp,
-                ),
-            ) {
-                items(items, key = { it.id }) { p ->
-                    PlaylistListRow(
-                        playlist = p,
-                        onClick = { onOpenPlaylist(p.id) },
-                        onPlay = { onPlayPlaylist(p.id) },
-                        onLongPress = { menuTarget = p },
+            },
+        ) {
+            if (items.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "No playlists yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
+                    Text(
+                        text = "Your synced collections will appear here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                ) {
+                    items(items, key = { it.id }) { p ->
+                        PlaylistListRow(
+                            playlist = p,
+                            onClick = { onOpenPlaylist(p.id) },
+                            onPlay = { onPlayPlaylist(p.id) },
+                            onLongPress = { menuTarget = p },
+                        )
+                    }
                 }
             }
         }

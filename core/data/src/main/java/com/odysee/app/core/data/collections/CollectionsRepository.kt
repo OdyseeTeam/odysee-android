@@ -1,9 +1,10 @@
 package com.odysee.app.core.data.collections
 
+import com.odysee.app.core.data.preferences.CollectionDoc
+import com.odysee.app.core.data.preferences.SharedPrefSlices
+import com.odysee.app.core.data.preferences.SharedPreferencesStore
 import com.odysee.app.core.datastore.AuthPreferences
 import com.odysee.app.core.network.SdkProxyApi
-import com.odysee.app.core.network.dto.PreferenceGetParams
-import com.odysee.app.core.network.dto.PreferenceSetParams
 import com.odysee.app.core.network.jsonrpc.JsonRpcRequest
 import com.odysee.app.core.network.jsonrpc.unwrap
 import kotlinx.coroutines.CoroutineScope
@@ -13,15 +14,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -74,6 +66,7 @@ abstract class BaseLocalCollectionRepository(
     private val rawFlow: Flow<List<String>>,
     private val setter: suspend (List<String>) -> Unit,
     private val sdkProxyApi: SdkProxyApi,
+    private val sharedStore: SharedPreferencesStore,
     private val collectionId: String,
     private val collectionName: String,
 ) : LocalCollectionRepository {
@@ -109,16 +102,13 @@ abstract class BaseLocalCollectionRepository(
     }
 
     override suspend fun syncFromServer(): Result<Int> = runCatching {
-        val resp = sdkProxyApi.preferenceGet(
-            JsonRpcRequest(method = "preference_get", params = PreferenceGetParams("shared")),
-        ).unwrap()
-        val shared = (resp["shared"] as? JsonObject) ?: return@runCatching 0
-        val value = (shared["value"] as? JsonObject) ?: return@runCatching 0
-        val builtins = (value["builtinCollections"] as? JsonObject) ?: return@runCatching 0
-        val coll = (builtins[collectionId] as? JsonObject) ?: return@runCatching 0
-        val serverUpdatedAt = (coll["updatedAt"]?.jsonPrimitive?.longOrNull) ?: 0L
-        val urls = (coll["items"] as? JsonArray)
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: return@runCatching 0
+        val builtins = sharedStore.readSlice(
+            SharedPrefSlices.BUILTIN_COLLECTIONS,
+            SharedPrefSlices.CollectionMap,
+        ) ?: return@runCatching 0
+        val coll = builtins[collectionId] ?: return@runCatching 0
+        val serverUpdatedAt = coll.updatedAt ?: 0L
+        val urls = coll.items
         if (urls.isEmpty()) {
             setter(emptyList())
             return@runCatching 0
@@ -182,36 +172,24 @@ abstract class BaseLocalCollectionRepository(
         val urls = list.map { e ->
             e.permanentUrl.takeIf { it.startsWith("lbry://") } ?: "lbry://${e.title}#${e.claimId}"
         }
-        val existing = runCatching {
-            sdkProxyApi.preferenceGet(
-                JsonRpcRequest(method = "preference_get", params = PreferenceGetParams("shared")),
-            ).unwrap()
-        }.getOrNull()
-        val sharedExisting = (existing?.get("shared") as? JsonObject)
-        val valueExisting = (sharedExisting?.get("value") as? JsonObject)
-        val builtinsExisting = (valueExisting?.get("builtinCollections") as? JsonObject)
-        val newCollection = buildJsonObject {
-            put("id", JsonPrimitive(collectionId))
-            put("name", JsonPrimitive(collectionName))
-            put("type", JsonPrimitive("playlist"))
-            put("items", buildJsonArray { urls.forEach { add(JsonPrimitive(it)) } })
-            put("updatedAt", JsonPrimitive(System.currentTimeMillis() / 1000L))
-        }
-        val newBuiltins = buildJsonObject {
-            builtinsExisting?.forEach { (k, v) -> if (k != collectionId) put(k, v) }
-            put(collectionId, newCollection)
-        }
-        val newValue = buildJsonObject {
-            valueExisting?.forEach { (k, v) -> if (k != "builtinCollections") put(k, v) }
-            put("builtinCollections", newBuiltins)
-        }
-        val newShared = buildJsonObject {
-            put("type", JsonPrimitive("object"))
-            put("version", JsonPrimitive("0.1"))
-            put("value", newValue)
-        }
-        sdkProxyApi.preferenceSet(
-            JsonRpcRequest(method = "preference_set", params = PreferenceSetParams(key = "shared", value = newShared.toString())),
+        // Merge into the existing builtinCollections map, preserving entries
+        // for other built-in collections (e.g. favorites when writing watchlater).
+        val existing = sharedStore.readSlice(
+            SharedPrefSlices.BUILTIN_COLLECTIONS,
+            SharedPrefSlices.CollectionMap,
+        ).orEmpty()
+        val merged = existing.toMutableMap()
+        merged[collectionId] = CollectionDoc(
+            id = collectionId,
+            name = collectionName,
+            type = "playlist",
+            items = urls,
+            updatedAt = System.currentTimeMillis() / 1000L,
+        )
+        sharedStore.writeSlice(
+            key = SharedPrefSlices.BUILTIN_COLLECTIONS,
+            serializer = SharedPrefSlices.CollectionMap,
+            value = merged,
         )
     }
 }
@@ -223,10 +201,12 @@ interface FavoritesRepository : LocalCollectionRepository
 class WatchLaterRepositoryImpl @Inject constructor(
     private val authPreferences: AuthPreferences,
     sdkProxyApi: SdkProxyApi,
+    sharedStore: SharedPreferencesStore,
 ) : BaseLocalCollectionRepository(
     rawFlow = authPreferences.watchLater,
     setter = { authPreferences.setWatchLater(it) },
     sdkProxyApi = sdkProxyApi,
+    sharedStore = sharedStore,
     collectionId = "watchlater",
     collectionName = "Watch Later",
 ), WatchLaterRepository
@@ -235,10 +215,12 @@ class WatchLaterRepositoryImpl @Inject constructor(
 class FavoritesRepositoryImpl @Inject constructor(
     private val authPreferences: AuthPreferences,
     sdkProxyApi: SdkProxyApi,
+    sharedStore: SharedPreferencesStore,
 ) : BaseLocalCollectionRepository(
     rawFlow = authPreferences.favorites,
     setter = { authPreferences.setFavorites(it) },
     sdkProxyApi = sdkProxyApi,
+    sharedStore = sharedStore,
     collectionId = "favorites",
     collectionName = "Favorites",
 ), FavoritesRepository

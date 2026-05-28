@@ -51,8 +51,19 @@ class PlaylistsViewModel @Inject constructor(
     val playlists: StateFlow<List<com.odysee.app.core.data.collections.PlaylistSummary>> =
         repository.playlists.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    fun refresh() {
+    private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    init {
         viewModelScope.launch { repository.syncFromServer() }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            runCatching { repository.syncFromServer() }
+            _isRefreshing.value = false
+        }
     }
 
     fun delete(id: String) {

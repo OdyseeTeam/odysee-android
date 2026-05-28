@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -244,7 +245,10 @@ fun ExpandedPlayerContent(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .then(if (isFullscreen) Modifier else Modifier.statusBarsPadding()),
+            .then(
+                if (isFullscreen) Modifier
+                else Modifier.statusBarsPadding().navigationBarsPadding(),
+            ),
     ) {
         Box(
             modifier = if (isFullscreen)
@@ -1001,10 +1005,12 @@ private fun InfoPage(
         }
         Spacer(Modifier.size(16.dp))
         val playerCtrl = com.odysee.app.player.LocalPlayerController.current
+        val authStateForFollow = com.odysee.app.auth.LocalAuthState.current
+        val canSubscribe = authStateForFollow is com.odysee.app.core.data.auth.AuthState.SignedIn
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Avatar tap → toggle subscribe (NOT navigate). Unfollow needs a confirm.
             Box(
-                modifier = Modifier.clickable {
+                modifier = Modifier.clickable(enabled = canSubscribe) {
                     if (media.channelClaimId == null) return@clickable
                     if (state.isChannelSubscribed) showUnfollowConfirm = true
                     else playerCtrl.toggleChannelSubscription()
@@ -1054,15 +1060,22 @@ private fun InfoPage(
         // Follow button on its own row so it can never be intercepted by the channel row.
         media.channelClaimId?.let {
             Spacer(Modifier.size(12.dp))
+            val followBg = when {
+                !canSubscribe -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                state.isChannelSubscribed -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.primary
+            }
+            val followFg = when {
+                !canSubscribe -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                state.isChannelSubscribed -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> Color.White
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                    .background(
-                        if (state.isChannelSubscribed) MaterialTheme.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.primary,
-                    )
-                    .clickable {
+                    .background(followBg)
+                    .clickable(enabled = canSubscribe) {
                         if (state.isChannelSubscribed) showUnfollowConfirm = true
                         else playerCtrl.toggleChannelSubscription()
                     }
@@ -1073,9 +1086,7 @@ private fun InfoPage(
                     text = if (state.isChannelSubscribed) "Following" else "Follow",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (state.isChannelSubscribed)
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    else Color.White,
+                    color = followFg,
                 )
             }
         }

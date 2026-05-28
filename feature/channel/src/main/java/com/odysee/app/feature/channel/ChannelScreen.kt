@@ -89,6 +89,16 @@ private enum class ChannelTab(val label: String, val ownerOnly: Boolean = false)
     Settings("Settings", ownerOnly = true),
 }
 
+data class ChannelShortTarget(
+    val claimId: String,
+    val permanentUrl: String,
+    val title: String,
+    val channelName: String,
+    val channelClaimId: String?,
+    val channelAvatarUrl: String?,
+    val thumbnailUrl: String?,
+)
+
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ChannelScreen(
@@ -105,6 +115,7 @@ fun ChannelScreen(
     onOpenAnalytics: (claimId: String, name: String) -> Unit = { _, _ -> },
     onPlayClaimBackground: (CurrentMedia) -> Unit = {},
     onPlayClaimPip: (CurrentMedia) -> Unit = {},
+    onWatchShort: (ChannelShortTarget) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
@@ -280,6 +291,7 @@ fun ChannelScreen(
                     isSubscribed = state.isSubscribed,
                     followerCount = state.followerCount,
                     onToggleSubscription = viewModel::toggleSubscription,
+                    canSubscribe = state.isSignedIn,
                 )
             }
             stickyHeader(key = "tabs") {
@@ -331,7 +343,20 @@ fun ChannelScreen(
                 ChannelTab.Shorts -> shortsTab(
                     state = state,
                     onRetry = viewModel::loadShorts,
-                    onVideoClick = onVideoClick,
+                    onVideoClick = { video ->
+                        val ch = state.channel
+                        onWatchShort(
+                            ChannelShortTarget(
+                                claimId = video.id,
+                                permanentUrl = video.permanentUrl,
+                                title = video.title,
+                                channelName = ch?.name ?: state.displayName,
+                                channelClaimId = ch?.claimId,
+                                channelAvatarUrl = ch?.thumbnailUrl,
+                                thumbnailUrl = video.thumbnailUrl,
+                            ),
+                        )
+                    },
                     onVideoLongPress = { claimMenuTarget = it },
                 )
                 ChannelTab.Playlists -> playlistsTab(state = state, onRetry = viewModel::loadChannelPlaylists)
@@ -1160,6 +1185,7 @@ private fun ChannelHeader(
     isSubscribed: Boolean,
     followerCount: Long?,
     onToggleSubscription: () -> Unit,
+    canSubscribe: Boolean,
 ) {
     val coverHeight = 160.dp
     val avatarSize = 88.dp
@@ -1233,6 +1259,7 @@ private fun ChannelHeader(
                 if (!isOwnChannel) {
                     Button(
                         onClick = onToggleSubscription,
+                        enabled = canSubscribe,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isSubscribed) MaterialTheme.colorScheme.surfaceVariant
                             else MaterialTheme.colorScheme.primary,

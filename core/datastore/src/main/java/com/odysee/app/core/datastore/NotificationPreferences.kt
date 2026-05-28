@@ -33,6 +33,9 @@ class NotificationPreferences @Inject constructor(
 
     val pushEnabled: Flow<Boolean> = store.data.map { it[KEY_PUSH_ENABLED] ?: true }
 
+    /** Master switch — when false, neither push nor poll fires. */
+    val notificationsEnabled: Flow<Boolean> = store.data.map { it[KEY_NOTIFICATIONS_ENABLED] ?: true }
+
     suspend fun setDeliveryMode(mode: NotificationDeliveryMode) {
         store.edit { it[KEY_MODE] = mode.name }
     }
@@ -49,6 +52,10 @@ class NotificationPreferences @Inject constructor(
         store.edit { it[KEY_PUSH_ENABLED] = value }
     }
 
+    suspend fun setNotificationsEnabled(value: Boolean) {
+        store.edit { it[KEY_NOTIFICATIONS_ENABLED] = value }
+    }
+
     companion object {
         const val MIN_POLL_INTERVAL_MIN = 15
         const val MAX_POLL_INTERVAL_MIN = 24 * 60
@@ -58,5 +65,6 @@ class NotificationPreferences @Inject constructor(
         private val KEY_POLL_INTERVAL_MIN = intPreferencesKey("poll_interval_min")
         private val KEY_LAST_SEEN_ID = longPreferencesKey("last_seen_id")
         private val KEY_PUSH_ENABLED = booleanPreferencesKey("push_enabled")
+        private val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
     }
 }

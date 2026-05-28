@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId = "com.odysee.app"
-        minSdk = 31
+        minSdk = 30
         targetSdk = 36
         // versionCode continues the Cordova app's numbering so that Cordova
         // installs treat the native build as an update and migrate.

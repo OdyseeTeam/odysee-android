@@ -20,6 +20,7 @@ data class ClaimSearchParams(
     val duration: String? = null,
     @SerialName("content_aspect_ratio") val contentAspectRatio: String? = null,
     @SerialName("any_languages") val anyLanguages: List<String>? = null,
+    val name: String? = null,
 )
 
 @Serializable

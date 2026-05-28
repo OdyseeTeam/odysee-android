@@ -52,6 +52,12 @@ data class CurrentMedia(
     val liveStreamUrl: String? = null,
     val mediaType: String? = null,
     val linkedCommentId: String? = null,
+    /**
+     * When true, `PlayerController.play(...)` does NOT prepare ExoPlayer and
+     * instead emits to [PlayerController.openShortsEvents] so the host can
+     * route to the dedicated shorts player.
+     */
+    val isShort: Boolean = false,
 ) {
     val renderMode: MediaRenderMode
         get() = when {
@@ -441,6 +447,14 @@ class PlayerController @Inject constructor(
     private val _uiCommands = Channel<PlayerUiCommand>(Channel.UNLIMITED)
     val uiCommands: Flow<PlayerUiCommand> = _uiCommands.receiveAsFlow()
 
+    /**
+     * Emitted when `play(media)` is invoked with a short. The host (NavHost)
+     * collects this and routes to the dedicated shorts player instead of
+     * preparing the regular video surface.
+     */
+    private val _openShortsEvents = Channel<CurrentMedia>(Channel.UNLIMITED)
+    val openShortsEvents: Flow<CurrentMedia> = _openShortsEvents.receiveAsFlow()
+
     private val _isPipActive = MutableStateFlow(false)
     val isPipActive: StateFlow<Boolean> = _isPipActive.asStateFlow()
 
@@ -533,6 +547,13 @@ class PlayerController @Inject constructor(
         openMode: PlayerOpenMode = PlayerOpenMode.Expanded,
         playlist: PlaylistContext? = null,
     ) {
+        if (media.isShort) {
+            // Hand off to the shorts player; never let a short open in the
+            // standard expanded surface, regardless of where the tap came from.
+            runCatching { exoPlayer.stop() }
+            _openShortsEvents.trySend(media)
+            return
+        }
         _uiCommands.trySend(PlayerUiCommand.Show(openMode))
         val current = _state.value
         val effectivePlaylist = playlist ?: current.playlist
@@ -692,9 +713,24 @@ class PlayerController @Inject constructor(
                         .build()
                     exoPlayer.setMediaItem(item)
                     exoPlayer.prepare()
-                    // Resume from last known position if any.
-                    savedPositions[media.claimId]?.takeIf { it > 0 }?.let { saved ->
-                        exoPlayer.seekTo(saved)
+                    // Resume from last known position. Local takes precedence
+                    // (more recent); fall back to the cross-device resume point
+                    // from lbryio for the first watch on this device.
+                    val localPos = savedPositions[media.claimId]?.takeIf { it > 0 }
+                    if (localPos != null) {
+                        exoPlayer.seekTo(localPos)
+                    } else if (media.liveStreamUrl == null) {
+                        scope.launch {
+                            val remoteSec = runCatching {
+                                lbryioApi.fileLastPositions(media.claimId).data
+                                    ?.get(media.claimId)
+                            }.getOrNull()
+                            val remoteMs = remoteSec?.takeIf { it > 0.0 }?.let { (it * 1000).toLong() }
+                            if (remoteMs != null && _state.value.media?.claimId == media.claimId) {
+                                exoPlayer.seekTo(remoteMs)
+                                savedPositions[media.claimId] = remoteMs
+                            }
+                        }
                     }
                     exoPlayer.playWhenReady = true
                     val signedUserId = (authRepository.state.value as? AuthState.SignedIn)
@@ -706,6 +742,18 @@ class PlayerController @Inject constructor(
                         isPreview = false,
                         mimeType = "application/x-mpegURL",
                     )
+                    // View-tracking ping for Odysee's per-claim view counter.
+                    if (media.liveStreamUrl == null) {
+                        scope.launch {
+                            runCatching {
+                                lbryioApi.fileView(
+                                    uri = media.permanentUrl.removePrefix("lbry://"),
+                                    outpoint = media.claimId,
+                                    claimId = media.claimId,
+                                )
+                            }
+                        }
+                    }
                     startWatchmanProgressLoop()
                     // The playback service is started lazily from the isPlaying listener
                     // once the player actually starts playing (avoids foreground-service

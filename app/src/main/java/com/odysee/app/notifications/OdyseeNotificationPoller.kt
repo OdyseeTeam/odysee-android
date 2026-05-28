@@ -32,6 +32,7 @@ class OdyseeNotificationPoller @Inject constructor(
 ) {
 
     suspend fun pollOnce() {
+        if (!prefs.notificationsEnabled.first()) return
         ensureChannel()
         val items = runCatching { notificationsRepository.list() }.getOrNull().orEmpty()
         if (items.isEmpty()) return

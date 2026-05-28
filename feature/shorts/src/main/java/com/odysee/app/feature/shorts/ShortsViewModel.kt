@@ -52,6 +52,7 @@ data class ShortsUiState(
     val currentIndex: Int = 0,
     val reactionsByClaim: Map<String, Reactions> = emptyMap(),
     val subscribedChannelIds: Set<String> = emptySet(),
+    val isSignedIn: Boolean = false,
     val autoplayNextShort: Boolean = true,
     val showInfo: Boolean = false,
     val showComments: Boolean = false,
@@ -68,6 +69,7 @@ class ShortsViewModel @Inject constructor(
     private val reactionsRepository: ReactionsRepository,
     private val subscriptionsRepository: SubscriptionsRepository,
     private val authPreferences: AuthPreferences,
+    private val authRepository: com.odysee.app.core.data.auth.AuthRepository,
     private val lbryioApi: com.odysee.app.core.network.LbryioApi,
 ) : ViewModel() {
 
@@ -150,6 +152,12 @@ class ShortsViewModel @Inject constructor(
         viewModelScope.launch {
             subscriptionsRepository.subscriptions.collect { subs ->
                 _state.update { it.copy(subscribedChannelIds = subs.map { s -> s.claimId }.toSet()) }
+            }
+        }
+        viewModelScope.launch {
+            authRepository.state.collect { auth ->
+                val signedIn = auth is com.odysee.app.core.data.auth.AuthState.SignedIn
+                _state.update { it.copy(isSignedIn = signedIn) }
             }
         }
         viewModelScope.launch {
@@ -262,6 +270,7 @@ class ShortsViewModel @Inject constructor(
     }
 
     fun toggleSubscribe(claimId: String, name: String) {
+        if (!_state.value.isSignedIn) return
         viewModelScope.launch { subscriptionsRepository.toggle(claimId, name) }
     }
 

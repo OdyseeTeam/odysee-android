@@ -506,9 +506,12 @@ private fun CategoryChipRow(
                         }
                     },
                     colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         selectedContainerColor = MaterialTheme.colorScheme.onBackground,
                         selectedLabelColor = MaterialTheme.colorScheme.background,
                     ),
+                    border = null,
                 )
             }
         }

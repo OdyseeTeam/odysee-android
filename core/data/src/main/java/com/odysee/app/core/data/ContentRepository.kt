@@ -971,6 +971,11 @@ class ContentRepositoryImpl @Inject constructor(
                     channelIds = listOf(channelClaimId),
                     page = page,
                     pageSize = pageSize,
+                    // Show every published claim type the channel has — audio,
+                    // PDFs, images, text, livestreams, plus video. The Shorts
+                    // tab filters separately client-side via Claim.isShort.
+                    streamTypes = null,
+                    hasSource = null,
                 ),
             ),
         )
@@ -979,25 +984,82 @@ class ContentRepositoryImpl @Inject constructor(
 
     override suspend fun search(query: String, size: Int, from: Int): List<Claim> {
         if (query.isBlank()) return emptyList()
-        val hits = lighthouseApi.search(query = query, size = size.coerceIn(1, 50), from = from.coerceAtLeast(0))
-        if (hits.isEmpty()) return emptyList()
-        val claimIds = hits.map { it.claimId }
-        val response = sdkProxyApi.claimSearch(
-            JsonRpcRequest(
-                method = "claim_search",
-                params = ClaimSearchParams(
-                    claimIds = claimIds,
-                    pageSize = claimIds.size.coerceAtMost(50),
-                    claimType = listOf("stream", "channel"),
-                    streamTypes = null,
-                    hasSource = null,
-                    notTags = null,
+        val cleaned = query.trim()
+        val hits = lighthouseApi.search(query = cleaned, size = size.coerceIn(1, 50), from = from.coerceAtLeast(0))
+
+        // Resolve the "winning" claim for this exact name in parallel with the
+        // Lighthouse relevance results. The winning claim is the one with the
+        // highest effective bid for `<query>` and `@<query>` — that's what the
+        // web frontend surfaces as the top result.
+        val winning = runCatching {
+            val raw = cleaned.removePrefix("@")
+            val candidates = mutableListOf<com.odysee.app.core.network.dto.ClaimDto>()
+            // Stream / generic name claim.
+            runCatching {
+                sdkProxyApi.claimSearch(
+                    JsonRpcRequest(
+                        method = "claim_search",
+                        params = ClaimSearchParams(
+                            name = raw,
+                            pageSize = 1,
+                            claimType = listOf("stream", "channel"),
+                            streamTypes = null,
+                            hasSource = null,
+                            notTags = null,
+                            orderBy = listOf("effective_amount"),
+                        ),
+                    ),
+                ).unwrap().items.firstOrNull()?.let { candidates.add(it) }
+            }
+            // Channel form: @name. Only relevant if the user didn't already prefix it.
+            if (!cleaned.startsWith("@")) {
+                runCatching {
+                    sdkProxyApi.claimSearch(
+                        JsonRpcRequest(
+                            method = "claim_search",
+                            params = ClaimSearchParams(
+                                name = "@$raw",
+                                pageSize = 1,
+                                claimType = listOf("channel"),
+                                streamTypes = null,
+                                hasSource = null,
+                                notTags = null,
+                                orderBy = listOf("effective_amount"),
+                            ),
+                        ),
+                    ).unwrap().items.firstOrNull()?.let { candidates.add(it) }
+                }
+            }
+            // Highest effective_amount wins.
+            candidates.maxByOrNull { it.meta?.effectiveAmount?.toDoubleOrNull() ?: 0.0 }
+        }.getOrNull()
+
+        val lighthouseClaims: List<Claim> = if (hits.isEmpty()) emptyList() else {
+            val claimIds = hits.map { it.claimId }
+            val response = sdkProxyApi.claimSearch(
+                JsonRpcRequest(
+                    method = "claim_search",
+                    params = ClaimSearchParams(
+                        claimIds = claimIds,
+                        pageSize = claimIds.size.coerceAtMost(50),
+                        claimType = listOf("stream", "channel"),
+                        streamTypes = null,
+                        hasSource = null,
+                        notTags = null,
+                    ),
                 ),
-            ),
-        )
-        val claims = response.unwrap().items.map { it.toDomain() }
-        val byClaimId = claims.associateBy { it.claimId }
-        return claimIds.mapNotNull { byClaimId[it] }
+            )
+            val claims = response.unwrap().items.map { it.toDomain() }
+            val byClaimId = claims.associateBy { it.claimId }
+            claimIds.mapNotNull { byClaimId[it] }
+        }
+
+        val winningDomain = winning?.toDomain()
+        if (winningDomain == null) return lighthouseClaims
+        // If Lighthouse already has the winning claim, promote it; otherwise
+        // prepend it as a featured result.
+        val without = lighthouseClaims.filterNot { it.claimId == winningDomain.claimId }
+        return listOf(winningDomain) + without
     }
 
     override suspend fun getRelated(
@@ -1602,6 +1664,9 @@ class ContentRepositoryImpl @Inject constructor(
                     page = page,
                     pageSize = pageSize.coerceIn(1, 50),
                     orderBy = listOf("release_time"),
+                    // All published claim types from followed channels, not just videos.
+                    streamTypes = null,
+                    hasSource = null,
                 ),
             ),
         )

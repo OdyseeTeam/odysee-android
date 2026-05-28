@@ -1,5 +1,9 @@
 package com.odysee.app.core.data.collections
 
+import com.odysee.app.core.data.preferences.CollectionDoc
+import com.odysee.app.core.data.preferences.CollectionThumbnail
+import com.odysee.app.core.data.preferences.SharedPrefSlices
+import com.odysee.app.core.data.preferences.SharedPreferencesStore
 import com.odysee.app.core.datastore.AuthPreferences
 import com.odysee.app.core.network.SdkProxyApi
 import com.odysee.app.core.network.dto.PreferenceGetParams
@@ -63,7 +67,12 @@ interface PlaylistsRepository {
 class PlaylistsRepositoryImpl @Inject constructor(
     private val authPreferences: AuthPreferences,
     private val sdkProxyApi: SdkProxyApi,
+    private val sharedStore: SharedPreferencesStore,
+    private val authRepository: com.odysee.app.core.data.auth.AuthRepository,
 ) : PlaylistsRepository {
+
+    private fun signedIn(): Boolean =
+        authRepository.state.value is com.odysee.app.core.data.auth.AuthState.SignedIn
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val bgScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -74,71 +83,46 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
     private suspend fun writePlaylistsToSharedPreference() {
         val current = decode(authPreferences.customPlaylists.first())
-        val existing = runCatching {
-            sdkProxyApi.preferenceGet(
-                JsonRpcRequest(method = "preference_get", params = PreferenceGetParams("shared")),
-            ).unwrap()
-        }.getOrNull()
-        val sharedExisting = (existing?.get("shared") as? JsonObject)
-        val valueExisting = (sharedExisting?.get("value") as? JsonObject)
-        val unpublishedExisting = (valueExisting?.get("unpublishedCollections") as? JsonObject)
-        val autoPublishExisting = (valueExisting?.get("autoPublishById") as? JsonObject)
 
-        // Preserve any non-playlist or published entries we don't own.
-        val newUnpublished = buildJsonObject {
-            unpublishedExisting?.forEach { (k, v) ->
-                val obj = v as? JsonObject
-                val type = obj?.get("type")?.jsonPrimitive?.contentOrNull
-                // Drop only our playlist entries; keep everything else.
-                if (type != "playlist") put(k, v)
-            }
-            current.forEach { p ->
-                put(p.id, buildJsonObject {
-                    put("id", JsonPrimitive(p.id))
-                    put("name", JsonPrimitive(p.name))
-                    put("type", JsonPrimitive("playlist"))
-                    put("items", buildJsonArray { p.itemUrls.forEach { add(JsonPrimitive(it)) } })
-                    put("updatedAt", JsonPrimitive(p.updatedAt / 1000L))
-                    p.thumbnailUrl?.takeIf { it.isNotBlank() }?.let {
-                        put("thumbnail", buildJsonObject { put("url", JsonPrimitive(it)) })
-                    }
-                    p.description?.takeIf { it.isNotBlank() }?.let {
-                        put("description", JsonPrimitive(it))
-                    }
-                    if (p.tags.isNotEmpty()) {
-                        put("tags", buildJsonArray { p.tags.forEach { add(JsonPrimitive(it)) } })
-                    }
-                    if (p.isPublic) put("isPublic", JsonPrimitive(true))
-                })
-            }
+        // Preserve unpublished entries that aren't playlists (web stores other
+        // claim types in the same bucket); replace our playlist entries wholesale.
+        val existingUnpublished = sharedStore.readSlice(
+            SharedPrefSlices.UNPUBLISHED_COLLECTIONS,
+            SharedPrefSlices.CollectionMap,
+        ).orEmpty()
+        val mergedUnpublished = existingUnpublished
+            .filterValues { it.type != "playlist" }
+            .toMutableMap()
+        current.forEach { p ->
+            mergedUnpublished[p.id] = CollectionDoc(
+                id = p.id,
+                name = p.name,
+                type = "playlist",
+                items = p.itemUrls,
+                updatedAt = p.updatedAt / 1000L,
+                thumbnail = p.thumbnailUrl?.takeIf { it.isNotBlank() }?.let { CollectionThumbnail(it) },
+                description = p.description?.takeIf { it.isNotBlank() },
+                tags = p.tags,
+                isPublic = if (p.isPublic) true else null,
+            )
         }
 
-        // Merge autoPublishById — keep any pre-existing keys we don't know about,
-        // overwrite ours.
+        // Merge autoPublishById — keep keys for playlists we don't manage,
+        // overwrite ours, drop entries that turned off auto-publish.
+        val existingAuto = sharedStore.readSlice(
+            SharedPrefSlices.AUTO_PUBLISH_BY_ID,
+            SharedPrefSlices.BoolMap,
+        ).orEmpty()
         val knownIds = current.map { it.id }.toSet()
-        val newAutoPublish = buildJsonObject {
-            autoPublishExisting?.forEach { (k, v) -> if (k !in knownIds) put(k, v) }
-            current.forEach { p ->
-                if (p.autoPublish) put(p.id, JsonPrimitive(true))
-            }
-        }
+        val mergedAuto = existingAuto.filterKeys { it !in knownIds }.toMutableMap()
+        current.forEach { p -> if (p.autoPublish) mergedAuto[p.id] = true }
 
-        val newValue = buildJsonObject {
-            valueExisting?.forEach { (k, v) ->
-                if (k != "unpublishedCollections" && k != "autoPublishById") put(k, v)
-            }
-            put("unpublishedCollections", newUnpublished)
-            put("autoPublishById", newAutoPublish)
-        }
-        val newShared = buildJsonObject {
-            put("type", JsonPrimitive("object"))
-            put("version", JsonPrimitive("0.1"))
-            put("value", newValue)
-        }
-        sdkProxyApi.preferenceSet(
-            JsonRpcRequest(
-                method = "preference_set",
-                params = PreferenceSetParams(key = "shared", value = newShared.toString()),
+        sharedStore.patch(
+            mapOf(
+                SharedPrefSlices.UNPUBLISHED_COLLECTIONS to
+                    json.encodeToJsonElement(SharedPrefSlices.CollectionMap, mergedUnpublished),
+                SharedPrefSlices.AUTO_PUBLISH_BY_ID to
+                    json.encodeToJsonElement(SharedPrefSlices.BoolMap, mergedAuto),
             ),
         )
     }
@@ -148,50 +132,30 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
     override suspend fun syncFromServer(): Result<Int> = runCatching {
         val collections = mutableMapOf<String, PlaylistSummary>()
-        var autoPublishMap: Map<String, Boolean> = emptyMap()
 
         // 1. Private / unpublished / edited collections from shared preferences.
-        val resp = runCatching {
-            sdkProxyApi.preferenceGet(
-                JsonRpcRequest(method = "preference_get", params = PreferenceGetParams("shared")),
-            ).unwrap()
-        }.getOrNull()
-        if (resp != null) {
-            val shared = resp["shared"] as? JsonObject
-            val value = shared?.get("value") as? JsonObject
-            autoPublishMap = (value?.get("autoPublishById") as? JsonObject)
-                ?.mapValues { (_, v) ->
-                    v.jsonPrimitive.contentOrNull?.toBoolean() ?: false
-                } ?: emptyMap()
-            if (value != null) {
-                listOf("unpublishedCollections", "editedCollections").forEach { key ->
-                    val group = value[key] as? JsonObject ?: return@forEach
-                    for ((id, raw) in group) {
-                        val coll = raw as? JsonObject ?: continue
-                        if ((coll["type"]?.jsonPrimitive?.contentOrNull) != "playlist") continue
-                        val name = coll["name"]?.jsonPrimitive?.contentOrNull ?: continue
-                        val itemUrls = (coll["items"] as? JsonArray)
-                            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
-                        val updatedAt = (coll["updatedAt"]?.jsonPrimitive?.longOrNull)?.let { it * 1000L } ?: 0L
-                        val thumb = (coll["thumbnail"] as? JsonObject)
-                            ?.get("url")?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                            ?: coll["thumbnail"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                        val desc = coll["description"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                        val tags = (coll["tags"] as? JsonArray)
-                            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
-                        val isPublic = coll["isPublic"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: false
-                        collections[id] = PlaylistSummary(
-                            id = id,
-                            name = name,
-                            itemUrls = itemUrls,
-                            updatedAt = updatedAt,
-                            thumbnailUrl = thumb,
-                            description = desc,
-                            tags = tags,
-                            isPublic = isPublic,
-                        )
-                    }
-                }
+        val autoPublishMap = sharedStore.readSlice(
+            SharedPrefSlices.AUTO_PUBLISH_BY_ID,
+            SharedPrefSlices.BoolMap,
+        ).orEmpty()
+        listOf(
+            SharedPrefSlices.UNPUBLISHED_COLLECTIONS,
+            SharedPrefSlices.EDITED_COLLECTIONS,
+        ).forEach { key ->
+            val group = sharedStore.readSlice(key, SharedPrefSlices.CollectionMap) ?: return@forEach
+            for ((id, coll) in group) {
+                if (coll.type != "playlist") continue
+                val name = coll.name ?: continue
+                collections[id] = PlaylistSummary(
+                    id = id,
+                    name = name,
+                    itemUrls = coll.items,
+                    updatedAt = (coll.updatedAt ?: 0L) * 1000L,
+                    thumbnailUrl = coll.thumbnail?.url?.takeIf { it.isNotBlank() },
+                    description = coll.description?.takeIf { it.isNotBlank() },
+                    tags = coll.tags,
+                    isPublic = coll.isPublic == true,
+                )
             }
         }
 
@@ -270,6 +234,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertLocalPlaylist(draft: PlaylistDraft): String {
+        if (!signedIn()) return draft.id ?: ""
         val current = decode(authPreferences.customPlaylists.first()).toMutableList()
         val now = System.currentTimeMillis()
         val targetId = draft.id ?: ("local-" + java.util.UUID.randomUUID().toString().take(12))
@@ -308,6 +273,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteLocalPlaylist(id: String) {
+        if (!signedIn()) return
         val current = decode(authPreferences.customPlaylists.first())
         val updated = current.filterNot { it.id == id }
         authPreferences.setCustomPlaylists(encode(updated))
@@ -319,6 +285,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addItem(playlistId: String, permanentUrl: String) {
+        if (!signedIn()) return
         val url = permanentUrl.trim().ifBlank { return }
         val current = decode(authPreferences.customPlaylists.first()).toMutableList()
         val idx = current.indexOfFirst { it.id == playlistId }
@@ -334,6 +301,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removeItem(playlistId: String, permanentUrl: String) {
+        if (!signedIn()) return
         val url = permanentUrl.trim().ifBlank { return }
         val current = decode(authPreferences.customPlaylists.first()).toMutableList()
         val idx = current.indexOfFirst { it.id == playlistId }
@@ -349,6 +317,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setAutoPublish(playlistId: String, enabled: Boolean) {
+        if (!signedIn()) return
         val current = decode(authPreferences.customPlaylists.first()).toMutableList()
         val idx = current.indexOfFirst { it.id == playlistId }
         if (idx < 0) return

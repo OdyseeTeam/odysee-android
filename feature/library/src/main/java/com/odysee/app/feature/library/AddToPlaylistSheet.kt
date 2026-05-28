@@ -192,23 +192,6 @@ fun AddToPlaylistSheet(
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onDismiss()
-                                onCreateNew()
-                            }
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                    ) {
-                        Spacer(Modifier.size(20.dp))
-                        Spacer(Modifier.width(16.dp))
-                        Text(
-                            text = "Open full editor…",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
 
                 Row(

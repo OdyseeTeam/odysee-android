@@ -60,6 +60,8 @@ interface AuthRepository {
     suspend fun selectActiveChannel(claimId: String)
     /** Triggers an email with a reset link. The user follows that to set a new password. */
     suspend fun requestPasswordReset(email: String): SignInResult
+    /** Sends an account deletion request to the server and signs out locally on success. */
+    suspend fun requestAccountDeletion(): SignInResult
     /**
      * Completes email verification using the parameters from the verify deep link
      * ({@code odysee.com/$/verify?email=...&verification_token=...&auth_token=...}).
@@ -79,6 +81,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val favoritesRepository: Lazy<FavoritesRepository>,
     private val playlistsRepository: Lazy<PlaylistsRepository>,
     private val tagsRepository: Lazy<TagsRepository>,
+    private val walletSyncRepository: Lazy<com.odysee.app.core.data.wallet.WalletSyncRepository>,
 ) : AuthRepository {
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -95,7 +98,10 @@ class AuthRepositoryImpl @Inject constructor(
                     if (user != null) {
                         _state.value = stateFor(existing, user)
                         if (user.email != null) authPreferences.setEmail(user.email)
-                        if (_state.value is AuthState.SignedIn) loadChannels()
+                        if (_state.value is AuthState.SignedIn) {
+                            loadChannels()
+                            walletSyncRepository.get().sync()
+                        }
                         return@withLock
                     }
                 }
@@ -152,9 +158,20 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOut() {
+        // Best-effort server-side sign-out; if the network call fails we still
+        // tear down local state so the user appears signed out immediately.
+        runCatching { lbryioApi.userSignout() }
         authPreferences.setAuthToken(null)
         authPreferences.setEmail(null)
         authPreferences.setActiveChannelClaimId(null)
+        // Drop all account-bound local caches so a new sign-in starts clean and
+        // we don't leak the previous user's playlists / subs / etc.
+        authPreferences.setCustomPlaylists(null)
+        authPreferences.setWatchLater(emptyList())
+        authPreferences.setFavorites(emptyList())
+        authPreferences.setSubscriptions(emptyList())
+        authPreferences.setBlockedChannels(emptyList())
+        authPreferences.setFollowedTags(emptyList())
         authHolder.set(null)
         _state.value = AuthState.Loading
         ensureBootstrap()
@@ -167,7 +184,16 @@ class AuthRepositoryImpl @Inject constructor(
                 val user = env.data?.toDomain() ?: return@onSuccess
                 _state.value = stateFor(token, user)
                 if (user.email != null) authPreferences.setEmail(user.email)
-                if (_state.value is AuthState.SignedIn) loadChannels()
+                if (_state.value is AuthState.SignedIn) {
+                    loadChannels()
+                    walletSyncRepository.get().sync()
+                    // Push device locale to the server so regional content +
+                    // tax behaviour follow the user across devices.
+                    runCatching {
+                        java.util.Locale.getDefault().country.takeIf { it.isNotBlank() }
+                            ?.let { lbryioApi.userCountrySet(it) }
+                    }
+                }
             }
     }
 
@@ -261,6 +287,26 @@ class AuthRepositoryImpl @Inject constructor(
             onSuccess = { SignInResult.VerificationEmailSent },
             onFailure = { err ->
                 SignInResult.Failure(err.message ?: "Couldn't request password reset.")
+            },
+        )
+    }
+
+    override suspend fun requestAccountDeletion(): SignInResult {
+        return runCatching { lbryioApi.userDelete() }.fold(
+            onSuccess = { env ->
+                if (env.success) {
+                    // Server accepted the deletion request. Sign out locally so the
+                    // user can't keep using the app with a now-doomed account.
+                    signOut()
+                    SignInResult.Success
+                } else {
+                    // Server rejects deletion while the account still owns
+                    // claims, has open transactions, etc. Surface the reason.
+                    SignInResult.Failure(env.error ?: "Account can't be deleted right now.")
+                }
+            },
+            onFailure = { err ->
+                SignInResult.Failure(err.message ?: "Couldn't request account deletion.")
             },
         )
     }

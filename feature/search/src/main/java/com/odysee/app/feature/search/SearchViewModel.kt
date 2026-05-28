@@ -50,6 +50,7 @@ data class SearchUiState(
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val contentRepository: ContentRepository,
+    private val lbryioApi: com.odysee.app.core.network.LbryioApi,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchUiState())
@@ -78,6 +79,8 @@ class SearchViewModel @Inject constructor(
 
     private suspend fun runSearch(query: String) {
         _state.update { it.copy(state = SearchState.Loading) }
+        // Fire-and-forget analytics event so Odysee can count searches.
+        viewModelScope.launch { runCatching { lbryioApi.eventSearch() } }
         runCatching { contentRepository.search(query.trim()) }
             .onSuccess { claims ->
                 val results = claims.map { it.toUi() }

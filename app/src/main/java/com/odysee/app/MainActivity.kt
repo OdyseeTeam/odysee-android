@@ -78,6 +78,7 @@ class MainActivity : FragmentActivity() {
     @Inject lateinit var playerController: PlayerController
     @Inject lateinit var authRepository: AuthRepository
     @Inject lateinit var appUpdater: com.odysee.app.core.data.updater.AppUpdater
+    @Inject lateinit var authPreferences: com.odysee.app.core.datastore.AuthPreferences
 
     private var mediaControllerFuture:
         com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.MediaController>? = null
@@ -108,6 +109,22 @@ class MainActivity : FragmentActivity() {
         super.onStop()
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // User intentionally backgrounded the app (Home / Recents). If a video
+        // is currently playing, switch to the floating pop-up player so the
+        // user actually sees the picture, not just hears audio.
+        val state = playerController.state.value
+        val hasVideo = state.media?.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
+            state.media?.liveStreamUrl == null
+        if (!hasVideo) return
+        if (!playerController.isPipActive.value &&
+            android.provider.Settings.canDrawOverlays(this)
+        ) {
+            playerController.requestPip()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -131,7 +148,43 @@ class MainActivity : FragmentActivity() {
             lifecycleScope.launch { appUpdater.checkForUpdates(silent = true) }
         }
         setContent {
-            OdyseeTheme {
+            val themePref by authPreferences.themePreference
+                .collectAsStateWithLifecycle(initialValue = "system")
+            val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val useDark = when (themePref) {
+                "dark" -> true
+                "light" -> false
+                else -> systemDark
+            }
+            androidx.compose.runtime.DisposableEffect(useDark) {
+                // Re-apply edge-to-edge with the right icon brightness for the
+                // active theme. Without this, status bar icons follow the OS
+                // dark-mode setting, which can mismatch the app's forced theme
+                // and leave the icons invisible (e.g. light icons on light bg).
+                if (useDark) {
+                    enableEdgeToEdge(
+                        statusBarStyle = androidx.activity.SystemBarStyle.dark(
+                            android.graphics.Color.TRANSPARENT,
+                        ),
+                        navigationBarStyle = androidx.activity.SystemBarStyle.dark(
+                            android.graphics.Color.TRANSPARENT,
+                        ),
+                    )
+                } else {
+                    enableEdgeToEdge(
+                        statusBarStyle = androidx.activity.SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        ),
+                        navigationBarStyle = androidx.activity.SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        ),
+                    )
+                }
+                onDispose { }
+            }
+            OdyseeTheme(darkTheme = useDark) {
                 val authState by authRepository.state.collectAsStateWithLifecycle()
                 CompositionLocalProvider(
                     LocalPlayerController provides playerController,

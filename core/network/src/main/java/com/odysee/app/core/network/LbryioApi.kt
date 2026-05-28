@@ -210,4 +210,85 @@ interface LbryioApi {
     suspend fun customerList(
         @Field("claim_id_filter") claimIdFilter: String,
     ): LbryioEnvelope<List<com.odysee.app.core.network.dto.CustomerTransactionDto>?>
+
+    /**
+     * Wallet sync: ask the server for the canonical encrypted wallet blob.
+     * If the server's hash differs from ours, it returns the merged blob to
+     * apply locally via `sync_apply`.
+     */
+    @FormUrlEncoded
+    @POST("sync/get")
+    suspend fun syncGet(
+        @Field("hash") hash: String,
+    ): LbryioEnvelope<com.odysee.app.core.network.dto.SyncGetResponse?>
+
+    /** Upload an updated encrypted wallet blob back to the server. */
+    @FormUrlEncoded
+    @POST("sync/set")
+    suspend fun syncSet(
+        @Field("old_hash") oldHash: String,
+        @Field("new_hash") newHash: String,
+        @Field("data") data: String,
+    ): LbryioEnvelope<com.odysee.app.core.network.dto.SyncSetResponse?>
+
+    @FormUrlEncoded
+    @POST("user/delete")
+    suspend fun userDelete(
+        @Field("_") unused: String = "",
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("user/signout")
+    suspend fun userSignout(
+        @Field("_") unused: String = "",
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("notification/delete")
+    suspend fun notificationDelete(
+        @Field("notification_ids") notificationIds: String,
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("file/view")
+    suspend fun fileView(
+        @Field("uri") uri: String,
+        @Field("outpoint") outpoint: String,
+        @Field("claim_id") claimId: String,
+        @Field("time_to_start") timeToStartMs: Long? = null,
+    ): LbryioEnvelope<Boolean?>
+
+    /** Returns `{ claim_id: position_seconds }` for the requested claims. */
+    @FormUrlEncoded
+    @POST("file/last_positions")
+    suspend fun fileLastPositions(
+        @Field("claim_ids") claimIdsCsv: String,
+    ): LbryioEnvelope<Map<String, Double>?>
+
+    @FormUrlEncoded
+    @POST("user/language")
+    suspend fun userLanguage(
+        @Field("language") language: String,
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("user_country/set")
+    suspend fun userCountrySet(
+        @Field("country") country: String,
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("event/publish")
+    suspend fun eventPublish(
+        @Field("uri") uri: String,
+        @Field("claim_id") claimId: String,
+        @Field("outpoint") outpoint: String,
+        @Field("channel_claim_id") channelClaimId: String? = null,
+    ): LbryioEnvelope<Boolean?>
+
+    @FormUrlEncoded
+    @POST("event/search")
+    suspend fun eventSearch(
+        @Field("_") unused: String = "",
+    ): LbryioEnvelope<Boolean?>
 }

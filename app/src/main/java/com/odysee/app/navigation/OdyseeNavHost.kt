@@ -91,6 +91,24 @@ fun OdyseeNavHost(
     onNotificationsClick: () -> Unit,
 ) {
     val playerController = LocalPlayerController.current
+    androidx.compose.runtime.LaunchedEffect(playerController) {
+        // Centralized short → shorts-player routing. PlayerController emits to
+        // this whenever `play(media)` is invoked with `isShort = true`,
+        // regardless of which surface fired the call.
+        playerController.openShortsEvents.collect { media ->
+            navController.navigate(
+                ShortsRoute(
+                    initialClaimId = media.claimId,
+                    initialPermanentUrl = media.permanentUrl,
+                    initialTitle = media.title,
+                    initialChannelName = media.channelName,
+                    initialChannelClaimId = media.channelClaimId,
+                    initialChannelAvatarUrl = media.channelAvatarUrl,
+                    initialThumbnailUrl = media.thumbnailUrl,
+                ),
+            )
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = HomeRoute,
@@ -112,7 +130,8 @@ fun OdyseeNavHost(
                 ageLabel = video.ageLabel.takeIf { it.isNotEmpty() },
                 liveStreamUrl = video.liveStreamUrl,
             )
-            val pagerState = rememberPagerState(pageCount = { 2 })
+            // Guests don't have playlists, so the home pager collapses to just Home.
+            val pagerState = rememberPagerState(pageCount = { if (signedIn != null) 2 else 1 })
             val scope = rememberCoroutineScope()
             val hazeState = androidx.compose.runtime.remember { HazeState() }
             val showCreateMenuState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -211,7 +230,7 @@ fun OdyseeNavHost(
                         premiumTier = signedIn?.premiumTier ?: com.odysee.app.core.data.auth.PremiumTier.None,
                     )
                 }
-                androidx.compose.foundation.layout.Box(
+                if (signedIn != null) androidx.compose.foundation.layout.Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(androidx.compose.ui.Alignment.BottomCenter),
@@ -280,6 +299,20 @@ fun OdyseeNavHost(
                 },
                 onPlayClaimBackground = { media -> playerController.play(media, openMode = PlayerOpenMode.Minimized) },
                 onPlayClaimPip = { media -> playerController.play(media, openMode = PlayerOpenMode.Pip) },
+                onWatchShort = { target ->
+                    playerController.close()
+                    navController.navigate(
+                        ShortsRoute(
+                            initialClaimId = target.claimId,
+                            initialPermanentUrl = target.permanentUrl,
+                            initialTitle = target.title,
+                            initialChannelName = target.channelName,
+                            initialChannelClaimId = target.channelClaimId,
+                            initialChannelAvatarUrl = target.channelAvatarUrl,
+                            initialThumbnailUrl = target.thumbnailUrl,
+                        ),
+                    )
+                },
             )
         }
         composable<CreatorMembershipsRoute> {

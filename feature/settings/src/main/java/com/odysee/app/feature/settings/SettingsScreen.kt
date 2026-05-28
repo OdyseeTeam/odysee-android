@@ -374,7 +374,9 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteAccount = false
-                    toast(ctx, "Deletion request sent")
+                    viewModel.requestAccountDeletion { ok, msg ->
+                        toast(ctx, if (ok) "Deletion request sent" else (msg ?: "Couldn't send request"))
+                    }
                 }) { Text("Send request") }
             },
             dismissButton = {
