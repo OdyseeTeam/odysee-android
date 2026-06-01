@@ -212,8 +212,22 @@ class PlayerController @Inject constructor(
     val castController: com.odysee.app.core.data.cast.CastController,
 ) {
     private val context: Context = appContext
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var playbackServiceStarted = false
+
+    private val _state = MutableStateFlow(PlayerState())
+    val state: StateFlow<PlayerState> = _state.asStateFlow()
+    private val _uiCommands = Channel<PlayerUiCommand>(Channel.UNLIMITED)
+    val uiCommands: Flow<PlayerUiCommand> = _uiCommands.receiveAsFlow()
+    private val _openShortsEvents = Channel<CurrentMedia>(Channel.UNLIMITED)
+    val openShortsEvents: Flow<CurrentMedia> = _openShortsEvents.receiveAsFlow()
+    private val _isPipActive = MutableStateFlow(false)
+    val isPipActive: StateFlow<Boolean> = _isPipActive.asStateFlow()
+    private val _isFullscreen = MutableStateFlow(false)
+    val isFullscreen: StateFlow<Boolean> = _isFullscreen.asStateFlow()
+    private val _activeVideoHeight = MutableStateFlow(0)
+    val activeVideoHeight: StateFlow<Int> = _activeVideoHeight.asStateFlow()
+    private val savedPositions = mutableMapOf<String, Long>()
 
     private fun ensurePlaybackServiceStarted() {
         if (playbackServiceStarted) return
@@ -327,8 +341,6 @@ class PlayerController @Inject constructor(
         }
     }
 
-    private val savedPositions = mutableMapOf<String, Long>()
-
     private var watchmanProgressJob: Job? = null
     private fun startWatchmanProgressLoop() {
         if (watchmanProgressJob?.isActive == true) return
@@ -441,29 +453,9 @@ class PlayerController @Inject constructor(
         })
     }
 
-    private val _state = MutableStateFlow(PlayerState())
-    val state: StateFlow<PlayerState> = _state.asStateFlow()
-
-    private val _uiCommands = Channel<PlayerUiCommand>(Channel.UNLIMITED)
-    val uiCommands: Flow<PlayerUiCommand> = _uiCommands.receiveAsFlow()
-
-    /**
-     * Emitted when `play(media)` is invoked with a short. The host (NavHost)
-     * collects this and routes to the dedicated shorts player instead of
-     * preparing the regular video surface.
-     */
-    private val _openShortsEvents = Channel<CurrentMedia>(Channel.UNLIMITED)
-    val openShortsEvents: Flow<CurrentMedia> = _openShortsEvents.receiveAsFlow()
-
-    private val _isPipActive = MutableStateFlow(false)
-    val isPipActive: StateFlow<Boolean> = _isPipActive.asStateFlow()
-
     fun setPipActive(active: Boolean) {
         _isPipActive.value = active
     }
-
-    private val _isFullscreen = MutableStateFlow(false)
-    val isFullscreen: StateFlow<Boolean> = _isFullscreen.asStateFlow()
 
     fun setFullscreen(active: Boolean) {
         _isFullscreen.value = active
@@ -479,9 +471,6 @@ class PlayerController @Inject constructor(
     fun setAutoplayMedia(value: Boolean) {
         scope.launch { authPreferences.setAutoplayMedia(value) }
     }
-
-    private val _activeVideoHeight = MutableStateFlow(0)
-    val activeVideoHeight: StateFlow<Int> = _activeVideoHeight.asStateFlow()
 
     private var resolveJob: Job? = null
     private var commentsJob: Job? = null

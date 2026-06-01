@@ -6,6 +6,7 @@ import com.odysee.app.core.data.collections.WatchLaterRepository
 import com.odysee.app.core.data.moderation.BlockedChannelsRepository
 import com.odysee.app.core.data.subscriptions.SubscriptionsRepository
 import com.odysee.app.core.data.tags.TagsRepository
+import com.odysee.app.core.common.telemetry.CrashReporter
 import com.odysee.app.core.datastore.AuthPreferences
 import com.odysee.app.core.model.Channel
 import com.odysee.app.core.model.User
@@ -82,6 +83,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val playlistsRepository: Lazy<PlaylistsRepository>,
     private val tagsRepository: Lazy<TagsRepository>,
     private val walletSyncRepository: Lazy<com.odysee.app.core.data.wallet.WalletSyncRepository>,
+    private val crashReporter: CrashReporter,
 ) : AuthRepository {
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -98,6 +100,7 @@ class AuthRepositoryImpl @Inject constructor(
                     if (user != null) {
                         _state.value = stateFor(existing, user)
                         if (user.email != null) authPreferences.setEmail(user.email)
+                        crashReporter.setUserId(user.id?.toString())
                         if (_state.value is AuthState.SignedIn) {
                             loadChannels()
                             walletSyncRepository.get().sync()
@@ -173,6 +176,7 @@ class AuthRepositoryImpl @Inject constructor(
         authPreferences.setBlockedChannels(emptyList())
         authPreferences.setFollowedTags(emptyList())
         authHolder.set(null)
+        crashReporter.setUserId(null)
         _state.value = AuthState.Loading
         ensureBootstrap()
     }
@@ -184,15 +188,10 @@ class AuthRepositoryImpl @Inject constructor(
                 val user = env.data?.toDomain() ?: return@onSuccess
                 _state.value = stateFor(token, user)
                 if (user.email != null) authPreferences.setEmail(user.email)
+                crashReporter.setUserId(user.id?.toString())
                 if (_state.value is AuthState.SignedIn) {
                     loadChannels()
                     walletSyncRepository.get().sync()
-                    // Push device locale to the server so regional content +
-                    // tax behaviour follow the user across devices.
-                    runCatching {
-                        java.util.Locale.getDefault().country.takeIf { it.isNotBlank() }
-                            ?.let { lbryioApi.userCountrySet(it) }
-                    }
                 }
             }
     }

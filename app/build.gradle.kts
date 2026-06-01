@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val keystoreProps = Properties().apply {
@@ -29,7 +31,7 @@ android {
         // installs treat the native build as an update and migrate.
         // Cordova's apk.odysee.tv/release.json was at 124 when the native
         // app shipped; 125 is the first native release. Bump monotonically.
-        versionCode = 125
+        versionCode = 126
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -45,7 +47,6 @@ android {
         create("apk") {
             dimension = "distribution"
             applicationId = "com.odysee.app"
-            versionNameSuffix = "-apk"
             buildConfigField("boolean", "BUILT_IN_UPDATER", "true")
         }
         create("foss") {
@@ -69,7 +70,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -81,6 +83,28 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    bundle {
+        language { enableSplit = true }
+        density { enableSplit = true }
+        abi { enableSplit = true }
+    }
+
+    androidComponents {
+        beforeVariants(selector().withFlavor("distribution" to "foss")) { variant ->
+            variant.androidTest?.enable = false
+        }
+        onVariants(selector().withFlavor("distribution" to "foss")) { variant ->
+            project.afterEvaluate {
+                tasks.matching {
+                    val n = it.name
+                    n.contains(variant.name, ignoreCase = true) &&
+                        (n.contains("GoogleServices", ignoreCase = true) ||
+                            n.contains("Crashlytics", ignoreCase = true))
+                }.configureEach { enabled = false }
+            }
+        }
     }
 
     sourceSets {

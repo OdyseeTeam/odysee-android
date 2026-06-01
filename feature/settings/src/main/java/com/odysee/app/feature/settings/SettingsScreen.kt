@@ -279,7 +279,29 @@ fun SettingsScreen(
             item { Divider() }
 
             item { SectionHeader("About") }
-            item { InfoRow(title = "Version", subtitle = "Native Android — early access") }
+            item {
+                val versionLabel = remember(ctx) {
+                    runCatching {
+                        val info = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+                        val code = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+                            info.longVersionCode else info.versionCode.toLong()
+                        "${info.versionName} ($code)"
+                    }.getOrDefault("unknown")
+                }
+                InfoRow(title = "Version", subtitle = versionLabel)
+            }
+            item {
+                ActionRow(
+                    title = "Privacy policy",
+                    onClick = { openUrl(ctx, "https://odysee.com/\$/privacypolicy") },
+                )
+            }
+            item {
+                ActionRow(
+                    title = "Terms of service",
+                    onClick = { openUrl(ctx, "https://odysee.com/\$/tos") },
+                )
+            }
             if (viewModel.updaterSupported) {
                 item {
                     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
@@ -390,6 +412,15 @@ private fun toast(ctx: android.content.Context, msg: String) {
     android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
 }
 
+private fun openUrl(ctx: android.content.Context, url: String) {
+    runCatching {
+        ctx.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }
+}
+
 @Composable
 private fun SectionHeader(text: String) {
     Text(
@@ -441,7 +472,7 @@ private fun ToggleRow(
 @Composable
 private fun ActionRow(
     title: String,
-    subtitle: String?,
+    subtitle: String? = null,
     onClick: () -> Unit,
 ) {
     Row(

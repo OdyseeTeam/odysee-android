@@ -27,7 +27,7 @@ class NotificationPreferences @Inject constructor(
         prefs[KEY_MODE]?.let { runCatching { NotificationDeliveryMode.valueOf(it) }.getOrNull() }
     }
 
-    val pollIntervalMinutes: Flow<Int> = store.data.map { it[KEY_POLL_INTERVAL_MIN] ?: 30 }
+    val pollIntervalMinutes: Flow<Int> = store.data.map { it[KEY_POLL_INTERVAL_MIN] ?: DEFAULT_POLL_INTERVAL_MIN }
 
     val lastSeenNotificationId: Flow<Long> = store.data.map { it[KEY_LAST_SEEN_ID] ?: 0L }
 
@@ -59,7 +59,7 @@ class NotificationPreferences @Inject constructor(
     companion object {
         const val MIN_POLL_INTERVAL_MIN = 15
         const val MAX_POLL_INTERVAL_MIN = 24 * 60
-        const val DEFAULT_POLL_INTERVAL_MIN = 30
+        const val DEFAULT_POLL_INTERVAL_MIN = 60
 
         private val KEY_MODE = stringPreferencesKey("delivery_mode")
         private val KEY_POLL_INTERVAL_MIN = intPreferencesKey("poll_interval_min")

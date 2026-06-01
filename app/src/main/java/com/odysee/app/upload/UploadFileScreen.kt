@@ -100,7 +100,7 @@ fun UploadFileScreen(
                 )
             }
             val name = uri.lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':') ?: "video"
-            val mime = context.contentResolver.getType(uri)
+            val mime = resolveMime(context, uri, name)
             viewModel.onPickFile(uri.toString(), name, mime)
         }
     }
@@ -1304,6 +1304,20 @@ private fun BoxScope.TileBadge(text: String) {
             color = Color.White,
         )
     }
+}
+
+private fun resolveMime(
+    context: android.content.Context,
+    uri: android.net.Uri,
+    name: String,
+): String? {
+    val resolved = context.contentResolver.getType(uri)
+    if (!resolved.isNullOrBlank() && resolved != "application/octet-stream") return resolved
+    val ext = name.substringAfterLast('.', "").lowercase().takeIf { it.isNotBlank() }
+        ?: android.webkit.MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+            ?.lowercase()?.takeIf { it.isNotBlank() }
+        ?: return resolved
+    return android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: resolved
 }
 
 private fun extractFrameOptions(

@@ -1,0 +1,13 @@
+Complete native rewrite of the Odysee app.
+
+Added
+- Native Android UI built with Jetpack Compose
+- Faster startup, smoother scrolling, lower battery use
+- Picture-in-Picture and background audio
+- Cross-device watch position sync
+- Server-backed playlists, watch later, favorites
+- New wallet sync flow
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications (periodic background fetch instead, defaults to 1 hour)

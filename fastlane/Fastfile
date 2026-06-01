@@ -1,0 +1,14 @@
+default_platform(:android)
+
+platform :android do
+  desc "Run unit tests for all variants"
+  lane :test do
+    gradle(task: "testPlayDebugUnitTest testFossDebugUnitTest testApkDebugUnitTest")
+  end
+
+  desc "Build the FOSS release APK that F-Droid mirrors when building from source"
+  lane :fdroid_artifact do
+    gradle(task: "clean")
+    gradle(task: ":app:assembleFossRelease")
+  end
+end

@@ -1,0 +1,6 @@
+Added\
+- Fix back button
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications

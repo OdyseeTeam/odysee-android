@@ -1,0 +1,17 @@
+Added: 
+- Experimental Chromecast support (if having trouble, try on another video)
+- Content recommendations on Homepage - requires premium
+- Customize Homepage - requires premium
+- Optimized thumbnails, hopefully results in faster load times!
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications
+
+Fixed: 
+- Hopefully crashes less!
+- Sign in with verifications links opening in app
+
+Known issues:
+- No Picture in Picture, but background play functional
+- Short pause if using background play on minimize/maximize.

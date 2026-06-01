@@ -1,0 +1,8 @@
+Added
+- 2 years of updates
+- Picture-in-Picture support
+- Skip forward/backward media controls
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications

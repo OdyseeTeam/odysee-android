@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -133,6 +134,12 @@ class HomeViewModel @Inject constructor(
     private var userPickedCategory = false
     @Volatile private var homepageLanguage: String? = null
 
+    private var allLivestreams: List<VideoUiModel> = emptyList()
+    private var allUpcoming: List<VideoUiModel> = emptyList()
+    private var livestreamLoaded = false
+    private val pagesLoaded = mutableMapOf<String, Int>()
+    private val exhausted = mutableSetOf<String>()
+
     init {
         loadHomepage()
         loadLivestreamFeeds()
@@ -144,14 +151,20 @@ class HomeViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            var first = true
             authPreferences.homepageLanguage.collect { lang ->
                 val cleaned = lang?.takeIf { it.isNotBlank() }
-                if (cleaned != homepageLanguage) {
-                    homepageLanguage = cleaned
+                val changed = cleaned != homepageLanguage
+                homepageLanguage = cleaned
+                if (first) {
+                    first = false
+                    return@collect
+                }
+                if (changed) {
                     cache.clear()
                     pagesLoaded.clear()
                     exhausted.clear()
-                    _state.value.selectedCategoryId?.let { loadCategory(it) }
+                    loadHomepage()
                 }
             }
         }
@@ -212,9 +225,6 @@ class HomeViewModel @Inject constructor(
     }
 
     private var livestreamJob: Job? = null
-    private var livestreamLoaded = false
-    private var allLivestreams: List<VideoUiModel> = emptyList()
-    private var allUpcoming: List<VideoUiModel> = emptyList()
 
     fun setContentTypes(types: Set<String>) {
         _state.update { it.copy(selectedContentTypes = types) }
@@ -307,7 +317,9 @@ class HomeViewModel @Inject constructor(
 
     fun loadHomepage() {
         viewModelScope.launch {
-            val lang = resolveHomepageLang()
+            val pref = homepageLanguage ?: authPreferences.homepageLanguage.first()?.takeIf { it.isNotBlank() }
+            homepageLanguage = pref
+            val lang = pref ?: resolveHomepageLang()
             _state.update { it.copy(isLoadingHomepage = true, homepageError = null) }
             runCatching { contentRepository.getHomepage(lang) }
                 .onSuccess { homepage ->
@@ -375,9 +387,7 @@ class HomeViewModel @Inject constructor(
         loadCategory(id)
     }
 
-    private val pagesLoaded = mutableMapOf<String, Int>()
     private val loadingMore = mutableSetOf<String>()
-    private val exhausted = mutableSetOf<String>()
     private var followingPage = 1
     private var followingLoadingMore = false
     private var followingExhausted = false
