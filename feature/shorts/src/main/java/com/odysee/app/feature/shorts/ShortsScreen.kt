@@ -36,7 +36,9 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.PlaylistPlay
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.Icon
@@ -328,12 +330,14 @@ private fun ShortsInfoSheet(
                     isSubscribed -> MaterialTheme.colorScheme.onSurfaceVariant
                     else -> Color.White
                 }
+                var showUnfollowConfirm by remember { mutableStateOf(false) }
                 Box(
                     modifier = Modifier
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
                         .background(bg)
                         .clickable(enabled = canSubscribe) {
-                            viewModel.toggleSubscribe(cid, short.channelName)
+                            if (isSubscribed) showUnfollowConfirm = true
+                            else viewModel.toggleSubscribe(cid, short.channelName)
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
@@ -344,8 +348,59 @@ private fun ShortsInfoSheet(
                         color = fg,
                     )
                 }
+                if (showUnfollowConfirm) {
+                    val name = short.channelTitle?.takeIf { it.isNotBlank() } ?: short.channelName
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showUnfollowConfirm = false },
+                        title = { Text("Unfollow $name?") },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                showUnfollowConfirm = false
+                                viewModel.toggleSubscribe(cid, short.channelName)
+                            }) { Text("Unfollow") }
+                        },
+                        dismissButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                showUnfollowConfirm = false
+                            }) { Text("Cancel") }
+                        },
+                    )
+                }
             }
         }
+        Spacer(Modifier.height(16.dp))
+        val reactions = viewModel.state.collectAsStateWithLifecycle().value
+            .reactionsByClaim[short.claimId]
+        val likes = reactions?.likes ?: 0L
+        val dislikes = reactions?.dislikes ?: 0L
+        val myReaction = reactions?.myReaction ?: MyReaction.NONE
+        ShortsInfoReactionRow(
+            likes = likes,
+            dislikes = dislikes,
+            myReaction = myReaction,
+            onLike = { viewModel.toggleLike(short.claimId) },
+            onDislike = { viewModel.toggleDislike(short.claimId) },
+        )
+        Spacer(Modifier.height(12.dp))
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val inWatchLater = short.claimId in viewModel.watchLaterIds.collectAsStateWithLifecycle().value
+        val inFavorites = short.claimId in viewModel.favoriteIds.collectAsStateWithLifecycle().value
+        ShortsInfoActionRow(
+            inWatchLater = inWatchLater,
+            inFavorites = inFavorites,
+            onWatchLater = { viewModel.toggleWatchLater(short) },
+            onFavorite = { viewModel.toggleFavorite(short) },
+            onShare = {
+                val stripped = short.permanentUrl.removePrefix("lbry://")
+                val url = "https://odysee.com/$stripped"
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, short.title)
+                    putExtra(android.content.Intent.EXTRA_TEXT, url)
+                }
+                ctx.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+            },
+        )
         if (!short.description.isNullOrBlank()) {
             Spacer(Modifier.height(16.dp))
             Text(
@@ -414,7 +469,11 @@ private fun formatFollowerCountShort(count: Long): String = when {
 
 @Composable
 private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
-    val comments by viewModel.commentsFor(claimId).collectAsStateWithLifecycle(initialValue = null)
+    val commentsFlow = remember(claimId) { viewModel.commentsFor(claimId) }
+    val comments by commentsFlow.collectAsStateWithLifecycle(initialValue = null)
+    var commentText by remember(claimId) { mutableStateOf("") }
+    var posting by remember(claimId) { mutableStateOf(false) }
+    val canPost by viewModel.canComment.collectAsStateWithLifecycle()
     Column(modifier = Modifier.fillMaxWidth().height(560.dp).padding(16.dp)) {
         Text(
             text = "Comments",
@@ -424,13 +483,12 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
         )
         Spacer(Modifier.height(8.dp))
         val list = comments
-        if (list == null) {
-            Box(
+        when {
+            list == null -> Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center,
             ) { androidx.compose.material3.CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
-        } else if (list.isEmpty()) {
-            Box(
+            list.isEmpty() -> Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
@@ -440,8 +498,7 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            else -> LazyColumn(modifier = Modifier.weight(1f)) {
                 items(items = list, key = { it.commentId }) { c ->
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
                         Text(
@@ -460,6 +517,176 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
                 }
             }
         }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.OutlinedTextField(
+                value = commentText,
+                onValueChange = { commentText = it },
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(if (canPost) "Add a comment…" else "Sign in to comment")
+                },
+                enabled = canPost && !posting,
+                maxLines = 4,
+            )
+            Spacer(Modifier.width(8.dp))
+            androidx.compose.material3.TextButton(
+                enabled = canPost && !posting && commentText.isNotBlank(),
+                onClick = {
+                    posting = true
+                    viewModel.postComment(claimId, commentText.trim()) { ok ->
+                        posting = false
+                        if (ok) commentText = ""
+                    }
+                },
+            ) {
+                Text(if (posting) "…" else "Post")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortsInfoReactionRow(
+    likes: Long,
+    dislikes: Long,
+    myReaction: MyReaction,
+    onLike: () -> Unit,
+    onDislike: () -> Unit,
+) {
+    val liked = myReaction == MyReaction.LIKE
+    val disliked = myReaction == MyReaction.DISLIKE
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onLike)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(
+                    id = if (liked) DesignR.drawable.ic_reaction_fire_active
+                    else DesignR.drawable.ic_reaction_fire,
+                ),
+                contentDescription = "Like",
+                modifier = Modifier.size(20.dp),
+                colorFilter = if (liked) null
+                else androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = formatFollowerCountShort(likes),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .width(1.dp)
+                .height(24.dp),
+        )
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onDislike)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(
+                    id = if (disliked) DesignR.drawable.ic_reaction_slime_active
+                    else DesignR.drawable.ic_reaction_slime,
+                ),
+                contentDescription = "Dislike",
+                modifier = Modifier.size(20.dp),
+                colorFilter = if (disliked) null
+                else androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = formatFollowerCountShort(dislikes),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShortsInfoActionRow(
+    inWatchLater: Boolean,
+    inFavorites: Boolean,
+    onWatchLater: () -> Unit,
+    onFavorite: () -> Unit,
+    onShare: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ShortsActionButton(
+            label = if (inWatchLater) "Saved" else "Later",
+            iconVector = Icons.Outlined.Schedule,
+            highlight = inWatchLater,
+            onClick = onWatchLater,
+            modifier = Modifier.weight(1f),
+        )
+        ShortsActionButton(
+            label = if (inFavorites) "Faved" else "Fave",
+            iconVector = Icons.Outlined.Star,
+            highlight = inFavorites,
+            onClick = onFavorite,
+            modifier = Modifier.weight(1f),
+        )
+        ShortsActionButton(
+            label = "Share",
+            iconVector = Icons.Outlined.Share,
+            onClick = onShare,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun ShortsActionButton(
+    label: String,
+    iconVector: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    highlight: Boolean = false,
+) {
+    Column(
+        modifier = modifier
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+            .background(
+                if (highlight) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        androidx.compose.material3.Icon(
+            imageVector = iconVector,
+            contentDescription = label,
+            tint = if (highlight) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (highlight) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -658,7 +885,15 @@ private fun ShortPage(
                 onClick = { viewModel.toggleDislike(item.claimId) },
             )
             Spacer(Modifier.height(14.dp))
-            // Channel avatar = tap to open channel. Heart badge = tap to subscribe.
+            val canSubscribe = viewModel.state.collectAsStateWithLifecycle().value.isSignedIn
+            var showUnfollowConfirm by remember { mutableStateOf(false) }
+            val onSubscribeTap: () -> Unit = {
+                val cid = item.channelClaimId
+                if (cid != null) {
+                    if (isSubscribed) showUnfollowConfirm = true
+                    else viewModel.toggleSubscribe(cid, item.channelName)
+                }
+            }
             Box(modifier = Modifier.size(SHORTS_BUTTON_SIZE + 10.dp)) {
                 Box(
                     modifier = Modifier
@@ -666,7 +901,7 @@ private fun ShortPage(
                         .align(Alignment.TopCenter)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
-                        .clickable(onClick = onChannelClick),
+                        .clickable(enabled = canSubscribe, onClick = onSubscribeTap),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (!item.channelAvatarUrl.isNullOrBlank()) {
@@ -690,13 +925,7 @@ private fun ShortPage(
                         .align(Alignment.BottomCenter)
                         .size(22.dp)
                         .clip(CircleShape)
-                        .clickable(
-                            enabled = viewModel.state.collectAsStateWithLifecycle().value.isSignedIn,
-                        ) {
-                            item.channelClaimId?.let {
-                                viewModel.toggleSubscribe(it, item.channelName)
-                            }
-                        },
+                        .clickable(enabled = canSubscribe, onClick = onSubscribeTap),
                     contentAlignment = Alignment.Center,
                 ) {
                     androidx.compose.foundation.Image(
@@ -708,6 +937,26 @@ private fun ShortPage(
                         modifier = Modifier.size(18.dp),
                     )
                 }
+            }
+            if (showUnfollowConfirm) {
+                val name = item.channelTitle?.takeIf { it.isNotBlank() } ?: item.channelName
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showUnfollowConfirm = false },
+                    title = { Text("Unfollow $name?") },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            showUnfollowConfirm = false
+                            item.channelClaimId?.let {
+                                viewModel.toggleSubscribe(it, item.channelName)
+                            }
+                        }) { Text("Unfollow") }
+                    },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            showUnfollowConfirm = false
+                        }) { Text("Cancel") }
+                    },
+                )
             }
             Spacer(Modifier.height(14.dp))
             ShortsRoundedIcon(

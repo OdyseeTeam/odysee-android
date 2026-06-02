@@ -73,6 +73,35 @@
             android:textSize="12sp"
             android:paddingHorizontal="4dp" />
 
+        <LinearLayout
+            android:id="@+id/odysee_live_button"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|start"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/odysee_live_dot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/odysee_live_dot" />
+
+            <TextView
+                android:id="@+id/odysee_live_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="LIVE"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="12sp" />
+        </LinearLayout>
+
         <ImageButton
             android:id="@+id/odysee_player_pip_btn"
             android:layout_width="40dp"

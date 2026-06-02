@@ -1,0 +1,13 @@
+Added
+- Live indicator (red dot + LIVE) replaces the timeline on livestreams; tap it to jump to the live edge
+- Shorts info drawer: like/dislike, Later, Fave and Share buttons
+- Shorts comments drawer: comment input
+- Unfollow confirmation dialog from the Shorts player and info drawer, matching the web flow
+
+Fixed
+- Shorts now retry transient CDN rate limits (429) instead of giving up
+- Channel avatar in the Shorts right-side rail toggles subscribe (was opening the channel)
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications (periodic background fetch instead, defaults to 1 hour)

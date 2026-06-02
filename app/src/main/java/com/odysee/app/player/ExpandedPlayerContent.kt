@@ -355,6 +355,33 @@ fun ExpandedPlayerContent(
                         cog.animate().cancel()
                         cog.animate().rotation(if (showPlayerSettings) 90f else 0f).setDuration(220).start()
                     }
+                    val isLive = media.liveStreamUrl != null
+                    val V = android.view.View.VISIBLE
+                    val G = android.view.View.GONE
+                    view.findViewById<android.view.View?>(androidx.media3.ui.R.id.exo_position)?.visibility =
+                        if (isLive) G else V
+                    view.findViewById<android.view.View?>(androidx.media3.ui.R.id.exo_duration)?.visibility =
+                        if (isLive) G else V
+                    view.findViewById<android.view.View?>(androidx.media3.ui.R.id.exo_progress)?.visibility =
+                        if (isLive) G else V
+                    val liveButton = view.findViewById<android.widget.LinearLayout?>(R.id.odysee_live_button)
+                    liveButton?.visibility = if (isLive) V else G
+                    if (isLive) {
+                        val atEdge = run {
+                            val dur = controller.exoPlayer.duration
+                            val pos = controller.exoPlayer.currentPosition
+                            dur > 0 && (dur - pos) < 5_000L
+                        }
+                        view.findViewById<android.view.View?>(R.id.odysee_live_dot)?.alpha =
+                            if (atEdge) 1f else 0.45f
+                        view.findViewById<android.widget.TextView?>(R.id.odysee_live_label)?.alpha =
+                            if (atEdge) 1f else 0.7f
+                        liveButton?.setOnClickListener {
+                            val dur = controller.exoPlayer.duration
+                            if (dur > 0) controller.exoPlayer.seekTo(dur)
+                            else controller.exoPlayer.seekToDefaultPosition()
+                        }
+                    }
                 },
             )
             }

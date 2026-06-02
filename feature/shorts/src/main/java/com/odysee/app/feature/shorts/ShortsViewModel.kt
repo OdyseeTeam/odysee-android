@@ -23,6 +23,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -71,7 +73,63 @@ class ShortsViewModel @Inject constructor(
     private val authPreferences: AuthPreferences,
     private val authRepository: com.odysee.app.core.data.auth.AuthRepository,
     private val lbryioApi: com.odysee.app.core.network.LbryioApi,
+    private val watchLaterRepository: com.odysee.app.core.data.collections.WatchLaterRepository,
+    private val favoritesRepository: com.odysee.app.core.data.collections.FavoritesRepository,
 ) : ViewModel() {
+
+    val canComment: StateFlow<Boolean> = authRepository.state
+        .map { (it as? com.odysee.app.core.data.auth.AuthState.SignedIn)?.activeChannel != null }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
+    val watchLaterIds: StateFlow<Set<String>> = watchLaterRepository.items
+        .map { items -> items.map { it.claimId }.toSet() }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptySet())
+    val favoriteIds: StateFlow<Set<String>> = favoritesRepository.items
+        .map { items -> items.map { it.claimId }.toSet() }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptySet())
+
+    fun toggleWatchLater(item: ShortUi) = viewModelScope.launch {
+        val entry = com.odysee.app.core.data.collections.CollectionEntry(
+            claimId = item.claimId,
+            permanentUrl = item.permanentUrl,
+            title = item.title,
+            channelName = item.channelName,
+            channelClaimId = item.channelClaimId,
+            thumbnailUrl = item.thumbnailUrl,
+            addedAt = System.currentTimeMillis(),
+        )
+        if (item.claimId in watchLaterIds.value) watchLaterRepository.remove(item.claimId)
+        else watchLaterRepository.add(entry)
+    }
+
+    fun toggleFavorite(item: ShortUi) = viewModelScope.launch {
+        val entry = com.odysee.app.core.data.collections.CollectionEntry(
+            claimId = item.claimId,
+            permanentUrl = item.permanentUrl,
+            title = item.title,
+            channelName = item.channelName,
+            channelClaimId = item.channelClaimId,
+            thumbnailUrl = item.thumbnailUrl,
+            addedAt = System.currentTimeMillis(),
+        )
+        if (item.claimId in favoriteIds.value) favoritesRepository.remove(item.claimId)
+        else favoritesRepository.add(entry)
+    }
+
+    fun postComment(claimId: String, text: String, onPosted: (Boolean) -> Unit = {}) = viewModelScope.launch {
+        val auth = authRepository.state.value as? com.odysee.app.core.data.auth.AuthState.SignedIn
+        val ch = auth?.activeChannel
+        if (ch == null) { onPosted(false); return@launch }
+        val result = runCatching {
+            contentRepository.postComment(
+                claimId = claimId,
+                channelId = ch.claimId,
+                channelName = ch.name,
+                text = text,
+            )
+        }
+        onPosted(result.isSuccess)
+    }
 
     private val route: ShortsRoute = savedStateHandle.toRoute()
 
@@ -122,7 +180,29 @@ class ShortsViewModel @Inject constructor(
                     androidx.media3.datasource.DefaultHttpDataSource.Factory()
                         .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
                         .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
-                        .setAllowCrossProtocolRedirects(true),
+                        .setAllowCrossProtocolRedirects(true)
+                        .setConnectTimeoutMs(30_000)
+                        .setReadTimeoutMs(30_000),
+                )
+                .setLoadErrorHandlingPolicy(
+                    object : androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy() {
+                        override fun getRetryDelayMsFor(
+                            loadErrorInfo: androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo,
+                        ): Long {
+                            val ex = loadErrorInfo.exception
+                            if (ex is androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException) {
+                                if (ex.responseCode == 429 || ex.responseCode in 500..599) {
+                                    if (loadErrorInfo.errorCount > 24) return androidx.media3.common.C.TIME_UNSET
+                                    val base = 2000L
+                                    val backoff = base * (1L shl (loadErrorInfo.errorCount.coerceAtMost(4) - 1).coerceAtLeast(0))
+                                    return backoff.coerceAtMost(15_000L)
+                                }
+                            }
+                            return super.getRetryDelayMsFor(loadErrorInfo)
+                        }
+
+                        override fun getMinimumLoadableRetryCount(dataType: Int): Int = Int.MAX_VALUE
+                    },
                 ),
         )
         .build().apply {
