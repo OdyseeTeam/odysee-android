@@ -105,9 +105,10 @@ fun OdyseeClaimCard(
     onLongPress: () -> Unit = {},
     showChannelAvatar: Boolean = true,
     landscapeThumbnailWidthFraction: Float = 0.42f,
+    forceColumnLayout: Boolean = false,
 ) {
     val haptics = LocalHapticFeedback.current
-    val landscape = LocalConfiguration.current.orientation ==
+    val landscape = !forceColumnLayout && LocalConfiguration.current.orientation ==
         android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val rowModifier = Modifier
         .fillMaxWidth()

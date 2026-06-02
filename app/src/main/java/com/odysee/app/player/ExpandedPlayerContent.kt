@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -241,20 +242,17 @@ fun ExpandedPlayerContent(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .then(
-                if (isFullscreen) Modifier
-                else Modifier.statusBarsPadding().navigationBarsPadding(),
-            ),
-    ) {
-        Box(
-            modifier = if (isFullscreen)
-                Modifier.fillMaxSize()
-            else Modifier.fillMaxWidth(),
-        ) {
+    val wide = !isFullscreen && com.odysee.app.core.designsystem.layout.rememberWindowSize()
+        .ordinal >= com.odysee.app.core.designsystem.layout.WindowSize.Expanded.ordinal
+    val outerModifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .then(
+            if (isFullscreen) Modifier
+            else Modifier.statusBarsPadding().navigationBarsPadding(),
+        )
+    val videoSurface: @Composable (Modifier) -> Unit = { videoModifier ->
+        Box(modifier = videoModifier) {
             val renderMode = media.renderMode
             when (renderMode) {
                 com.odysee.app.core.data.player.MediaRenderMode.Image ->
@@ -420,7 +418,7 @@ fun ExpandedPlayerContent(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(end = 48.dp, top = 8.dp)
+                        .padding(end = 48.dp, top = 6.dp)
                         .size(36.dp),
                 ) {
                     com.odysee.app.cast.OdyseeCastButton(modifier = Modifier.size(36.dp))
@@ -431,7 +429,8 @@ fun ExpandedPlayerContent(
             }
             }
         }
-        if (isFullscreen) return@Column
+    }
+    val sidePane: @Composable ColumnScope.() -> Unit = {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f).fillMaxSize(),
@@ -568,6 +567,30 @@ fun ExpandedPlayerContent(
                     unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+
+    if (wide) {
+        Row(modifier = outerModifier) {
+            Box(
+                modifier = Modifier
+                    .weight(1.6f)
+                    .fillMaxHeight()
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                videoSurface(Modifier.fillMaxWidth())
+            }
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                sidePane()
+            }
+        }
+    } else {
+        Column(modifier = outerModifier) {
+            videoSurface(
+                if (isFullscreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+            )
+            if (!isFullscreen) sidePane()
         }
     }
 

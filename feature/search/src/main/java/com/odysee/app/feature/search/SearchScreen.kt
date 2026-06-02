@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import com.odysee.app.core.designsystem.layout.feedColumns
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -148,6 +149,8 @@ fun SearchScreen(
                         padding = padding,
                     )
                 } else {
+                    val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
+                        .feedColumns() / 2).coerceAtLeast(1)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
@@ -156,29 +159,33 @@ fun SearchScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        items(current.results, key = { it.claimId }) { result ->
-                            ResultRow(
-                                result = result,
-                                onClick = {
-                                    if (result.isChannel) {
-                                        onChannelClick(result.claimId, result.name)
-                                    } else {
-                                        onWatch(result)
+                        items(current.results.chunked(columns), key = { it.first().claimId }) { chunk ->
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                chunk.forEach { result ->
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        ResultRow(
+                                            result = result,
+                                            onClick = {
+                                                if (result.isChannel) {
+                                                    onChannelClick(result.claimId, result.name)
+                                                } else {
+                                                    onWatch(result)
+                                                }
+                                            },
+                                            onChannelClick = {
+                                                val id = result.channelClaimId
+                                                val n = result.channelName
+                                                if (id != null && n != null) onChannelClick(id, n)
+                                            },
+                                            onLongPress = {
+                                                if (result.isChannel) repostTarget = result
+                                                else claimMenuTarget = result
+                                            },
+                                        )
                                     }
-                                },
-                                onChannelClick = {
-                                    val id = result.channelClaimId
-                                    val n = result.channelName
-                                    if (id != null && n != null) onChannelClick(id, n)
-                                },
-                                onLongPress = {
-                                    // Streams get the full claim menu; channels go
-                                    // straight to the repost dialog (the only useful
-                                    // long-press action for a channel).
-                                    if (result.isChannel) repostTarget = result
-                                    else claimMenuTarget = result
-                                },
-                            )
+                                }
+                                repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                            }
                         }
                     }
                 }

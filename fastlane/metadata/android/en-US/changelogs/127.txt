@@ -1,0 +1,14 @@
+Added
+- Tablet-friendly layouts: multi-column grids on Home, Channels, Library and Search
+- Two-pane video page on tablets — video on the left, comments and related on the right
+- Outdoor and Lifestyle category icons for German homepage
+
+Fixed
+- Email magic-link sign-in now works when the link is opened in any browser
+- Homepage language setting now actually drives the home feed
+- Notification bell only shows when signed in
+- Settings centred on tablets so it doesn't sprawl
+
+FLOSS restrictions
+- No Chromecast support
+- No push notifications (periodic background fetch instead, defaults to 1 hour)

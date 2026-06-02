@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import com.odysee.app.core.designsystem.layout.feedColumns
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -174,6 +175,7 @@ fun ChannelScreen(
     var repostTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<ChannelVideoUi?>(null) }
     var repostChannelTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, String>?>(null) }
     val clipboardMgr = context.getSystemService(android.content.ClipboardManager::class.java)
+    val columns = com.odysee.app.core.designsystem.layout.rememberWindowSize().feedColumns()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -336,12 +338,14 @@ fun ChannelScreen(
             when (activeTab) {
                 ChannelTab.Content -> videosTab(
                     state = state,
+                    columns = columns,
                     onRetry = viewModel::loadVideos,
                     onVideoClick = onVideoClick,
                     onVideoLongPress = { claimMenuTarget = it },
                 )
                 ChannelTab.Shorts -> shortsTab(
                     state = state,
+                    columns = columns,
                     onRetry = viewModel::loadShorts,
                     onVideoClick = { video ->
                         val ch = state.channel
@@ -541,6 +545,7 @@ fun ChannelScreen(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(
     state: ChannelUiState,
+    columns: Int,
     onRetry: () -> Unit,
     onVideoClick: (ChannelVideoUi) -> Unit,
     onVideoLongPress: (ChannelVideoUi) -> Unit,
@@ -565,12 +570,25 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(
             }
         else -> {
             item { Spacer(Modifier.height(16.dp)) }
-            items(state.videos, key = { it.id }) { video ->
-                ChannelVideoRow(
-                    video = video,
-                    onClick = { onVideoClick(video) },
-                    onLongPress = { onVideoLongPress(video) },
-                )
+            items(state.videos.chunked(columns), key = { it.first().id }) { chunk ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (columns > 1) 12.dp else 0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (columns > 1) 12.dp else 0.dp),
+                ) {
+                    chunk.forEach { video ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            ChannelVideoRow(
+                                video = video,
+                                onClick = { onVideoClick(video) },
+                                onLongPress = { onVideoLongPress(video) },
+                                forceColumnLayout = columns > 1,
+                            )
+                        }
+                    }
+                    repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                }
                 Spacer(Modifier.height(20.dp))
             }
             if (state.isLoadingMoreVideos) {
@@ -592,6 +610,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
     state: ChannelUiState,
+    columns: Int,
     onRetry: () -> Unit,
     onVideoClick: (ChannelVideoUi) -> Unit,
     onVideoLongPress: (ChannelVideoUi) -> Unit,
@@ -616,12 +635,25 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
             }
         else -> {
             item { Spacer(Modifier.height(16.dp)) }
-            items(state.shorts, key = { it.id }) { video ->
-                ChannelVideoRow(
-                    video = video,
-                    onClick = { onVideoClick(video) },
-                    onLongPress = { onVideoLongPress(video) },
-                )
+            items(state.shorts.chunked(columns), key = { it.first().id }) { chunk ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (columns > 1) 12.dp else 0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (columns > 1) 12.dp else 0.dp),
+                ) {
+                    chunk.forEach { video ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            ChannelVideoRow(
+                                video = video,
+                                onClick = { onVideoClick(video) },
+                                onLongPress = { onVideoLongPress(video) },
+                                forceColumnLayout = columns > 1,
+                            )
+                        }
+                    }
+                    repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                }
                 Spacer(Modifier.height(20.dp))
             }
         }
@@ -1312,6 +1344,7 @@ private fun ChannelVideoRow(
     video: ChannelVideoUi,
     onClick: () -> Unit,
     onLongPress: () -> Unit = {},
+    forceColumnLayout: Boolean = false,
 ) {
     com.odysee.app.core.designsystem.claims.OdyseeClaimCard(
         claim = com.odysee.app.core.designsystem.claims.OdyseeClaimCardModel(
@@ -1329,6 +1362,7 @@ private fun ChannelVideoRow(
         onClick = onClick,
         onLongPress = onLongPress,
         showChannelAvatar = false,
+        forceColumnLayout = forceColumnLayout,
     )
 }
 

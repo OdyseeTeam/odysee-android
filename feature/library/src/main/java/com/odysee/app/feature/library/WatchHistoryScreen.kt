@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import com.odysee.app.core.designsystem.layout.feedColumns
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -115,6 +116,8 @@ fun WatchHistoryScreen(
                 )
             }
         } else {
+            val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
+                .feedColumns() / 2).coerceAtLeast(1)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -122,24 +125,31 @@ fun WatchHistoryScreen(
                     bottom = padding.calculateBottomPadding() + 16.dp,
                 ),
             ) {
-                items(history, key = { it.claimId }) { entry ->
-                    HistoryRow(
-                        entry = entry,
-                        onClick = {
-                            onWatch(
-                                HistoryWatchTarget(
-                                    claimId = entry.claimId,
-                                    permanentUrl = entry.permanentUrl,
-                                    title = entry.title,
-                                    channelName = entry.channelName,
-                                    channelClaimId = entry.channelClaimId,
-                                    thumbnailUrl = entry.thumbnailUrl,
-                                ),
-                            )
-                        },
-                        onRemove = { viewModel.remove(entry.claimId) },
-                        onLongPress = { claimMenuTarget = entry },
-                    )
+                items(history.chunked(columns), key = { it.first().claimId }) { chunk ->
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        chunk.forEach { entry ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                HistoryRow(
+                                    entry = entry,
+                                    onClick = {
+                                        onWatch(
+                                            HistoryWatchTarget(
+                                                claimId = entry.claimId,
+                                                permanentUrl = entry.permanentUrl,
+                                                title = entry.title,
+                                                channelName = entry.channelName,
+                                                channelClaimId = entry.channelClaimId,
+                                                thumbnailUrl = entry.thumbnailUrl,
+                                            ),
+                                        )
+                                    },
+                                    onRemove = { viewModel.remove(entry.claimId) },
+                                    onLongPress = { claimMenuTarget = entry },
+                                )
+                            }
+                        }
+                        repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                    }
                 }
             }
         }

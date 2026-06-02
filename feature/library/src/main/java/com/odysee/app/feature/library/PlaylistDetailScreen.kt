@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import com.odysee.app.core.designsystem.layout.feedColumns
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -205,6 +206,9 @@ fun PlaylistDetailScreen(
             }
             return@Scaffold
         }
+        val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
+            .feedColumns() / 2).coerceAtLeast(1)
+        val rows = state.claims.withIndex().toList().chunked(columns)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -241,15 +245,21 @@ fun PlaylistDetailScreen(
                     }
                 }
             }
-            items(state.claims.size, key = { state.claims[it].claimId }) { idx ->
-                val claim = state.claims[idx]
-                ClaimRow(
-                    claim = claim,
-                    onClick = {
-                        buildTarget(viewModel.playlistId, state.title, state.claims, idx)?.let(onWatch)
-                    },
-                    onLongPress = { claimMenuTarget = claim },
-                )
+            items(rows, key = { it.first().value.claimId }) { chunk ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    chunk.forEach { (idx, claim) ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            ClaimRow(
+                                claim = claim,
+                                onClick = {
+                                    buildTarget(viewModel.playlistId, state.title, state.claims, idx)?.let(onWatch)
+                                },
+                                onLongPress = { claimMenuTarget = claim },
+                            )
+                        }
+                    }
+                    repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                }
             }
         }
     }

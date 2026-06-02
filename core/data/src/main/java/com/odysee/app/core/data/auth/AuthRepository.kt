@@ -18,6 +18,8 @@ import com.odysee.app.core.network.dto.UserDto
 import com.odysee.app.core.network.jsonrpc.JsonRpcRequest
 import com.odysee.app.core.network.mapper.toChannel
 import dagger.Lazy
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,8 +127,14 @@ class AuthRepositoryImpl @Inject constructor(
             .fold(
                 onSuccess = { env ->
                     if (env.success) {
+                        adoptResponseToken(env.data?.authToken)
                         refreshUser()
-                        SignInResult.Success
+                        if (password == null && _state.value !is AuthState.SignedIn) {
+                            startVerificationPolling(email)
+                            SignInResult.VerificationEmailSent
+                        } else {
+                            SignInResult.Success
+                        }
                     } else {
                         SignInResult.Failure(env.error ?: "Sign-in failed")
                     }
@@ -143,9 +151,13 @@ class AuthRepositoryImpl @Inject constructor(
             .fold(
                 onSuccess = { env ->
                     if (env.success) {
+                        adoptResponseToken(env.data?.authToken)
                         refreshUser()
                         if (password != null) SignInResult.Success
-                        else SignInResult.VerificationEmailSent
+                        else {
+                            startVerificationPolling(email)
+                            SignInResult.VerificationEmailSent
+                        }
                     } else {
                         SignInResult.Failure(env.error ?: "Sign-up failed")
                     }
@@ -308,6 +320,32 @@ class AuthRepositoryImpl @Inject constructor(
                 SignInResult.Failure(err.message ?: "Couldn't request account deletion.")
             },
         )
+    }
+
+    private suspend fun adoptResponseToken(token: String?) {
+        val clean = token?.takeIf { it.isNotBlank() } ?: return
+        authPreferences.setAuthToken(clean)
+        authHolder.set(clean)
+    }
+
+    private val verificationScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default,
+    )
+    @Volatile private var verificationJob: kotlinx.coroutines.Job? = null
+
+    private fun startVerificationPolling(email: String) {
+        verificationJob?.cancel()
+        verificationJob = verificationScope.launch {
+            val deadline = System.currentTimeMillis() + 15 * 60_000L
+            while (System.currentTimeMillis() < deadline) {
+                delay(4_000)
+                refreshUser()
+                val signedIn = _state.value as? AuthState.SignedIn
+                if (signedIn != null && signedIn.user.email.equals(email, ignoreCase = true)) {
+                    return@launch
+                }
+            }
+        }
     }
 
     override suspend fun confirmEmail(

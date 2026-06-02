@@ -25,6 +25,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import com.odysee.app.core.designsystem.layout.feedColumns
+import com.odysee.app.core.designsystem.layout.rememberWindowSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -128,6 +134,7 @@ fun OdyseeHomeHeader(
     signedInAvatarUrl: String?,
     unseenNotifications: Int = 0,
     premiumTier: com.odysee.app.core.data.auth.PremiumTier = com.odysee.app.core.data.auth.PremiumTier.None,
+    isSignedIn: Boolean = signedInEmail != null,
 ) {
     val hazeState = LocalHazeState.current
     Box(
@@ -145,25 +152,27 @@ fun OdyseeHomeHeader(
             HeaderCircleIconButton(onClick = onSearchClick) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
             }
-            Spacer(Modifier.width(6.dp))
-            HeaderCircleIconButton(onClick = onNotificationsClick) {
-                androidx.compose.material3.BadgedBox(
-                    badge = {
-                        if (unseenNotifications > 0) {
-                            androidx.compose.material3.Badge(
-                                containerColor = Color(0xFFE2202D),
-                                contentColor = Color.White,
-                            ) {
-                                Text(
-                                    text = if (unseenNotifications > 99) "99+"
-                                    else unseenNotifications.toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
+            if (isSignedIn) {
+                Spacer(Modifier.width(6.dp))
+                HeaderCircleIconButton(onClick = onNotificationsClick) {
+                    androidx.compose.material3.BadgedBox(
+                        badge = {
+                            if (unseenNotifications > 0) {
+                                androidx.compose.material3.Badge(
+                                    containerColor = Color(0xFFE2202D),
+                                    contentColor = Color.White,
+                                ) {
+                                    Text(
+                                        text = if (unseenNotifications > 99) "99+"
+                                        else unseenNotifications.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
                             }
-                        }
-                    },
-                ) {
-                    Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                        },
+                    ) {
+                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                    }
                 }
             }
             Spacer(Modifier.width(6.dp))
@@ -227,25 +236,27 @@ private fun HomeScreenContent(
                                 HeaderCircleIconButton(onClick = onSearchClick) {
                                     Icon(Icons.Outlined.Search, contentDescription = "Search")
                                 }
-                                Spacer(Modifier.width(6.dp))
-                                HeaderCircleIconButton(onClick = onNotificationsClick) {
-                                    androidx.compose.material3.BadgedBox(
-                                        badge = {
-                                            if (state.unseenNotifications > 0) {
-                                                androidx.compose.material3.Badge(
-                                                    containerColor = Color(0xFFE2202D),
-                                                    contentColor = Color.White,
-                                                ) {
-                                                    Text(
-                                                        text = if (state.unseenNotifications > 99) "99+"
-                                                        else state.unseenNotifications.toString(),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                    )
+                                if (state.isSignedIn) {
+                                    Spacer(Modifier.width(6.dp))
+                                    HeaderCircleIconButton(onClick = onNotificationsClick) {
+                                        androidx.compose.material3.BadgedBox(
+                                            badge = {
+                                                if (state.unseenNotifications > 0) {
+                                                    androidx.compose.material3.Badge(
+                                                        containerColor = Color(0xFFE2202D),
+                                                        contentColor = Color.White,
+                                                    ) {
+                                                        Text(
+                                                            text = if (state.unseenNotifications > 99) "99+"
+                                                            else state.unseenNotifications.toString(),
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                        )
+                                                    }
                                                 }
-                                            }
-                                        },
-                                    ) {
-                                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                                            },
+                                        ) {
+                                            Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                                        }
                                     }
                                 }
                                 Spacer(Modifier.width(6.dp))
@@ -537,6 +548,8 @@ private fun categoryIconRes(iconName: String?): Int? = when (iconName) {
     "Spirituality" -> DesignR.drawable.ic_category_spirituality
     "Horror" -> DesignR.drawable.ic_category_horror
     "Featured" -> DesignR.drawable.ic_category_featured
+    "Life" -> DesignR.drawable.ic_category_life
+    "Peace" -> DesignR.drawable.ic_category_peace
     else -> null
 }
 
@@ -601,21 +614,19 @@ private fun VerticalVideoFeed(
         ),
     ) { androidx.compose.runtime.mutableStateOf<VideoUiModel?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val columns = rememberWindowSize().feedColumns()
+    val gridState = rememberLazyGridState()
 
-    // When the leading items (live/upcoming pinned to the top) change,
-    // pull the scroll back to the top so the new entries are actually visible.
     val topKey = videos.firstOrNull()?.id
     androidx.compose.runtime.LaunchedEffect(topKey) {
-        if (listState.firstVisibleItemIndex > 0) {
-            listState.animateScrollToItem(0)
+        if (gridState.firstVisibleItemIndex > 0) {
+            gridState.animateScrollToItem(0)
         }
     }
 
-    // Infinite scroll: trigger onLoadMore when within 4 items of the bottom.
-    androidx.compose.runtime.LaunchedEffect(listState, videos.size) {
+    androidx.compose.runtime.LaunchedEffect(gridState, videos.size) {
         androidx.compose.runtime.snapshotFlow {
-            val info = listState.layoutInfo
+            val info = gridState.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
             last to info.totalItemsCount
         }.collect { (lastVisible, total) ->
@@ -641,16 +652,20 @@ private fun VerticalVideoFeed(
             )
         },
     ) {
-        LazyColumn(
-            state = listState,
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            state = gridState,
             modifier = Modifier
                 .fillMaxSize()
                 .let { m -> LocalHazeState.current?.let { m.hazeSource(state = it) } ?: m }
                 .displayCutoutPadding(),
             contentPadding = PaddingValues(
+                start = if (columns > 1) 12.dp else 0.dp,
+                end = if (columns > 1) 12.dp else 0.dp,
                 top = padding.calculateTopPadding(),
                 bottom = padding.calculateBottomPadding() + 16.dp,
             ),
+            horizontalArrangement = Arrangement.spacedBy(if (columns > 1) 12.dp else 0.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             items(videos, key = { it.id }) { video ->
@@ -661,6 +676,7 @@ private fun VerticalVideoFeed(
                         video.channelClaimId?.let { id -> onChannelClick(id, video.channelName) }
                     },
                     onMoreClick = { moreSheetVideo = video },
+                    forceColumnLayout = columns > 1,
                 )
             }
         }
@@ -1015,8 +1031,10 @@ private fun VideoCard(
     onClick: () -> Unit,
     onChannelClick: () -> Unit,
     onMoreClick: () -> Unit,
+    forceColumnLayout: Boolean = false,
 ) {
     com.odysee.app.core.designsystem.claims.OdyseeClaimCard(
+        forceColumnLayout = forceColumnLayout,
         claim = com.odysee.app.core.designsystem.claims.OdyseeClaimCardModel(
             claimId = video.id,
             title = video.title,
