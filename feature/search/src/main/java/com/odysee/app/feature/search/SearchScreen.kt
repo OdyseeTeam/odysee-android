@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +29,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -124,67 +129,83 @@ fun SearchScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        when (val current = state.state) {
-            SearchState.Idle -> EmptyState(
-                title = "Find creators, channels and videos",
-                message = "Type a query to search Odysee.",
-                padding = padding,
+        var filtersExpanded by remember { mutableStateOf(false) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = padding.calculateTopPadding()),
+        ) {
+            SearchFilterBar(
+                filters = state.filters,
+                expanded = filtersExpanded,
+                onToggleExpanded = { filtersExpanded = !filtersExpanded },
+                onFiltersChange = viewModel::setFilters,
+                visible = state.state is SearchState.Success || state.filters.isActive,
             )
-            SearchState.Loading -> Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
-            is SearchState.Error -> EmptyState(
-                title = "Couldn't search",
-                message = current.message,
-                padding = padding,
-            )
-            is SearchState.Success -> {
-                if (current.results.isEmpty()) {
-                    EmptyState(
-                        title = "No results",
-                        message = "Try a different query.",
-                        padding = padding,
-                    )
-                } else {
-                    val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
-                        .feedColumns() / 2).coerceAtLeast(1)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            top = padding.calculateTopPadding(),
-                            bottom = padding.calculateBottomPadding() + 16.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        items(current.results.chunked(columns), key = { it.first().claimId }) { chunk ->
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                chunk.forEach { result ->
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        ResultRow(
-                                            result = result,
-                                            onClick = {
-                                                if (result.isChannel) {
-                                                    onChannelClick(result.claimId, result.name)
-                                                } else {
-                                                    onWatch(result)
-                                                }
-                                            },
-                                            onChannelClick = {
-                                                val id = result.channelClaimId
-                                                val n = result.channelName
-                                                if (id != null && n != null) onChannelClick(id, n)
-                                            },
-                                            onLongPress = {
-                                                if (result.isChannel) repostTarget = result
-                                                else claimMenuTarget = result
-                                            },
-                                        )
+            when (val current = state.state) {
+                SearchState.Idle -> EmptyState(
+                    title = "Find creators, channels and videos",
+                    message = "Type a query to search Odysee.",
+                    padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                )
+                SearchState.Loading -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = padding.calculateBottomPadding()),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+                is SearchState.Error -> EmptyState(
+                    title = "Couldn't search",
+                    message = current.message,
+                    padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                )
+                is SearchState.Success -> {
+                    if (current.results.isEmpty()) {
+                        EmptyState(
+                            title = "No results",
+                            message = "Try a different query.",
+                            padding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                        )
+                    } else {
+                        val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
+                            .feedColumns() / 2).coerceAtLeast(1)
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = 0.dp,
+                                bottom = padding.calculateBottomPadding() + 16.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            items(current.results.chunked(columns), key = { it.first().claimId }) { chunk ->
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    chunk.forEach { result ->
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            ResultRow(
+                                                result = result,
+                                                onClick = {
+                                                    if (result.isChannel) {
+                                                        onChannelClick(result.claimId, result.name)
+                                                    } else {
+                                                        onWatch(result)
+                                                    }
+                                                },
+                                                onChannelClick = {
+                                                    val id = result.channelClaimId
+                                                    val n = result.channelName
+                                                    if (id != null && n != null) onChannelClick(id, n)
+                                                },
+                                                onLongPress = {
+                                                    if (result.isChannel) repostTarget = result
+                                                    else claimMenuTarget = result
+                                                },
+                                            )
+                                        }
                                     }
+                                    repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
                                 }
-                                repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
                             }
                         }
                     }
@@ -435,6 +456,151 @@ private fun ResultRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchFilterBar(
+    filters: SearchFilters,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onFiltersChange: (SearchFilters) -> Unit,
+    visible: Boolean,
+) {
+    if (!visible) return
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleExpanded)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.FilterList,
+                contentDescription = null,
+                tint = if (filters.isActive) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (filters.activeCount > 0) "Filters (${filters.activeCount})" else "Filters",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (filters.isActive) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onBackground,
+                fontWeight = if (filters.isActive) FontWeight.SemiBold else FontWeight.Normal,
+            )
+            Spacer(Modifier.weight(1f))
+            if (filters.isActive) {
+                Text(
+                    text = "Clear",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable { onFiltersChange(SearchFilters()) }
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+            }
+            Icon(
+                imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                contentDescription = if (expanded) "Hide filters" else "Show filters",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        if (expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FilterGroupLabel("Type")
+                FilterChipRow(
+                    options = listOf(
+                        SearchClaimType.Everything to "Everything",
+                        SearchClaimType.Files to "Files",
+                        SearchClaimType.Channels to "Channels",
+                    ),
+                    selected = filters.claimType,
+                    onSelect = { onFiltersChange(filters.copy(claimType = it)) },
+                )
+                FilterGroupLabel("Sort by")
+                FilterChipRow(
+                    options = listOf(
+                        SearchSortBy.Relevance to "Relevance",
+                        SearchSortBy.Newest to "Newest",
+                        SearchSortBy.Oldest to "Oldest",
+                    ),
+                    selected = filters.sortBy,
+                    onSelect = { onFiltersChange(filters.copy(sortBy = it)) },
+                )
+                FilterGroupLabel("Upload date")
+                FilterChipRow(
+                    options = listOf(
+                        SearchTimeFilter.All to "All",
+                        SearchTimeFilter.Today to "24h",
+                        SearchTimeFilter.ThisWeek to "Week",
+                        SearchTimeFilter.ThisMonth to "Month",
+                        SearchTimeFilter.ThisYear to "Year",
+                    ),
+                    selected = filters.timeFilter,
+                    onSelect = { onFiltersChange(filters.copy(timeFilter = it)) },
+                )
+            }
+        }
+        androidx.compose.material3.HorizontalDivider(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            thickness = 0.5.dp,
+        )
+    }
+}
+
+@Composable
+private fun FilterGroupLabel(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun <T> FilterChipRow(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { (value, label) ->
+            val isSelected = value == selected
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                    .clickable { onSelect(value) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                )
             }
         }
     }

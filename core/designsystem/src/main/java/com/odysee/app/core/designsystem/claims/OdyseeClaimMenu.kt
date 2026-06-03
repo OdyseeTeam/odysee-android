@@ -21,5 +21,6 @@ data class OdyseeClaimMenuActions(
     val onBlockChannel: (() -> Unit)? = null,
     val onRemoveFromPlaylist: (() -> Unit)? = null,
     val onRepost: (() -> Unit)? = null,
+    val onEdit: (() -> Unit)? = null,
     val onReport: () -> Unit = {},
 )

@@ -20,6 +20,7 @@ data class ClaimSearchParams(
     val duration: String? = null,
     @SerialName("content_aspect_ratio") val contentAspectRatio: String? = null,
     @SerialName("any_languages") val anyLanguages: List<String>? = null,
+    @SerialName("any_tags") val anyTags: List<String>? = null,
     val name: String? = null,
 )
 
@@ -32,8 +33,8 @@ data class ClaimSearchResult(
 
 @Serializable
 data class ClaimDto(
-    @SerialName("claim_id") val claimId: String,
-    val name: String,
+    @SerialName("claim_id") val claimId: String? = null,
+    val name: String? = null,
     val amount: String? = null,
     @SerialName("permanent_url") val permanentUrl: String? = null,
     @SerialName("canonical_url") val canonicalUrl: String? = null,

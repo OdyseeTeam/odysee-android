@@ -46,6 +46,7 @@ private val MINI_BAR_HEIGHT = 64.dp
 @Composable
 fun PlayerSheet(
     onChannelClick: (String, String) -> Unit,
+    onHashtagClick: (String) -> Unit = {},
     appContent: @Composable () -> Unit,
 ) {
     val controller = LocalPlayerController.current
@@ -57,6 +58,8 @@ fun PlayerSheet(
 
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    androidx.activity.compose.BackHandler(enabled = isExpanded) { isExpanded = false }
 
     LaunchedEffect(Unit) {
         controller.uiCommands.collect { cmd ->
@@ -174,6 +177,10 @@ fun PlayerSheet(
                             controller = controller,
                             onCollapse = { isExpanded = false },
                             onChannelClick = onChannelClick,
+                            onHashtagClick = { tag ->
+                                isExpanded = false
+                                onHashtagClick(tag)
+                            },
                         )
                     }
                 }

@@ -27,11 +27,14 @@ fun RichCommentBody(
     body: String,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onBackground,
+    onHashtagClick: (String) -> Unit = {},
 ) {
     val segments = remember(body) { parseCommentSegments(body) }
     val linkColor = MaterialTheme.colorScheme.primary
     if (segments.all { it.sticker == null && it.emote == null }) {
-        val annotated = remember(body, linkColor) { buildMarkdownAnnotated(body, linkColor) }
+        val annotated = remember(body, linkColor, onHashtagClick) {
+            buildMarkdownAnnotated(body, linkColor, onHashtagClick)
+        }
         Text(
             text = annotated,
             style = MaterialTheme.typography.bodyMedium,
@@ -56,8 +59,8 @@ fun RichCommentBody(
                     modifier = Modifier.size(20.dp).padding(end = 2.dp),
                 )
                 !seg.text.isNullOrBlank() -> {
-                    val annotated = remember(seg.text, linkColor) {
-                        buildMarkdownAnnotated(seg.text, linkColor)
+                    val annotated = remember(seg.text, linkColor, onHashtagClick) {
+                        buildMarkdownAnnotated(seg.text, linkColor, onHashtagClick)
                     }
                     Text(
                         text = annotated,
@@ -111,7 +114,13 @@ private fun CommentFlowRow(
     }
 }
 
-fun buildMarkdownAnnotated(text: String, linkColor: Color): AnnotatedString = buildAnnotatedString {
+private val HASHTAG_REGEX_RICH = Regex("(?<![A-Za-z0-9_/])#([A-Za-z0-9_]{1,40})")
+
+fun buildMarkdownAnnotated(
+    text: String,
+    linkColor: Color,
+    onHashtagClick: (String) -> Unit = {},
+): AnnotatedString = buildAnnotatedString {
     var i = 0
     val n = text.length
     fun matchSpan(start: Int, marker: String): Int {
@@ -204,13 +213,35 @@ fun buildMarkdownAnnotated(text: String, linkColor: Color): AnnotatedString = bu
         val match = urlRegex.find(text, i)
         if (match != null && match.range.first == i) {
             val url = match.value
-            pushStringAnnotation(tag = "URL", annotation = url)
-            pushStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+            val urlLink = androidx.compose.ui.text.LinkAnnotation.Url(
+                url = url,
+                styles = androidx.compose.ui.text.TextLinkStyles(
+                    style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+                ),
+            )
+            val idx = pushLink(urlLink)
             append(url)
-            pop()
-            pop()
+            pop(idx)
             i += url.length
             continue
+        }
+        if (ch == '#') {
+            val tagMatch = HASHTAG_REGEX_RICH.matchAt(text, i)
+            if (tagMatch != null) {
+                val raw = tagMatch.value
+                val tag = tagMatch.groupValues[1]
+                val link = androidx.compose.ui.text.LinkAnnotation.Clickable(
+                    tag = "hashtag:$tag",
+                    styles = androidx.compose.ui.text.TextLinkStyles(
+                        style = SpanStyle(color = linkColor),
+                    ),
+                ) { onHashtagClick(tag) }
+                val idx = pushLink(link)
+                append(raw)
+                pop(idx)
+                i += raw.length
+                continue
+            }
         }
         append(ch)
         i += 1

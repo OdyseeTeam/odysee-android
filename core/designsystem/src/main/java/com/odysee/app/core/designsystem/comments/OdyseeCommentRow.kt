@@ -222,7 +222,7 @@ fun OdyseeCommentRow(
                 }
             }
             Spacer(Modifier.size(2.dp))
-            RichCommentBody(body = comment.body)
+            RichCommentBody(body = comment.body, onHashtagClick = actions.onHashtagClick)
             Row(
                 modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,

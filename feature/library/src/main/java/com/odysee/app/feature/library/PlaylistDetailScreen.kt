@@ -24,6 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -151,7 +156,41 @@ class PlaylistDetailViewModel @Inject constructor(
             _state.value = _state.value.copy(itemUrls = updated.itemUrls, claims = newClaims)
         }
     }
+
+    fun applySortAndPersist(sort: PlaylistSort) {
+        val cur = _state.value
+        if (cur.claims.isEmpty()) return
+        val sortedClaims = when (sort) {
+            PlaylistSort.Manual -> return
+            PlaylistSort.Newest -> cur.claims.sortedByDescending { it.releaseTime ?: 0L }
+            PlaylistSort.Oldest -> cur.claims.sortedBy { it.releaseTime ?: Long.MAX_VALUE }
+            PlaylistSort.TitleAsc -> cur.claims.sortedBy { it.title.lowercase() }
+            PlaylistSort.TitleDesc -> cur.claims.sortedByDescending { it.title.lowercase() }
+        }
+        val byCid = cur.itemUrls.associateBy { url -> extractClaimId(url) ?: "" }
+        val orderedUrls = sortedClaims.mapNotNull { c -> byCid[c.claimId] }
+        if (orderedUrls.size != cur.itemUrls.size) return
+        _state.value = cur.copy(claims = sortedClaims, itemUrls = orderedUrls)
+        viewModelScope.launch {
+            playlistsRepository.reorderItems(playlistId, orderedUrls)
+        }
+    }
+
+    fun moveItem(fromIndex: Int, toIndex: Int) {
+        val cur = _state.value
+        if (fromIndex == toIndex) return
+        if (fromIndex !in cur.claims.indices) return
+        val target = toIndex.coerceIn(0, cur.claims.lastIndex)
+        val claims = cur.claims.toMutableList().apply { add(target, removeAt(fromIndex)) }
+        val urls = cur.itemUrls.toMutableList().apply { add(target, removeAt(fromIndex)) }
+        _state.value = cur.copy(claims = claims, itemUrls = urls)
+        viewModelScope.launch {
+            playlistsRepository.reorderItems(playlistId, urls)
+        }
+    }
 }
+
+enum class PlaylistSort { Manual, Newest, Oldest, TitleAsc, TitleDesc }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,6 +198,7 @@ fun PlaylistDetailScreen(
     viewModel: PlaylistDetailViewModel = hiltViewModel(),
     onBack: () -> Unit,
     onWatch: (PlaylistWatchTarget) -> Unit,
+    onEdit: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -178,6 +218,8 @@ fun PlaylistDetailScreen(
     var addToPlaylistTarget by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf<Claim?>(null)
     }
+    var sortMenuOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var reorderMode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -193,6 +235,63 @@ fun PlaylistDetailScreen(
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
+                actions = {
+                    IconButton(onClick = { reorderMode = !reorderMode }) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Outlined.SwapVert,
+                            contentDescription = if (reorderMode) "Done reordering" else "Reorder",
+                            tint = if (reorderMode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = { sortMenuOpen = true }) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Outlined.Sort,
+                                contentDescription = "Sort",
+                            )
+                        }
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = sortMenuOpen,
+                            onDismissRequest = { sortMenuOpen = false },
+                        ) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Newest first") },
+                                onClick = {
+                                    viewModel.applySortAndPersist(PlaylistSort.Newest)
+                                    sortMenuOpen = false
+                                },
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Oldest first") },
+                                onClick = {
+                                    viewModel.applySortAndPersist(PlaylistSort.Oldest)
+                                    sortMenuOpen = false
+                                },
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Title (A–Z)") },
+                                onClick = {
+                                    viewModel.applySortAndPersist(PlaylistSort.TitleAsc)
+                                    sortMenuOpen = false
+                                },
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Title (Z–A)") },
+                                onClick = {
+                                    viewModel.applySortAndPersist(PlaylistSort.TitleDesc)
+                                    sortMenuOpen = false
+                                },
+                            )
+                        }
+                    }
+                    IconButton(onClick = { onEdit(viewModel.playlistId) }) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Outlined.Edit,
+                            contentDescription = "Edit playlist",
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -206,7 +305,7 @@ fun PlaylistDetailScreen(
             }
             return@Scaffold
         }
-        val columns = (com.odysee.app.core.designsystem.layout.rememberWindowSize()
+        val columns = if (reorderMode) 1 else (com.odysee.app.core.designsystem.layout.rememberWindowSize()
             .feedColumns() / 2).coerceAtLeast(1)
         val rows = state.claims.withIndex().toList().chunked(columns)
         LazyColumn(
@@ -249,13 +348,39 @@ fun PlaylistDetailScreen(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     chunk.forEach { (idx, claim) ->
                         Box(modifier = Modifier.weight(1f)) {
-                            ClaimRow(
-                                claim = claim,
-                                onClick = {
-                                    buildTarget(viewModel.playlistId, state.title, state.claims, idx)?.let(onWatch)
-                                },
-                                onLongPress = { claimMenuTarget = claim },
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ClaimRow(
+                                        claim = claim,
+                                        onClick = {
+                                            buildTarget(viewModel.playlistId, state.title, state.claims, idx)?.let(onWatch)
+                                        },
+                                        onLongPress = { claimMenuTarget = claim },
+                                    )
+                                }
+                                if (reorderMode) {
+                                    Column {
+                                        IconButton(
+                                            enabled = idx > 0,
+                                            onClick = { viewModel.moveItem(idx, idx - 1) },
+                                        ) {
+                                            Icon(
+                                                imageVector = androidx.compose.material.icons.Icons.Outlined.KeyboardArrowUp,
+                                                contentDescription = "Move up",
+                                            )
+                                        }
+                                        IconButton(
+                                            enabled = idx < state.claims.lastIndex,
+                                            onClick = { viewModel.moveItem(idx, idx + 1) },
+                                        ) {
+                                            Icon(
+                                                imageVector = androidx.compose.material.icons.Icons.Outlined.KeyboardArrowDown,
+                                                contentDescription = "Move down",
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }

@@ -221,6 +221,8 @@ class PlayerController @Inject constructor(
     val uiCommands: Flow<PlayerUiCommand> = _uiCommands.receiveAsFlow()
     private val _openShortsEvents = Channel<CurrentMedia>(Channel.UNLIMITED)
     val openShortsEvents: Flow<CurrentMedia> = _openShortsEvents.receiveAsFlow()
+    private val _postErrors = Channel<String>(Channel.BUFFERED)
+    val postErrors: Flow<String> = _postErrors.receiveAsFlow()
     private val _isPipActive = MutableStateFlow(false)
     val isPipActive: StateFlow<Boolean> = _isPipActive.asStateFlow()
     private val _isFullscreen = MutableStateFlow(false)
@@ -271,14 +273,8 @@ class PlayerController @Inject constructor(
             castController.isSessionActive.collect { active ->
                 if (!active) return@collect
                 val media = _state.value.media ?: return@collect
-                val url = _state.value.streamingUrl ?: return@collect
                 runCatching { exoPlayer.stop() }
-                castController.loadMedia(
-                    streamUrl = url,
-                    title = media.title,
-                    channelName = media.channelName,
-                    thumbnailUrl = media.thumbnailUrl,
-                )
+                pushCurrentMediaToCast(media, _state.value.playlist, _state.value.streamingUrl)
             }
         }
         scope.launch {
@@ -499,33 +495,39 @@ class PlayerController @Inject constructor(
                 android.util.Log.e("PlayerController", "Chat WS failure", t)
             }
             override fun onMessage(webSocket: okhttp3.WebSocket, text: String) {
-                android.util.Log.d("PlayerController", "Chat WS msg: ${text.take(200)}")
-                val element = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(text) }
-                    .getOrNull() ?: return
-                val obj = element as? kotlinx.serialization.json.JsonObject ?: return
-                val type = (obj["type"] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: return
-                if (type != "delta") return
-                val data = obj["data"] as? kotlinx.serialization.json.JsonObject ?: return
-                val comment = data["comment"] as? kotlinx.serialization.json.JsonObject ?: return
-                fun field(name: String): String? =
-                    (comment[name] as? kotlinx.serialization.json.JsonPrimitive)?.content
-                val id = field("comment_id") ?: return
-                val author = field("channel_name") ?: "anonymous"
-                val body = field("comment").orEmpty()
-                val timestampSec = field("timestamp")?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)
-                val ui = CommentUiModel(
-                    id = id,
-                    author = author,
-                    authorInitial = (author.firstOrNull { it.isLetterOrDigit() } ?: 'O').uppercaseChar(),
-                    authorAvatarUrl = null,
-                    body = body,
-                    ageLabel = formatAge(timestampSec),
-                    isPinned = false,
-                )
-                _state.update { s ->
-                    val existing = (s.comments as? CommentsState.Success)?.comments ?: emptyList()
-                    if (existing.any { it.id == ui.id }) s
-                    else s.copy(comments = CommentsState.Success(listOf(ui) + existing))
+                try {
+                    android.util.Log.d("PlayerController", "Chat WS msg: ${text.take(200)}")
+                    val element = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(text) }
+                        .getOrNull() ?: return
+                    val obj = element as? kotlinx.serialization.json.JsonObject ?: return
+                    val type = (obj["type"] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: return
+                    if (type != "delta") return
+                    val data = obj["data"] as? kotlinx.serialization.json.JsonObject ?: return
+                    val comment = data["comment"] as? kotlinx.serialization.json.JsonObject ?: return
+                    fun field(name: String): String? =
+                        (comment[name] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    val id = field("comment_id") ?: return
+                    val author = field("channel_name") ?: "anonymous"
+                    val authorChannelId = field("channel_id")
+                    val body = field("comment").orEmpty()
+                    val timestampSec = field("timestamp")?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)
+                    val ui = CommentUiModel(
+                        id = id,
+                        author = author,
+                        authorChannelId = authorChannelId,
+                        authorInitial = (author.firstOrNull { it.isLetterOrDigit() } ?: 'O').uppercaseChar(),
+                        authorAvatarUrl = null,
+                        body = body,
+                        ageLabel = formatAge(timestampSec),
+                        isPinned = false,
+                    )
+                    _state.update { s ->
+                        val existing = (s.comments as? CommentsState.Success)?.comments ?: emptyList()
+                        if (existing.any { it.id == ui.id }) s
+                        else s.copy(comments = CommentsState.Success(listOf(ui) + existing))
+                    }
+                } catch (t: Throwable) {
+                    android.util.Log.e("PlayerController", "Chat WS message handling failed", t)
                 }
             }
         })
@@ -678,12 +680,7 @@ class PlayerController @Inject constructor(
                     // cast device, not the local ExoPlayer.
                     if (castController.isSessionActive.value) {
                         runCatching { exoPlayer.stop() }
-                        castController.loadMedia(
-                            streamUrl = url,
-                            title = media.title,
-                            channelName = media.channelName,
-                            thumbnailUrl = media.thumbnailUrl,
-                        )
+                        pushCurrentMediaToCast(media, _state.value.playlist, url)
                         return@onSuccess
                     }
                     val metadata = androidx.media3.common.MediaMetadata.Builder()
@@ -772,7 +769,16 @@ class PlayerController @Inject constructor(
         }
 
         commentsJob = scope.launch {
-            loadAndEnrichComments(media.claimId, _state.value.commentSort, media.channelClaimId)
+            try {
+                loadAndEnrichComments(media.claimId, _state.value.commentSort, media.channelClaimId)
+            } catch (t: Throwable) {
+                android.util.Log.e("PlayerController", "loadAndEnrichComments crashed", t)
+                _state.update {
+                    it.copy(
+                        comments = CommentsState.Error(t.message ?: "Couldn't load chat"),
+                    )
+                }
+            }
         }
         loadRelated(media)
     }
@@ -1108,7 +1114,16 @@ class PlayerController @Inject constructor(
         commentsJob?.cancel()
         _state.update { it.copy(comments = CommentsState.Loading) }
         commentsJob = scope.launch {
-            loadAndEnrichComments(media.claimId, _state.value.commentSort, media.channelClaimId)
+            try {
+                loadAndEnrichComments(media.claimId, _state.value.commentSort, media.channelClaimId)
+            } catch (t: Throwable) {
+                android.util.Log.e("PlayerController", "loadAndEnrichComments crashed", t)
+                _state.update {
+                    it.copy(
+                        comments = CommentsState.Error(t.message ?: "Couldn't load chat"),
+                    )
+                }
+            }
         }
     }
 
@@ -1176,8 +1191,9 @@ class PlayerController @Inject constructor(
         val media = _state.value.media ?: return
         val active = (authRepository.state.value as? AuthState.SignedIn)?.activeChannel ?: return
         if (text.isBlank()) return
+        val mineChannelId = active.claimId
         scope.launch {
-            val result = runCatching {
+            runCatching {
                 contentRepository.postComment(
                     claimId = media.claimId,
                     channelId = active.claimId,
@@ -1186,12 +1202,23 @@ class PlayerController @Inject constructor(
                     parentId = parentId,
                 )
             }
-            result.onSuccess { posted ->
-                _state.update { st ->
-                    val current = (st.comments as? CommentsState.Success)?.comments ?: emptyList()
-                    st.copy(comments = CommentsState.Success(listOf(posted.toUi()) + current))
+                .onSuccess { posted ->
+                    runCatching {
+                        val ui = posted.toUi(mineChannelId = mineChannelId)
+                        _state.update { st ->
+                            val current = (st.comments as? CommentsState.Success)?.comments
+                                ?: emptyList()
+                            if (current.any { it.id == ui.id }) st
+                            else st.copy(comments = CommentsState.Success(listOf(ui) + current))
+                        }
+                    }.onFailure { e ->
+                        android.util.Log.e("PlayerController", "postComment: failed to apply UI", e)
+                    }
                 }
-            }
+                .onFailure { e ->
+                    android.util.Log.e("PlayerController", "postComment failed", e)
+                    _postErrors.trySend(e.message ?: "Couldn't post your message")
+                }
         }
     }
 
@@ -1386,11 +1413,36 @@ class PlayerController @Inject constructor(
         // it can auto-advance natively instead of round-tripping through the app
         // for every transition.
         if (castController.isSessionActive.value) {
+            val newMedia = _state.value.media ?: return
+            pushCurrentMediaToCast(newMedia, _state.value.playlist, streamingUrl = null)
+            // Avoid the per-item loadMedia duplicate from the URL resolve path —
+            // queueLoad already handled the start item.
+            _state.update { it.copy(streamingUrl = null) }
+        }
+    }
+
+    /**
+     * Drives whatever should currently be playing on the Chromecast device.
+     *
+     * - If there's a playlist context, resolve all items in parallel and
+     *   `queueLoad` so the device auto-advances natively.
+     * - Otherwise, `loadMedia` a single item. If the streaming URL isn't
+     *   resolved yet (`streamingUrl == null`), resolve it before casting.
+     *
+     * Idempotent w.r.t. the current media — if `media` no longer matches
+     * what `_state` is pointing at when resolves complete, we drop the cast.
+     */
+    private fun pushCurrentMediaToCast(
+        media: CurrentMedia,
+        playlist: PlaylistContext?,
+        streamingUrl: String?,
+    ) {
+        if (playlist != null && playlist.items.size > 1) {
             scope.launch {
-                val resolved = ctx.items.map { i ->
+                val resolved = playlist.items.map { i ->
                     val url = runCatching { contentRepository.resolveStreamUrl(i.permanentUrl) }.getOrNull()
                     if (url.isNullOrBlank()) null
-                    else com.odysee.app.core.data.cast.CastQueueItem(
+                    else i.claimId to com.odysee.app.core.data.cast.CastQueueItem(
                         streamUrl = url,
                         title = i.title,
                         channelName = i.channelName,
@@ -1398,17 +1450,49 @@ class PlayerController @Inject constructor(
                     )
                 }
                 val valid = resolved.filterNotNull()
-                if (valid.isNotEmpty()) {
-                    // Map the start index from the original list into the filtered list.
-                    val targetClaimId = item.claimId
-                    val startIdx = valid.indexOfFirst { it.title == item.title }
-                        .takeIf { it >= 0 } ?: 0
-                    castController.queueLoad(valid, startIdx)
-                    // Avoid the per-item loadMedia duplicate from the URL resolve path.
-                    _state.update { it.copy(streamingUrl = null) }
-                }
+                if (valid.isEmpty()) return@launch
+                if (_state.value.media?.claimId != media.claimId) return@launch
+                val items = valid.map { it.second }
+                val startIdx = valid.indexOfFirst { it.first == media.claimId }
+                    .takeIf { it >= 0 } ?: 0
+                castController.queueLoad(items, startIdx)
             }
+            return
         }
+        if (streamingUrl != null) {
+            castController.loadMedia(
+                streamUrl = streamingUrl,
+                title = media.title,
+                channelName = media.channelName,
+                thumbnailUrl = media.thumbnailUrl,
+            )
+            return
+        }
+        // No streaming URL yet — resolve it, then cast (provided the user
+        // hasn't switched media in the meantime).
+        scope.launch {
+            val resolved = runCatching { contentRepository.resolveStreamUrl(media.permanentUrl) }
+                .getOrNull()
+                ?.takeIf { it.isNotBlank() } ?: return@launch
+            if (_state.value.media?.claimId != media.claimId) return@launch
+            _state.update { it.copy(streamingUrl = resolved) }
+            castController.loadMedia(
+                streamUrl = resolved,
+                title = media.title,
+                channelName = media.channelName,
+                thumbnailUrl = media.thumbnailUrl,
+            )
+        }
+    }
+
+    /**
+     * Public re-cast for the "tap to cast" overlay shown when a Chromecast
+     * session is active but the device isn't currently playing this stream.
+     * Resolves the URL if needed and uses the playlist queue if there is one.
+     */
+    fun recastCurrent() {
+        val media = _state.value.media ?: return
+        pushCurrentMediaToCast(media, _state.value.playlist, _state.value.streamingUrl)
     }
 
     private fun advanceToNextPlaylistItem() {

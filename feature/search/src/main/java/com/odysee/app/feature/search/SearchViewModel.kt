@@ -28,6 +28,7 @@ data class SearchResultUi(
     val channelAvatarUrl: String?,
     val ageLabel: String,
     val durationLabel: String,
+    val releaseTime: Long?,
     val tintIndex: Int,
     val description: String?,
     val paywall: com.odysee.app.core.model.Paywall = com.odysee.app.core.model.Paywall.Free,
@@ -42,9 +43,33 @@ sealed interface SearchState {
     data class Error(val message: String) : SearchState
 }
 
+enum class SearchClaimType { Everything, Files, Channels }
+enum class SearchSortBy { Relevance, Newest, Oldest }
+enum class SearchTimeFilter { All, Today, ThisWeek, ThisMonth, ThisYear }
+
+data class SearchFilters(
+    val claimType: SearchClaimType = SearchClaimType.Everything,
+    val sortBy: SearchSortBy = SearchSortBy.Relevance,
+    val timeFilter: SearchTimeFilter = SearchTimeFilter.All,
+) {
+    val isActive: Boolean
+        get() = claimType != SearchClaimType.Everything ||
+            sortBy != SearchSortBy.Relevance ||
+            timeFilter != SearchTimeFilter.All
+
+    val activeCount: Int
+        get() = listOf(
+            claimType != SearchClaimType.Everything,
+            sortBy != SearchSortBy.Relevance,
+            timeFilter != SearchTimeFilter.All,
+        ).count { it }
+}
+
 data class SearchUiState(
     val query: String = "",
     val state: SearchState = SearchState.Idle,
+    val filters: SearchFilters = SearchFilters(),
+    val rawResults: List<SearchResultUi> = emptyList(),
 )
 
 @HiltViewModel
@@ -84,7 +109,12 @@ class SearchViewModel @Inject constructor(
         runCatching { contentRepository.search(query.trim()) }
             .onSuccess { claims ->
                 val results = claims.map { it.toUi() }
-                _state.update { it.copy(state = SearchState.Success(results)) }
+                _state.update {
+                    it.copy(
+                        rawResults = results,
+                        state = SearchState.Success(applyFilters(results, it.filters)),
+                    )
+                }
             }
             .onFailure { error ->
                 _state.update {
@@ -95,6 +125,43 @@ class SearchViewModel @Inject constructor(
                     )
                 }
             }
+    }
+
+    fun setFilters(filters: SearchFilters) {
+        val cur = _state.value
+        if (cur.filters == filters) return
+        val newState = if (cur.rawResults.isNotEmpty()) {
+            cur.copy(filters = filters, state = SearchState.Success(applyFilters(cur.rawResults, filters)))
+        } else {
+            cur.copy(filters = filters)
+        }
+        _state.value = newState
+    }
+
+    private fun applyFilters(items: List<SearchResultUi>, filters: SearchFilters): List<SearchResultUi> {
+        val nowSec = System.currentTimeMillis() / 1000
+        val typed = when (filters.claimType) {
+            SearchClaimType.Everything -> items
+            SearchClaimType.Files -> items.filter { !it.isChannel }
+            SearchClaimType.Channels -> items.filter { it.isChannel }
+        }
+        val timed = when (filters.timeFilter) {
+            SearchTimeFilter.All -> typed
+            SearchTimeFilter.Today -> typed.filter { withinSeconds(it.releaseTime, nowSec, TimeUnit.DAYS.toSeconds(1)) }
+            SearchTimeFilter.ThisWeek -> typed.filter { withinSeconds(it.releaseTime, nowSec, TimeUnit.DAYS.toSeconds(7)) }
+            SearchTimeFilter.ThisMonth -> typed.filter { withinSeconds(it.releaseTime, nowSec, TimeUnit.DAYS.toSeconds(30)) }
+            SearchTimeFilter.ThisYear -> typed.filter { withinSeconds(it.releaseTime, nowSec, TimeUnit.DAYS.toSeconds(365)) }
+        }
+        return when (filters.sortBy) {
+            SearchSortBy.Relevance -> timed
+            SearchSortBy.Newest -> timed.sortedByDescending { it.releaseTime ?: 0 }
+            SearchSortBy.Oldest -> timed.sortedBy { it.releaseTime ?: Long.MAX_VALUE }
+        }
+    }
+
+    private fun withinSeconds(releaseTime: Long?, nowSec: Long, window: Long): Boolean {
+        val rt = releaseTime ?: return false
+        return (nowSec - rt) in 0..window
     }
 }
 
@@ -112,6 +179,7 @@ private fun Claim.toUi(): SearchResultUi {
         channelAvatarUrl = signingChannel?.thumbnailUrl,
         ageLabel = formatAge(releaseTime),
         durationLabel = formatDuration(durationSeconds),
+        releaseTime = releaseTime,
         tintIndex = claimId.hashCode().absoluteValue,
         description = description,
         paywall = paywall,

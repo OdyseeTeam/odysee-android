@@ -227,6 +227,15 @@ fun UploadsScreen(
                         )
                     }
                 },
+                onEdit = {
+                    val stripped = target.permanentUrl.removePrefix("lbry://")
+                    val link = "https://odysee.com/$stripped?view=publish"
+                    runCatching {
+                        context.startActivity(
+                            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link)),
+                        )
+                    }
+                },
             ),
             onDismiss = { claimMenuTarget = null },
         )

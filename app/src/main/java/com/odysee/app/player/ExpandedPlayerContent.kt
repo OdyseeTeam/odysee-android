@@ -137,33 +137,88 @@ private tailrec fun android.content.Context.findActivity(): android.app.Activity
     else -> null
 }
 
+private val HASHTAG_REGEX = Regex("(?<![A-Za-z0-9_/])#([A-Za-z0-9_]{1,40})")
+
+private const val HIT_KIND_URL = 0
+private const val HIT_KIND_HASHTAG = 1
+
+private data class DescriptionHit(
+    val start: Int,
+    val end: Int,
+    val kind: Int,
+    val payload: String,
+)
+
 private fun buildDescriptionAnnotated(
     text: String,
     linkColor: androidx.compose.ui.graphics.Color,
+    onHashtagClick: (String) -> Unit = {},
 ): androidx.compose.ui.text.AnnotatedString {
-    val pattern = android.util.Patterns.WEB_URL
-    val matcher = pattern.matcher(text)
+    val hits = mutableListOf<DescriptionHit>()
+    val urlMatcher = android.util.Patterns.WEB_URL.matcher(text)
+    while (urlMatcher.find()) {
+        hits += DescriptionHit(
+            start = urlMatcher.start(),
+            end = urlMatcher.end(),
+            kind = HIT_KIND_URL,
+            payload = text.substring(urlMatcher.start(), urlMatcher.end()),
+        )
+    }
+    HASHTAG_REGEX.findAll(text).forEach { m ->
+        hits += DescriptionHit(
+            start = m.range.first,
+            end = m.range.last + 1,
+            kind = HIT_KIND_HASHTAG,
+            payload = m.groupValues[1],
+        )
+    }
+    hits.sortBy { it.start }
+    // Drop overlapping (later-starting) hits — URLs always win.
+    val merged = mutableListOf<DescriptionHit>()
+    var consumedUntil = 0
+    for (h in hits) {
+        if (h.start < consumedUntil) continue
+        merged += h
+        consumedUntil = h.end
+    }
+
     val linkStyle = androidx.compose.ui.text.TextLinkStyles(
         style = androidx.compose.ui.text.SpanStyle(
             color = linkColor,
             textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
         ),
     )
+    val hashtagStyle = androidx.compose.ui.text.TextLinkStyles(
+        style = androidx.compose.ui.text.SpanStyle(color = linkColor),
+    )
     val builder = androidx.compose.ui.text.AnnotatedString.Builder()
     var lastEnd = 0
-    while (matcher.find()) {
-        val start = matcher.start()
-        val end = matcher.end()
-        if (start > lastEnd) builder.append(text.substring(lastEnd, start))
-        val raw = text.substring(start, end)
-        val href = if (raw.startsWith("http://", ignoreCase = true) ||
-            raw.startsWith("https://", ignoreCase = true)) raw else "https://$raw"
-        val linkIdx = builder.pushLink(
-            androidx.compose.ui.text.LinkAnnotation.Url(url = href, styles = linkStyle),
-        )
-        builder.append(raw)
-        builder.pop(linkIdx)
-        lastEnd = end
+    for (h in merged) {
+        if (h.start > lastEnd) builder.append(text.substring(lastEnd, h.start))
+        val raw = text.substring(h.start, h.end)
+        when (h.kind) {
+            HIT_KIND_URL -> {
+                val href = if (raw.startsWith("http://", ignoreCase = true) ||
+                    raw.startsWith("https://", ignoreCase = true)) raw else "https://$raw"
+                val idx = builder.pushLink(
+                    androidx.compose.ui.text.LinkAnnotation.Url(url = href, styles = linkStyle),
+                )
+                builder.append(raw)
+                builder.pop(idx)
+            }
+            HIT_KIND_HASHTAG -> {
+                val tag = h.payload
+                val idx = builder.pushLink(
+                    androidx.compose.ui.text.LinkAnnotation.Clickable(
+                        tag = "hashtag:$tag",
+                        styles = hashtagStyle,
+                    ) { onHashtagClick(tag) },
+                )
+                builder.append(raw)
+                builder.pop(idx)
+            }
+        }
+        lastEnd = h.end
     }
     if (lastEnd < text.length) builder.append(text.substring(lastEnd))
     return builder.toAnnotatedString()
@@ -182,6 +237,7 @@ fun ExpandedPlayerContent(
     controller: PlayerController,
     onCollapse: () -> Unit,
     onChannelClick: (String, String) -> Unit,
+    onHashtagClick: (String) -> Unit = {},
 ) {
     val media = state.media ?: return
     val tabs = remember(state.playlist) {
@@ -211,6 +267,13 @@ fun ExpandedPlayerContent(
         if (!state.isPlaying && !controller.exoPlayer.playWhenReady) {
             controlsVisible = true
             playerViewRef?.showController()
+        }
+    }
+
+    val ctxForToast = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(controller) {
+        controller.postErrors.collect { msg ->
+            android.widget.Toast.makeText(ctxForToast, msg, android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -291,17 +354,7 @@ fun ExpandedPlayerContent(
                 CastPlaceholderSurface(
                     thumbnailUrl = media.thumbnailUrl,
                     fillScreen = isFullscreen,
-                    onPlay = {
-                        val url = state.streamingUrl
-                        if (url != null) {
-                            controller.castController.loadMedia(
-                                streamUrl = url,
-                                title = media.title,
-                                channelName = media.channelName,
-                                thumbnailUrl = media.thumbnailUrl,
-                            )
-                        }
-                    },
+                    onPlay = { controller.recastCurrent() },
                 )
             } else if (isPipActive) {
                 PipPlaceholderSurface(
@@ -476,6 +529,10 @@ fun ExpandedPlayerContent(
                     onToggleFavorite = controller::toggleFavorite,
                     onLike = controller::like,
                     onDislike = controller::dislike,
+                    onHashtagClick = { tag ->
+                        onCollapse()
+                        onHashtagClick(tag)
+                    },
                 )
                 WatchTab.Comments -> {
                     val auth = com.odysee.app.auth.LocalAuthState.current
@@ -517,6 +574,10 @@ fun ExpandedPlayerContent(
                             onAddModerator = controller::addCommentModerator,
                             onRemoveModerator = controller::removeCommentModerator,
                             onHyperchat = { text, amount -> controller.postHyperchat(text, amount) },
+                            onHashtagClick = { tag ->
+                                onCollapse()
+                                onHashtagClick(tag)
+                            },
                             canPost = canPost,
                             isClaimOwner = media.channelClaimId != null && signedIn?.activeChannel?.claimId == media.channelClaimId,
                         )
@@ -991,6 +1052,7 @@ private fun InfoPage(
     onToggleFavorite: () -> Unit,
     onLike: () -> Unit,
     onDislike: () -> Unit,
+    onHashtagClick: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scroll = rememberScrollState()
@@ -1058,14 +1120,7 @@ private fun InfoPage(
         val authStateForFollow = com.odysee.app.auth.LocalAuthState.current
         val canSubscribe = authStateForFollow is com.odysee.app.core.data.auth.AuthState.SignedIn
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Avatar tap → toggle subscribe (NOT navigate). Unfollow needs a confirm.
-            Box(
-                modifier = Modifier.clickable(enabled = canSubscribe) {
-                    if (media.channelClaimId == null) return@clickable
-                    if (state.isChannelSubscribed) showUnfollowConfirm = true
-                    else playerCtrl.toggleChannelSubscription()
-                },
-            ) {
+            Box(modifier = Modifier.clickable(onClick = onChannelClick)) {
                 OdyseeChannelAvatar(
                     avatarUrl = media.channelAvatarUrl,
                     initial = media.channelInitial,
@@ -1211,7 +1266,9 @@ private fun InfoPage(
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
             Spacer(Modifier.size(16.dp))
             val linkColor = MaterialTheme.colorScheme.primary
-            val annotated = remember(desc, linkColor) { buildDescriptionAnnotated(desc, linkColor) }
+            val annotated = remember(desc, linkColor) {
+                buildDescriptionAnnotated(desc, linkColor, onHashtagClick = onHashtagClick)
+            }
             Text(
                 text = annotated,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1302,32 +1359,19 @@ private fun ChatPage(
         }
         androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         if (canPost) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                androidx.compose.material3.OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Say something...") },
-                    singleLine = true,
-                )
-                Spacer(Modifier.size(8.dp))
-                TextButton(
-                    onClick = {
-                        if (draft.isNotBlank()) {
-                            onPost(draft.trim())
-                            draft = ""
-                        }
-                    },
-                    enabled = draft.isNotBlank(),
-                ) {
-                    Text("Send")
-                }
-            }
+            com.odysee.app.core.designsystem.comments.OdyseeCommentComposer(
+                draft = draft,
+                onDraftChange = { draft = it },
+                onSubmit = {
+                    if (draft.isNotBlank()) {
+                        onPost(draft.trim())
+                        draft = ""
+                    }
+                },
+                placeholder = "Say something…",
+                maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_LIVESTREAM_COMMENT,
+                singleLine = true,
+            )
         } else {
             Text(
                 text = "Sign in to chat",
@@ -1426,6 +1470,17 @@ private fun ChatMessageRow(comment: CommentUiModel) {
             ) {
                 append(comment.author)
             }
+            if (comment.ageLabel.isNotBlank()) {
+                append("  ")
+                withStyle(
+                    androidx.compose.ui.text.SpanStyle(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = MaterialTheme.typography.labelSmall.fontSize,
+                    ),
+                ) {
+                    append(comment.ageLabel)
+                }
+            }
             append("  ")
             withStyle(androidx.compose.ui.text.SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
                 append(comment.body)
@@ -1459,6 +1514,7 @@ private fun CommentsPage(
     onAddModerator: (String) -> Unit = {},
     onRemoveModerator: (String) -> Unit = {},
     onHyperchat: suspend (String, Double) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    onHashtagClick: (String) -> Unit = {},
     canPost: Boolean = false,
     isClaimOwner: Boolean = false,
     linkedCommentId: String? = null,
@@ -1468,7 +1524,7 @@ private fun CommentsPage(
     var showHyperchatDialog by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxSize()) {
         if (canPost) {
-            CommentComposer(
+            com.odysee.app.core.designsystem.comments.OdyseeCommentComposer(
                 draft = draft,
                 onDraftChange = { draft = it },
                 onSubmit = {
@@ -1488,6 +1544,8 @@ private fun CommentsPage(
                     }
                 },
                 onOpenHyperchat = { showHyperchatDialog = true },
+                showHyperchat = true,
+                maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_COMMENT,
             )
             androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         }
@@ -1509,6 +1567,7 @@ private fun CommentsPage(
                 onBlock = onBlock,
                 onAddModerator = onAddModerator,
                 onRemoveModerator = onRemoveModerator,
+                onHashtagClick = onHashtagClick,
                 isClaimOwner = isClaimOwner,
                 linkedCommentId = linkedCommentId,
             )
@@ -1516,7 +1575,7 @@ private fun CommentsPage(
     }
 
     pendingPaidSticker?.let { sticker ->
-        HyperchatStickerDialog(
+        com.odysee.app.core.designsystem.comments.OdyseeHyperchatStickerDialog(
             sticker = sticker,
             onDismiss = { pendingPaidSticker = null },
             onConfirm = { amount ->
@@ -1527,7 +1586,7 @@ private fun CommentsPage(
         )
     }
     if (showHyperchatDialog) {
-        HyperchatTextDialog(
+        com.odysee.app.core.designsystem.comments.OdyseeHyperchatTextDialog(
             initialText = draft,
             onDismiss = { showHyperchatDialog = false },
             onConfirm = { text, amount ->
@@ -1539,382 +1598,6 @@ private fun CommentsPage(
     }
 }
 
-@Composable
-private fun HyperchatStickerDialog(
-    sticker: StickerDef,
-    onDismiss: () -> Unit,
-    onConfirm: suspend (Double) -> Result<Unit>,
-) {
-    val price = (sticker.priceLbc ?: 0).toDouble()
-    var sending by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val coScope = rememberCoroutineScope()
-    AlertDialog(
-        onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("Send sticker hyperchat") },
-        text = {
-            Column {
-                AsyncImage(
-                    model = sticker.url,
-                    contentDescription = sticker.name,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.size(96.dp),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "Tip $${price.toInt()} (LBC) and post this sticker as a hyperchat.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                error?.let {
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = !sending,
-                onClick = {
-                    sending = true
-                    error = null
-                    coScope.launch {
-                        val result = onConfirm(price)
-                        sending = false
-                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: "Failed"
-                        else onDismiss()
-                    }
-                },
-            ) { Text(if (sending) "Sending…" else "Send") }
-        },
-        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-@Composable
-private fun HyperchatTextDialog(
-    initialText: String,
-    onDismiss: () -> Unit,
-    onConfirm: suspend (String, Double) -> Result<Unit>,
-) {
-    var text by remember { mutableStateOf(initialText) }
-    var amount by remember { mutableStateOf("1") }
-    var sending by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val coScope = rememberCoroutineScope()
-    AlertDialog(
-        onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("Hyperchat") },
-        text = {
-            Column {
-                Text(
-                    text = "Highlight your comment by tipping the creator. Paid in LBC from your wallet.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(8.dp))
-                androidx.compose.material3.OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Message") },
-                    maxLines = 4,
-                )
-                Spacer(Modifier.size(8.dp))
-                androidx.compose.material3.OutlinedTextField(
-                    value = amount,
-                    onValueChange = { v -> amount = v.filter { it.isDigit() || it == '.' } },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Amount (LBC)") },
-                    singleLine = true,
-                )
-                error?.let {
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            val amt = amount.toDoubleOrNull() ?: 0.0
-            TextButton(
-                enabled = !sending && text.isNotBlank() && amt > 0,
-                onClick = {
-                    sending = true
-                    error = null
-                    coScope.launch {
-                        val result = onConfirm(text.trim(), amt)
-                        sending = false
-                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: "Failed"
-                        else onDismiss()
-                    }
-                },
-            ) { Text(if (sending) "Sending…" else "Send") }
-        },
-        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun CommentComposer(
-    draft: String,
-    onDraftChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onInsertSticker: (StickerDef) -> Unit,
-    onOpenHyperchat: () -> Unit = {},
-) {
-    var showStickers by remember { mutableStateOf(false) }
-    var showEmojis by remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(start = 14.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(modifier = Modifier.weight(1f).padding(vertical = 12.dp)) {
-                if (draft.isEmpty()) {
-                    Text(
-                        text = "Add a comment...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                androidx.compose.foundation.text.BasicTextField(
-                    value = draft,
-                    onValueChange = onDraftChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onBackground,
-                    ),
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                    maxLines = 4,
-                )
-            }
-            IconButton(onClick = { showEmojis = true }, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.EmojiEmotions,
-                    contentDescription = "Emoji",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            IconButton(onClick = { showStickers = true }, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.AddReaction,
-                    contentDescription = "Sticker",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            IconButton(onClick = onOpenHyperchat, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.AttachMoney,
-                    contentDescription = "Hyperchat",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-        Spacer(Modifier.width(4.dp))
-        IconButton(
-            onClick = onSubmit,
-            enabled = draft.isNotBlank(),
-            modifier = Modifier.size(44.dp),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Post",
-                tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.size(22.dp),
-            )
-        }
-    }
-    if (showStickers) {
-        StickerPickerSheet(
-            onDismiss = { showStickers = false },
-            onPick = { sticker ->
-                showStickers = false
-                onInsertSticker(sticker)
-            },
-        )
-    }
-    if (showEmojis) {
-        EmojiPickerSheet(
-            onDismiss = { showEmojis = false },
-            onPick = { token ->
-                onDraftChange(draft + token)
-            },
-        )
-    }
-}
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun StickerPickerSheet(onDismiss: () -> Unit, onPick: (StickerDef) -> Unit) {
-    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-            columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(80.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(480.dp)
-                .padding(horizontal = 8.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
-        ) {
-            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Free",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                )
-            }
-            gridItems(items = FREE_GLOBAL_STICKERS, key = { "free-${it.name}" }) { sticker ->
-                StickerCell(sticker = sticker, onPick = onPick)
-            }
-            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Tips",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                )
-            }
-            gridItems(items = PAID_GLOBAL_STICKERS, key = { "paid-${it.name}" }) { sticker ->
-                StickerCell(sticker = sticker, onPick = onPick)
-            }
-        }
-    }
-}
-
-@Composable
-private fun StickerCell(sticker: StickerDef, onPick: (StickerDef) -> Unit) {
-    Box(
-        modifier = Modifier
-            .padding(4.dp)
-            .size(72.dp)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-            .clickable { onPick(sticker) },
-        contentAlignment = Alignment.Center,
-    ) {
-        AsyncImage(
-            model = sticker.url,
-            contentDescription = sticker.name,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize().padding(4.dp),
-        )
-        val price = sticker.priceLbc
-        if (price != null && price > 0) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 2.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE2202D))
-                    .padding(horizontal = 6.dp, vertical = 1.dp),
-            ) {
-                Text(
-                    text = "$$price",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-    }
-}
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun EmojiPickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
-    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedCategoryIndex by remember { mutableStateOf(0) }
-    androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            itemsIndexed(items = EMOTE_CATEGORIES, key = { _, c -> c.key }) { idx, cat ->
-                val selected = idx == selectedCategoryIndex
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.surfaceVariant
-                            else Color.Transparent
-                        )
-                        .clickable { selectedCategoryIndex = idx }
-                        .padding(6.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AsyncImage(
-                        model = cat.mainImg,
-                        contentDescription = cat.title,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
-        androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-        val category = EMOTE_CATEGORIES[selectedCategoryIndex]
-        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-            columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(48.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(420.dp)
-                .padding(horizontal = 8.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-        ) {
-            gridItems(items = category.items, key = { "${category.key}-${it.name}" }) { emote ->
-                Box(
-                    modifier = Modifier
-                        .padding(2.dp)
-                        .size(44.dp)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
-                        .clickable { onPick(emote.name) }
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AsyncImage(
-                        model = emote.url,
-                        contentDescription = emote.name,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun CommentSortBar(
@@ -1979,6 +1662,7 @@ private fun CommentsBody(
     onBlock: (String) -> Unit = {},
     onAddModerator: (String) -> Unit = {},
     onRemoveModerator: (String) -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
     isClaimOwner: Boolean = false,
     linkedCommentId: String? = null,
 ) {
@@ -2067,6 +1751,7 @@ private fun CommentsBody(
                             onReplyDislike = { id -> onDislike(id) },
                             onLongPress = { menuTarget = it },
                             onReplyLongPress = { menuTarget = it },
+                            onHashtagClick = onHashtagClick,
                         )
                     }
                 }
@@ -2748,6 +2433,7 @@ private fun CommentThread(
     onReplyDislike: (String) -> Unit,
     onLongPress: (CommentUiModel) -> Unit = {},
     onReplyLongPress: (CommentUiModel) -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
 ) {
     val rawReplies = replies
     OdyseeCommentThread(
@@ -2757,11 +2443,13 @@ private fun CommentThread(
             onLike = onLike,
             onDislike = onDislike,
             onReply = onReply,
+            onHashtagClick = onHashtagClick,
         ),
         replyActionsFor = { rDisplay: OdyseeComment ->
             OdyseeCommentActions(
                 onLike = { onReplyLike(rDisplay.id) },
                 onDislike = { onReplyDislike(rDisplay.id) },
+                onHashtagClick = onHashtagClick,
             )
         },
         canReply = canReply,

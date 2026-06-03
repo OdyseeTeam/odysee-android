@@ -213,6 +213,7 @@ private fun HomeScreenContent(
     showOdyseeTopBar: Boolean = true,
 ) {
     val hazeState = LocalHazeState.current ?: remember { HazeState() }
+    var scrollToTopTick by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     androidx.compose.runtime.CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
         topBar = {
@@ -228,7 +229,9 @@ private fun HomeScreenContent(
                     Box(modifier = Modifier.hazeEffect(state = hazeState, style = HazeMaterials.thick())) {
                         TopAppBar(
                             modifier = Modifier.displayCutoutPadding(),
-                            title = { OdyseeWordmark() },
+                            title = {
+                                OdyseeWordmark(onClick = { scrollToTopTick += 1 })
+                            },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
                             ),
@@ -324,6 +327,7 @@ private fun HomeScreenContent(
                         onSaveFavorite = onSaveFavorite,
                         onRefresh = onRetryFollowing,
                         onLoadMore = onLoadMore,
+                        scrollToTopTick = scrollToTopTick,
                     )
                 }
             }
@@ -344,6 +348,7 @@ private fun HomeScreenContent(
                 onSaveFavorite = onSaveFavorite,
                 onRefresh = onRetryFeed,
                 onLoadMore = onLoadMore,
+                scrollToTopTick = scrollToTopTick,
             )
             }
         }
@@ -566,6 +571,7 @@ private fun FeedPane(
     onSaveFavorite: (VideoUiModel) -> Unit,
     onRefresh: () -> Unit = {},
     onLoadMore: () -> Unit = {},
+    scrollToTopTick: Int = 0,
 ) {
     when (feed) {
         FeedState.Loading -> CenteredLoading(padding)
@@ -585,6 +591,7 @@ private fun FeedPane(
             onSaveFavorite = onSaveFavorite,
             onRefresh = onRefresh,
             onLoadMore = onLoadMore,
+            scrollToTopTick = scrollToTopTick,
         )
     }
 }
@@ -603,6 +610,7 @@ private fun VerticalVideoFeed(
     onRefresh: () -> Unit = {},
     onLoadMore: () -> Unit = {},
     isRefreshing: Boolean = false,
+    scrollToTopTick: Int = 0,
 ) {
     var addToPlaylistVideo by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf<VideoUiModel?>(null)
@@ -622,6 +630,10 @@ private fun VerticalVideoFeed(
         if (gridState.firstVisibleItemIndex > 0) {
             gridState.animateScrollToItem(0)
         }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(scrollToTopTick) {
+        if (scrollToTopTick > 0) gridState.animateScrollToItem(0)
     }
 
     androidx.compose.runtime.LaunchedEffect(gridState, videos.size) {
@@ -1017,11 +1029,13 @@ private fun AccountButton(
 }
 
 @Composable
-private fun OdyseeWordmark() {
+private fun OdyseeWordmark(onClick: (() -> Unit)? = null) {
     Image(
         painter = painterResource(id = DesignR.drawable.odysee_wordmark),
         contentDescription = "Odysee",
-        modifier = Modifier.height(38.dp),
+        modifier = Modifier
+            .height(38.dp)
+            .let { m -> if (onClick != null) m.clickable(onClick = onClick) else m },
     )
 }
 

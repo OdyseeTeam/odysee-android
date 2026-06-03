@@ -37,6 +37,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
@@ -85,6 +87,7 @@ private enum class ChannelTab(val label: String, val ownerOnly: Boolean = false)
     Shorts("Shorts"),
     Playlists("Playlists"),
     Channels("Channels"),
+    Membership("Membership"),
     Discussion("Discussion"),
     About("About"),
     Settings("Settings", ownerOnly = true),
@@ -117,6 +120,7 @@ fun ChannelScreen(
     onPlayClaimBackground: (CurrentMedia) -> Unit = {},
     onPlayClaimPip: (CurrentMedia) -> Unit = {},
     onWatchShort: (ChannelShortTarget) -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
@@ -124,11 +128,18 @@ fun ChannelScreen(
     var selectedTab by rememberSaveable { mutableStateOf(ChannelTab.Content) }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+    androidx.compose.runtime.LaunchedEffect(state.claimId) {
+        if (state.claimId.isNotBlank() && !state.membershipsLoaded && !state.isLoadingMemberships) {
+            viewModel.loadMemberships()
+        }
+    }
+
     androidx.compose.runtime.LaunchedEffect(selectedTab, listState) {
         when (selectedTab) {
             ChannelTab.Shorts -> if (state.shorts.isEmpty() && !state.isLoadingShorts) viewModel.loadShorts()
             ChannelTab.Playlists -> if (state.playlists.isEmpty() && !state.isLoadingPlaylists) viewModel.loadChannelPlaylists()
             ChannelTab.Channels -> if (!state.featuredChannelsLoaded && !state.isLoadingFeaturedChannels) viewModel.loadFeaturedChannels()
+            ChannelTab.Membership -> if (!state.membershipsLoaded && !state.isLoadingMemberships) viewModel.loadMemberships()
             else -> Unit
         }
     }
@@ -294,6 +305,8 @@ fun ChannelScreen(
                     followerCount = state.followerCount,
                     onToggleSubscription = viewModel::toggleSubscription,
                     canSubscribe = state.isSignedIn,
+                    hasMemberships = state.memberships.isNotEmpty(),
+                    onJoinMembership = { selectedTab = ChannelTab.Membership },
                 )
             }
             stickyHeader(key = "tabs") {
@@ -368,22 +381,35 @@ fun ChannelScreen(
                     state = state,
                     onChannelClick = onVisitChannel,
                 )
+                ChannelTab.Membership -> membershipTab(
+                    state = state,
+                    onJoin = { channelName ->
+                        val ctx = context
+                        val url = "https://odysee.com/@$channelName:${state.claimId}?view=membership"
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        runCatching { ctx.startActivity(intent) }
+                    },
+                )
                 ChannelTab.Discussion -> {
                     if (state.discussion is DiscussionState.Idle) viewModel.loadDiscussion()
                     discussionTab(
                         state = state.discussion,
                         isClaimOwner = state.isOwnChannel,
+                        canPost = state.canPostDiscussion,
+                        onPost = viewModel::postDiscussion,
                         onRetry = viewModel::loadDiscussion,
                         onLongPress = { menuTarget = it },
                         onLike = { viewModel.reactToDiscussionComment(it, OdyseeReaction.Like) },
                         onDislike = { viewModel.reactToDiscussionComment(it, OdyseeReaction.Dislike) },
                         onLoadReplies = viewModel::loadDiscussionReplies,
+                        onHashtagClick = onHashtagClick,
                     )
                 }
                 ChannelTab.About -> aboutTab(
                     channel = state.channel,
                     isLoading = state.isLoadingChannel,
                     followedTags = state.followedTags,
+                    onTagClick = onHashtagClick,
                     onToggleTag = viewModel::toggleTag,
                 )
                 ChannelTab.Settings -> settingsTab(
@@ -660,6 +686,106 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
     }
 }
 
+private fun androidx.compose.foundation.lazy.LazyListScope.membershipTab(
+    state: ChannelUiState,
+    onJoin: (channelName: String) -> Unit,
+) {
+    when {
+        state.isLoadingMemberships && state.memberships.isEmpty() ->
+            item(key = "memberships_loading") { CenteredLoadingItem() }
+        state.membershipsError != null && state.memberships.isEmpty() ->
+            item(key = "memberships_error") {
+                CenteredErrorItem(message = state.membershipsError, onRetry = {})
+            }
+        state.memberships.isEmpty() ->
+            item(key = "memberships_empty") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "This channel doesn't offer memberships.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        else -> {
+            item { Spacer(Modifier.height(16.dp)) }
+            items(state.memberships, key = { it.id }) { tier ->
+                MembershipTierRow(
+                    tier = tier,
+                    channelName = state.channel?.name ?: state.displayName,
+                    onJoin = { onJoin(state.channel?.name ?: state.displayName) },
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MembershipTierRow(
+    tier: com.odysee.app.core.network.dto.CreatorMembershipDto,
+    channelName: String,
+    onJoin: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = tier.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+            )
+            tier.price?.let { p ->
+                Text(
+                    text = "$" + "%.2f".format(p.amount) + " / mo",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        tier.description?.takeIf { it.isNotBlank() }?.let { desc ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (tier.perks.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            tier.perks.forEach { perk ->
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        text = "•  ",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = perk.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        androidx.compose.material3.OutlinedButton(onClick = onJoin) {
+            Text("Join on odysee.com")
+        }
+    }
+}
+
 private fun androidx.compose.foundation.lazy.LazyListScope.channelsTab(
     state: ChannelUiState,
     onChannelClick: (String, String) -> Unit,
@@ -819,15 +945,42 @@ private fun ChannelPlaylistRow(playlist: ChannelPlaylistUi) {
     }
 }
 
+@Composable
+private fun DiscussionComposer(canPost: Boolean, onPost: (String) -> Unit) {
+    var text by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
+    var posting by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    com.odysee.app.core.designsystem.comments.OdyseeCommentComposer(
+        draft = text,
+        onDraftChange = { text = it },
+        onSubmit = {
+            if (canPost && text.isNotBlank()) {
+                posting = true
+                onPost(text.trim())
+                text = ""
+                posting = false
+            }
+        },
+        placeholder = if (canPost) "Add a comment…" else "Sign in to comment",
+        enabled = canPost && !posting,
+        maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_COMMENT,
+    )
+}
+
 private fun androidx.compose.foundation.lazy.LazyListScope.discussionTab(
     state: DiscussionState,
     isClaimOwner: Boolean,
+    canPost: Boolean,
+    onPost: (String) -> Unit,
     onRetry: () -> Unit,
     onLongPress: (OdyseeComment) -> Unit,
     onLike: (String) -> Unit,
     onDislike: (String) -> Unit,
     onLoadReplies: (String) -> Unit,
+    onHashtagClick: (String) -> Unit = {},
 ) {
+    item(key = "discussion_post") {
+        DiscussionComposer(canPost = canPost, onPost = onPost)
+    }
     when (state) {
         DiscussionState.Idle, DiscussionState.Loading -> item("discussion_loading") { CenteredLoadingItem() }
         is DiscussionState.Error -> item("discussion_error") {
@@ -855,11 +1008,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.discussionTab(
                         actions = OdyseeCommentActions(
                             onLike = { onLike(comment.id) },
                             onDislike = { onDislike(comment.id) },
+                            onHashtagClick = onHashtagClick,
                         ),
                         replyActionsFor = { reply ->
                             OdyseeCommentActions(
                                 onLike = { onLike(reply.id) },
                                 onDislike = { onDislike(reply.id) },
+                                onHashtagClick = onHashtagClick,
                             )
                         },
                         canReply = false,
@@ -977,6 +1132,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutTab(
     channel: Channel?,
     isLoading: Boolean,
     followedTags: Set<String> = emptySet(),
+    onTagClick: (String) -> Unit = {},
     onToggleTag: (String) -> Unit = {},
 ) {
     when {
@@ -997,6 +1153,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutTab(
             ChannelAboutContent(
                 channel = channel,
                 followedTagsForAbout = followedTags,
+                onTagClick = onTagClick,
                 onToggleTag = onToggleTag,
             )
         }
@@ -1007,6 +1164,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutTab(
 private fun ChannelAboutContent(
     channel: Channel,
     followedTagsForAbout: Set<String> = emptySet(),
+    onTagClick: (String) -> Unit = {},
     onToggleTag: (String) -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
@@ -1053,7 +1211,12 @@ private fun ChannelAboutContent(
         }
         if (channel.tags.isNotEmpty()) {
             AboutSection(label = "Tags") {
-                TagFlowRow(tags = channel.tags, followed = followedTagsForAbout, onToggleTag = onToggleTag)
+                TagFlowRow(
+                    tags = channel.tags,
+                    followed = followedTagsForAbout,
+                    onTagClick = onTagClick,
+                    onToggleTag = onToggleTag,
+                )
             }
         }
         if (channel.languages.isNotEmpty()) {
@@ -1123,10 +1286,12 @@ private fun AboutSection(label: String, content: @Composable () -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun TagFlowRow(
     tags: List<String>,
     followed: Set<String> = emptySet(),
+    onTagClick: (String) -> Unit = {},
     onToggleTag: (String) -> Unit = {},
 ) {
     val spacing = 8.dp
@@ -1134,14 +1299,21 @@ private fun TagFlowRow(
         content = {
             tags.forEach { tag ->
                 val isFollowed = followed.contains(tag.lowercase())
+                val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
                 Surface(
                     color = if (isFollowed) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(50),
-                    modifier = Modifier.clickable { onToggleTag(tag) },
+                    modifier = Modifier.combinedClickable(
+                        onClick = { onTagClick(tag) },
+                        onLongClick = {
+                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            onToggleTag(tag)
+                        },
+                    ),
                 ) {
                     Text(
-                        text = tag,
+                        text = "#$tag",
                         style = MaterialTheme.typography.labelMedium,
                         color = if (isFollowed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1218,6 +1390,8 @@ private fun ChannelHeader(
     followerCount: Long?,
     onToggleSubscription: () -> Unit,
     canSubscribe: Boolean,
+    hasMemberships: Boolean,
+    onJoinMembership: () -> Unit,
 ) {
     val coverHeight = 160.dp
     val avatarSize = 88.dp
@@ -1289,22 +1463,46 @@ private fun ChannelHeader(
                     }
                 }
                 if (!isOwnChannel) {
-                    Button(
-                        onClick = onToggleSubscription,
-                        enabled = canSubscribe,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSubscribed) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.primary,
-                            contentColor = if (isSubscribed) MaterialTheme.colorScheme.onSurfaceVariant
-                            else Color.White,
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
-                            text = if (isSubscribed) "Following" else "Follow",
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        Button(
+                            onClick = onToggleSubscription,
+                            enabled = canSubscribe,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isSubscribed) MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.primary,
+                                contentColor = if (isSubscribed) MaterialTheme.colorScheme.onSurfaceVariant
+                                else Color.White,
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = if (isSubscribed) "Following" else "Follow",
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                        if (hasMemberships) {
+                            OutlinedButton(
+                                onClick = onJoinMembership,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            ) {
+                                Text(
+                                    text = "Join",
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1354,6 +1552,7 @@ private fun ChannelVideoRow(
             thumbnailUrl = video.thumbnailUrl,
             durationLabel = video.durationLabel,
             ageLabel = video.ageLabel,
+            viewCount = video.viewCount,
             thumbnailTintIndex = video.thumbnailTintIndex,
             paywall = com.odysee.app.core.designsystem.claims.toCardPaywall(video.paywall),
             isPurchased = video.isPurchased,

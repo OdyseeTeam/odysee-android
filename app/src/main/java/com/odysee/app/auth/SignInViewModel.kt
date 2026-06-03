@@ -38,6 +38,20 @@ class SignInViewModel @Inject constructor(
     private val _dismiss = Channel<Unit>(capacity = Channel.BUFFERED)
     val dismissEvents: Flow<Unit> = _dismiss.receiveAsFlow()
 
+    init {
+        // When the background poll / deep-link flips us into SignedIn while this
+        // screen is open, close it automatically — otherwise the user sits on
+        // the "check your email" UI even though they're already signed in.
+        viewModelScope.launch {
+            var wasSignedIn = authRepository.state.value is AuthState.SignedIn
+            authRepository.state.collect { st ->
+                val nowSignedIn = st is AuthState.SignedIn
+                if (nowSignedIn && !wasSignedIn) _dismiss.trySend(Unit)
+                wasSignedIn = nowSignedIn
+            }
+        }
+    }
+
     fun signIn(email: String, password: String?) {
         if (email.isBlank()) {
             _ui.update { it.copy(statusMessage = "Enter your email.", statusIsError = true) }

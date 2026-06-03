@@ -131,6 +131,7 @@ interface ContentRepository {
     suspend fun getChannelVideos(channelClaimId: String, page: Int = 1, pageSize: Int = 20): List<Claim>
     suspend fun getFollowingFeed(channelClaimIds: List<String>, page: Int = 1, pageSize: Int = 30): List<Claim>
     suspend fun search(query: String, size: Int = 20, from: Int = 0): List<Claim>
+    suspend fun getClaimsByTags(tags: List<String>, page: Int = 1, pageSize: Int = 20): List<Claim>
     suspend fun getRelated(channelClaimId: String?, excludeClaimId: String, query: String? = null): List<Claim>
     suspend fun getViewCounts(claimIds: List<String>): Map<String, Long>
     suspend fun getShortsFeed(page: Int = 1, pageSize: Int = 20): List<Claim>
@@ -147,7 +148,7 @@ interface ContentRepository {
     ): Comment
 
     suspend fun sendTip(claimId: String, amountLbc: Double, channelId: String? = null): String
-    suspend fun getFeaturedChannelClaimIds(channelClaimId: String): List<String>
+    suspend fun getFeaturedChannelClaimIds(channelClaimId: String, channelName: String? = null): List<String>
     suspend fun getFeaturedChannelSections(channelClaimId: String): List<com.odysee.app.core.data.featured.FeaturedChannelSection>
     suspend fun updateFeaturedChannelSections(
         channelClaimId: String,
@@ -471,7 +472,7 @@ class ContentRepositoryImpl @Inject constructor(
         val response = sdkProxyApi.claimSearch(
             JsonRpcRequest(method = "claim_search", params = params),
         )
-        return response.unwrap().items.map { it.toDomain() }
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun resolveStreamUrl(uri: String): String {
@@ -502,7 +503,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             ),
         )
-        return response.unwrap().items.map { it.toDomain() }
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun getCommentReactions(
@@ -891,7 +892,7 @@ class ContentRepositoryImpl @Inject constructor(
                     ),
                 )
             }.getOrNull() ?: return@forEach
-            collected.addAll(response.unwrap().items.map { it.toChannel() })
+            collected.addAll(response.unwrap().items.mapNotNull { it.toChannel() })
         }
         return collected
     }
@@ -916,7 +917,7 @@ class ContentRepositoryImpl @Inject constructor(
                     ),
                 )
             }.getOrNull() ?: return@forEach
-            collected.addAll(response.unwrap().items.map { it.toDomain() })
+            collected.addAll(response.unwrap().items.mapNotNull { it.toDomain() })
         }
         return collected
     }
@@ -939,9 +940,10 @@ class ContentRepositoryImpl @Inject constructor(
             )
         }.getOrNull() ?: return emptyList()
         val items = response.unwrap().items
-        return items.map { c ->
+        return items.mapNotNull { c ->
+            val cid = c.claimId ?: return@mapNotNull null
             com.odysee.app.core.network.dto.CollectionClaimDto(
-                claimId = c.claimId,
+                claimId = cid,
                 name = c.name,
                 permanentUrl = c.permanentUrl,
                 canonicalUrl = c.canonicalUrl,
@@ -976,10 +978,11 @@ class ContentRepositoryImpl @Inject constructor(
                     // tab filters separately client-side via Claim.isShort.
                     streamTypes = null,
                     hasSource = null,
+                    notTags = listOf("mature", "c:unlisted"),
                 ),
             ),
         )
-        return response.unwrap().items.map { it.toDomain() }
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun search(query: String, size: Int, from: Int): List<Claim> {
@@ -1049,7 +1052,7 @@ class ContentRepositoryImpl @Inject constructor(
                     ),
                 ),
             )
-            val claims = response.unwrap().items.map { it.toDomain() }
+            val claims = response.unwrap().items.mapNotNull { it.toDomain() }
             val byClaimId = claims.associateBy { it.claimId }
             claimIds.mapNotNull { byClaimId[it] }
         }
@@ -1060,6 +1063,28 @@ class ContentRepositoryImpl @Inject constructor(
         // prepend it as a featured result.
         val without = lighthouseClaims.filterNot { it.claimId == winningDomain.claimId }
         return listOf(winningDomain) + without
+    }
+
+    override suspend fun getClaimsByTags(tags: List<String>, page: Int, pageSize: Int): List<Claim> {
+        val cleaned = tags.map { it.removePrefix("#").trim().lowercase() }.filter { it.isNotEmpty() }.distinct()
+        if (cleaned.isEmpty()) return emptyList()
+        val response = runCatching {
+            sdkProxyApi.claimSearch(
+                JsonRpcRequest(
+                    method = "claim_search",
+                    params = ClaimSearchParams(
+                        anyTags = cleaned,
+                        page = page,
+                        pageSize = pageSize.coerceIn(1, 50),
+                        claimType = listOf("stream"),
+                        streamTypes = listOf("video", "audio"),
+                        notTags = listOf("mature", "c:unlisted"),
+                        orderBy = listOf("release_time"),
+                    ),
+                ),
+            )
+        }.getOrNull() ?: return emptyList()
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun getRelated(
@@ -1080,7 +1105,7 @@ class ContentRepositoryImpl @Inject constructor(
                         ),
                     ),
                 )
-                response.unwrap().items.map { it.toDomain() }.filterNot { it.claimId == excludeClaimId }
+                response.unwrap().items.mapNotNull { it.toDomain() }.filterNot { it.claimId == excludeClaimId }
             }.getOrNull().orEmpty()
         }.orEmpty()
 
@@ -1105,7 +1130,7 @@ class ContentRepositoryImpl @Inject constructor(
                         ),
                     ),
                 )
-                response.unwrap().items.map { it.toDomain() }.filterNot { it.claimId == excludeClaimId }
+                response.unwrap().items.mapNotNull { it.toDomain() }.filterNot { it.claimId == excludeClaimId }
             }.getOrNull().orEmpty()
         }
         return channelResults + searchResults
@@ -1520,12 +1545,15 @@ class ContentRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getFeaturedChannelClaimIds(channelClaimId: String): List<String> {
+    override suspend fun getFeaturedChannelClaimIds(channelClaimId: String, channelName: String?): List<String> {
         val response = runCatching {
             commentronApi.settingGet(
                 JsonRpcRequest(
                     method = "setting.Get",
-                    params = com.odysee.app.core.network.dto.SettingGetParams(channelId = channelClaimId),
+                    params = com.odysee.app.core.network.dto.SettingGetParams(
+                        channelId = channelClaimId,
+                        channelName = channelName,
+                    ),
                 ),
             ).unwrap()
         }.getOrNull() ?: return emptyList()
@@ -1582,7 +1610,7 @@ class ContentRepositoryImpl @Inject constructor(
             )
             val items = response.unwrap().items
             if (items.isEmpty()) break
-            collected.addAll(items.map { it.toDomain() }.filter { it.isShort })
+            collected.addAll(items.mapNotNull { it.toDomain() }.filter { it.isShort })
             p++
             attempts++
         }
@@ -1612,7 +1640,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             )
         }.getOrNull() ?: return emptyList()
-        return response.unwrap().items.map { it.toDomain().copy(hasSource = false) }
+        return response.unwrap().items.mapNotNull { it.toDomain()?.copy(hasSource = false) }
     }
 
     override suspend fun getLivestreamUrls(): Map<String, String> {
@@ -1647,7 +1675,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             )
         }.getOrNull() ?: return emptyList()
-        return response.unwrap().items.map { it.toDomain() }
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun getFollowingFeed(
@@ -1667,10 +1695,11 @@ class ContentRepositoryImpl @Inject constructor(
                     // All published claim types from followed channels, not just videos.
                     streamTypes = null,
                     hasSource = null,
+                    notTags = listOf("mature", "c:unlisted"),
                 ),
             ),
         )
-        return response.unwrap().items.map { it.toDomain() }
+        return response.unwrap().items.mapNotNull { it.toDomain() }
     }
 
     override suspend fun listOwnComments(
@@ -1706,7 +1735,7 @@ class ContentRepositoryImpl @Inject constructor(
             ),
         ).unwrap()
 
-        val comments = listResponse.items.map { it.toDomain() }
+        val comments = listResponse.items.mapNotNull { it.toDomain() }
         val claimIds = comments.mapNotNull { it.claimId }.distinct()
         val claimsById = if (claimIds.isEmpty()) emptyMap() else {
             val search = sdkProxyApi.claimSearch(
@@ -1719,7 +1748,11 @@ class ContentRepositoryImpl @Inject constructor(
                     ),
                 ),
             ).unwrap()
-            search.items.associate { dto -> dto.claimId to dto.toDomain() }
+            search.items.mapNotNull { dto ->
+                val id = dto.claimId ?: return@mapNotNull null
+                val domain = dto.toDomain() ?: return@mapNotNull null
+                id to domain
+            }.toMap()
         }
         val totalItems = listResponse.totalItems ?: comments.size
         val totalPages = listResponse.totalPages

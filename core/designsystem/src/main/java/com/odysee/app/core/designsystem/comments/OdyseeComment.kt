@@ -46,4 +46,5 @@ data class OdyseeCommentActions(
     val onAddModerator: () -> Unit = {},
     val onRemoveModerator: () -> Unit = {},
     val onReport: () -> Unit = {},
+    val onHashtagClick: (String) -> Unit = {},
 )

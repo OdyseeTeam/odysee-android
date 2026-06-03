@@ -61,6 +61,7 @@ interface PlaylistsRepository {
     suspend fun addItem(playlistId: String, permanentUrl: String)
     suspend fun removeItem(playlistId: String, permanentUrl: String)
     suspend fun setAutoPublish(playlistId: String, enabled: Boolean)
+    suspend fun reorderItems(playlistId: String, orderedUrls: List<String>)
 }
 
 @Singleton
@@ -324,6 +325,20 @@ class PlaylistsRepositoryImpl @Inject constructor(
         val ex = current[idx]
         if (ex.autoPublish == enabled) return
         current[idx] = ex.copy(autoPublish = enabled, updatedAt = System.currentTimeMillis())
+        authPreferences.setCustomPlaylists(encode(current))
+        pushToServerAsync()
+    }
+
+    override suspend fun reorderItems(playlistId: String, orderedUrls: List<String>) {
+        if (!signedIn()) return
+        val current = decode(authPreferences.customPlaylists.first()).toMutableList()
+        val idx = current.indexOfFirst { it.id == playlistId }
+        if (idx < 0) return
+        val ex = current[idx]
+        // Only accept a permutation of the existing items — never drop or add via reorder.
+        if (orderedUrls.toSet() != ex.itemUrls.toSet()) return
+        if (orderedUrls == ex.itemUrls) return
+        current[idx] = ex.copy(itemUrls = orderedUrls, updatedAt = System.currentTimeMillis())
         authPreferences.setCustomPlaylists(encode(current))
         pushToServerAsync()
     }

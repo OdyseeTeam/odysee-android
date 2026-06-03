@@ -91,6 +91,9 @@ fun OdyseeNavHost(
     onNotificationsClick: () -> Unit,
 ) {
     val playerController = LocalPlayerController.current
+    val onHashtagClickNav: (String) -> Unit = { tag ->
+        navController.navigate(com.odysee.app.feature.search.HashtagRoute(tag = tag))
+    }
     androidx.compose.runtime.LaunchedEffect(playerController) {
         // Centralized short → shorts-player routing. PlayerController emits to
         // this whenever `play(media)` is invoked with `isShort = true`,
@@ -129,6 +132,7 @@ fun OdyseeNavHost(
                 thumbnailUrl = video.thumbnailUrl,
                 ageLabel = video.ageLabel.takeIf { it.isNotEmpty() },
                 liveStreamUrl = video.liveStreamUrl,
+                mediaType = video.mediaType,
             )
             // Guests don't have playlists, so the home pager collapses to just Home.
             val pagerState = rememberPagerState(pageCount = { if (signedIn != null) 2 else 1 })
@@ -313,6 +317,31 @@ fun OdyseeNavHost(
                         ),
                     )
                 },
+                onHashtagClick = onHashtagClickNav,
+            )
+        }
+        composable<com.odysee.app.feature.search.HashtagRoute> {
+            com.odysee.app.feature.search.HashtagScreen(
+                onBack = { navController.popBackStack() },
+                onWatch = { claim ->
+                    val cname = claim.signingChannel?.name.orEmpty()
+                    val media = CurrentMedia(
+                        claimId = claim.claimId,
+                        title = claim.title.ifBlank { claim.name },
+                        description = claim.description,
+                        channelName = cname,
+                        channelClaimId = claim.signingChannel?.claimId,
+                        channelTitle = claim.signingChannel?.title,
+                        channelInitial = (cname.firstOrNull { it.isLetterOrDigit() } ?: 'O').uppercaseChar(),
+                        channelAvatarUrl = claim.signingChannel?.thumbnailUrl,
+                        permanentUrl = claim.permanentUrl,
+                        thumbnailUrl = claim.thumbnailUrl,
+                        mediaType = claim.mediaType,
+                        ageLabel = null,
+                    )
+                    playerController.play(media)
+                },
+                onChannelClick = onChannelClick,
             )
         }
         composable<CreatorMembershipsRoute> {
@@ -483,6 +512,9 @@ fun OdyseeNavHost(
             com.odysee.app.feature.library.PlaylistDetailScreen(
                 onBack = { navController.popBackStack() },
                 onWatch = { target -> playFromPlaylistTarget(playerController, target) },
+                onEdit = { id ->
+                    navController.navigate(com.odysee.app.feature.library.PlaylistEditRoute(id = id))
+                },
             )
         }
         composable<com.odysee.app.feature.library.PlaylistEditRoute> {

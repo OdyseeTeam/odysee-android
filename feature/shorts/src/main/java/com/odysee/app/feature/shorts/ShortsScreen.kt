@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -122,6 +123,8 @@ fun ShortsScreen(
     val hasPrevious = pagerState.currentPage > 0
     val hasNext = pagerState.currentPage < state.items.size - 1
 
+    var repostTarget by remember { mutableStateOf<ShortUi?>(null) }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (state.items.isNotEmpty()) {
             VerticalPager(
@@ -137,6 +140,7 @@ fun ShortsScreen(
                     isPlaying = state.isPlaying,
                     isMuted = state.isMuted,
                     viewModel = viewModel,
+                    onRepost = { repostTarget = item },
                     likes = reactions?.likes ?: 0,
                     dislikes = reactions?.dislikes ?: 0,
                     myReaction = reactions?.myReaction ?: MyReaction.NONE,
@@ -218,6 +222,14 @@ fun ShortsScreen(
             ) {
                 ShortsCommentsSheet(claimId = currentItem.claimId, viewModel = viewModel)
             }
+        }
+        repostTarget?.let { target ->
+            com.odysee.app.feature.library.RepostSheet(
+                claimId = target.claimId,
+                claimName = target.title,
+                onDismiss = { repostTarget = null },
+                onPosted = { repostTarget = null },
+            )
         }
     }
 }
@@ -518,31 +530,22 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            androidx.compose.material3.OutlinedTextField(
-                value = commentText,
-                onValueChange = { commentText = it },
-                modifier = Modifier.weight(1f),
-                placeholder = {
-                    Text(if (canPost) "Add a comment…" else "Sign in to comment")
-                },
-                enabled = canPost && !posting,
-                maxLines = 4,
-            )
-            Spacer(Modifier.width(8.dp))
-            androidx.compose.material3.TextButton(
-                enabled = canPost && !posting && commentText.isNotBlank(),
-                onClick = {
+        com.odysee.app.core.designsystem.comments.OdyseeCommentComposer(
+            draft = commentText,
+            onDraftChange = { commentText = it },
+            onSubmit = {
+                if (canPost && commentText.isNotBlank()) {
                     posting = true
                     viewModel.postComment(claimId, commentText.trim()) { ok ->
                         posting = false
                         if (ok) commentText = ""
                     }
-                },
-            ) {
-                Text(if (posting) "…" else "Post")
-            }
-        }
+                }
+            },
+            placeholder = if (canPost) "Add a comment…" else "Sign in to comment",
+            enabled = canPost && !posting,
+            maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_COMMENT,
+        )
     }
 }
 
@@ -697,6 +700,7 @@ private fun ShortPage(
     isPlaying: Boolean,
     isMuted: Boolean,
     viewModel: ShortsViewModel,
+    onRepost: () -> Unit,
     likes: Long,
     dislikes: Long,
     myReaction: MyReaction,
@@ -812,6 +816,7 @@ private fun ShortPage(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -862,6 +867,7 @@ private fun ShortPage(
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
+                .navigationBarsPadding()
                 .padding(end = 12.dp, bottom = 96.dp)
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.Bottom,
@@ -992,17 +998,7 @@ private fun ShortPage(
             ShortsRoundedImageButton(
                 iconRes = DesignR.drawable.ic_repost,
                 contentDescription = "Repost",
-                onClick = {
-                    // Repost requires a publishing flow which isn't wired up yet;
-                    // fall back to the share sheet so the link is still actionable.
-                    val stripped = item.permanentUrl.removePrefix("lbry://")
-                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_SUBJECT, item.title)
-                        putExtra(android.content.Intent.EXTRA_TEXT, "https://odysee.com/$stripped")
-                    }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Repost via"))
-                },
+                onClick = onRepost,
             )
             Spacer(Modifier.height(14.dp))
             ShortsRoundedIcon(

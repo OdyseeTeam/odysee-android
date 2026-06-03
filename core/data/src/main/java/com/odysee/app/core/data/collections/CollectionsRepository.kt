@@ -133,7 +133,7 @@ abstract class BaseLocalCollectionRepository(
                         ),
                     ),
                 )
-                response.unwrap().items.associateBy { it.claimId }
+                response.unwrap().items.mapNotNull { dto -> dto.claimId?.let { it to dto } }.toMap()
             }.getOrDefault(emptyMap())
 
         val merged = urls.mapNotNull { url ->

@@ -224,7 +224,7 @@ class AuthRepositoryImpl @Inject constructor(
         }.onSuccess { items ->
             val itemsByClaimId = items.associateBy { it.claimId }
             val channels = items
-                .map { it.toChannel() }
+                .mapNotNull { it.toChannel() }
                 .sortedByDescending { ch ->
                     itemsByClaimId[ch.claimId]?.meta?.effectiveAmount?.toDoubleOrNull() ?: 0.0
                 }

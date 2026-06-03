@@ -294,7 +294,13 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                     }
-                    PlayerSheet(onChannelClick = onChannelClick) {
+                    val onHashtagClick: (String) -> Unit = { tag ->
+                        navController.navigate(com.odysee.app.feature.search.HashtagRoute(tag = tag))
+                    }
+                    PlayerSheet(
+                        onChannelClick = onChannelClick,
+                        onHashtagClick = onHashtagClick,
+                    ) {
                         androidx.compose.foundation.layout.Column {
                             com.odysee.app.updater.UpdateBannerHost(appUpdater = appUpdater)
                             OdyseeNavHost(

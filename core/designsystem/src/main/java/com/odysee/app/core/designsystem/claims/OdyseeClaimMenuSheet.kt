@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.PictureInPicture
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.PlaylistRemove
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.HorizontalDivider
@@ -89,6 +90,11 @@ fun OdyseeClaimMenuSheet(
                 actions.onRepost?.let { repost ->
                     MenuRow(Icons.Outlined.Repeat, "Repost") {
                         repost(); onDismiss()
+                    }
+                }
+                actions.onEdit?.let { edit ->
+                    MenuRow(Icons.Outlined.Edit, "Edit") {
+                        edit(); onDismiss()
                     }
                 }
                 MenuRow(Icons.Outlined.Share, "Share") {

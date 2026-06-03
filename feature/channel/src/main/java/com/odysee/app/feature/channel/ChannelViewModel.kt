@@ -40,6 +40,7 @@ data class ChannelVideoUi(
     val thumbnailTintIndex: Int,
     val ageLabel: String,
     val durationLabel: String,
+    val viewCount: Long? = null,
     val paywall: com.odysee.app.core.model.Paywall = com.odysee.app.core.model.Paywall.Free,
     val isPurchased: Boolean = false,
     val isMembersOnly: Boolean = false,
@@ -65,6 +66,10 @@ data class ChannelUiState(
     val playlists: List<ChannelPlaylistUi> = emptyList(),
     val isLoadingPlaylists: Boolean = false,
     val playlistsError: String? = null,
+    val memberships: List<com.odysee.app.core.network.dto.CreatorMembershipDto> = emptyList(),
+    val isLoadingMemberships: Boolean = false,
+    val membershipsLoaded: Boolean = false,
+    val membershipsError: String? = null,
     val featuredChannels: List<Channel> = emptyList(),
     val isLoadingFeaturedChannels: Boolean = false,
     val featuredChannelsLoaded: Boolean = false,
@@ -75,6 +80,7 @@ data class ChannelUiState(
     val discussion: DiscussionState = DiscussionState.Idle,
     val followerCount: Long? = null,
     val followedTags: Set<String> = emptySet(),
+    val canPostDiscussion: Boolean = false,
 )
 
 data class ChannelPlaylistUi(
@@ -119,9 +125,16 @@ class ChannelViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             authRepository.state.collect { auth ->
-                val signed = auth is AuthState.SignedIn
-                val mine = (auth as? AuthState.SignedIn)?.channels?.any { it.claimId == route.claimId } == true
-                _state.update { it.copy(isOwnChannel = mine, isSignedIn = signed) }
+                val signedIn = auth as? AuthState.SignedIn
+                val mine = signedIn?.channels?.any { it.claimId == route.claimId } == true
+                val canPost = signedIn?.activeChannel != null
+                _state.update {
+                    it.copy(
+                        isOwnChannel = mine,
+                        isSignedIn = signedIn != null,
+                        canPostDiscussion = canPost,
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -378,6 +391,24 @@ class ChannelViewModel @Inject constructor(
         }
     }
 
+    fun postDiscussion(text: String) {
+        if (text.isBlank()) return
+        val signed = authRepoRef.state.value as? AuthState.SignedIn ?: return
+        val active = signed.activeChannel ?: return
+        viewModelScope.launch {
+            runCatching {
+                contentRepository.postComment(
+                    claimId = route.claimId,
+                    channelId = active.claimId,
+                    channelName = active.name,
+                    text = text,
+                    parentId = null,
+                    supportTxId = null,
+                )
+            }.onSuccess { loadDiscussion() }
+        }
+    }
+
     fun postDiscussionReply(parentId: String, text: String) {
         if (text.isBlank()) return
         val signed = authRepoRef.state.value as? AuthState.SignedIn ?: return
@@ -401,7 +432,10 @@ class ChannelViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoadingFeaturedChannels = true) }
             val ids = runCatching {
-                contentRepository.getFeaturedChannelClaimIds(route.claimId)
+                contentRepository.getFeaturedChannelClaimIds(
+                    channelClaimId = route.claimId,
+                    channelName = _state.value.channel?.name ?: route.name,
+                )
             }.getOrNull().orEmpty()
             val channels = if (ids.isEmpty()) emptyList() else runCatching {
                 contentRepository.getChannels(ids)
@@ -559,6 +593,7 @@ class ChannelViewModel @Inject constructor(
                             videosExhausted = claims.size < PAGE_SIZE,
                         )
                     }
+                    enrichVideoViewCounts(items.map { it.id })
                 }
                 .onFailure { error ->
                     _state.update {
@@ -590,6 +625,7 @@ class ChannelViewModel @Inject constructor(
                             videosExhausted = claims.size < PAGE_SIZE,
                         )
                     }
+                    enrichVideoViewCounts(newOnes.map { it.id })
                 }
                 .onFailure {
                     _state.update { st -> st.copy(isLoadingMoreVideos = false) }
@@ -602,26 +638,41 @@ class ChannelViewModel @Inject constructor(
         if (cur.isLoadingShorts) return
         viewModelScope.launch {
             _state.update { it.copy(isLoadingShorts = true, shortsError = null) }
-            runCatching { contentRepository.getChannelVideos(route.claimId, page = 1, pageSize = PAGE_SIZE) }
-                .onSuccess { claims ->
-                    val items = claims.filter { it.isShort }.map { c -> c.toUi() }
-                    _state.update {
-                        it.copy(
-                            isLoadingShorts = false,
-                            shorts = items,
-                            shortsPage = 1,
-                            shortsExhausted = claims.size < PAGE_SIZE,
-                        )
-                    }
+            // Many channels have far more long-form than shorts, so a single
+            // 20-item fetch usually surfaces zero. Walk up to 5 pages to find some.
+            val collected = mutableListOf<ChannelVideoUi>()
+            var page = 0
+            var lastBatchSize = PAGE_SIZE
+            var error: Throwable? = null
+            while (page < 5 && lastBatchSize >= PAGE_SIZE) {
+                page += 1
+                val attempt = runCatching {
+                    contentRepository.getChannelVideos(route.claimId, page = page, pageSize = PAGE_SIZE)
                 }
-                .onFailure { error ->
-                    _state.update {
-                        it.copy(
-                            isLoadingShorts = false,
-                            shortsError = error.message ?: "Couldn't load shorts",
-                        )
-                    }
+                attempt.onFailure { error = it; return@onFailure }
+                if (attempt.isFailure) break
+                val claims = attempt.getOrNull().orEmpty()
+                lastBatchSize = claims.size
+                collected += claims.filter { it.isShort }.map { c -> c.toUi() }
+                if (collected.size >= PAGE_SIZE) break
+            }
+            if (error != null && collected.isEmpty()) {
+                _state.update {
+                    it.copy(
+                        isLoadingShorts = false,
+                        shortsError = error?.message ?: "Couldn't load shorts",
+                    )
                 }
+                return@launch
+            }
+            _state.update {
+                it.copy(
+                    isLoadingShorts = false,
+                    shorts = collected,
+                    shortsPage = page,
+                    shortsExhausted = lastBatchSize < PAGE_SIZE,
+                )
+            }
         }
     }
 
@@ -642,6 +693,49 @@ class ChannelViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    fun loadMemberships() {
+        if (_state.value.isLoadingMemberships) return
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingMemberships = true, membershipsError = null) }
+            runCatching { lbryioApi.membershipList(route.claimId) }
+                .onSuccess { env ->
+                    val tiers = env.data.orEmpty()
+                    _state.update {
+                        it.copy(
+                            memberships = tiers,
+                            isLoadingMemberships = false,
+                            membershipsLoaded = true,
+                            membershipsError = null,
+                        )
+                    }
+                }
+                .onFailure { err ->
+                    _state.update {
+                        it.copy(
+                            isLoadingMemberships = false,
+                            membershipsError = err.message ?: "Couldn't load memberships",
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun enrichVideoViewCounts(claimIds: List<String>) {
+        if (claimIds.isEmpty()) return
+        viewModelScope.launch {
+            val counts = runCatching { contentRepository.getViewCounts(claimIds) }.getOrNull().orEmpty()
+            if (counts.isEmpty()) return@launch
+            _state.update { st ->
+                st.copy(
+                    videos = st.videos.map { v ->
+                        val n = counts[v.id]
+                        if (n != null) v.copy(viewCount = n) else v
+                    },
+                )
+            }
         }
     }
 
