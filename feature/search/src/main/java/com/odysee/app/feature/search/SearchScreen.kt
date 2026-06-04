@@ -86,7 +86,15 @@ fun SearchScreen(
     var repostTarget by remember { mutableStateOf<SearchResultUi?>(null) }
     BackHandler(onBack = onBack)
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
+    LaunchedEffect(Unit) {
+        // Wait one frame so the TextField's FocusRequester modifier is attached
+        // before requesting focus. Without this, slow devices race the
+        // LaunchedEffect against composition and crash with "FocusRequester is
+        // not initialized". Also guard with runCatching for the rare case where
+        // the screen is torn down between frames.
+        kotlinx.coroutines.android.awaitFrame()
+        runCatching { focus.requestFocus() }
+    }
 
     Scaffold(
         topBar = {

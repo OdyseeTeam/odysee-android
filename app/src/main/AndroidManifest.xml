@@ -48,6 +48,8 @@
         <activity
             android:name="com.odysee.app.tv.OdyseeTvActivity"
             android:exported="true"
+            android:icon="@drawable/tv_icon"
+            android:banner="@drawable/tv_banner"
             android:theme="@style/Theme.Odysee.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

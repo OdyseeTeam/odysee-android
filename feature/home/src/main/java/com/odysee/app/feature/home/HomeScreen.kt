@@ -386,11 +386,14 @@ private fun FeedState.filterByTypes(types: Set<String>): FeedState {
 
 private fun FeedState.mergeLive(state: HomeUiState): FeedState {
     if (this !is FeedState.Success) return this
+    // A live or upcoming claim can also appear in the regular following feed
+    // (it's the same claim ID either way). Dedup by id; the live/upcoming
+    // copies are preferred because they carry the live decoration.
     val list = mutableListOf<VideoUiModel>()
     if ("live" in state.selectedContentTypes) list.addAll(state.livestreamFeed)
     if ("upcoming" in state.selectedContentTypes) list.addAll(state.upcomingFeed)
     list.addAll(videos)
-    return FeedState.Success(list)
+    return FeedState.Success(list.distinctBy { it.id })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -624,6 +627,11 @@ private fun VerticalVideoFeed(
     val context = androidx.compose.ui.platform.LocalContext.current
     val columns = rememberWindowSize().feedColumns()
     val gridState = rememberLazyGridState()
+
+    // Belt-and-braces dedup: LazyVerticalGrid crashes hard if any key repeats.
+    // Every assembly path upstream is meant to be unique, but a single new
+    // merge that forgets to dedup would crash for every user. Cheap to keep.
+    val videos = remember(videos) { videos.distinctBy { it.id } }
 
     val topKey = videos.firstOrNull()?.id
     androidx.compose.runtime.LaunchedEffect(topKey) {
