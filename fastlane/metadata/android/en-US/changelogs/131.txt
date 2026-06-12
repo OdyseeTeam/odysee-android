@@ -1,0 +1,3 @@
+- Multi-language UI
+- Bug fixes
+- Stability improvements
