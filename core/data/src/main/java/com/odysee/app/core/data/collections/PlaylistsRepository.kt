@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -77,35 +79,41 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val bgScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Serializes any operation that reads or writes the server's
+    // shared-preferences blob. Without this, a push triggered by upsertLocal
+    // can race the sync triggered by PlaylistsViewModel.init and the sync
+    // overwrites the local cache with a server snapshot that doesn't yet
+    // contain the just-created playlist.
+    private val syncMutex = Mutex()
 
     private fun pushToServerAsync() {
         bgScope.launch { runCatching { writePlaylistsToSharedPreference() } }
     }
 
-    private suspend fun writePlaylistsToSharedPreference() {
+    private suspend fun writePlaylistsToSharedPreference() = syncMutex.withLock {
         val current = decode(authPreferences.customPlaylists.first())
+            // isPublic playlists belong to collection_list, NOT unpublishedCollections.
+            // Including them here pollutes the bucket with malformed entries that
+            // confuse the web and iOS clients.
+            .filterNot { it.isPublic }
 
         // Preserve unpublished entries that aren't playlists (web stores other
-        // claim types in the same bucket); replace our playlist entries wholesale.
-        val existingUnpublished = sharedStore.readSlice(
-            SharedPrefSlices.UNPUBLISHED_COLLECTIONS,
-            SharedPrefSlices.CollectionMap,
-        ).orEmpty()
-        val mergedUnpublished = existingUnpublished
-            .filterValues { it.type != "playlist" }
-            .toMutableMap()
-        current.forEach { p ->
-            mergedUnpublished[p.id] = CollectionDoc(
-                id = p.id,
-                name = p.name,
-                type = "playlist",
-                items = p.itemUrls,
-                updatedAt = p.updatedAt / 1000L,
-                thumbnail = p.thumbnailUrl?.takeIf { it.isNotBlank() }?.let { CollectionThumbnail(it) },
-                description = p.description?.takeIf { it.isNotBlank() },
-                tags = p.tags,
-                isPublic = if (p.isPublic) true else null,
-            )
+        // claim types in the same bucket). Preserve them verbatim as raw JSON
+        // so we don't lose any future keys we don't know about.
+        val existingValue = sharedStore.readValueObject()
+        val existingUnpublishedRaw = existingValue?.get(SharedPrefSlices.UNPUBLISHED_COLLECTIONS) as? JsonObject
+
+        val mergedUnpublished = buildJsonObject {
+            existingUnpublishedRaw?.forEach { (id, entry) ->
+                val obj = entry as? JsonObject ?: return@forEach
+                val type = obj["type"]?.jsonPrimitive?.contentOrNull
+                // Drop any existing playlist entry that we manage — we'll re-add
+                // it below. Anything else stays verbatim.
+                if (type != "playlist") put(id, entry)
+            }
+            current.forEach { p ->
+                put(p.id, buildPlaylistDocJson(p))
+            }
         }
 
         // Merge autoPublishById — keep keys for playlists we don't manage,
@@ -120,18 +128,38 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
         sharedStore.patch(
             mapOf(
-                SharedPrefSlices.UNPUBLISHED_COLLECTIONS to
-                    json.encodeToJsonElement(SharedPrefSlices.CollectionMap, mergedUnpublished),
+                SharedPrefSlices.UNPUBLISHED_COLLECTIONS to mergedUnpublished,
                 SharedPrefSlices.AUTO_PUBLISH_BY_ID to
                     json.encodeToJsonElement(SharedPrefSlices.BoolMap, mergedAuto),
             ),
         )
     }
 
+    private fun buildPlaylistDocJson(p: PlaylistSummary): JsonObject = buildJsonObject {
+        put("id", JsonPrimitive(p.id))
+        put("name", JsonPrimitive(p.name))
+        put("type", JsonPrimitive("playlist"))
+        // Always emit an items array, even when empty — web and iOS rely on
+        // the key being present.
+        put("items", buildJsonArray { p.itemUrls.forEach { add(JsonPrimitive(it)) } })
+        put("updatedAt", JsonPrimitive(p.updatedAt / 1000L))
+        p.thumbnailUrl?.takeIf { it.isNotBlank() }?.let { url ->
+            put("thumbnail", buildJsonObject { put("url", JsonPrimitive(url)) })
+        }
+        p.description?.takeIf { it.isNotBlank() }?.let { put("description", JsonPrimitive(it)) }
+        if (p.tags.isNotEmpty()) {
+            put("tags", buildJsonArray { p.tags.forEach { add(JsonPrimitive(it)) } })
+        }
+    }
+
     override val playlists: Flow<List<PlaylistSummary>> =
         authPreferences.customPlaylists.map { raw -> decode(raw) }
 
     override suspend fun syncFromServer(): Result<Int> = runCatching {
+        syncMutex.withLock { syncFromServerLocked() }
+    }
+
+    private suspend fun syncFromServerLocked(): Int {
         val collections = mutableMapOf<String, PlaylistSummary>()
 
         // 1. Private / unpublished / edited collections from shared preferences.
@@ -155,7 +183,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
                     thumbnailUrl = coll.thumbnail?.url?.takeIf { it.isNotBlank() },
                     description = coll.description?.takeIf { it.isNotBlank() },
                     tags = coll.tags,
-                    isPublic = coll.isPublic == true,
+                    isPublic = false,
                 )
             }
         }
@@ -177,7 +205,9 @@ class PlaylistsRepositoryImpl @Inject constructor(
                 list.items.forEach { c ->
                     val name = c.value?.title ?: c.name ?: return@forEach
                     val urls = c.value?.claims ?: emptyList()
-                    val updatedAt = c.timestamp ?: 0L
+                    // c.timestamp is in seconds; normalize to ms so comparison
+                    // with unpublished entries (also normalized to ms) is sane.
+                    val updatedAt = (c.timestamp ?: 0L) * 1000L
                     collections[c.claimId] = PlaylistSummary(
                         id = c.claimId,
                         name = name,
@@ -200,38 +230,65 @@ class PlaylistsRepositoryImpl @Inject constructor(
             .map { s -> if (autoPublishMap[s.id] == true) s.copy(autoPublish = true) else s }
             .sortedByDescending { it.updatedAt }
 
-        // Enrich with the first-item thumbnail for each playlist that has at
-        // least one entry — one batched claim_search call covers them all.
-        val firstClaimIds = summaries.mapNotNull { extractClaimId(it.itemUrls.firstOrNull()) }
-        val thumbnailByClaimId = if (firstClaimIds.isEmpty()) emptyMap()
-        else runCatching {
-            sdkProxyApi.claimSearch(
-                JsonRpcRequest(
-                    method = "claim_search",
-                    params = com.odysee.app.core.network.dto.ClaimSearchParams(
-                        claimType = listOf("stream"),
-                        claimIds = firstClaimIds.distinct(),
-                        pageSize = firstClaimIds.size.coerceAtMost(50),
-                        noTotals = true,
-                        notTags = null,
-                        hasSource = null,
-                        streamTypes = null,
+        // Resolve every item claim referenced by published playlists so we can
+        // store the full permanent_url (with the human-readable name) instead
+        // of the short `lbry://?#claimId` form. While we're at it, pick up
+        // each playlist's first-item thumbnail so the playlist tile has a
+        // cover image. One batched claim_search per 50 IDs.
+        val publishedClaimIds = summaries
+            .filter { it.isPublic }
+            .flatMap { it.itemUrls.mapNotNull(::extractClaimId) }
+            .distinct()
+        val resolved = if (publishedClaimIds.isEmpty()) emptyMap<String, Pair<String, String?>>()
+        else publishedClaimIds.chunked(50).flatMap { chunk ->
+            runCatching {
+                sdkProxyApi.claimSearch(
+                    JsonRpcRequest(
+                        method = "claim_search",
+                        params = com.odysee.app.core.network.dto.ClaimSearchParams(
+                            claimType = listOf("stream"),
+                            claimIds = chunk,
+                            pageSize = chunk.size.coerceAtMost(50),
+                            noTotals = true,
+                            notTags = null,
+                            hasSource = null,
+                            streamTypes = null,
+                        ),
                     ),
-                ),
-            ).unwrap().items.associate { c ->
-                c.claimId to (c.value?.thumbnail?.url?.takeIf { it.isNotBlank() })
-            }
-        }.getOrNull().orEmpty()
+                ).unwrap().items.mapNotNull { c ->
+                    val cid = c.claimId ?: return@mapNotNull null
+                    val purl = c.permanentUrl?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    val thumb = c.value?.thumbnail?.url?.takeIf { it.isNotBlank() }
+                    cid to (purl to thumb)
+                }
+            }.getOrNull().orEmpty()
+        }.toMap()
 
         val enriched = summaries.map { s ->
-            val cid = extractClaimId(s.itemUrls.firstOrNull())
-            val thumb = cid?.let { thumbnailByClaimId[it] }
-            if (thumb != null) s.copy(thumbnailUrl = thumb) else s
+            val rewrittenItems = if (s.isPublic) {
+                s.itemUrls.map { url ->
+                    val cid = extractClaimId(url) ?: return@map url
+                    resolved[cid]?.first ?: url
+                }
+            } else s.itemUrls
+            val firstCid = extractClaimId(rewrittenItems.firstOrNull())
+            val thumb = firstCid?.let { resolved[it]?.second }
+            val withThumb = if (thumb != null) s.copy(thumbnailUrl = thumb) else s
+            if (rewrittenItems !== s.itemUrls) withThumb.copy(itemUrls = rewrittenItems) else withThumb
         }
 
-        val encoded = encode(enriched)
+        // Preserve any local-only playlists that exist in the current cache but
+        // haven't shown up in the server response yet (likely a write that
+        // hasn't been picked up by the server, or a write we issued that's
+        // still propagating).
+        val localCache = decode(authPreferences.customPlaylists.first())
+        val seenIds = enriched.mapTo(mutableSetOf()) { it.id }
+        val pending = localCache.filter { p -> !p.isPublic && p.id !in seenIds && p.id.startsWith("local-") }
+        val merged = (enriched + pending).sortedByDescending { it.updatedAt }
+
+        val encoded = encode(merged)
         authPreferences.setCustomPlaylists(encoded)
-        enriched.size
+        return merged.size
     }
 
     override suspend fun upsertLocalPlaylist(draft: PlaylistDraft): String {

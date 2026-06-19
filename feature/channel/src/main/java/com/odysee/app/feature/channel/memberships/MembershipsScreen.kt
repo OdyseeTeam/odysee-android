@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.memberships.MembershipTier
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,10 +68,10 @@ fun MembershipsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Memberships") },
+                title = { Text(tr("Memberships")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -81,7 +82,7 @@ fun MembershipsScreen(
                 onClick = viewModel::startNew,
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Add tier", tint = Color.White)
+                Icon(Icons.Outlined.Add, contentDescription = tr("Add tier"), tint = Color.White)
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -113,7 +114,7 @@ fun MembershipsScreen(
             if (state.tiers.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No membership tiers yet. Tap + to create one.",
+                        text = tr("No membership tiers yet. Tap + to create one."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -135,14 +136,14 @@ fun MembershipsScreen(
     state.editing?.let { draft ->
         AlertDialog(
             onDismissRequest = viewModel::closeEdit,
-            title = { Text(if (draft.id == null) "New tier" else "Edit tier") },
+            title = { Text(if (draft.id == null) tr("New tier") else tr("Edit tier")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextField(
                         value = draft.name,
                         onValueChange = viewModel::onName,
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Tier name") },
+                        placeholder = { Text(tr("Tier name")) },
                         colors = textFieldColors(),
                         shape = RoundedCornerShape(8.dp),
                         maxLines = 1,
@@ -151,7 +152,7 @@ fun MembershipsScreen(
                         value = draft.description,
                         onValueChange = viewModel::onDescription,
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Description") },
+                        placeholder = { Text(tr("Description")) },
                         colors = textFieldColors(),
                         shape = RoundedCornerShape(8.dp),
                         minLines = 2,
@@ -161,7 +162,7 @@ fun MembershipsScreen(
                         value = draft.priceText,
                         onValueChange = viewModel::onPrice,
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Monthly price (USD)") },
+                        placeholder = { Text(tr("Monthly price (USD)")) },
                         colors = textFieldColors(),
                         shape = RoundedCornerShape(8.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -181,12 +182,12 @@ fun MembershipsScreen(
                             strokeWidth = 2.dp,
                         )
                     } else {
-                        Text(if (draft.id == null) "Create" else "Save")
+                        Text(if (draft.id == null) tr("Create") else tr("Save"))
                     }
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::closeEdit) { Text("Cancel") }
+                TextButton(onClick = viewModel::closeEdit) { Text(tr("Cancel")) }
             },
         )
     }
@@ -194,16 +195,16 @@ fun MembershipsScreen(
     deleteTarget?.let { tier ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete tier?") },
+            title = { Text(tr("Delete tier?")) },
             text = { Text("Remove “${tier.name}”? Active subscribers will keep access until their period ends.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(tier)
                     deleteTarget = null
-                }) { Text("Delete", color = Color(0xFFE2202D)) }
+                }) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteTarget = null }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -243,10 +244,10 @@ private fun TierRow(tier: MembershipTier, onEdit: () -> Unit, onDelete: () -> Un
                 )
             }
             IconButton(onClick = onEdit) {
-                Icon(Icons.Outlined.Edit, contentDescription = "Edit")
+                Icon(Icons.Outlined.Edit, contentDescription = tr("Edit"))
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = Color(0xFFE2202D))
+                Icon(Icons.Outlined.Delete, contentDescription = tr("Delete"), tint = Color(0xFFE2202D))
             }
         }
     }

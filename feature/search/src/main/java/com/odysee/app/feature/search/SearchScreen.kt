@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,14 +102,14 @@ fun SearchScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
                     TextField(
                         value = state.query,
                         onValueChange = viewModel::onQueryChange,
-                        placeholder = { Text("Search Odysee") },
+                        placeholder = { Text(tr("Search Odysee")) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -124,7 +125,7 @@ fun SearchScreen(
                         trailingIcon = {
                             if (state.query.isNotEmpty()) {
                                 IconButton(onClick = { viewModel.onQueryChange("") }) {
-                                    Icon(Icons.Outlined.Clear, contentDescription = "Clear")
+                                    Icon(Icons.Outlined.Clear, contentDescription = tr("Clear"))
                                 }
                             }
                         },
@@ -152,8 +153,8 @@ fun SearchScreen(
             )
             when (val current = state.state) {
                 SearchState.Idle -> EmptyState(
-                    title = "Find creators, channels and videos",
-                    message = "Type a query to search Odysee.",
+                    title = tr("Find creators, channels and videos"),
+                    message = tr("Type a query to search Odysee."),
                     padding = PaddingValues(bottom = padding.calculateBottomPadding()),
                 )
                 SearchState.Loading -> Box(
@@ -165,15 +166,15 @@ fun SearchScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
                 is SearchState.Error -> EmptyState(
-                    title = "Couldn't search",
+                    title = tr("Couldn't search"),
                     message = current.message,
                     padding = PaddingValues(bottom = padding.calculateBottomPadding()),
                 )
                 is SearchState.Success -> {
                     if (current.results.isEmpty()) {
                         EmptyState(
-                            title = "No results",
-                            message = "Try a different query.",
+                            title = tr("No results"),
+                            message = tr("Try a different query."),
                             padding = PaddingValues(bottom = padding.calculateBottomPadding()),
                         )
                     } else {
@@ -247,7 +248,7 @@ fun SearchScreen(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")
@@ -504,7 +505,7 @@ private fun SearchFilterBar(
             Spacer(Modifier.weight(1f))
             if (filters.isActive) {
                 Text(
-                    text = "Clear",
+                    text = tr("Clear"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
@@ -515,7 +516,7 @@ private fun SearchFilterBar(
             }
             Icon(
                 imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                contentDescription = if (expanded) "Hide filters" else "Show filters",
+                contentDescription = if (expanded) tr("Hide filters") else tr("Show filters"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -527,34 +528,34 @@ private fun SearchFilterBar(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                FilterGroupLabel("Type")
+                FilterGroupLabel(tr("Type"))
                 FilterChipRow(
                     options = listOf(
-                        SearchClaimType.Everything to "Everything",
-                        SearchClaimType.Files to "Files",
-                        SearchClaimType.Channels to "Channels",
+                        SearchClaimType.Everything to tr("Everything"),
+                        SearchClaimType.Files to tr("Files"),
+                        SearchClaimType.Channels to tr("Channels"),
                     ),
                     selected = filters.claimType,
                     onSelect = { onFiltersChange(filters.copy(claimType = it)) },
                 )
-                FilterGroupLabel("Sort by")
+                FilterGroupLabel(tr("Sort by"))
                 FilterChipRow(
                     options = listOf(
-                        SearchSortBy.Relevance to "Relevance",
-                        SearchSortBy.Newest to "Newest",
-                        SearchSortBy.Oldest to "Oldest",
+                        SearchSortBy.Relevance to tr("Relevance"),
+                        SearchSortBy.Newest to tr("Newest"),
+                        SearchSortBy.Oldest to tr("Oldest"),
                     ),
                     selected = filters.sortBy,
                     onSelect = { onFiltersChange(filters.copy(sortBy = it)) },
                 )
-                FilterGroupLabel("Upload date")
+                FilterGroupLabel(tr("Upload date"))
                 FilterChipRow(
                     options = listOf(
                         SearchTimeFilter.All to "All",
                         SearchTimeFilter.Today to "24h",
-                        SearchTimeFilter.ThisWeek to "Week",
-                        SearchTimeFilter.ThisMonth to "Month",
-                        SearchTimeFilter.ThisYear to "Year",
+                        SearchTimeFilter.ThisWeek to tr("Week"),
+                        SearchTimeFilter.ThisMonth to tr("Month"),
+                        SearchTimeFilter.ThisYear to tr("Year"),
                     ),
                     selected = filters.timeFilter,
                     onSelect = { onFiltersChange(filters.copy(timeFilter = it)) },
@@ -659,14 +660,14 @@ private fun androidx.compose.foundation.layout.BoxScope.SearchPaywallBadge(
 ) {
     val (label, bg) = when {
         isPurchased && paywall !is com.odysee.app.core.model.Paywall.Free ->
-            "Purchased" to Color(0xCC1AC04F)
+            tr("Purchased") to Color(0xCC1AC04F)
         paywall is com.odysee.app.core.model.Paywall.Lbc ->
             "${formatLbc(paywall.amount)} LBC" to Color(0xCCE2202D)
         paywall is com.odysee.app.core.model.Paywall.FiatPurchase ->
             "$${"%.2f".format(paywall.usd)}" to Color(0xCCE2202D)
         paywall is com.odysee.app.core.model.Paywall.FiatRental ->
             "Rent $${"%.2f".format(paywall.usd)}" to Color(0xCCE2202D)
-        isMembersOnly -> "Members" to Color(0xCC5E60CE)
+        isMembersOnly -> tr("Members") to Color(0xCC5E60CE)
         else -> return
     }
     Box(

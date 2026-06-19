@@ -50,6 +50,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun AddToPlaylistSheet(
@@ -96,14 +97,14 @@ fun AddToPlaylistSheet(
                     val inLater = watchLaterIds.contains(q.claimId)
                     val inFav = favoriteIds.contains(q.claimId)
                     QuickToggleRow(
-                        label = if (inLater) "Saved to Watch Later" else "Watch Later",
+                        label = if (inLater) tr("Saved to Watch Later") else tr("Watch Later"),
                         checked = inLater,
                         iconChecked = Icons.Filled.Bookmark,
                         iconUnchecked = Icons.Outlined.BookmarkBorder,
                         onClick = { viewModel.toggleWatchLater(q) },
                     )
                     QuickToggleRow(
-                        label = if (inFav) "Favorited" else "Favorites",
+                        label = if (inFav) tr("Favorited") else tr("Favorites"),
                         checked = inFav,
                         iconChecked = Icons.Filled.Favorite,
                         iconUnchecked = Icons.Outlined.FavoriteBorder,
@@ -114,7 +115,7 @@ fun AddToPlaylistSheet(
 
                 if (playlists.isEmpty()) {
                     Text(
-                        text = "You don't have any playlists yet.",
+                        text = tr("You don't have any playlists yet."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -141,7 +142,7 @@ fun AddToPlaylistSheet(
                             value = draftName,
                             onValueChange = { draftName = it },
                             placeholder = {
-                                Text("New playlist name", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(tr("New playlist name"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -155,7 +156,7 @@ fun AddToPlaylistSheet(
                         )
                         Spacer(Modifier.size(8.dp))
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                            TextButton(onClick = { creating = false; draftName = "" }) { Text("Cancel") }
+                            TextButton(onClick = { creating = false; draftName = "" }) { Text(tr("Cancel")) }
                             Spacer(Modifier.width(8.dp))
                             Button(
                                 onClick = {
@@ -167,7 +168,7 @@ fun AddToPlaylistSheet(
                                     }
                                 },
                                 enabled = draftName.isNotBlank(),
-                            ) { Text("Create & add", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                            ) { Text(tr("Create & add"), color = Color.White, fontWeight = FontWeight.SemiBold) }
                         }
                     }
                 } else {
@@ -186,7 +187,7 @@ fun AddToPlaylistSheet(
                         )
                         Spacer(Modifier.width(16.dp))
                         Text(
-                            text = "Create new playlist",
+                            text = tr("Create new playlist"),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -198,7 +199,7 @@ fun AddToPlaylistSheet(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Done") }
+                    TextButton(onClick = onDismiss) { Text(tr("Done")) }
                 }
             }
         }
@@ -236,7 +237,7 @@ private fun QuickToggleRow(
         if (checked) {
             Icon(
                 imageVector = Icons.Outlined.Check,
-                contentDescription = "In",
+                contentDescription = tr("In"),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
@@ -293,7 +294,7 @@ private fun PlaylistToggleRow(
         if (checked) {
             Icon(
                 imageVector = Icons.Outlined.Check,
-                contentDescription = "In playlist",
+                contentDescription = tr("In playlist"),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp),
             )

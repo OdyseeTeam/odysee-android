@@ -1,6 +1,5 @@
 package com.odysee.app.core.data.subscriptions
 
-import com.odysee.app.core.data.preferences.FollowingEntry
 import com.odysee.app.core.data.preferences.SharedPrefSlices
 import com.odysee.app.core.data.preferences.SharedPreferencesStore
 import com.odysee.app.core.datastore.AuthPreferences
@@ -12,9 +11,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class Subscription(val claimId: String, val name: String)
 
@@ -36,7 +41,11 @@ class SubscriptionsRepositoryImpl @Inject constructor(
 ) : SubscriptionsRepository {
 
     private val bgScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val json = Json { encodeDefaults = false }
+    // Serializes sync and push. Without this, a push triggered by subscribe()
+    // can race with the initial syncFromServer (kicked off by AuthRepository
+    // on sign-in) and overwrite the user's existing follows on the server.
+    private val syncMutex = Mutex()
+    private val hasSynced = AtomicBoolean(false)
 
     override val subscriptions: Flow<List<Subscription>> = authPreferences.subscriptions.map { raw ->
         raw.mapNotNull { entry ->
@@ -51,8 +60,17 @@ class SubscriptionsRepositoryImpl @Inject constructor(
     private fun ensureSignedIn(): Boolean =
         authRepository.state.value is com.odysee.app.core.data.auth.AuthState.SignedIn
 
+    // Pull the server's current list into the local cache once before any
+    // mutation, so a sub/unsub never writes back a list that's missing
+    // entries we never loaded.
+    private suspend fun ensureSynced() {
+        if (hasSynced.get()) return
+        syncFromServerInternal()
+    }
+
     override suspend fun subscribe(claimId: String, name: String) {
         if (!ensureSignedIn()) return
+        ensureSynced()
         val current = authPreferences.subscriptions.first().toMutableList()
         if (current.none { it.startsWith("$claimId|") }) {
             current.add("$claimId|$name")
@@ -66,6 +84,7 @@ class SubscriptionsRepositoryImpl @Inject constructor(
 
     override suspend fun unsubscribe(claimId: String) {
         if (!ensureSignedIn()) return
+        ensureSynced()
         val current = authPreferences.subscriptions.first()
         val filtered = current.filterNot { it.startsWith("$claimId|") }
         if (filtered.size != current.size) {
@@ -86,8 +105,12 @@ class SubscriptionsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncFromServer(): Result<Int> = runCatching {
+        syncFromServerInternal()
+    }
+
+    private suspend fun syncFromServerInternal(): Int = syncMutex.withLock {
         val urls = sharedStore.readSlice(SharedPrefSlices.SUBSCRIPTIONS, SharedPrefSlices.StringList)
-            ?: return@runCatching 0
+            ?: run { hasSynced.set(true); return@withLock 0 }
         val parsed = urls.mapNotNull { parseLbryUrl(it) }
         val serverEntries = parsed.map { "${it.claimId}|${it.name}" }
         val serverIds = parsed.map { it.claimId }.toSet()
@@ -96,20 +119,30 @@ class SubscriptionsRepositoryImpl @Inject constructor(
             entry.substringBefore('|') in serverIds
         }
         authPreferences.setSubscriptions(serverEntries + localOnly)
+        hasSynced.set(true)
         parsed.size
     }
 
-    private suspend fun push() {
+    private suspend fun push() = syncMutex.withLock {
         val subs = subscriptions.first()
         val urls = subs.map { "lbry://${it.name}#${it.claimId}" }
-        val following = urls.map { FollowingEntry(uri = it, notificationsDisabled = false) }
-        // subscriptions + following are written together: web keeps them in sync.
+        val subscriptionsJson = buildJsonArray { urls.forEach { add(JsonPrimitive(it)) } }
+        // Build following manually so notificationsDisabled is always emitted,
+        // even when false. kotlinx with encodeDefaults=false would drop it.
+        val followingJson = buildJsonArray {
+            urls.forEach { uri ->
+                add(
+                    buildJsonObject {
+                        put("uri", JsonPrimitive(uri))
+                        put("notificationsDisabled", JsonPrimitive(false))
+                    },
+                )
+            }
+        }
         sharedStore.patch(
             mapOf(
-                SharedPrefSlices.SUBSCRIPTIONS to
-                    json.encodeToJsonElement(SharedPrefSlices.StringList, urls),
-                SharedPrefSlices.FOLLOWING to
-                    json.encodeToJsonElement(SharedPrefSlices.FollowingList, following),
+                SharedPrefSlices.SUBSCRIPTIONS to subscriptionsJson,
+                SharedPrefSlices.FOLLOWING to followingJson,
             ),
         )
     }

@@ -61,6 +61,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 @HiltViewModel
 class UploadsViewModel @Inject constructor(
@@ -89,7 +90,7 @@ class UploadsViewModel @Inject constructor(
                     _state.update { it.copy(isLoading = false, claims = items, errorMessage = null) }
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isLoading = false, errorMessage = e.message ?: "Couldn't load uploads") }
+                    _state.update { it.copy(isLoading = false, errorMessage = e.message ?: tr("Couldn't load uploads")) }
                 },
             )
         }
@@ -127,10 +128,10 @@ fun UploadsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Your uploads") },
+                title = { Text(tr("Your uploads")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -159,12 +160,12 @@ fun UploadsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "No uploads yet",
+                    text = tr("No uploads yet"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Tap the + button in the bottom tabs to upload your first file.",
+                    text = tr("Tap the + button in the bottom tabs to upload your first file."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -211,7 +212,7 @@ fun UploadsScreen(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title.ifBlank { target.name })
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")

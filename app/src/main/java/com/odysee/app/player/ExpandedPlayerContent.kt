@@ -130,6 +130,7 @@ import com.odysee.app.core.designsystem.comments.RichCommentBody
 import com.odysee.app.core.designsystem.comments.StickerDef
 import com.odysee.app.core.designsystem.comments.toCommentToken
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 private tailrec fun android.content.Context.findActivity(): android.app.Activity? = when (this) {
     is android.app.Activity -> this
@@ -138,9 +139,14 @@ private tailrec fun android.content.Context.findActivity(): android.app.Activity
 }
 
 private val HASHTAG_REGEX = Regex("(?<![A-Za-z0-9_/])#([A-Za-z0-9_]{1,40})")
+// Matches HH:MM:SS or MM:SS, at start of line or after whitespace, with a
+// trailing word-boundary-equivalent. Used for clickable timestamps in
+// video descriptions (e.g. "0:42 intro", "1:23:45 outro").
+private val TIMESTAMP_REGEX = Regex("(?<![0-9:])(?:([0-9]{1,2}):)?([0-5]?[0-9]):([0-5][0-9])(?![0-9])")
 
 private const val HIT_KIND_URL = 0
 private const val HIT_KIND_HASHTAG = 1
+private const val HIT_KIND_TIMESTAMP = 2
 
 private data class DescriptionHit(
     val start: Int,
@@ -153,6 +159,7 @@ private fun buildDescriptionAnnotated(
     text: String,
     linkColor: androidx.compose.ui.graphics.Color,
     onHashtagClick: (String) -> Unit = {},
+    onTimestampClick: (Long) -> Unit = {},
 ): androidx.compose.ui.text.AnnotatedString {
     val hits = mutableListOf<DescriptionHit>()
     val urlMatcher = android.util.Patterns.WEB_URL.matcher(text)
@@ -170,6 +177,18 @@ private fun buildDescriptionAnnotated(
             end = m.range.last + 1,
             kind = HIT_KIND_HASHTAG,
             payload = m.groupValues[1],
+        )
+    }
+    TIMESTAMP_REGEX.findAll(text).forEach { m ->
+        val hours = m.groupValues[1].toIntOrNull() ?: 0
+        val minutes = m.groupValues[2].toInt()
+        val seconds = m.groupValues[3].toInt()
+        val totalMs = (hours * 3600L + minutes * 60L + seconds) * 1000L
+        hits += DescriptionHit(
+            start = m.range.first,
+            end = m.range.last + 1,
+            kind = HIT_KIND_TIMESTAMP,
+            payload = totalMs.toString(),
         )
     }
     hits.sortBy { it.start }
@@ -217,6 +236,17 @@ private fun buildDescriptionAnnotated(
                 builder.append(raw)
                 builder.pop(idx)
             }
+            HIT_KIND_TIMESTAMP -> {
+                val ms = h.payload.toLongOrNull() ?: 0L
+                val idx = builder.pushLink(
+                    androidx.compose.ui.text.LinkAnnotation.Clickable(
+                        tag = "timestamp:$ms",
+                        styles = linkStyle,
+                    ) { onTimestampClick(ms) },
+                )
+                builder.append(raw)
+                builder.pop(idx)
+            }
         }
         lastEnd = h.end
     }
@@ -224,11 +254,13 @@ private fun buildDescriptionAnnotated(
     return builder.toAnnotatedString()
 }
 
-private enum class WatchTab(val label: String, val iconRes: Int) {
+private enum class WatchTab(val labelKey: String, val iconRes: Int) {
     Info("Info", DesignR.drawable.ic_tab_info),
     Comments("Comments", DesignR.drawable.ic_tab_comments),
     Playlist("Playlist", DesignR.drawable.ic_menu_playlist),
-    Related("Related", DesignR.drawable.ic_tab_discover),
+    Related("Related", DesignR.drawable.ic_tab_discover);
+
+    val label: String get() = com.odysee.app.core.model.i18n.Translations.tr(labelKey)
 }
 
 @Composable
@@ -268,6 +300,11 @@ fun ExpandedPlayerContent(
             controlsVisible = true
             playerViewRef?.showController()
         }
+        // Keep the device screen on while the video is actually playing.
+        // When the user pauses, drop the flag so the screen can sleep
+        // normally — matches YouTube's behavior and fixes the dozens of
+        // "screen keeps going dark" complaints on 0.1.4.
+        playerViewRef?.keepScreenOn = state.isPlaying
     }
 
     val ctxForToast = androidx.compose.ui.platform.LocalContext.current
@@ -381,6 +418,10 @@ fun ExpandedPlayerContent(
                         useController = true
                         controllerShowTimeoutMs = 0
                         controllerAutoShow = false
+                        // Screen-off mid-playback was the most common complaint
+                        // on 0.1.4. PlayerView doesn't set this by default; we
+                        // toggle it from the isPlaying state below.
+                        keepScreenOn = controller.state.value.isPlaying
                         setFullscreenButtonClickListener { fullscreenRequested ->
                             controller.setFullscreen(fullscreenRequested)
                         }
@@ -476,7 +517,7 @@ fun ExpandedPlayerContent(
                 ) {
                     Icon(
                         imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        contentDescription = if (state.isPlaying) tr("Pause") else tr("Play"),
                         tint = Color.White,
                         modifier = Modifier.size(44.dp),
                     )
@@ -489,7 +530,7 @@ fun ExpandedPlayerContent(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.ExpandMore,
-                        contentDescription = "Collapse",
+                        contentDescription = tr("Collapse"),
                         tint = Color.White,
                     )
                 }
@@ -533,6 +574,7 @@ fun ExpandedPlayerContent(
                         onCollapse()
                         onHashtagClick(tag)
                     },
+                    onSeekTo = { ms -> controller.exoPlayer.seekTo(ms) },
                 )
                 WatchTab.Comments -> {
                     val auth = com.odysee.app.auth.LocalAuthState.current
@@ -640,8 +682,8 @@ fun ExpandedPlayerContent(
                         )
                     },
                     text = {
-                        val label = if (tab == WatchTab.Comments && media.liveStreamUrl != null) "Chat"
-                            else tab.label
+                        val label = if (tab == WatchTab.Comments && media.liveStreamUrl != null) tr("Chat")
+                            else tr(tab.label)
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
@@ -777,7 +819,7 @@ fun ExpandedPlayerContent(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, item.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    ctx.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    ctx.startActivity(android.content.Intent.createChooser(intent, com.odysee.app.core.model.i18n.Translations.tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = item.permanentUrl.removePrefix("lbry://")
@@ -857,11 +899,11 @@ private fun PlayerSettingsSheet(
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
             when (view) {
                 "speed" -> {
-                    SettingsBackHeader(title = "Playback speed", onBack = { view = "main" })
+                    SettingsBackHeader(title = tr("Playback speed"), onBack = { view = "main" })
                     val speeds = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
                     speeds.forEach { speed ->
                         SettingsOptionRow(
-                            label = if (speed == 1f) "Normal" else "${speed}x",
+                            label = if (speed == 1f) tr("Normal") else "${speed}x",
                             selected = currentSpeed == speed,
                             onClick = {
                                 exoPlayer.setPlaybackSpeed(speed)
@@ -872,7 +914,7 @@ private fun PlayerSettingsSheet(
                     }
                 }
                 "quality" -> {
-                    SettingsBackHeader(title = "Quality", onBack = { view = "main" })
+                    SettingsBackHeader(title = tr("Quality"), onBack = { view = "main" })
                     qualityOptions.forEach { option ->
                         val isSelected =
                             (option.isAuto && selectedQualityHeight == null) ||
@@ -890,17 +932,17 @@ private fun PlayerSettingsSheet(
                 }
                 else -> {
                     SettingsToggleRow(
-                        label = "Autoplay",
+                        label = tr("Autoplay"),
                         checked = autoplayMedia,
                         onToggle = { controller.setAutoplayMedia(!autoplayMedia) },
                     )
                     SettingsToggleRow(
-                        label = "Autoplay next",
+                        label = tr("Autoplay next"),
                         checked = autoplayNext,
                         onToggle = { controller.setAutoplayNext(!autoplayNext) },
                     )
                     SettingsToggleRow(
-                        label = "Loop",
+                        label = tr("Loop"),
                         checked = isLooping,
                         onToggle = {
                             isLooping = !isLooping
@@ -911,12 +953,12 @@ private fun PlayerSettingsSheet(
                         },
                     )
                     SettingsArrowRow(
-                        label = "Playback speed",
-                        value = if (currentSpeed == 1f) "Normal" else "${currentSpeed}x",
+                        label = tr("Playback speed"),
+                        value = if (currentSpeed == 1f) tr("Normal") else "${currentSpeed}x",
                         onClick = { view = "speed" },
                     )
                     SettingsArrowRow(
-                        label = "Quality",
+                        label = tr("Quality"),
                         value = currentQualityLabel,
                         onClick = { view = "quality" },
                     )
@@ -939,7 +981,7 @@ private fun collectQualityOptions(exoPlayer: androidx.media3.exoplayer.ExoPlayer
         }
     }
     val sorted = heights.sortedDescending()
-    val list = mutableListOf(QualityOption(label = "Auto", height = null, isAuto = true))
+    val list = mutableListOf(QualityOption(label = com.odysee.app.core.model.i18n.Translations.tr("Auto"), height = null, isAuto = true))
     sorted.forEach { list.add(QualityOption(label = "${it}p", height = it, isAuto = false)) }
     return list
 }
@@ -953,7 +995,7 @@ private fun currentSelectedQualityHeight(
 
 private fun qualityLabelFor(selectedHeight: Int?, activeHeight: Int): String =
     if (selectedHeight == null) {
-        if (activeHeight > 0) "Auto (${activeHeight}p)" else "Auto"
+        if (activeHeight > 0) com.odysee.app.core.model.i18n.Translations.tr("Auto (%dp)").format(activeHeight) else com.odysee.app.core.model.i18n.Translations.tr("Auto")
     } else {
         "${selectedHeight}p"
     }
@@ -982,7 +1024,7 @@ private fun SettingsBackHeader(title: String, onBack: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Outlined.ArrowBack,
-            contentDescription = "Back",
+            contentDescription = tr("Back"),
             tint = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(Modifier.width(12.dp))
@@ -1053,6 +1095,7 @@ private fun InfoPage(
     onLike: () -> Unit,
     onDislike: () -> Unit,
     onHashtagClick: (String) -> Unit = {},
+    onSeekTo: (Long) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scroll = rememberScrollState()
@@ -1188,21 +1231,24 @@ private fun InfoPage(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = if (state.isChannelSubscribed) "Following" else "Follow",
+                    text = if (state.isChannelSubscribed) tr("Following") else tr("Follow"),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = followFg,
                 )
             }
         }
-        Spacer(Modifier.size(16.dp))
-        ReactionRow(
-            likes = state.reactions?.likes ?: 0,
-            dislikes = state.reactions?.dislikes ?: 0,
-            myReaction = state.reactions?.myReaction ?: com.odysee.app.core.data.reactions.MyReaction.NONE,
-            onLike = onLike,
-            onDislike = onDislike,
-        )
+        if (!state.creatorRestrictions.videoReactionsDisabled) {
+            Spacer(Modifier.size(16.dp))
+            ReactionRow(
+                likes = state.reactions?.likes ?: 0,
+                dislikes = state.reactions?.dislikes ?: 0,
+                myReaction = state.reactions?.myReaction ?: com.odysee.app.core.data.reactions.MyReaction.NONE,
+                onLike = onLike,
+                onDislike = onDislike,
+                hideDislike = state.creatorRestrictions.videoDislikesDisabled,
+            )
+        }
         Spacer(Modifier.size(12.dp))
         var showSavePicker by remember { mutableStateOf(false) }
         ActionRow(
@@ -1219,7 +1265,7 @@ private fun InfoPage(
                     putExtra(Intent.EXTRA_SUBJECT, media.title)
                     putExtra(Intent.EXTRA_TEXT, url)
                 }
-                context.startActivity(Intent.createChooser(intent, "Share via"))
+                context.startActivity(Intent.createChooser(intent, com.odysee.app.core.model.i18n.Translations.tr("Share via")))
             },
         )
         if (showSavePicker) {
@@ -1249,15 +1295,15 @@ private fun InfoPage(
             val name = media.channelTitle?.takeIf { it.isNotBlank() } ?: media.channelName
             AlertDialog(
                 onDismissRequest = { showUnfollowConfirm = false },
-                title = { Text("Unfollow $name?") },
+                title = { Text(tr("Unfollow %s?").format(name)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showUnfollowConfirm = false
                         playerCtrl.toggleChannelSubscription()
-                    }) { Text("Unfollow") }
+                    }) { Text(tr("Unfollow")) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showUnfollowConfirm = false }) { Text("Cancel") }
+                    TextButton(onClick = { showUnfollowConfirm = false }) { Text(tr("Cancel")) }
                 },
             )
         }
@@ -1267,7 +1313,12 @@ private fun InfoPage(
             Spacer(Modifier.size(16.dp))
             val linkColor = MaterialTheme.colorScheme.primary
             val annotated = remember(desc, linkColor) {
-                buildDescriptionAnnotated(desc, linkColor, onHashtagClick = onHashtagClick)
+                buildDescriptionAnnotated(
+                    desc,
+                    linkColor,
+                    onHashtagClick = onHashtagClick,
+                    onTimestampClick = { ms -> onSeekTo(ms) },
+                )
             }
             Text(
                 text = annotated,
@@ -1312,7 +1363,7 @@ private fun ChatPage(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Couldn't load chat",
+                        text = tr("Couldn't load chat"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
@@ -1324,7 +1375,7 @@ private fun ChatPage(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.size(8.dp))
-                    TextButton(onClick = onRetry) { Text("Retry") }
+                    TextButton(onClick = onRetry) { Text(tr("Retry")) }
                 }
                 is CommentsState.Success -> {
                     val nonPinned = comments.comments.filterNot { it.isPinned }
@@ -1340,7 +1391,7 @@ private fun ChatPage(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "Say hi to start the chat!",
+                                text = tr("Say hi to start the chat!"),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -1351,14 +1402,24 @@ private fun ChatPage(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = 4.dp),
                         ) {
-                            items(items, key = { it.id }) { msg -> ChatMessageRow(msg) }
+                            items(items.distinctBy { it.id }, key = { it.id }) { msg -> ChatMessageRow(msg) }
                         }
                     }
+                }
+                CommentsState.DisabledByCreator -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = tr("The creator has turned off chat for this stream."),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
         androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-        if (canPost) {
+        if (canPost && comments != CommentsState.DisabledByCreator) {
             com.odysee.app.core.designsystem.comments.OdyseeCommentComposer(
                 draft = draft,
                 onDraftChange = { draft = it },
@@ -1368,13 +1429,13 @@ private fun ChatPage(
                         draft = ""
                     }
                 },
-                placeholder = "Say something…",
+                placeholder = tr("Say something…"),
                 maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_LIVESTREAM_COMMENT,
                 singleLine = true,
             )
         } else {
             Text(
-                text = "Sign in to chat",
+                text = tr("Sign in to chat"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -1397,7 +1458,7 @@ private fun PinnedChatBanner(comment: CommentUiModel, onDismiss: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Outlined.PushPin,
-            contentDescription = "Pinned",
+            contentDescription = tr("Pinned"),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(16.dp),
         )
@@ -1418,7 +1479,7 @@ private fun PinnedChatBanner(comment: CommentUiModel, onDismiss: () -> Unit) {
         IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
             Icon(
                 imageVector = Icons.Outlined.Close,
-                contentDescription = "Dismiss pinned",
+                contentDescription = tr("Dismiss pinned"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),
             )
@@ -1612,7 +1673,7 @@ private fun CommentSortBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Sort by",
+            text = tr("Sort by"),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -1690,7 +1751,7 @@ private fun CommentsBody(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Couldn't load comments",
+                text = tr("Couldn't load comments"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -1702,7 +1763,7 @@ private fun CommentsBody(
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.size(8.dp))
-            TextButton(onClick = onRetry) { Text("Retry") }
+            TextButton(onClick = onRetry) { Text(tr("Retry")) }
         }
         is CommentsState.Success -> {
             if (comments.comments.isEmpty()) {
@@ -1711,7 +1772,7 @@ private fun CommentsBody(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No comments yet.",
+                        text = tr("No comments yet."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1731,7 +1792,7 @@ private fun CommentsBody(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
-                    items(comments.comments, key = { it.id }) { comment ->
+                    items(comments.comments.distinctBy { it.id }, key = { it.id }) { comment ->
                         CommentThread(
                             comment = comment,
                             replies = repliesByParent[comment.id],
@@ -1756,6 +1817,16 @@ private fun CommentsBody(
                     }
                 }
             }
+        }
+        CommentsState.DisabledByCreator -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = tr("Comments are disabled for this video."),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 
@@ -1831,15 +1902,15 @@ private fun CommentsBody(
     deleteTarget?.let { target ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete comment?") },
-            text = { Text("This can't be undone.") },
+            title = { Text(tr("Delete comment?")) },
+            text = { Text(tr("This can't be undone.")) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete(target.id)
                     deleteTarget = null
-                }) { Text("Delete", color = Color(0xFFE2202D)) }
+                }) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(tr("Cancel")) } },
         )
     }
 }
@@ -1885,7 +1956,7 @@ private fun EditCommentDialog(initial: String, onDismiss: () -> Unit, onConfirm:
     var text by remember { mutableStateOf(initial) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit comment") },
+        title = { Text(tr("Edit comment")) },
         text = {
             androidx.compose.material3.OutlinedTextField(
                 value = text,
@@ -1898,9 +1969,9 @@ private fun EditCommentDialog(initial: String, onDismiss: () -> Unit, onConfirm:
             TextButton(
                 enabled = text.isNotBlank() && text != initial,
                 onClick = { onConfirm(text.trim()) },
-            ) { Text("Save") }
+            ) { Text(tr("Save")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Cancel")) } },
     )
 }
 
@@ -1911,6 +1982,7 @@ private fun ReactionRow(
     myReaction: com.odysee.app.core.data.reactions.MyReaction,
     onLike: () -> Unit,
     onDislike: () -> Unit,
+    hideDislike: Boolean = false,
 ) {
     val liked = myReaction == com.odysee.app.core.data.reactions.MyReaction.LIKE
     val disliked = myReaction == com.odysee.app.core.data.reactions.MyReaction.DISLIKE
@@ -1934,7 +2006,7 @@ private fun ReactionRow(
                         id = if (liked) DesignR.drawable.ic_reaction_fire_active
                         else DesignR.drawable.ic_reaction_fire,
                     ),
-                    contentDescription = "Like",
+                    contentDescription = tr("Like"),
                     modifier = Modifier.size(20.dp),
                     colorFilter = if (liked) null else androidx.compose.ui.graphics.ColorFilter.tint(
                         MaterialTheme.colorScheme.onBackground,
@@ -1947,47 +2019,51 @@ private fun ReactionRow(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            Box(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .width(1.dp)
-                    .height(24.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(onClick = onDislike)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                androidx.compose.foundation.Image(
-                    painter = painterResource(
-                        id = if (disliked) DesignR.drawable.ic_reaction_slime_active
-                        else DesignR.drawable.ic_reaction_slime,
-                    ),
-                    contentDescription = "Dislike",
-                    modifier = Modifier.size(20.dp),
-                    colorFilter = if (disliked) null else androidx.compose.ui.graphics.ColorFilter.tint(
-                        MaterialTheme.colorScheme.onBackground,
-                    ),
+            if (!hideDislike) {
+                Box(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .width(1.dp)
+                        .height(24.dp),
                 )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = formatReactionCount(dislikes),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = onDislike)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(
+                            id = if (disliked) DesignR.drawable.ic_reaction_slime_active
+                            else DesignR.drawable.ic_reaction_slime,
+                        ),
+                        contentDescription = tr("Dislike"),
+                        modifier = Modifier.size(20.dp),
+                        colorFilter = if (disliked) null else androidx.compose.ui.graphics.ColorFilter.tint(
+                            MaterialTheme.colorScheme.onBackground,
+                        ),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = formatReactionCount(dislikes),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(2.dp))
-        RatioBar(
-            likes = likes,
-            dislikes = dislikes,
-            likeColor = fireColor,
-            dislikeColor = slimeColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
+        if (!hideDislike) {
+            Spacer(Modifier.height(2.dp))
+            RatioBar(
+                likes = likes,
+                dislikes = dislikes,
+                likeColor = fireColor,
+                dislikeColor = slimeColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
     }
 }
 
@@ -2051,33 +2127,33 @@ private fun ActionRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ActionButton(
-            label = if (inWatchLater) "Saved" else "Later",
+            label = if (inWatchLater) tr("Saved") else tr("Later"),
             icon = if (inWatchLater) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
             highlight = inWatchLater,
             onClick = onWatchLater,
             modifier = Modifier.weight(1f),
         )
         ActionButton(
-            label = if (inFavorites) "Faved" else "Fave",
+            label = if (inFavorites) tr("Faved") else tr("Fave"),
             icon = if (inFavorites) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
             highlight = inFavorites,
             onClick = onFavorite,
             modifier = Modifier.weight(1f),
         )
         ActionButton(
-            label = "Save",
+            label = tr("Save"),
             icon = Icons.Outlined.Add,
             onClick = onSave,
             modifier = Modifier.weight(1f),
         )
         ActionButton(
-            label = "Tip",
+            label = tr("Tip"),
             icon = Icons.Outlined.AttachMoney,
             onClick = onTip,
             modifier = Modifier.weight(1f),
         )
         ActionButton(
-            label = "Share",
+            label = tr("Share"),
             icon = Icons.Outlined.Share,
             onClick = onShare,
             modifier = Modifier.weight(1f),
@@ -2125,11 +2201,11 @@ private fun TipDialog(
     val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("Tip $channelName") },
+        title = { Text(tr("Tip %s").format(channelName)) },
         text = {
             Column {
                 Text(
-                    text = "Send LBC directly to the creator. Requires a funded wallet.",
+                    text = tr("Send LBC directly to the creator. Requires a funded wallet."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -2137,14 +2213,14 @@ private fun TipDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { v -> amount = v.filter { it.isDigit() || it == '.' } },
-                    label = { Text("Amount (LBC)") },
+                    label = { Text(tr("Amount (LBC)")) },
                     singleLine = true,
                     enabled = !sending && success == null,
                 )
                 success?.let {
                     Spacer(Modifier.size(8.dp))
                     Text(
-                        text = "Tip sent! tx ${it.take(10)}…",
+                        text = tr("Tip sent! tx %s…").format(it.take(10)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -2161,7 +2237,7 @@ private fun TipDialog(
         },
         confirmButton = {
             if (success != null) {
-                TextButton(onClick = onDismiss) { Text("Close") }
+                TextButton(onClick = onDismiss) { Text(tr("Close")) }
             } else {
                 TextButton(
                     enabled = !sending && amount.toDoubleOrNull()?.let { it > 0 } == true,
@@ -2174,18 +2250,18 @@ private fun TipDialog(
                             sending = false
                             r.fold(
                                 onSuccess = { txid -> success = txid },
-                                onFailure = { err -> error = err.message ?: "Tip failed" },
+                                onFailure = { err -> error = err.message ?: com.odysee.app.core.model.i18n.Translations.tr("Tip failed") },
                             )
                         }
                     },
                 ) {
-                    Text(if (sending) "Sending…" else "Send tip")
+                    Text(if (sending) tr("Sending…") else tr("Send tip"))
                 }
             }
         },
         dismissButton = {
             if (success == null) {
-                TextButton(onClick = onDismiss, enabled = !sending) { Text("Cancel") }
+                TextButton(onClick = onDismiss, enabled = !sending) { Text(tr("Cancel")) }
             }
         },
     )
@@ -2229,12 +2305,12 @@ private fun RelatedPage(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 RelatedFilterChip(
-                    label = "Related",
+                    label = tr("Related"),
                     selected = !showingMore,
                     onClick = { showingMore = false },
                 )
                 RelatedFilterChip(
-                    label = "More from ${channelName ?: "channel"}",
+                    label = tr("More from %s").format(channelName ?: tr("channel")),
                     selected = showingMore,
                     onClick = { showingMore = true },
                 )
@@ -2299,7 +2375,7 @@ private fun RelatedListContent(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Couldn't load related",
+                text = tr("Couldn't load related"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -2311,7 +2387,7 @@ private fun RelatedListContent(
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.size(8.dp))
-            TextButton(onClick = onRetry) { Text("Retry") }
+            TextButton(onClick = onRetry) { Text(tr("Retry")) }
         }
         is RelatedState.Success -> {
             if (state.items.isEmpty()) {
@@ -2320,7 +2396,7 @@ private fun RelatedListContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No related videos.",
+                        text = tr("No related videos."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -2330,7 +2406,7 @@ private fun RelatedListContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
-                    items(state.items, key = { it.claimId }) { item ->
+                    items(state.items.distinctBy { it.claimId }, key = { it.claimId }) { item ->
                         RelatedRow(
                             item = item,
                             onClick = { onWatch(item) },
@@ -2510,11 +2586,11 @@ private fun PaywallGateSurface(
             Text(
                 text = when (paywall) {
                     is com.odysee.app.core.model.Paywall.Lbc ->
-                        "${formatLbcAmountForGate(paywall.amount)} LBC to unlock"
+                        tr("%s LBC to unlock").format(formatLbcAmountForGate(paywall.amount))
                     is com.odysee.app.core.model.Paywall.FiatPurchase ->
-                        "$${"%.2f".format(paywall.usd)} to unlock"
+                        tr("$%s to unlock").format("%.2f".format(paywall.usd))
                     is com.odysee.app.core.model.Paywall.FiatRental ->
-                        "Rent for $${"%.2f".format(paywall.usd)}"
+                        tr("Rent for $%s").format("%.2f".format(paywall.usd))
                     com.odysee.app.core.model.Paywall.Free -> ""
                 },
                 color = Color.White,
@@ -2524,7 +2600,7 @@ private fun PaywallGateSurface(
             if (paywall is com.odysee.app.core.model.Paywall.FiatRental) {
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Access for ${formatRentalDuration(paywall.expirySeconds)}",
+                    text = tr("Access for %s").format(formatRentalDuration(paywall.expirySeconds)),
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.labelSmall,
                 )
@@ -2554,9 +2630,9 @@ private fun PaywallGateSurface(
                 } else {
                     Text(
                         text = when (paywall) {
-                            is com.odysee.app.core.model.Paywall.Lbc -> "Pay with LBC"
-                            is com.odysee.app.core.model.Paywall.FiatPurchase -> "Buy"
-                            is com.odysee.app.core.model.Paywall.FiatRental -> "Rent"
+                            is com.odysee.app.core.model.Paywall.Lbc -> tr("Pay with LBC")
+                            is com.odysee.app.core.model.Paywall.FiatPurchase -> tr("Buy")
+                            is com.odysee.app.core.model.Paywall.FiatRental -> tr("Rent")
                             com.odysee.app.core.model.Paywall.Free -> ""
                         },
                         color = Color.White,
@@ -2622,14 +2698,14 @@ private fun MembersOnlyGateSurface(
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Members-only content",
+                text = tr("Members-only content"),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Join ${media.channelTitle ?: media.channelName.removePrefix("@")}'s membership to watch",
+                text = tr("Join %s's membership to watch").format(media.channelTitle ?: media.channelName.removePrefix("@")),
                 color = Color.White.copy(alpha = 0.85f),
                 style = MaterialTheme.typography.labelSmall,
             )
@@ -2640,7 +2716,7 @@ private fun MembersOnlyGateSurface(
                     containerColor = MaterialTheme.colorScheme.primary,
                 ),
             ) {
-                Text("Join membership", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(tr("Join membership"), color = Color.White, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -2683,10 +2759,10 @@ private fun MembershipJoinWebViewDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     androidx.compose.material3.IconButton(onClick = onDismiss) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Close")
+                        Icon(Icons.Outlined.Close, contentDescription = tr("Close"))
                     }
                     Text(
-                        text = "Join membership",
+                        text = tr("Join membership"),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f).padding(start = 8.dp),
                     )
@@ -2743,10 +2819,10 @@ private fun FiatPurchaseWebViewDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     androidx.compose.material3.IconButton(onClick = onDismiss) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Close")
+                        Icon(Icons.Outlined.Close, contentDescription = tr("Close"))
                     }
                     Text(
-                        text = "Complete purchase",
+                        text = tr("Complete purchase"),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f).padding(start = 8.dp),
                     )
@@ -2819,13 +2895,13 @@ private fun CastPlaceholderSurface(
         ) {
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play on cast device",
+                contentDescription = tr("Play on cast device"),
                 tint = Color.White,
                 modifier = Modifier.size(40.dp),
             )
         }
         Text(
-            text = "Tap to play on your cast device",
+            text = tr("Tap to play on your cast device"),
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
@@ -2873,13 +2949,13 @@ private fun PipPlaceholderSurface(
         ) {
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Resume inline",
+                contentDescription = tr("Resume inline"),
                 tint = Color.White,
                 modifier = Modifier.size(40.dp),
             )
         }
         Text(
-            text = "Playing in pop-up player • tap to resume here",
+            text = tr("Playing in pop-up player • tap to resume here"),
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
@@ -2936,7 +3012,7 @@ private fun PlayerSurface(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "Couldn't load this video",
+                    text = tr("Couldn't load this video"),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -2949,7 +3025,7 @@ private fun PlayerSurface(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.size(8.dp))
-                TextButton(onClick = onRetry) { Text("Retry") }
+                TextButton(onClick = onRetry) { Text(tr("Retry")) }
             }
         }
     }
@@ -2964,7 +3040,7 @@ private fun PlaylistTabContent(
     if (playlist == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "No playlist active",
+                text = tr("No playlist active"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -2990,8 +3066,9 @@ private fun PlaylistTabContent(
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(playlist.items.size, key = { playlist.items[it].claimId }) { idx ->
-                val item = playlist.items[idx]
+            val deduped = playlist.items.distinctBy { it.claimId }
+            items(deduped.size, key = { deduped[it].claimId }) { idx ->
+                val item = deduped[idx]
                 val isCurrent = item.claimId == currentClaimId
                 Row(
                     modifier = Modifier
@@ -3126,7 +3203,7 @@ private fun TextMediaSurface(state: com.odysee.app.core.data.player.PlayerState,
             val url = state.streamingUrl
             if (url == null) {
                 Text(
-                    text = "Text content unavailable",
+                    text = tr("Text content unavailable"),
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             } else {
@@ -3191,7 +3268,7 @@ private fun PdfMediaSurface(state: com.odysee.app.core.data.player.PlayerState, 
         }
         result.fold(
             onSuccess = { pages = it },
-            onFailure = { error = it.message ?: "Couldn't render PDF" },
+            onFailure = { error = it.message ?: com.odysee.app.core.model.i18n.Translations.tr("Couldn't render PDF") },
         )
     }
     Box(
@@ -3202,7 +3279,7 @@ private fun PdfMediaSurface(state: com.odysee.app.core.data.player.PlayerState, 
             state.isResolving || (url != null && pages.isEmpty() && error == null) ->
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             error != null -> Text(
-                text = "PDF error: $error",
+                text = tr("PDF error: %s").format(error),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(24.dp),
             )
@@ -3210,7 +3287,7 @@ private fun PdfMediaSurface(state: com.odysee.app.core.data.player.PlayerState, 
                 items(pages.size, key = { it }) { idx ->
                     androidx.compose.foundation.Image(
                         bitmap = pages[idx].asImageBitmap(),
-                        contentDescription = "PDF page ${idx + 1}",
+                        contentDescription = tr("PDF page %d").format(idx + 1),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
@@ -3238,12 +3315,12 @@ private fun DownloadMediaSurface(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "This file type can't be played in-app",
+                text = tr("This file type can't be played in-app"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = media.mediaType ?: "Unknown type",
+                text = media.mediaType ?: tr("Unknown type"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -3256,7 +3333,7 @@ private fun DownloadMediaSurface(
                     )
                     runCatching { context.startActivity(intent) }
                 },
-            ) { Text("Open externally") }
+            ) { Text(tr("Open externally")) }
         }
     }
 }

@@ -85,6 +85,9 @@ class FloatingPlayerService : Service() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
             )
+            // The floating PiP is only visible while the user wants to keep
+            // watching — don't let the screen dim out from under them.
+            keepScreenOn = true
         }
         container.addView(playerView)
 

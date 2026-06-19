@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 @HiltViewModel
 class BlockedChannelsViewModel @Inject constructor(
@@ -79,10 +80,10 @@ fun BlockedChannelsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Blocked channels") },
+                title = { Text(tr("Blocked channels")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -97,12 +98,12 @@ fun BlockedChannelsScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "No blocked channels",
+                    text = tr("No blocked channels"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Channels you block won't appear in your feed or comments.",
+                    text = tr("Channels you block won't appear in your feed or comments."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -153,7 +154,7 @@ fun BlockedChannelsScreen(
                         IconButton(onClick = { viewModel.unblock(ch.claimId) }) {
                             Icon(
                                 Icons.Outlined.Close,
-                                contentDescription = "Unblock",
+                                contentDescription = tr("Unblock"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }

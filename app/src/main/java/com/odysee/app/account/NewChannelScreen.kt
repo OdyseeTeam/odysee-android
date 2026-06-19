@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,10 +80,10 @@ fun NewChannelScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("New channel") },
+                title = { Text(tr("New channel")) },
                 actions = {
                     TextButton(onClick = viewModel::submit, enabled = state.canSubmit) {
                         if (state.isCreating) {
@@ -92,7 +93,7 @@ fun NewChannelScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Create", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Create"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -130,7 +131,7 @@ fun NewChannelScreen(
                 }
                 if (state.isUploadingCover) CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 else if (state.coverUrl.isNullOrBlank()) Text(
-                    text = "Tap to add banner",
+                    text = tr("Tap to add banner"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -174,7 +175,7 @@ fun NewChannelScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Tap avatar or banner to set",
+                        text = tr("Tap avatar or banner to set"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -190,13 +191,13 @@ fun NewChannelScreen(
             )
 
             FieldLabel("Display name")
-            FlatField(value = state.title, onValueChange = viewModel::onTitle, placeholder = "Display name")
+            FlatField(value = state.title, onValueChange = viewModel::onTitle, placeholder = tr("Display name"))
 
             FieldLabel("About")
             FlatField(
                 value = state.description,
                 onValueChange = viewModel::onDescription,
-                placeholder = "Tell people about your channel",
+                placeholder = tr("Tell people about your channel"),
                 minLines = 4,
                 maxLines = 8,
             )
@@ -221,7 +222,7 @@ fun NewChannelScreen(
                 keyboardType = KeyboardType.Decimal,
             )
             Text(
-                text = "This LBC stays in the channel's name; you can remove it later.",
+                text = tr("This LBC stays in the channel's name; you can remove it later."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -253,7 +254,7 @@ fun NewChannelScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Create channel", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(tr("Create channel"), color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
             Spacer(Modifier.height(40.dp))
@@ -331,7 +332,7 @@ private fun TagsEditor(
                     }
                 },
                 enabled = draft.isNotBlank(),
-            ) { Text("Add") }
+            ) { Text(tr("Add")) }
         }
         if (tags.isNotEmpty()) {
             TagWrap(tags, onRemove)
@@ -363,7 +364,7 @@ private fun TagWrap(tags: List<String>, onRemove: (String) -> Unit) {
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Remove",
+                            contentDescription = tr("Remove"),
                             tint = Color.White,
                             modifier = Modifier.size(14.dp),
                         )

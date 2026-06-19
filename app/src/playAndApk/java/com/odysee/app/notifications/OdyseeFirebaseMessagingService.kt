@@ -58,7 +58,7 @@ class OdyseeFirebaseMessagingService : FirebaseMessagingService() {
             manager.createNotificationChannel(
                 android.app.NotificationChannel(
                     OdyseeNotificationPoller.CHANNEL_ID,
-                    "Odysee notifications",
+                    com.odysee.app.core.model.i18n.Translations.tr("Odysee notifications"),
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ),
             )

@@ -74,6 +74,7 @@ import com.odysee.app.auth.LocalAuthState
 import com.odysee.app.core.data.auth.AuthState
 import com.odysee.app.core.model.Channel
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -117,7 +118,7 @@ fun UploadFileScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Upload", style = MaterialTheme.typography.titleMedium)
+                        Text(tr("Upload"), style = MaterialTheme.typography.titleMedium)
                         Text(
                             text = stepLabel(state.step),
                             style = MaterialTheme.typography.labelSmall,
@@ -127,7 +128,7 @@ fun UploadFileScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -209,10 +210,10 @@ fun UploadFileScreen(
 }
 
 private fun stepLabel(step: UploadStep): String = when (step) {
-    UploadStep.File -> "Step 1 of 4 — Upload a file"
-    UploadStep.Details -> "Step 2 of 4 — Details"
-    UploadStep.Visibility -> "Step 3 of 4 — Visibility & price"
-    UploadStep.Publish -> "Step 4 of 4 — Review & publish"
+    UploadStep.File -> tr("Step 1 of 4 — Upload a file")
+    UploadStep.Details -> tr("Step 2 of 4 — Details")
+    UploadStep.Visibility -> tr("Step 3 of 4 — Visibility & price")
+    UploadStep.Publish -> tr("Step 4 of 4 — Review & publish")
 }
 
 private fun prevStep(step: UploadStep): UploadStep = when (step) {
@@ -365,7 +366,7 @@ private fun FileStep(
             Spacer(Modifier.height(12.dp))
             if (state.fileName.isNullOrBlank()) {
                 Text(
-                    text = "Tap to select a file",
+                    text = tr("Tap to select a file"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.SemiBold,
@@ -381,7 +382,7 @@ private fun FileStep(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Tap to change",
+                    text = tr("Tap to change"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -392,11 +393,11 @@ private fun FileStep(
 
 @Composable
 private fun DetailsStep(state: UploadFormState, viewModel: UploadFileViewModel) {
-    SectionLabel("Title")
+    SectionLabel(tr("Title"))
     FlatTextField(
         value = state.title,
         onValueChange = viewModel::onTitleChange,
-        placeholder = "Descriptive titles work best",
+        placeholder = tr("Descriptive titles work best"),
         helper = "${state.title.length} / 200",
     )
 
@@ -406,51 +407,51 @@ private fun DetailsStep(state: UploadFormState, viewModel: UploadFileViewModel) 
         onValueChange = viewModel::onUrlSlugChange,
         placeholder = "my-content",
         prefix = "odysee.com/",
-        helper = "Permanent link to your content. Lowercase letters, numbers and dashes only.",
+        helper = tr("Permanent link to your content. Lowercase letters, numbers and dashes only."),
     )
 
-    SectionLabel("Description")
+    SectionLabel(tr("Description"))
     FlatTextField(
         value = state.description,
         onValueChange = viewModel::onDescriptionChange,
         modifier = Modifier.height(180.dp),
-        placeholder = "Tell viewers about your content. Supports Markdown.",
+        placeholder = tr("Tell viewers about your content. Supports Markdown."),
         singleLine = false,
         minLines = 6,
     )
 
-    SectionLabel("Thumbnail")
+    SectionLabel(tr("Thumbnail"))
     ThumbnailSection(state = state, viewModel = viewModel)
 
-    SectionLabel("Tags")
+    SectionLabel(tr("Tags"))
     TagsSection(state = state, viewModel = viewModel)
 
-    SectionLabel("Language")
+    SectionLabel(tr("Language"))
     LanguageDropdown(
         value = state.language,
         onChange = viewModel::onLanguageChange,
     )
 
-    SectionLabel("License")
+    SectionLabel(tr("License"))
     LicenseDropdown(
         value = state.license,
         onChange = viewModel::onLicenseChange,
     )
     if (state.license == UploadLicense.Copyrighted) {
-        SectionLabel("Copyright notice")
+        SectionLabel(tr("Copyright notice"))
         FlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "© 2026 Your Name",
+            placeholder = tr("© 2026 Your Name"),
         )
     } else if (state.license == UploadLicense.Other) {
-        SectionLabel("License description")
+        SectionLabel(tr("License description"))
         FlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "The 'cool' license — TM",
+            placeholder = tr("The 'cool' license — TM"),
         )
-        SectionLabel("License URL")
+        SectionLabel(tr("License URL"))
         FlatTextField(
             value = state.licenseUrl,
             onValueChange = viewModel::onLicenseUrlChange,
@@ -462,25 +463,25 @@ private fun DetailsStep(state: UploadFormState, viewModel: UploadFileViewModel) 
 
 @Composable
 private fun VisibilityStep(state: UploadFormState, viewModel: UploadFileViewModel) {
-    SectionLabel("Visibility")
+    SectionLabel(tr("Visibility"))
     VisibilityOption(
         icon = Icons.Outlined.Public,
-        title = "Public",
-        description = "Content is visible to everyone.",
+        title = tr("Public"),
+        description = tr("Content is visible to everyone."),
         selected = state.visibility == UploadVisibility.Public,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Public) },
     )
     VisibilityOption(
         icon = Icons.Outlined.VisibilityOff,
-        title = "Unlisted",
-        description = "The content cannot be viewed without a special link.",
+        title = tr("Unlisted"),
+        description = tr("The content cannot be viewed without a special link."),
         selected = state.visibility == UploadVisibility.Unlisted,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Unlisted) },
     )
     VisibilityOption(
         icon = Icons.Outlined.Schedule,
-        title = "Scheduled",
-        description = "Set a date to make the content public.",
+        title = tr("Scheduled"),
+        description = tr("Set a date to make the content public."),
         selected = state.visibility == UploadVisibility.Scheduled,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Scheduled) },
     )
@@ -494,46 +495,46 @@ private fun VisibilityStep(state: UploadFormState, viewModel: UploadFileViewMode
     }
     VisibilityOption(
         icon = Icons.Outlined.Lock,
-        title = "Private",
-        description = "Only you can see this content.",
+        title = tr("Private"),
+        description = tr("Only you can see this content."),
         selected = state.visibility == UploadVisibility.Private,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Private) },
     )
 
     Spacer(Modifier.height(8.dp))
-    SectionLabel("Members only")
+    SectionLabel(tr("Members only"))
     InlineToggleRow(
-        title = if (state.membersOnly) "Restricted to channel members" else "Open to everyone",
-        description = "Limit access to paying members of your channel.",
+        title = if (state.membersOnly) tr("Restricted to channel members") else tr("Open to everyone"),
+        description = tr("Limit access to paying members of your channel."),
         checked = state.membersOnly,
         onChange = viewModel::onMembersOnlyChange,
     )
 
     if (state.visibility != UploadVisibility.Public) {
         Spacer(Modifier.height(8.dp))
-        SectionLabel("Price")
+        SectionLabel(tr("Price"))
         Text(
-            text = "Payment options are not available for unlisted, scheduled or private content.",
+            text = tr("Payment options are not available for unlisted, scheduled or private content."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
         Spacer(Modifier.height(8.dp))
-        SectionLabel("Price")
+        SectionLabel(tr("Price"))
         PaywallOption(
-            title = "Free",
-            description = "Anyone can view this content for free.",
+            title = tr("Free"),
+            description = tr("Anyone can view this content for free."),
             selected = state.paywall == UploadPaywall.Free,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Free) },
         )
         PaywallOption(
-            title = "Paid with Credits (LBC)",
-            description = "Charge in LBC via the network.",
+            title = tr("Paid with Credits (LBC)"),
+            description = tr("Charge in LBC via the network."),
             selected = state.paywall == UploadPaywall.Lbc,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Lbc) },
         )
         if (state.paywall == UploadPaywall.Lbc) {
-            SectionLabel("Credits (LBC)")
+            SectionLabel(tr("Credits (LBC)"))
             FlatTextField(
                 value = state.lbcAmount,
                 onValueChange = viewModel::onLbcAmountChange,
@@ -541,20 +542,20 @@ private fun VisibilityStep(state: UploadFormState, viewModel: UploadFileViewMode
             )
         }
         PaywallOption(
-            title = "Paid content (Purchase / Rent)",
-            description = "Sell access in USD via a one-off purchase or rental.",
+            title = tr("Paid content (Purchase / Rent)"),
+            description = tr("Sell access in USD via a one-off purchase or rental."),
             selected = state.paywall == UploadPaywall.Fiat,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Fiat) },
         )
         if (state.paywall == UploadPaywall.Fiat) {
             InlineToggleRow(
-                title = "Purchase",
-                description = "One-time purchase grants permanent access.",
+                title = tr("Purchase"),
+                description = tr("One-time purchase grants permanent access."),
                 checked = state.fiatPurchaseEnabled,
                 onChange = viewModel::onFiatPurchaseEnabledChange,
             )
             if (state.fiatPurchaseEnabled) {
-                SectionLabel("Purchase price")
+                SectionLabel(tr("Purchase price"))
                 FlatTextField(
                     value = state.fiatPurchaseAmount,
                     onValueChange = viewModel::onFiatPurchaseAmountChange,
@@ -562,19 +563,19 @@ private fun VisibilityStep(state: UploadFormState, viewModel: UploadFileViewMode
                 )
             }
             InlineToggleRow(
-                title = "Rent",
-                description = "Time-limited access that expires.",
+                title = tr("Rent"),
+                description = tr("Time-limited access that expires."),
                 checked = state.fiatRentalEnabled,
                 onChange = viewModel::onFiatRentalEnabledChange,
             )
             if (state.fiatRentalEnabled) {
-                SectionLabel("Rental price")
+                SectionLabel(tr("Rental price"))
                 FlatTextField(
                     value = state.fiatRentalAmount,
                     onValueChange = viewModel::onFiatRentalAmountChange,
                     suffix = "USD",
                 )
-                SectionLabel("Rental duration")
+                SectionLabel(tr("Rental duration"))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -597,7 +598,7 @@ private fun VisibilityStep(state: UploadFormState, viewModel: UploadFileViewMode
                 }
             }
             Text(
-                text = "By continuing, you accept Odysee's paid-content terms and conditions.",
+                text = tr("By continuing, you accept Odysee's paid-content terms and conditions."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -746,7 +747,7 @@ private fun ScheduledPicker(
                 onCheckedChange = onShowOnUpcomingChange,
             )
             Text(
-                text = "Show this on my channel's Upcoming section",
+                text = tr("Show this on my channel's Upcoming section"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -786,36 +787,36 @@ private fun RentalUnitDropdown(
 
 @Composable
 private fun PublishStep(state: UploadFormState) {
-    SectionLabel("Review")
-    SummaryRow("File", state.fileName ?: "—")
-    SummaryRow("Title", state.title.ifBlank { "—" })
+    SectionLabel(tr("Review"))
+    SummaryRow(tr("File"), state.fileName ?: "—")
+    SummaryRow(tr("Title"), state.title.ifBlank { "—" })
     SummaryRow("URL", "odysee.com/${state.urlSlug.ifBlank { "—" }}")
     SummaryRow(
-        "Description",
+        tr("Description"),
         if (state.description.isBlank()) "—"
         else state.description.take(120) + if (state.description.length > 120) "…" else "",
     )
-    SummaryRow("Thumbnail", state.thumbnailUrl.ifBlank { "—" })
-    SummaryRow("Tags", if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
-    SummaryRow("Language", SupportedLanguages.list.firstOrNull { it.first == state.language }?.second ?: state.language)
-    SummaryRow("License", state.license.display)
+    SummaryRow(tr("Thumbnail"), state.thumbnailUrl.ifBlank { "—" })
+    SummaryRow(tr("Tags"), if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
+    SummaryRow(tr("Language"), SupportedLanguages.list.firstOrNull { it.first == state.language }?.second ?: state.language)
+    SummaryRow(tr("License"), state.license.display)
     SummaryRow(
-        "Visibility",
+        tr("Visibility"),
         when (state.visibility) {
-            UploadVisibility.Public -> "Public"
-            UploadVisibility.Unlisted -> "Unlisted"
+            UploadVisibility.Public -> tr("Public")
+            UploadVisibility.Unlisted -> tr("Unlisted")
             UploadVisibility.Scheduled -> {
                 val fmt = java.text.SimpleDateFormat("EEE d MMM yyyy, HH:mm", java.util.Locale.getDefault())
                 val ts = state.scheduledTimestamp ?: 0L
                 "Scheduled — ${fmt.format(java.util.Date(ts))}"
             }
-            UploadVisibility.Private -> "Private"
+            UploadVisibility.Private -> tr("Private")
         },
     )
     SummaryRow(
-        "Price",
+        tr("Price"),
         when (state.paywall) {
-            UploadPaywall.Free -> "Free"
+            UploadPaywall.Free -> tr("Free")
             UploadPaywall.Lbc -> "${state.lbcAmount} LBC"
             UploadPaywall.Fiat -> buildString {
                 if (state.fiatPurchaseEnabled) append("Purchase ${state.fiatPurchaseAmount} USD")
@@ -823,11 +824,11 @@ private fun PublishStep(state: UploadFormState) {
                     if (isNotEmpty()) append(" · ")
                     append("Rent ${state.fiatRentalAmount} USD / ${state.fiatRentalDuration} ${state.fiatRentalDurationUnit.label}")
                 }
-                if (isEmpty()) append("Paid (no options selected)")
+                if (isEmpty()) append(tr("Paid (no options selected)"))
             }
         },
     )
-    if (state.membersOnly) SummaryRow("Members only", "Yes")
+    if (state.membersOnly) SummaryRow(tr("Members only"), "Yes")
 }
 
 @Composable
@@ -923,7 +924,7 @@ private fun TagsSection(state: UploadFormState, viewModel: UploadFileViewModel) 
         )
         if (state.tags.isEmpty()) {
             Text(
-                text = "No tags added",
+                text = tr("No tags added"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp),
@@ -943,7 +944,7 @@ private fun TagsSection(state: UploadFormState, viewModel: UploadFileViewModel) 
         FlatTextField(
             value = state.tagSearch,
             onValueChange = viewModel::onTagSearchChange,
-            placeholder = "Search or add tags...",
+            placeholder = tr("Search or add tags..."),
             singleLine = true,
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                 imeAction = androidx.compose.ui.text.input.ImeAction.Done,
@@ -1113,7 +1114,7 @@ private fun ThumbnailSection(state: UploadFormState, viewModel: UploadFileViewMo
                 if (state.thumbnailUrl.isNotBlank()) {
                     AsyncImage(
                         model = state.thumbnailUrl,
-                        contentDescription = "Thumbnail",
+                        contentDescription = tr("Thumbnail"),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
@@ -1143,7 +1144,7 @@ private fun ThumbnailSection(state: UploadFormState, viewModel: UploadFileViewMo
         tiles += ThumbnailTile.PickImage
         tiles += ThumbnailTile.PasteUrl
 
-        SectionLabel("Suggested thumbnails")
+        SectionLabel(tr("Suggested thumbnails"))
         ThumbnailTileGrid(
             tiles = tiles,
             disabled = state.isUploadingThumbnail,
@@ -1228,11 +1229,11 @@ private fun ThumbnailTileCard(
             is ThumbnailTile.UseUploadedImage -> {
                 AsyncImage(
                     model = tile.uri,
-                    contentDescription = "Uploaded image",
+                    contentDescription = tr("Uploaded image"),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 )
-                TileBadge(text = "Image")
+                TileBadge(text = tr("Image"))
             }
             is ThumbnailTile.Frame -> {
                 androidx.compose.foundation.Image(
@@ -1261,7 +1262,7 @@ private fun ThumbnailTileCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Upload",
+                        text = tr("Upload"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1279,7 +1280,7 @@ private fun ThumbnailTileCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "URL",
+                        text = tr("URL"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1462,7 +1463,7 @@ private fun UploadBottomBar(
                 OutlinedButton(
                     onClick = onPrev,
                     modifier = Modifier.weight(1f),
-                ) { Text("Back") }
+                ) { Text(tr("Back")) }
             }
             if (state.step != UploadStep.Publish) {
                 val enabled = when (state.step) {
@@ -1476,7 +1477,7 @@ private fun UploadBottomBar(
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                ) { Text("Next", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                ) { Text(tr("Next"), color = Color.White, fontWeight = FontWeight.SemiBold) }
             } else {
                 Button(
                     onClick = onPublish,
@@ -1491,9 +1492,9 @@ private fun UploadBottomBar(
                             strokeWidth = 2.dp,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Publishing…", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Publishing…"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     } else {
-                        Text("Publish", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Publish"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

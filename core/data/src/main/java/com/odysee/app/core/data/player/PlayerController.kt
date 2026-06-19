@@ -96,10 +96,13 @@ sealed interface RelatedState {
     data class Error(val message: String) : RelatedState
 }
 
-enum class CommentSort(val raw: Int, val label: String) {
+enum class CommentSort(val raw: Int, val labelKey: String) {
     Best(3, "Best"),
     Newest(0, "Newest"),
-    Controversial(2, "Controversial"),
+    Controversial(2, "Controversial");
+
+    // Resolved every read so language changes take effect without restart.
+    val label: String get() = com.odysee.app.core.model.i18n.Translations.tr(labelKey)
 }
 
 data class CommentUiModel(
@@ -137,7 +140,26 @@ sealed interface CommentsState {
     data object Loading : CommentsState
     data class Success(val comments: List<CommentUiModel>) : CommentsState
     data class Error(val message: String) : CommentsState
+    /**
+     * The creator has turned off comments at the channel level
+     * (Commentron `comments_enabled = false`) or via the per-claim
+     * `c:disable-comments` tag. UI should hide the composer + thread.
+     */
+    data object DisabledByCreator : CommentsState
 }
+
+/**
+ * Per-claim/per-channel switches the creator can flip to disable certain
+ * social features. Web mirrors these via the `c:*` tag family on claims
+ * plus the channel-wide `setting.Get.comments_enabled` flag.
+ */
+data class CreatorRestrictions(
+    val commentsDisabled: Boolean = false,
+    // Video reactions = the like/dislike buttons under the player.
+    val videoReactionsDisabled: Boolean = false,
+    // Dislikes/"slimes" can be turned off independently of likes.
+    val videoDislikesDisabled: Boolean = false,
+)
 
 data class PlayerState(
     val media: CurrentMedia? = null,
@@ -147,6 +169,7 @@ data class PlayerState(
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,
     val comments: CommentsState = CommentsState.Idle,
+    val creatorRestrictions: CreatorRestrictions = CreatorRestrictions(),
     val related: RelatedState = RelatedState.Idle,
     val moreFromChannel: RelatedState = RelatedState.Idle,
     val inWatchLater: Boolean = false,
@@ -207,6 +230,7 @@ class PlayerController @Inject constructor(
     private val authPreferences: AuthPreferences,
     private val subscriptionsRepository: SubscriptionsRepository,
     private val lbryioApi: LbryioApi,
+    private val commentronApi: com.odysee.app.core.network.CommentronApi,
     private val okHttpClient: okhttp3.OkHttpClient,
     private val watchman: WatchmanReporter,
     val castController: com.odysee.app.core.data.cast.CastController,
@@ -361,38 +385,20 @@ class PlayerController @Inject constructor(
             androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(
                     androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
-                        .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
+                        .setUserAgent(com.odysee.app.core.model.i18n.Translations.tr("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36"))
+                        .setDefaultRequestProperties(mapOf(com.odysee.app.core.model.i18n.Translations.tr("Referer") to "https://odysee.com/"))
                         .setAllowCrossProtocolRedirects(true)
                         .setConnectTimeoutMs(30_000)
                         .setReadTimeoutMs(30_000),
                 )
-                .setLoadErrorHandlingPolicy(
-                    object : androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy() {
-                        override fun getRetryDelayMsFor(
-                            loadErrorInfo: androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo,
-                        ): Long {
-                            val ex = loadErrorInfo.exception
-                            if (ex is androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException) {
-                                // The player CDN returns 429 while a video is still being
-                                // transcoded; web waits and retries until it's ready. Retry with
-                                // exponential backoff up to ~2 minutes total.
-                                if (ex.responseCode == 429 || ex.responseCode in 500..599) {
-                                    if (loadErrorInfo.errorCount > 24) return androidx.media3.common.C.TIME_UNSET
-                                    val base = 2000L
-                                    val backoff = base * (1L shl (loadErrorInfo.errorCount.coerceAtMost(4) - 1).coerceAtLeast(0))
-                                    return backoff.coerceAtMost(15_000L)
-                                }
-                            }
-                            return super.getRetryDelayMsFor(loadErrorInfo)
-                        }
-
-                        override fun getMinimumLoadableRetryCount(dataType: Int): Int = Int.MAX_VALUE
-                    },
-                ),
+                .setLoadErrorHandlingPolicy(odyseeLoadErrorHandlingPolicy()),
         )
         .build().apply {
         playWhenReady = true
+        // Keep the CPU + network alive during playback even after the screen
+        // dims so background-audio and long videos don't stutter or stop.
+        // PlayerView's own keepScreenOn handles the display side.
+        setWakeMode(androidx.media3.common.C.WAKE_MODE_NETWORK)
         // Tell Media3 this is audio/video content so foreground notification + audio focus work.
         setAudioAttributes(
             androidx.media3.common.AudioAttributes.Builder()
@@ -442,7 +448,7 @@ class PlayerController @Inject constructor(
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 android.util.Log.e("PlayerController", "onPlayerError", error)
                 _state.update {
-                    it.copy(errorMessage = error.localizedMessage ?: error.message ?: "Playback error")
+                    it.copy(errorMessage = error.localizedMessage ?: error.message ?: com.odysee.app.core.model.i18n.Translations.tr("Playback error"))
                 }
                 stopPlaybackService()
             }
@@ -762,25 +768,76 @@ class PlayerController @Inject constructor(
                     _state.update {
                         it.copy(
                             isResolving = false,
-                            errorMessage = error.message ?: error::class.simpleName ?: "Unknown error",
+                            errorMessage = error.message ?: error::class.simpleName ?: com.odysee.app.core.model.i18n.Translations.tr("Unknown error"),
                         )
                     }
                 }
         }
 
         commentsJob = scope.launch {
+            // Pull the creator's per-channel settings + claim-tag flags BEFORE
+            // we fire off the comment.List request. If comments are disabled,
+            // we never hit the comments API at all — saves a roundtrip and
+            // matches what the web does. Reactions on the video gate on the
+            // same fetch.
+            val restrictions = resolveCreatorRestrictions(
+                channelClaimId = media.channelClaimId,
+                claimMeta = runCatching {
+                    contentRepository.getClaimsByIds(listOf(media.claimId)).firstOrNull()
+                }.getOrNull(),
+            )
+            _state.update {
+                if (it.media?.claimId != media.claimId) it
+                else it.copy(
+                    creatorRestrictions = restrictions,
+                    comments = if (restrictions.commentsDisabled) CommentsState.DisabledByCreator
+                    else it.comments,
+                    reactions = if (restrictions.videoReactionsDisabled) null else it.reactions,
+                )
+            }
+            if (restrictions.commentsDisabled) return@launch
             try {
                 loadAndEnrichComments(media.claimId, _state.value.commentSort, media.channelClaimId)
             } catch (t: Throwable) {
                 android.util.Log.e("PlayerController", "loadAndEnrichComments crashed", t)
                 _state.update {
                     it.copy(
-                        comments = CommentsState.Error(t.message ?: "Couldn't load chat"),
+                        comments = CommentsState.Error(t.message ?: com.odysee.app.core.model.i18n.Translations.tr("Couldn't load chat")),
                     )
                 }
             }
         }
         loadRelated(media)
+    }
+
+    private suspend fun resolveCreatorRestrictions(
+        channelClaimId: String?,
+        claimMeta: com.odysee.app.core.model.Claim?,
+    ): CreatorRestrictions {
+        val tags = claimMeta?.tags.orEmpty().map { it.lowercase() }
+        val tagCommentsOff = "c:disable-comments" in tags
+        val tagReactionsAllOff = "c:disable-reactions-all" in tags
+        val tagReactionsVideoOff = "c:disable-reactions-video" in tags
+        val tagSlimesAllOff = "c:disable-slimes-all" in tags
+        val tagSlimesVideoOff = "c:disable-slimes-video" in tags
+        // Channel-wide comments toggle from setting.Get. Missing/null = enabled.
+        val channelCommentsOff = channelClaimId?.let { id ->
+            runCatching {
+                with(com.odysee.app.core.network.jsonrpc.JsonRpcRequest(
+                    method = "setting.Get",
+                    params = com.odysee.app.core.network.dto.SettingGetParams(channelId = id),
+                )) {
+                    val resp = commentronApi.settingGet(this)
+                    resp.error?.let { return@runCatching null }
+                    resp.result?.commentsEnabled
+                }
+            }.getOrNull() == false
+        } ?: false
+        return CreatorRestrictions(
+            commentsDisabled = tagCommentsOff || channelCommentsOff,
+            videoReactionsDisabled = tagReactionsAllOff || tagReactionsVideoOff,
+            videoDislikesDisabled = tagSlimesAllOff || tagSlimesVideoOff,
+        )
     }
 
     private suspend fun fetchPremiumByChannel(
@@ -893,7 +950,7 @@ class PlayerController @Inject constructor(
                 _state.update {
                     it.copy(
                         comments = CommentsState.Error(
-                            error.message ?: error::class.simpleName ?: "Unknown error",
+                            error.message ?: error::class.simpleName ?: com.odysee.app.core.model.i18n.Translations.tr("Unknown error"),
                         ),
                     )
                 }
@@ -1079,7 +1136,7 @@ class PlayerController @Inject constructor(
                     _state.update {
                         it.copy(
                             related = RelatedState.Error(
-                                error.message ?: error::class.simpleName ?: "Unknown error",
+                                error.message ?: error::class.simpleName ?: com.odysee.app.core.model.i18n.Translations.tr("Unknown error"),
                             ),
                         )
                     }
@@ -1100,7 +1157,7 @@ class PlayerController @Inject constructor(
                         _state.update {
                             it.copy(
                                 moreFromChannel = RelatedState.Error(
-                                    error.message ?: error::class.simpleName ?: "Unknown error",
+                                    error.message ?: error::class.simpleName ?: com.odysee.app.core.model.i18n.Translations.tr("Unknown error"),
                                 ),
                             )
                         }
@@ -1120,7 +1177,7 @@ class PlayerController @Inject constructor(
                 android.util.Log.e("PlayerController", "loadAndEnrichComments crashed", t)
                 _state.update {
                     it.copy(
-                        comments = CommentsState.Error(t.message ?: "Couldn't load chat"),
+                        comments = CommentsState.Error(t.message ?: com.odysee.app.core.model.i18n.Translations.tr("Couldn't load chat")),
                     )
                 }
             }
@@ -1180,7 +1237,7 @@ class PlayerController @Inject constructor(
     }
 
     suspend fun sendTip(amountLbc: Double): Result<String> {
-        val media = _state.value.media ?: return Result.failure(IllegalStateException("No media"))
+        val media = _state.value.media ?: return Result.failure(IllegalStateException(com.odysee.app.core.model.i18n.Translations.tr("No media")))
         val activeChannelId = (authRepository.state.value as? AuthState.SignedIn)?.activeChannel?.claimId
         return runCatching {
             contentRepository.sendTip(media.claimId, amountLbc, activeChannelId)
@@ -1217,16 +1274,16 @@ class PlayerController @Inject constructor(
                 }
                 .onFailure { e ->
                     android.util.Log.e("PlayerController", "postComment failed", e)
-                    _postErrors.trySend(e.message ?: "Couldn't post your message")
+                    _postErrors.trySend(e.message ?: com.odysee.app.core.model.i18n.Translations.tr("Couldn't post your message"))
                 }
         }
     }
 
     suspend fun postHyperchat(text: String, amountLbc: Double): Result<Unit> {
-        val media = _state.value.media ?: return Result.failure(IllegalStateException("No media"))
+        val media = _state.value.media ?: return Result.failure(IllegalStateException(com.odysee.app.core.model.i18n.Translations.tr("No media")))
         val active = (authRepository.state.value as? AuthState.SignedIn)?.activeChannel
-            ?: return Result.failure(IllegalStateException("Not signed in"))
-        if (amountLbc <= 0.0) return Result.failure(IllegalArgumentException("Amount must be > 0"))
+            ?: return Result.failure(IllegalStateException(com.odysee.app.core.model.i18n.Translations.tr("Not signed in")))
+        if (amountLbc <= 0.0) return Result.failure(IllegalArgumentException(com.odysee.app.core.model.i18n.Translations.tr("Amount must be > 0")))
         return runCatching {
             val txid = contentRepository.sendTip(media.claimId, amountLbc, active.claimId)
             val posted = contentRepository.postComment(
@@ -1522,7 +1579,7 @@ class PlayerController @Inject constructor(
                 }
                 .onFailure { err ->
                     _state.update {
-                        it.copy(purchaseStatus = PurchaseStatus.Failed(err.message ?: "Purchase failed"))
+                        it.copy(purchaseStatus = PurchaseStatus.Failed(err.message ?: com.odysee.app.core.model.i18n.Translations.tr("Purchase failed")))
                     }
                 }
         }
@@ -1559,7 +1616,7 @@ class PlayerController @Inject constructor(
             } else {
                 _state.update {
                     it.copy(
-                        purchaseStatus = PurchaseStatus.Failed("Purchase not yet recorded — try again in a moment."),
+                        purchaseStatus = PurchaseStatus.Failed(com.odysee.app.core.model.i18n.Translations.tr("Purchase not yet recorded — try again in a moment.")),
                     )
                 }
             }
@@ -1648,13 +1705,14 @@ private fun formatAge(unixSeconds: Long): String {
     if (unixSeconds <= 0) return ""
     val nowSec = System.currentTimeMillis() / 1000
     val deltaSec = (nowSec - unixSeconds).coerceAtLeast(0)
+    val tr = com.odysee.app.core.model.i18n.Translations::tr
     return when {
-        deltaSec < 60 -> "Just now"
-        deltaSec < TimeUnit.HOURS.toSeconds(1) -> "${deltaSec / 60}m ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(1) -> "${deltaSec / 3600}h ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(7) -> "${deltaSec / 86_400}d ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(30) -> "${deltaSec / (7 * 86_400)}w ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(365) -> "${deltaSec / (30 * 86_400)}mo ago"
-        else -> "${deltaSec / (365 * 86_400)}y ago"
+        deltaSec < 60 -> tr("Just now")
+        deltaSec < TimeUnit.HOURS.toSeconds(1) -> tr("%d minutes ago").format(deltaSec / 60)
+        deltaSec < TimeUnit.DAYS.toSeconds(1) -> tr("%d hours ago").format(deltaSec / 3600)
+        deltaSec < TimeUnit.DAYS.toSeconds(7) -> tr("%d days ago").format(deltaSec / 86_400)
+        deltaSec < TimeUnit.DAYS.toSeconds(30) -> tr("%d weeks ago").format(deltaSec / (7 * 86_400))
+        deltaSec < TimeUnit.DAYS.toSeconds(365) -> tr("%d months ago").format(deltaSec / (30 * 86_400))
+        else -> tr("%d years ago").format(deltaSec / (365 * 86_400))
     }
 }

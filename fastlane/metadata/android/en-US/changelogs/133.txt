@@ -1,0 +1,3 @@
+- Cross-device settings sync
+- Creator-disabled comments respected
+- Tablet status bar fix

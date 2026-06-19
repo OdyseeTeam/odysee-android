@@ -76,6 +76,7 @@ import com.odysee.app.auth.LocalAuthState
 import com.odysee.app.core.data.auth.AuthState
 import com.odysee.app.core.model.Channel
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +103,7 @@ fun PostFormScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("New post", style = MaterialTheme.typography.titleMedium)
+                        Text(tr("New post"), style = MaterialTheme.typography.titleMedium)
                         Text(
                             text = postStepLabel(state.step),
                             style = MaterialTheme.typography.labelSmall,
@@ -112,7 +113,7 @@ fun PostFormScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -171,10 +172,10 @@ fun PostFormScreen(
 }
 
 private fun postStepLabel(step: PostStep): String = when (step) {
-    PostStep.Post -> "Step 1 of 4 — Post"
-    PostStep.Content -> "Step 2 of 4 — Content"
-    PostStep.Visibility -> "Step 3 of 4 — Visibility & price"
-    PostStep.Publish -> "Step 4 of 4 — Review & publish"
+    PostStep.Post -> tr("Step 1 of 4 — Post")
+    PostStep.Content -> tr("Step 2 of 4 — Content")
+    PostStep.Visibility -> tr("Step 3 of 4 — Visibility & price")
+    PostStep.Publish -> tr("Step 4 of 4 — Review & publish")
 }
 
 private fun prevPostStep(step: PostStep): PostStep = when (step) {
@@ -303,11 +304,11 @@ private fun PFlatTextField(
 
 @Composable
 private fun PostPostStep(state: PostFormState, viewModel: PostFormViewModel) {
-    PSectionLabel("Title")
+    PSectionLabel(tr("Title"))
     PFlatTextField(
         value = state.title,
         onValueChange = viewModel::onTitleChange,
-        placeholder = "Descriptive titles work best",
+        placeholder = tr("Descriptive titles work best"),
         helper = "${state.title.length} / 200",
     )
 
@@ -317,14 +318,14 @@ private fun PostPostStep(state: PostFormState, viewModel: PostFormViewModel) {
         onValueChange = viewModel::onUrlSlugChange,
         placeholder = "my-post",
         prefix = "odysee.com/",
-        helper = "Permanent link. Lowercase letters, numbers and dashes only.",
+        helper = tr("Permanent link. Lowercase letters, numbers and dashes only."),
     )
 
-    PSectionLabel("Post")
+    PSectionLabel(tr("Post"))
     MarkdownEditor(
         value = state.body,
         onValueChange = viewModel::onBodyChange,
-        placeholder = "What do you want to say? Markdown supported.",
+        placeholder = tr("What do you want to say? Markdown supported."),
         helper = "${state.body.length} characters",
         minLines = 10,
     )
@@ -332,32 +333,32 @@ private fun PostPostStep(state: PostFormState, viewModel: PostFormViewModel) {
 
 @Composable
 private fun PostContentStep(state: PostFormState, viewModel: PostFormViewModel) {
-    PSectionLabel("Thumbnail")
+    PSectionLabel(tr("Thumbnail"))
     PostThumbnailSection(state = state, viewModel = viewModel)
 
-    PSectionLabel("Tags")
+    PSectionLabel(tr("Tags"))
     PostTagsSection(state = state, viewModel = viewModel)
 
-    PSectionLabel("Language")
+    PSectionLabel(tr("Language"))
     PostLanguageDropdown(value = state.language, onChange = viewModel::onLanguageChange)
 
-    PSectionLabel("License")
+    PSectionLabel(tr("License"))
     PostLicenseDropdown(value = state.license, onChange = viewModel::onLicenseChange)
     if (state.license == UploadLicense.Copyrighted) {
-        PSectionLabel("Copyright notice")
+        PSectionLabel(tr("Copyright notice"))
         PFlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "© 2026 Your Name",
+            placeholder = tr("© 2026 Your Name"),
         )
     } else if (state.license == UploadLicense.Other) {
-        PSectionLabel("License description")
+        PSectionLabel(tr("License description"))
         PFlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "The 'cool' license — TM",
+            placeholder = tr("The 'cool' license — TM"),
         )
-        PSectionLabel("License URL")
+        PSectionLabel(tr("License URL"))
         PFlatTextField(
             value = state.licenseUrl,
             onValueChange = viewModel::onLicenseUrlChange,
@@ -401,32 +402,32 @@ private fun MarkdownEditor(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MdButton(label = "B", aria = "Bold", bold = true, enabled = !preview) {
+            MdButton(label = "B", aria = tr("Bold"), bold = true, enabled = !preview) {
                 apply { t, s, e -> wrapSelection(t, s, e, "**", "**", "bold text") }
             }
-            MdButton(label = "I", aria = "Italic", italic = true, enabled = !preview) {
+            MdButton(label = "I", aria = tr("Italic"), italic = true, enabled = !preview) {
                 apply { t, s, e -> wrapSelection(t, s, e, "*", "*", "italic text") }
             }
-            MdButton(label = "S", aria = "Strikethrough", strikethrough = true, enabled = !preview) {
+            MdButton(label = "S", aria = tr("Strikethrough"), strikethrough = true, enabled = !preview) {
                 apply { t, s, e -> wrapSelection(t, s, e, "~~", "~~", "struck text") }
             }
-            MdButton(label = "\"", aria = "Quote", enabled = !preview) {
+            MdButton(label = "\"", aria = tr("Quote"), enabled = !preview) {
                 apply { t, s, e -> prefixSelectedLines(t, s, e) { "> " } }
             }
-            MdButton(label = "UL", aria = "Bulleted list", enabled = !preview) {
+            MdButton(label = tr("UL"), aria = tr("Bulleted list"), enabled = !preview) {
                 apply { t, s, e -> prefixSelectedLines(t, s, e) { "- " } }
             }
-            MdButton(label = "OL", aria = "Numbered list", enabled = !preview) {
+            MdButton(label = tr("OL"), aria = tr("Numbered list"), enabled = !preview) {
                 apply { t, s, e -> prefixSelectedLines(t, s, e) { idx -> "${idx + 1}. " } }
             }
-            MdButton(label = "Link", aria = "Link", enabled = !preview) {
+            MdButton(label = tr("Link"), aria = tr("Link"), enabled = !preview) {
                 apply { t, s, e -> insertLink(t, s, e) }
             }
-            MdButton(label = "</>", aria = "Code block", enabled = !preview) {
+            MdButton(label = "</>", aria = tr("Code block"), enabled = !preview) {
                 apply { t, s, e -> wrapSelection(t, s, e, "```\n", "\n```", "code") }
             }
             Spacer(Modifier.weight(1f))
-            MdButton(label = if (preview) "Edit" else "Preview", aria = "Toggle preview", enabled = true) {
+            MdButton(label = if (preview) "Edit" else "Preview", aria = tr("Toggle preview"), enabled = true) {
                 preview = !preview
             }
         }
@@ -441,7 +442,7 @@ private fun MarkdownEditor(
             ) {
                 if (tfv.text.isBlank()) {
                     Text(
-                        text = "Nothing to preview yet.",
+                        text = tr("Nothing to preview yet."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -577,25 +578,25 @@ private fun insertLink(
 
 @Composable
 private fun PostVisibilityStep(state: PostFormState, viewModel: PostFormViewModel) {
-    PSectionLabel("Visibility")
+    PSectionLabel(tr("Visibility"))
     PostVisibilityOption(
         icon = Icons.Outlined.Public,
-        title = "Public",
-        description = "Anyone can read this post.",
+        title = tr("Public"),
+        description = tr("Anyone can read this post."),
         selected = state.visibility == UploadVisibility.Public,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Public) },
     )
     PostVisibilityOption(
         icon = Icons.Outlined.VisibilityOff,
-        title = "Unlisted",
-        description = "Only people with the link can read it.",
+        title = tr("Unlisted"),
+        description = tr("Only people with the link can read it."),
         selected = state.visibility == UploadVisibility.Unlisted,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Unlisted) },
     )
     PostVisibilityOption(
         icon = Icons.Outlined.Schedule,
-        title = "Scheduled",
-        description = "Make it public at a chosen date.",
+        title = tr("Scheduled"),
+        description = tr("Make it public at a chosen date."),
         selected = state.visibility == UploadVisibility.Scheduled,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Scheduled) },
     )
@@ -609,46 +610,46 @@ private fun PostVisibilityStep(state: PostFormState, viewModel: PostFormViewMode
     }
     PostVisibilityOption(
         icon = Icons.Outlined.Lock,
-        title = "Private",
-        description = "Only you can see this post.",
+        title = tr("Private"),
+        description = tr("Only you can see this post."),
         selected = state.visibility == UploadVisibility.Private,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Private) },
     )
 
     Spacer(Modifier.height(8.dp))
-    PSectionLabel("Members only")
+    PSectionLabel(tr("Members only"))
     PostInlineToggleRow(
-        title = if (state.membersOnly) "Restricted to channel members" else "Open to everyone",
-        description = "Limit access to paying members of your channel.",
+        title = if (state.membersOnly) tr("Restricted to channel members") else tr("Open to everyone"),
+        description = tr("Limit access to paying members of your channel."),
         checked = state.membersOnly,
         onChange = viewModel::onMembersOnlyChange,
     )
 
     if (state.visibility != UploadVisibility.Public) {
         Spacer(Modifier.height(8.dp))
-        PSectionLabel("Price")
+        PSectionLabel(tr("Price"))
         Text(
-            text = "Payment options aren't available for unlisted, scheduled or private posts.",
+            text = tr("Payment options aren't available for unlisted, scheduled or private posts."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
         Spacer(Modifier.height(8.dp))
-        PSectionLabel("Price")
+        PSectionLabel(tr("Price"))
         PostPaywallOption(
-            title = "Free",
-            description = "Anyone can view this post for free.",
+            title = tr("Free"),
+            description = tr("Anyone can view this post for free."),
             selected = state.paywall == UploadPaywall.Free,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Free) },
         )
         PostPaywallOption(
-            title = "Paid with Credits (LBC)",
-            description = "Charge in LBC via the network.",
+            title = tr("Paid with Credits (LBC)"),
+            description = tr("Charge in LBC via the network."),
             selected = state.paywall == UploadPaywall.Lbc,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Lbc) },
         )
         if (state.paywall == UploadPaywall.Lbc) {
-            PSectionLabel("Credits (LBC)")
+            PSectionLabel(tr("Credits (LBC)"))
             PFlatTextField(
                 value = state.lbcAmount,
                 onValueChange = viewModel::onLbcAmountChange,
@@ -656,20 +657,20 @@ private fun PostVisibilityStep(state: PostFormState, viewModel: PostFormViewMode
             )
         }
         PostPaywallOption(
-            title = "Paid (Purchase / Rent)",
-            description = "Sell access in USD via a one-off purchase or rental.",
+            title = tr("Paid (Purchase / Rent)"),
+            description = tr("Sell access in USD via a one-off purchase or rental."),
             selected = state.paywall == UploadPaywall.Fiat,
             onClick = { viewModel.onPaywallChange(UploadPaywall.Fiat) },
         )
         if (state.paywall == UploadPaywall.Fiat) {
             PostInlineToggleRow(
-                title = "Purchase",
-                description = "One-time purchase grants permanent access.",
+                title = tr("Purchase"),
+                description = tr("One-time purchase grants permanent access."),
                 checked = state.fiatPurchaseEnabled,
                 onChange = viewModel::onFiatPurchaseEnabledChange,
             )
             if (state.fiatPurchaseEnabled) {
-                PSectionLabel("Purchase price")
+                PSectionLabel(tr("Purchase price"))
                 PFlatTextField(
                     value = state.fiatPurchaseAmount,
                     onValueChange = viewModel::onFiatPurchaseAmountChange,
@@ -677,19 +678,19 @@ private fun PostVisibilityStep(state: PostFormState, viewModel: PostFormViewMode
                 )
             }
             PostInlineToggleRow(
-                title = "Rent",
-                description = "Time-limited access that expires.",
+                title = tr("Rent"),
+                description = tr("Time-limited access that expires."),
                 checked = state.fiatRentalEnabled,
                 onChange = viewModel::onFiatRentalEnabledChange,
             )
             if (state.fiatRentalEnabled) {
-                PSectionLabel("Rental price")
+                PSectionLabel(tr("Rental price"))
                 PFlatTextField(
                     value = state.fiatRentalAmount,
                     onValueChange = viewModel::onFiatRentalAmountChange,
                     suffix = "USD",
                 )
-                PSectionLabel("Rental duration")
+                PSectionLabel(tr("Rental duration"))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -712,7 +713,7 @@ private fun PostVisibilityStep(state: PostFormState, viewModel: PostFormViewMode
                 }
             }
             Text(
-                text = "By continuing, you accept Odysee's paid-content terms.",
+                text = tr("By continuing, you accept Odysee's paid-content terms."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -860,7 +861,7 @@ private fun PostScheduledPicker(
                 onCheckedChange = onShowOnUpcomingChange,
             )
             Text(
-                text = "Show this on my channel's Upcoming section",
+                text = tr("Show this on my channel's Upcoming section"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -900,37 +901,37 @@ private fun PostRentalUnitDropdown(
 
 @Composable
 private fun PostPublishStep(state: PostFormState) {
-    PSectionLabel("Review")
-    PSummaryRow("Title", state.title.ifBlank { "—" })
+    PSectionLabel(tr("Review"))
+    PSummaryRow(tr("Title"), state.title.ifBlank { "—" })
     PSummaryRow("URL", "odysee.com/${state.urlSlug.ifBlank { "—" }}")
     PSummaryRow(
-        "Content",
+        tr("Content"),
         state.body.take(160).let { if (state.body.length > 160) "$it…" else it }.ifBlank { "—" },
     )
-    PSummaryRow("Thumbnail", state.thumbnailUrl.ifBlank { "—" })
-    PSummaryRow("Tags", if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
+    PSummaryRow(tr("Thumbnail"), state.thumbnailUrl.ifBlank { "—" })
+    PSummaryRow(tr("Tags"), if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
     PSummaryRow(
-        "Language",
+        tr("Language"),
         SupportedLanguages.list.firstOrNull { it.first == state.language }?.second ?: state.language,
     )
-    PSummaryRow("License", state.license.display)
+    PSummaryRow(tr("License"), state.license.display)
     PSummaryRow(
-        "Visibility",
+        tr("Visibility"),
         when (state.visibility) {
-            UploadVisibility.Public -> "Public"
-            UploadVisibility.Unlisted -> "Unlisted"
+            UploadVisibility.Public -> tr("Public")
+            UploadVisibility.Unlisted -> tr("Unlisted")
             UploadVisibility.Scheduled -> {
                 val fmt = java.text.SimpleDateFormat("EEE d MMM yyyy, HH:mm", java.util.Locale.getDefault())
                 val ts = state.scheduledTimestamp ?: 0L
                 "Scheduled — ${fmt.format(java.util.Date(ts))}"
             }
-            UploadVisibility.Private -> "Private"
+            UploadVisibility.Private -> tr("Private")
         },
     )
     PSummaryRow(
-        "Price",
+        tr("Price"),
         when (state.paywall) {
-            UploadPaywall.Free -> "Free"
+            UploadPaywall.Free -> tr("Free")
             UploadPaywall.Lbc -> "${state.lbcAmount} LBC"
             UploadPaywall.Fiat -> buildString {
                 if (state.fiatPurchaseEnabled) append("Purchase ${state.fiatPurchaseAmount} USD")
@@ -938,11 +939,11 @@ private fun PostPublishStep(state: PostFormState) {
                     if (isNotEmpty()) append(" · ")
                     append("Rent ${state.fiatRentalAmount} USD / ${state.fiatRentalDuration} ${state.fiatRentalDurationUnit.label}")
                 }
-                if (isEmpty()) append("Paid (no options selected)")
+                if (isEmpty()) append(tr("Paid (no options selected)"))
             }
         },
     )
-    if (state.membersOnly) PSummaryRow("Members only", "Yes")
+    if (state.membersOnly) PSummaryRow(tr("Members only"), "Yes")
 }
 
 @Composable
@@ -1038,7 +1039,7 @@ private fun PostTagsSection(state: PostFormState, viewModel: PostFormViewModel) 
         )
         if (state.tags.isEmpty()) {
             Text(
-                text = "No tags added",
+                text = tr("No tags added"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp),
@@ -1054,7 +1055,7 @@ private fun PostTagsSection(state: PostFormState, viewModel: PostFormViewModel) 
         PFlatTextField(
             value = state.tagSearch,
             onValueChange = viewModel::onTagSearchChange,
-            placeholder = "Search or add tags...",
+            placeholder = tr("Search or add tags..."),
             singleLine = true,
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                 imeAction = androidx.compose.ui.text.input.ImeAction.Done,
@@ -1193,7 +1194,7 @@ private fun PostThumbnailSection(state: PostFormState, viewModel: PostFormViewMo
                 if (state.thumbnailUrl.isNotBlank()) {
                     AsyncImage(
                         model = state.thumbnailUrl,
-                        contentDescription = "Thumbnail",
+                        contentDescription = tr("Thumbnail"),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
@@ -1232,7 +1233,7 @@ private fun PostThumbnailSection(state: PostFormState, viewModel: PostFormViewMo
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Upload",
+                        text = tr("Upload"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1354,7 +1355,7 @@ private fun PostBottomBar(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (state.step != PostStep.Post) {
-                OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text("Back") }
+                OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text(tr("Back")) }
             }
             if (state.step != PostStep.Publish) {
                 val enabled = when (state.step) {
@@ -1368,7 +1369,7 @@ private fun PostBottomBar(
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                ) { Text("Next", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                ) { Text(tr("Next"), color = Color.White, fontWeight = FontWeight.SemiBold) }
             } else {
                 Button(
                     onClick = onPublish,
@@ -1383,9 +1384,9 @@ private fun PostBottomBar(
                             strokeWidth = 2.dp,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Publishing…", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Publishing…"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     } else {
-                        Text("Publish", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Publish"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

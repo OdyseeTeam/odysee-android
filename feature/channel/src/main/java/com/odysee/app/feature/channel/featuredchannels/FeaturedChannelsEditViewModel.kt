@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 data class FeaturedChannelsEditState(
     val channelClaimId: String,

@@ -54,6 +54,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.math.absoluteValue
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Serializable
 data class HashtagRoute(val tag: String)
@@ -86,7 +87,7 @@ class HashtagViewModel @Inject constructor(
 
     fun load() {
         if (tag.isEmpty()) {
-            _state.update { it.copy(isLoading = false, error = "No tag", exhausted = true) }
+            _state.update { it.copy(isLoading = false, error = tr("No tag"), exhausted = true) }
             return
         }
         viewModelScope.launch {
@@ -106,7 +107,7 @@ class HashtagViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = e.message ?: e::class.simpleName ?: "Couldn't load",
+                            error = e.message ?: e::class.simpleName ?: tr("Couldn't load"),
                         )
                     }
                 }
@@ -170,7 +171,7 @@ fun HashtagScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
@@ -207,7 +208,7 @@ fun HashtagScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = state.error ?: "Couldn't load",
+                    text = state.error ?: tr("Couldn't load"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -237,7 +238,7 @@ fun HashtagScreen(
                     horizontalArrangement = Arrangement.spacedBy(if (columns > 1) 12.dp else 0.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    items(state.claims, key = { it.claimId }) { claim ->
+                    items(state.claims.distinctBy { it.claimId }, key = { it.claimId }) { claim ->
                         OdyseeClaimCard(
                             forceColumnLayout = columns > 1,
                             claim = OdyseeClaimCardModel(
@@ -283,13 +284,14 @@ private fun formatAgeShort(releaseTimeSeconds: Long?): String {
     if (releaseTimeSeconds == null || releaseTimeSeconds <= 0) return ""
     val nowSec = System.currentTimeMillis() / 1000
     val delta = (nowSec - releaseTimeSeconds).coerceAtLeast(0)
+    val tr = com.odysee.app.core.model.i18n.Translations::tr
     return when {
-        delta < 60 -> "Just now"
-        delta < 3600 -> "${delta / 60}m ago"
-        delta < 86_400 -> "${delta / 3600}h ago"
-        delta < 7 * 86_400 -> "${delta / 86_400}d ago"
-        delta < 30 * 86_400 -> "${delta / (7 * 86_400)}w ago"
-        delta < 365 * 86_400 -> "${delta / (30 * 86_400)}mo ago"
-        else -> "${delta / (365 * 86_400)}y ago"
+        delta < 60 -> tr("Just now")
+        delta < 3600 -> tr("%d minutes ago").format(delta / 60)
+        delta < 86_400 -> tr("%d hours ago").format(delta / 3600)
+        delta < 7 * 86_400 -> tr("%d days ago").format(delta / 86_400)
+        delta < 30 * 86_400 -> tr("%d weeks ago").format(delta / (7 * 86_400))
+        delta < 365 * 86_400 -> tr("%d months ago").format(delta / (30 * 86_400))
+        else -> tr("%d years ago").format(delta / (365 * 86_400))
     }
 }

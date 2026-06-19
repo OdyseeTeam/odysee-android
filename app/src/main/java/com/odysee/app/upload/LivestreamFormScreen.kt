@@ -73,6 +73,7 @@ import com.odysee.app.auth.LocalAuthState
 import com.odysee.app.core.data.auth.AuthState
 import com.odysee.app.core.model.Channel
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +100,7 @@ fun LivestreamFormScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("New livestream", style = MaterialTheme.typography.titleMedium)
+                        Text(tr("New livestream"), style = MaterialTheme.typography.titleMedium)
                         Text(
                             text = liveStepLabel(state.step),
                             style = MaterialTheme.typography.labelSmall,
@@ -109,7 +110,7 @@ fun LivestreamFormScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -166,10 +167,10 @@ fun LivestreamFormScreen(
 }
 
 private fun liveStepLabel(step: LivestreamStep): String = when (step) {
-    LivestreamStep.Details -> "Step 1 of 3 — Details"
-    LivestreamStep.Visibility -> "Step 2 of 3 — Visibility"
-    LivestreamStep.Publish -> "Step 3 of 3 — Review & create"
-    LivestreamStep.Ready -> "You're live!"
+    LivestreamStep.Details -> tr("Step 1 of 3 — Details")
+    LivestreamStep.Visibility -> tr("Step 2 of 3 — Visibility")
+    LivestreamStep.Publish -> tr("Step 3 of 3 — Review & create")
+    LivestreamStep.Ready -> tr("You're live!")
 }
 
 private fun prevLiveStep(step: LivestreamStep): LivestreamStep = when (step) {
@@ -293,25 +294,25 @@ private fun LiveDetailsStep(state: LivestreamFormState, viewModel: LivestreamFor
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Create a livestream",
+                text = tr("Create a livestream"),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = "After publishing, point OBS at Odysee's RTMP server with your stream key.",
+                text = tr("After publishing, point OBS at Odysee's RTMP server with your stream key."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 
-    LSectionLabel("Title")
+    LSectionLabel(tr("Title"))
     LFlatTextField(
         value = state.title,
         onValueChange = viewModel::onTitleChange,
-        placeholder = "What's the stream about?",
+        placeholder = tr("What's the stream about?"),
         helper = "${state.title.length} / 200",
     )
 
@@ -321,45 +322,45 @@ private fun LiveDetailsStep(state: LivestreamFormState, viewModel: LivestreamFor
         onValueChange = viewModel::onUrlSlugChange,
         placeholder = "my-stream",
         prefix = "odysee.com/",
-        helper = "Permanent link. Lowercase letters, numbers and dashes only.",
+        helper = tr("Permanent link. Lowercase letters, numbers and dashes only."),
     )
 
-    LSectionLabel("Description")
+    LSectionLabel(tr("Description"))
     LFlatTextField(
         value = state.description,
         onValueChange = viewModel::onDescriptionChange,
         modifier = Modifier.height(140.dp),
-        placeholder = "Tell viewers what to expect. Markdown supported.",
+        placeholder = tr("Tell viewers what to expect. Markdown supported."),
         singleLine = false,
         minLines = 5,
     )
 
-    LSectionLabel("Thumbnail")
+    LSectionLabel(tr("Thumbnail"))
     LiveThumbnailSection(state = state, viewModel = viewModel)
 
-    LSectionLabel("Tags")
+    LSectionLabel(tr("Tags"))
     LiveTagsSection(state = state, viewModel = viewModel)
 
-    LSectionLabel("Language")
+    LSectionLabel(tr("Language"))
     LiveLanguageDropdown(value = state.language, onChange = viewModel::onLanguageChange)
 
-    LSectionLabel("License")
+    LSectionLabel(tr("License"))
     LiveLicenseDropdown(value = state.license, onChange = viewModel::onLicenseChange)
     if (state.license == UploadLicense.Copyrighted) {
-        LSectionLabel("Copyright notice")
+        LSectionLabel(tr("Copyright notice"))
         LFlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "© 2026 Your Name",
+            placeholder = tr("© 2026 Your Name"),
         )
     } else if (state.license == UploadLicense.Other) {
-        LSectionLabel("License description")
+        LSectionLabel(tr("License description"))
         LFlatTextField(
             value = state.licenseDescription,
             onValueChange = viewModel::onLicenseDescriptionChange,
-            placeholder = "The 'cool' license — TM",
+            placeholder = tr("The 'cool' license — TM"),
         )
-        LSectionLabel("License URL")
+        LSectionLabel(tr("License URL"))
         LFlatTextField(
             value = state.licenseUrl,
             onValueChange = viewModel::onLicenseUrlChange,
@@ -370,25 +371,25 @@ private fun LiveDetailsStep(state: LivestreamFormState, viewModel: LivestreamFor
 
 @Composable
 private fun LiveVisibilityStep(state: LivestreamFormState, viewModel: LivestreamFormViewModel) {
-    LSectionLabel("Visibility")
+    LSectionLabel(tr("Visibility"))
     LiveVisibilityOption(
         icon = Icons.Outlined.Public,
-        title = "Public",
-        description = "Anyone can find and watch your stream.",
+        title = tr("Public"),
+        description = tr("Anyone can find and watch your stream."),
         selected = state.visibility == UploadVisibility.Public,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Public) },
     )
     LiveVisibilityOption(
         icon = Icons.Outlined.VisibilityOff,
-        title = "Unlisted",
-        description = "Only people with the link can watch.",
+        title = tr("Unlisted"),
+        description = tr("Only people with the link can watch."),
         selected = state.visibility == UploadVisibility.Unlisted,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Unlisted) },
     )
     LiveVisibilityOption(
         icon = Icons.Outlined.Schedule,
-        title = "Scheduled",
-        description = "Show as upcoming until you go live.",
+        title = tr("Scheduled"),
+        description = tr("Show as upcoming until you go live."),
         selected = state.visibility == UploadVisibility.Scheduled,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Scheduled) },
     )
@@ -402,14 +403,14 @@ private fun LiveVisibilityStep(state: LivestreamFormState, viewModel: Livestream
     }
     LiveVisibilityOption(
         icon = Icons.Outlined.Lock,
-        title = "Private",
-        description = "Only you can watch this stream.",
+        title = tr("Private"),
+        description = tr("Only you can watch this stream."),
         selected = state.visibility == UploadVisibility.Private,
         onClick = { viewModel.onVisibilityChange(UploadVisibility.Private) },
     )
 
     Spacer(Modifier.height(8.dp))
-    LSectionLabel("Members only")
+    LSectionLabel(tr("Members only"))
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -419,13 +420,13 @@ private fun LiveVisibilityStep(state: LivestreamFormState, viewModel: Livestream
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (state.membersOnly) "Restricted to channel members" else "Open to everyone",
+                text = if (state.membersOnly) tr("Restricted to channel members") else tr("Open to everyone"),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = "Limit access to paying members of your channel.",
+                text = tr("Limit access to paying members of your channel."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -436,35 +437,35 @@ private fun LiveVisibilityStep(state: LivestreamFormState, viewModel: Livestream
 
 @Composable
 private fun LivePublishStep(state: LivestreamFormState) {
-    LSectionLabel("Review")
-    LSummaryRow("Title", state.title.ifBlank { "—" })
+    LSectionLabel(tr("Review"))
+    LSummaryRow(tr("Title"), state.title.ifBlank { "—" })
     LSummaryRow("URL", "odysee.com/${state.urlSlug.ifBlank { "—" }}")
     LSummaryRow(
-        "Description",
+        tr("Description"),
         if (state.description.isBlank()) "—"
         else state.description.take(120).let { if (state.description.length > 120) "$it…" else it },
     )
-    LSummaryRow("Thumbnail", state.thumbnailUrl.ifBlank { "—" })
-    LSummaryRow("Tags", if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
+    LSummaryRow(tr("Thumbnail"), state.thumbnailUrl.ifBlank { "—" })
+    LSummaryRow(tr("Tags"), if (state.tags.isEmpty()) "—" else state.tags.joinToString(", "))
     LSummaryRow(
-        "Language",
+        tr("Language"),
         SupportedLanguages.list.firstOrNull { it.first == state.language }?.second ?: state.language,
     )
-    LSummaryRow("License", state.license.display)
+    LSummaryRow(tr("License"), state.license.display)
     LSummaryRow(
-        "Visibility",
+        tr("Visibility"),
         when (state.visibility) {
-            UploadVisibility.Public -> "Public"
-            UploadVisibility.Unlisted -> "Unlisted"
+            UploadVisibility.Public -> tr("Public")
+            UploadVisibility.Unlisted -> tr("Unlisted")
             UploadVisibility.Scheduled -> {
                 val fmt = java.text.SimpleDateFormat("EEE d MMM yyyy, HH:mm", java.util.Locale.getDefault())
                 val ts = state.scheduledTimestamp ?: 0L
                 "Scheduled — ${fmt.format(java.util.Date(ts))}"
             }
-            UploadVisibility.Private -> "Private"
+            UploadVisibility.Private -> tr("Private")
         },
     )
-    if (state.membersOnly) LSummaryRow("Members only", "Yes")
+    if (state.membersOnly) LSummaryRow(tr("Members only"), "Yes")
 }
 
 @Composable
@@ -480,7 +481,7 @@ private fun LiveReadyStep(state: LivestreamFormState) {
     ) {
         Column {
             Text(
-                text = "Stream created",
+                text = tr("Stream created"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -497,7 +498,7 @@ private fun LiveReadyStep(state: LivestreamFormState) {
     CopyRow(value = state.rtmpUrl) {
         clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("RTMP server", state.rtmpUrl))
     }
-    LSectionLabel("Stream key")
+    LSectionLabel(tr("Stream key"))
     val key = state.streamKey ?: "—"
     CopyRow(value = key, masked = true) {
         if (state.streamKey != null) {
@@ -505,7 +506,7 @@ private fun LiveReadyStep(state: LivestreamFormState) {
         }
     }
     Text(
-        text = "Treat the stream key like a password. Anyone with it can stream to your channel.",
+        text = tr("Treat the stream key like a password. Anyone with it can stream to your channel."),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -535,7 +536,7 @@ private fun CopyRow(value: String, masked: Boolean = false, onCopy: () -> Unit) 
             IconButton(onClick = { revealed = !revealed }) {
                 Icon(
                     imageVector = if (revealed) Icons.Outlined.VisibilityOff else Icons.Outlined.Public,
-                    contentDescription = if (revealed) "Hide" else "Show",
+                    contentDescription = if (revealed) tr("Hide") else tr("Show"),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
                 )
@@ -544,7 +545,7 @@ private fun CopyRow(value: String, masked: Boolean = false, onCopy: () -> Unit) 
         IconButton(onClick = onCopy) {
             Icon(
                 imageVector = Icons.Outlined.ContentCopy,
-                contentDescription = "Copy",
+                contentDescription = tr("Copy"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
@@ -690,7 +691,7 @@ private fun LiveScheduledPicker(
                 onCheckedChange = onShowOnUpcomingChange,
             )
             Text(
-                text = "Show this on my channel's Upcoming section",
+                text = tr("Show this on my channel's Upcoming section"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -709,7 +710,7 @@ private fun LiveTagsSection(state: LivestreamFormState, viewModel: LivestreamFor
         )
         if (state.tags.isEmpty()) {
             Text(
-                text = "No tags added",
+                text = tr("No tags added"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp),
@@ -725,7 +726,7 @@ private fun LiveTagsSection(state: LivestreamFormState, viewModel: LivestreamFor
         LFlatTextField(
             value = state.tagSearch,
             onValueChange = viewModel::onTagSearchChange,
-            placeholder = "Add a tag…",
+            placeholder = tr("Add a tag…"),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                 imeAction = androidx.compose.ui.text.input.ImeAction.Done,
             ),
@@ -812,7 +813,7 @@ private fun LiveThumbnailSection(state: LivestreamFormState, viewModel: Livestre
                 if (state.thumbnailUrl.isNotBlank()) {
                     AsyncImage(
                         model = state.thumbnailUrl,
-                        contentDescription = "Thumbnail",
+                        contentDescription = tr("Thumbnail"),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
@@ -847,7 +848,7 @@ private fun LiveThumbnailSection(state: LivestreamFormState, viewModel: Livestre
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Upload thumbnail",
+                    text = tr("Upload thumbnail"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -971,19 +972,19 @@ private fun LiveBottomBar(
                         enabled = state.isDetailsStepValid,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    ) { Text("Next", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                    ) { Text(tr("Next"), color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
                 LivestreamStep.Visibility -> {
-                    OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text("Back") }
+                    OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text(tr("Back")) }
                     Button(
                         onClick = onNext,
                         enabled = state.isVisibilityStepValid,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    ) { Text("Next", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                    ) { Text(tr("Next"), color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
                 LivestreamStep.Publish -> {
-                    OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text("Back") }
+                    OutlinedButton(onClick = onPrev, modifier = Modifier.weight(1f)) { Text(tr("Back")) }
                     Button(
                         onClick = onPublish,
                         enabled = state.canPublish && !state.isPublishing,
@@ -997,9 +998,9 @@ private fun LiveBottomBar(
                                 strokeWidth = 2.dp,
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Creating…", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(tr("Creating…"), color = Color.White, fontWeight = FontWeight.SemiBold)
                         } else {
-                            Text("Create", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(tr("Create"), color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -1008,7 +1009,7 @@ private fun LiveBottomBar(
                         onClick = onDone,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    ) { Text("Done", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                    ) { Text(tr("Done"), color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
             }
         }

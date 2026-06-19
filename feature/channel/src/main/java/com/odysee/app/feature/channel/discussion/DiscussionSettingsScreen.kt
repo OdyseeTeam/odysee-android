@@ -44,6 +44,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,10 +61,10 @@ fun DiscussionSettingsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Discussion settings") },
+                title = { Text(tr("Discussion settings")) },
                 actions = {
                     TextButton(
                         onClick = viewModel::save,
@@ -76,7 +77,7 @@ fun DiscussionSettingsScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Save", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Save"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -102,35 +103,35 @@ fun DiscussionSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             SettingNumberField(
-                label = "Minimum tip to comment (LBC)",
+                label = tr("Minimum tip to comment (LBC)"),
                 value = state.settings.minTipAmountComment.toString().trimEnd0(),
                 onChange = viewModel::onMinTipChange,
                 placeholder = "0",
                 decimal = true,
             )
             SettingNumberField(
-                label = "Minimum super chat (LBC)",
+                label = tr("Minimum super chat (LBC)"),
                 value = state.settings.minTipAmountSuperChat.toString().trimEnd0(),
                 onChange = viewModel::onMinSuperChatChange,
                 placeholder = "0",
                 decimal = true,
             )
             SettingNumberField(
-                label = "Slow mode (seconds between comments)",
+                label = tr("Slow mode (seconds between comments)"),
                 value = state.settings.slowModeMinGap.toString(),
                 onChange = viewModel::onSlowModeChange,
                 placeholder = "0",
                 decimal = false,
             )
             SettingToggle(
-                label = "Members-only comments",
-                subtitle = "Only paying members can comment on your videos.",
+                label = tr("Members-only comments"),
+                subtitle = tr("Only paying members can comment on your videos."),
                 checked = state.settings.commentsMembersOnly,
                 onChange = viewModel::setMembersOnlyComments,
             )
             SettingToggle(
-                label = "Members-only livestream chat",
-                subtitle = "Only paying members can chat on your livestreams.",
+                label = tr("Members-only livestream chat"),
+                subtitle = tr("Only paying members can chat on your livestreams."),
                 checked = state.settings.livestreamChatMembersOnly,
                 onChange = viewModel::setMembersOnlyLivestreamChat,
             )

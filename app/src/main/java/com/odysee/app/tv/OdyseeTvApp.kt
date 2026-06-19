@@ -60,6 +60,7 @@ import com.odysee.app.core.data.player.PlayerOpenMode
 import com.odysee.app.feature.home.FeedState
 import com.odysee.app.feature.home.HomeViewModel
 import com.odysee.app.feature.home.VideoUiModel
+import com.odysee.app.core.designsystem.i18n.tr
 
 private sealed interface TvDestination {
     data class Section(val section: TvSection) : TvDestination
@@ -67,12 +68,14 @@ private sealed interface TvDestination {
     data class Channel(val claimId: String, val name: String) : TvDestination
 }
 
-private enum class TvSection(val label: String, val icon: ImageVector) {
+private enum class TvSection(val labelKey: String, val icon: ImageVector) {
     Home("Home", Icons.Outlined.Home),
     Library("Library", Icons.Outlined.LibraryBooks),
     Search("Search", Icons.Outlined.Search),
     SignIn("Sign in", Icons.Outlined.AccountCircle),
-    Settings("Settings", Icons.Outlined.Settings),
+    Settings("Settings", Icons.Outlined.Settings);
+
+    val label: String get() = com.odysee.app.core.model.i18n.Translations.tr(labelKey)
 }
 
 @Composable
@@ -158,7 +161,7 @@ private fun TvShell(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Odysee",
+                        text = tr("Odysee"),
                         color = Color.White,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -230,7 +233,7 @@ private fun TvHomeSection(
         }
         if (live.isNotEmpty()) {
             TvVideoRow(
-                label = "Live now",
+                label = tr("Live now"),
                 videos = live,
                 onVideoClick = { v -> onVideoClick(v, live) },
                 onLongClickVideo = onLongClickVideo,
@@ -238,13 +241,13 @@ private fun TvHomeSection(
         }
         if (following.isNotEmpty()) {
             TvVideoRow(
-                label = "From channels you follow",
+                label = tr("From channels you follow"),
                 videos = following,
                 onVideoClick = { v -> onVideoClick(v, following) },
                 onLongClickVideo = onLongClickVideo,
             )
         }
-        val rowLabel = chips.firstOrNull { it.id == state.selectedCategoryId }?.label ?: "Recommended"
+        val rowLabel = chips.firstOrNull { it.id == state.selectedCategoryId }?.label ?: tr("Recommended")
         TvVideoRow(
             label = rowLabel,
             videos = recommended,
@@ -259,16 +262,16 @@ private fun TvHomeSection(
 private fun TvSettingsSection(viewModel: TvSettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val languages = listOf(
-        "system" to "Follow device",
-        "en" to "English",
-        "fr" to "Français",
-        "es" to "Español",
-        "de" to "Deutsch",
-        "it" to "Italiano",
+        "system" to tr("Follow device"),
+        "en" to tr("English"),
+        "fr" to tr("Français"),
+        "es" to tr("Español"),
+        "de" to tr("Deutsch"),
+        "it" to tr("Italiano"),
         "hi" to "हिन्दी",
         "zh" to "中文",
         "ru" to "Русский",
-        "pt-BR" to "Português",
+        "pt-BR" to tr("Português"),
     )
     Column(
         modifier = Modifier
@@ -277,13 +280,13 @@ private fun TvSettingsSection(viewModel: TvSettingsViewModel = hiltViewModel()) 
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Text(
-            text = "Settings",
+            text = tr("Settings"),
             style = MaterialTheme.typography.displaySmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = "Homepage language",
+            text = tr("Homepage language"),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -323,7 +326,7 @@ private fun TvSettingsSection(viewModel: TvSettingsViewModel = hiltViewModel()) 
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Autoplay next video",
+                        text = tr("Autoplay next video"),
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -367,7 +370,7 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = if (state.isSignedIn) "Signed in" else "Sign in",
+            text = if (state.isSignedIn) tr("Signed in") else tr("Sign in"),
             style = MaterialTheme.typography.displaySmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -387,7 +390,7 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
                 ),
             ) {
                 Text(
-                    text = "Sign out",
+                    text = tr("Sign out"),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -397,13 +400,13 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
         }
         if (state.emailSent) {
             Text(
-                text = "Check your email",
+                text = tr("Check your email"),
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
             )
             Text(
                 text = "We sent a link to ${state.email}. Open it on any device — your phone, your laptop, anywhere. " +
-                    "This TV will sign in automatically within a few seconds of you tapping the link.",
+                    tr("This TV will sign in automatically within a few seconds of you tapping the link."),
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.fillMaxWidth(0.7f),
@@ -417,7 +420,7 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
                 ),
             ) {
                 Text(
-                    text = "Use a different email",
+                    text = tr("Use a different email"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
@@ -426,7 +429,7 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
             return@Column
         }
         Text(
-            text = "Enter your email. We'll send a one-tap sign-in link.",
+            text = tr("Enter your email. We'll send a one-tap sign-in link."),
             color = Color.White.copy(alpha = 0.7f),
             style = MaterialTheme.typography.titleMedium,
         )
@@ -464,7 +467,7 @@ private fun TvSignInSection(viewModel: TvSignInViewModel = hiltViewModel()) {
             ),
         ) {
             Text(
-                text = if (state.isSending) "Sending…" else "Send sign-in link",
+                text = if (state.isSending) tr("Sending…") else tr("Send sign-in link"),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -591,6 +594,7 @@ private fun TvPlayer(
     onAdvance: (CurrentMedia) -> Unit = {},
     onOpenChannel: ((String, String) -> Unit)? = null,
 ) {
+    val playerState by controller.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
     androidx.compose.runtime.LaunchedEffect(media.claimId) {
         controller.play(media, openMode = PlayerOpenMode.Expanded)
@@ -647,10 +651,12 @@ private fun TvPlayer(
                 view.controllerAutoShow = true
                 view.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                 view.player = controller.exoPlayer
+                view.keepScreenOn = playerState.isPlaying
                 view
             },
             update = { view ->
                 view.player = controller.exoPlayer
+                view.keepScreenOn = playerState.isPlaying
                 val isLive = media.liveStreamUrl != null
                 val V = android.view.View.VISIBLE
                 val G = android.view.View.GONE
@@ -723,7 +729,7 @@ private fun TvPlayer(
                 ),
             ) {
                 Text(
-                    text = "Go to channel",
+                    text = tr("Go to channel"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -892,7 +898,7 @@ private fun TvChannelSection(
                 ),
             ) {
                 Text(
-                    text = if (state.isSubscribed) "Following" else "Follow",
+                    text = if (state.isSubscribed) tr("Following") else tr("Follow"),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -901,13 +907,13 @@ private fun TvChannelSection(
             }
         }
         when {
-            state.isLoading -> Text("Loading…", color = Color.White.copy(alpha = 0.7f))
+            state.isLoading -> Text(tr("Loading…"), color = Color.White.copy(alpha = 0.7f))
             videos.isEmpty() && state.playlists.isEmpty() ->
-                Text("Nothing here yet.", color = Color.White.copy(alpha = 0.6f))
+                Text(tr("Nothing here yet."), color = Color.White.copy(alpha = 0.6f))
             else -> {
                 if (videos.isNotEmpty()) {
                     TvVideoRow(
-                        label = "Latest",
+                        label = tr("Latest"),
                         videos = videos,
                         onVideoClick = { v -> onVideoClick(v.toCurrentMedia()) },
                     )
@@ -925,7 +931,7 @@ private fun TvChannelSection(
 private fun TvChannelPlaylistsRow(playlists: List<TvChannelPlaylist>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Playlists",
+            text = tr("Playlists"),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -1004,7 +1010,7 @@ private fun TvSearchSection(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = "Search",
+            text = tr("Search"),
             style = MaterialTheme.typography.displaySmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -1026,7 +1032,7 @@ private fun TvSearchSection(
                 modifier = Modifier.weight(1f, fill = false).fillMaxWidth(0.55f),
                 placeholder = {
                     androidx.compose.material3.Text(
-                        text = "Search Odysee…",
+                        text = tr("Search Odysee…"),
                         color = Color.White.copy(alpha = 0.5f),
                     )
                 },
@@ -1059,7 +1065,7 @@ private fun TvSearchSection(
             ) {
                 Icon(
                     imageVector = androidx.compose.material.icons.Icons.Outlined.Mic,
-                    contentDescription = "Voice search",
+                    contentDescription = tr("Voice search"),
                     tint = Color.White,
                     modifier = Modifier.padding(12.dp).size(28.dp),
                 )
@@ -1067,11 +1073,11 @@ private fun TvSearchSection(
         }
         when (val s = state.state) {
             com.odysee.app.feature.search.SearchState.Idle -> Text(
-                text = "Type to search.",
+                text = tr("Type to search."),
                 color = Color.White.copy(alpha = 0.6f),
             )
             com.odysee.app.feature.search.SearchState.Loading -> Text(
-                text = "Searching…",
+                text = tr("Searching…"),
                 color = Color.White.copy(alpha = 0.6f),
             )
             is com.odysee.app.feature.search.SearchState.Error -> Text(
@@ -1081,7 +1087,7 @@ private fun TvSearchSection(
             is com.odysee.app.feature.search.SearchState.Success -> {
                 if (s.results.isEmpty()) {
                     Text(
-                        text = "No results.",
+                        text = tr("No results."),
                         color = Color.White.copy(alpha = 0.6f),
                     )
                 } else {
@@ -1132,7 +1138,7 @@ private fun TvLibrarySection(
         verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
         Text(
-            text = "Library",
+            text = tr("Library"),
             style = MaterialTheme.typography.displaySmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -1141,7 +1147,7 @@ private fun TvLibrarySection(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Continue watching",
+                        text = tr("Continue watching"),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold,
@@ -1156,7 +1162,7 @@ private fun TvLibrarySection(
                         ),
                     ) {
                         Text(
-                            text = "Clear",
+                            text = tr("Clear"),
                             color = Color.White,
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1173,14 +1179,14 @@ private fun TvLibrarySection(
         }
         if (watchLaterAsVideos.isNotEmpty()) {
             TvVideoRow(
-                label = "Watch later",
+                label = tr("Watch later"),
                 videos = watchLaterAsVideos,
                 onVideoClick = { v -> onVideoClick(v.toCurrentMedia()) },
             )
         }
         if (favoritesAsVideos.isNotEmpty()) {
             TvVideoRow(
-                label = "Favorites",
+                label = tr("Favorites"),
                 videos = favoritesAsVideos,
                 onVideoClick = { v -> onVideoClick(v.toCurrentMedia()) },
             )
@@ -1188,7 +1194,7 @@ private fun TvLibrarySection(
         if (state.subscriptions.isNotEmpty()) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Following",
+                    text = tr("Following"),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
@@ -1231,7 +1237,7 @@ private fun TvLibrarySection(
         }
         if (historyAsVideos.isEmpty() && watchLaterAsVideos.isEmpty() && favoritesAsVideos.isEmpty() && state.subscriptions.isEmpty()) {
             Text(
-                text = "Nothing here yet. Sign in and save videos, follow channels, or build playlists on the phone/tablet app and they'll show up here.",
+                text = tr("Nothing here yet. Sign in and save videos, follow channels, or build playlists on the phone/tablet app and they'll show up here."),
                 color = Color.White.copy(alpha = 0.6f),
             )
         }

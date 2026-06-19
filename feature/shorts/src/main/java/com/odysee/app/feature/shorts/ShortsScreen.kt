@@ -78,6 +78,7 @@ import coil3.compose.AsyncImage
 import com.odysee.app.core.data.reactions.MyReaction
 import com.odysee.app.core.designsystem.R as DesignR
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @androidx.compose.material3.ExperimentalMaterial3Api
 @Composable
@@ -172,7 +173,7 @@ fun ShortsScreen(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Close,
-                contentDescription = "Close",
+                contentDescription = tr("Close"),
                 tint = Color.White,
             )
         }
@@ -188,7 +189,7 @@ fun ShortsScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ViewModePill(
-                label = "Related",
+                label = tr("Related"),
                 active = state.viewMode == ShortsViewMode.RELATED,
                 onClick = { viewModel.setViewMode(ShortsViewMode.RELATED) },
             )
@@ -354,7 +355,7 @@ private fun ShortsInfoSheet(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(
-                        text = if (isSubscribed) "Following" else "Follow",
+                        text = if (isSubscribed) tr("Following") else tr("Follow"),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = fg,
@@ -369,12 +370,12 @@ private fun ShortsInfoSheet(
                             androidx.compose.material3.TextButton(onClick = {
                                 showUnfollowConfirm = false
                                 viewModel.toggleSubscribe(cid, short.channelName)
-                            }) { Text("Unfollow") }
+                            }) { Text(tr("Unfollow")) }
                         },
                         dismissButton = {
                             androidx.compose.material3.TextButton(onClick = {
                                 showUnfollowConfirm = false
-                            }) { Text("Cancel") }
+                            }) { Text(tr("Cancel")) }
                         },
                     )
                 }
@@ -410,13 +411,13 @@ private fun ShortsInfoSheet(
                     putExtra(android.content.Intent.EXTRA_SUBJECT, short.title)
                     putExtra(android.content.Intent.EXTRA_TEXT, url)
                 }
-                ctx.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                ctx.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
             },
         )
         if (!short.description.isNullOrBlank()) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Description",
+                text = tr("Description"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,
@@ -431,7 +432,7 @@ private fun ShortsInfoSheet(
         if (short.tags.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Tags",
+                text = tr("Tags"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,
@@ -445,7 +446,7 @@ private fun ShortsInfoSheet(
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Claim ID",
+            text = tr("Claim ID"),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
@@ -463,13 +464,14 @@ private fun formatRelativeTime(unixSeconds: Long): String {
     if (unixSeconds <= 0) return ""
     val now = System.currentTimeMillis() / 1000
     val delta = (now - unixSeconds).coerceAtLeast(0)
+    val tr = com.odysee.app.core.model.i18n.Translations::tr
     return when {
-        delta < 60 -> "Just now"
-        delta < 3600 -> "${delta / 60}m ago"
-        delta < 86_400 -> "${delta / 3600}h ago"
-        delta < 30 * 86_400 -> "${delta / 86_400}d ago"
-        delta < 365 * 86_400L -> "${delta / (30 * 86_400)}mo ago"
-        else -> "${delta / (365 * 86_400L)}y ago"
+        delta < 60 -> tr("Just now")
+        delta < 3600 -> tr("%d minutes ago").format(delta / 60)
+        delta < 86_400 -> tr("%d hours ago").format(delta / 3600)
+        delta < 30 * 86_400 -> tr("%d days ago").format(delta / 86_400)
+        delta < 365 * 86_400L -> tr("%d months ago").format(delta / (30 * 86_400))
+        else -> tr("%d years ago").format(delta / (365 * 86_400L))
     }
 }
 
@@ -488,7 +490,7 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
     val canPost by viewModel.canComment.collectAsStateWithLifecycle()
     Column(modifier = Modifier.fillMaxWidth().height(560.dp).padding(16.dp)) {
         Text(
-            text = "Comments",
+            text = tr("Comments"),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
@@ -505,7 +507,7 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "No comments yet.",
+                    text = tr("No comments yet."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -542,7 +544,7 @@ private fun ShortsCommentsSheet(claimId: String, viewModel: ShortsViewModel) {
                     }
                 }
             },
-            placeholder = if (canPost) "Add a comment…" else "Sign in to comment",
+            placeholder = if (canPost) tr("Add a comment…") else tr("Sign in to comment"),
             enabled = canPost && !posting,
             maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_COMMENT,
         )
@@ -576,7 +578,7 @@ private fun ShortsInfoReactionRow(
                     id = if (liked) DesignR.drawable.ic_reaction_fire_active
                     else DesignR.drawable.ic_reaction_fire,
                 ),
-                contentDescription = "Like",
+                contentDescription = tr("Like"),
                 modifier = Modifier.size(20.dp),
                 colorFilter = if (liked) null
                 else androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
@@ -607,7 +609,7 @@ private fun ShortsInfoReactionRow(
                     id = if (disliked) DesignR.drawable.ic_reaction_slime_active
                     else DesignR.drawable.ic_reaction_slime,
                 ),
-                contentDescription = "Dislike",
+                contentDescription = tr("Dislike"),
                 modifier = Modifier.size(20.dp),
                 colorFilter = if (disliked) null
                 else androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
@@ -635,21 +637,21 @@ private fun ShortsInfoActionRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ShortsActionButton(
-            label = if (inWatchLater) "Saved" else "Later",
+            label = if (inWatchLater) tr("Saved") else tr("Later"),
             iconVector = Icons.Outlined.Schedule,
             highlight = inWatchLater,
             onClick = onWatchLater,
             modifier = Modifier.weight(1f),
         )
         ShortsActionButton(
-            label = if (inFavorites) "Faved" else "Fave",
+            label = if (inFavorites) tr("Faved") else tr("Fave"),
             iconVector = Icons.Outlined.Star,
             highlight = inFavorites,
             onClick = onFavorite,
             modifier = Modifier.weight(1f),
         )
         ShortsActionButton(
-            label = "Share",
+            label = tr("Share"),
             iconVector = Icons.Outlined.Share,
             onClick = onShare,
             modifier = Modifier.weight(1f),
@@ -737,10 +739,14 @@ private fun ShortPage(
                     .aspectRatio(aspect),
                 factory = { ctx ->
                     SurfaceView(ctx).apply {
+                        keepScreenOn = isPlaying
                         viewModel.exoPlayer.setVideoSurfaceView(this)
                     }
                 },
-                update = { view -> viewModel.exoPlayer.setVideoSurfaceView(view) },
+                update = { view ->
+                    view.keepScreenOn = isPlaying
+                    viewModel.exoPlayer.setVideoSurfaceView(view)
+                },
             )
         }
         // Thumbnail sits on TOP of the surface until playback actually starts, so the
@@ -777,7 +783,7 @@ private fun ShortPage(
                 ) {
                     androidx.compose.material3.Icon(
                         imageVector = androidx.compose.material.icons.Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
+                        contentDescription = tr("Play"),
                         tint = Color.White,
                         modifier = Modifier.size(40.dp),
                     )
@@ -855,7 +861,7 @@ private fun ShortPage(
                 ) {
                     Icon(
                         imageVector = if (isMuted) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp,
-                        contentDescription = if (isMuted) "Unmute" else "Mute",
+                        contentDescription = if (isMuted) tr("Unmute") else tr("Mute"),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp),
                     )
@@ -878,7 +884,7 @@ private fun ShortPage(
                 else DesignR.drawable.ic_reaction_fire,
                 tint = if (myReaction == MyReaction.LIKE) null else Color.White,
                 label = formatCount(likes),
-                contentDescription = "Like",
+                contentDescription = tr("Like"),
                 onClick = { viewModel.toggleLike(item.claimId) },
             )
             Spacer(Modifier.height(14.dp))
@@ -887,7 +893,7 @@ private fun ShortPage(
                 else DesignR.drawable.ic_reaction_slime,
                 tint = if (myReaction == MyReaction.DISLIKE) null else Color.White,
                 label = formatCount(dislikes),
-                contentDescription = "Dislike",
+                contentDescription = tr("Dislike"),
                 onClick = { viewModel.toggleDislike(item.claimId) },
             )
             Spacer(Modifier.height(14.dp))
@@ -939,7 +945,7 @@ private fun ShortPage(
                             id = if (isSubscribed) DesignR.drawable.ic_heart_filled
                             else DesignR.drawable.ic_heart_outline,
                         ),
-                        contentDescription = if (isSubscribed) "Unsubscribe" else "Subscribe",
+                        contentDescription = if (isSubscribed) tr("Unsubscribe") else tr("Subscribe"),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -955,26 +961,26 @@ private fun ShortPage(
                             item.channelClaimId?.let {
                                 viewModel.toggleSubscribe(it, item.channelName)
                             }
-                        }) { Text("Unfollow") }
+                        }) { Text(tr("Unfollow")) }
                     },
                     dismissButton = {
                         androidx.compose.material3.TextButton(onClick = {
                             showUnfollowConfirm = false
-                        }) { Text("Cancel") }
+                        }) { Text(tr("Cancel")) }
                     },
                 )
             }
             Spacer(Modifier.height(14.dp))
             ShortsRoundedIcon(
                 imageVector = Icons.Outlined.Info,
-                contentDescription = "Info",
+                contentDescription = tr("Info"),
                 enabled = true,
                 onClick = { viewModel.setShowInfo(true) },
             )
             Spacer(Modifier.height(14.dp))
             ShortsRoundedIcon(
                 imageVector = Icons.Outlined.ChatBubbleOutline,
-                contentDescription = "Comments",
+                contentDescription = tr("Comments"),
                 enabled = true,
                 onClick = { viewModel.setShowComments(true) },
             )
@@ -982,7 +988,7 @@ private fun ShortPage(
             val context = androidx.compose.ui.platform.LocalContext.current
             ShortsRoundedIcon(
                 imageVector = Icons.Outlined.Share,
-                contentDescription = "Share",
+                contentDescription = tr("Share"),
                 enabled = true,
                 onClick = {
                     val stripped = item.permanentUrl.removePrefix("lbry://")
@@ -991,19 +997,19 @@ private fun ShortPage(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, item.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, "https://odysee.com/$stripped")
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                 },
             )
             Spacer(Modifier.height(14.dp))
             ShortsRoundedImageButton(
                 iconRes = DesignR.drawable.ic_repost,
-                contentDescription = "Repost",
+                contentDescription = tr("Repost"),
                 onClick = onRepost,
             )
             Spacer(Modifier.height(14.dp))
             ShortsRoundedIcon(
                 imageVector = Icons.Outlined.PlaylistPlay,
-                contentDescription = "Autoplay next short",
+                contentDescription = tr("Autoplay next short"),
                 enabled = true,
                 active = autoplayNextShort,
                 onClick = { viewModel.toggleAutoplayNextShort() },

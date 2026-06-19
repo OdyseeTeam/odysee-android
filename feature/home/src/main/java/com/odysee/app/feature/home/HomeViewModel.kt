@@ -28,6 +28,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.absoluteValue
+import com.odysee.app.core.designsystem.i18n.tr
 
 private val SUPPORTED_HOMEPAGE_LANGS = setOf(
     "en", "fr", "es", "de", "it", "hi", "zh", "ru", "pt-BR",
@@ -543,13 +544,14 @@ private fun formatAge(releaseTimeSeconds: Long?): String {
     if (releaseTimeSeconds == null || releaseTimeSeconds <= 0) return ""
     val nowSec = System.currentTimeMillis() / 1000
     val deltaSec = (nowSec - releaseTimeSeconds).coerceAtLeast(0)
+    val tr = com.odysee.app.core.model.i18n.Translations::tr
     return when {
-        deltaSec < 60 -> "Just now"
-        deltaSec < TimeUnit.HOURS.toSeconds(1) -> "${deltaSec / 60}m ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(1) -> "${deltaSec / 3600}h ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(7) -> "${deltaSec / 86_400}d ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(30) -> "${deltaSec / (7 * 86_400)}w ago"
-        deltaSec < TimeUnit.DAYS.toSeconds(365) -> "${deltaSec / (30 * 86_400)}mo ago"
-        else -> "${deltaSec / (365 * 86_400)}y ago"
+        deltaSec < 60 -> tr("Just now")
+        deltaSec < TimeUnit.HOURS.toSeconds(1) -> tr("%d minutes ago").format(deltaSec / 60)
+        deltaSec < TimeUnit.DAYS.toSeconds(1) -> tr("%d hours ago").format(deltaSec / 3600)
+        deltaSec < TimeUnit.DAYS.toSeconds(7) -> tr("%d days ago").format(deltaSec / 86_400)
+        deltaSec < TimeUnit.DAYS.toSeconds(30) -> tr("%d weeks ago").format(deltaSec / (7 * 86_400))
+        deltaSec < TimeUnit.DAYS.toSeconds(365) -> tr("%d months ago").format(deltaSec / (30 * 86_400))
+        else -> tr("%d years ago").format(deltaSec / (365 * 86_400))
     }
 }

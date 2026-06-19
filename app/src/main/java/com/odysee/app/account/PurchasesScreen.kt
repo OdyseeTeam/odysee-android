@@ -37,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.designsystem.claims.OdyseeClaimCard
 import com.odysee.app.core.model.Claim
+import com.odysee.app.core.designsystem.i18n.tr
 
 private fun formatDuration(seconds: Long?): String {
     if (seconds == null || seconds <= 0) return ""
@@ -71,10 +72,10 @@ fun PurchasesScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Purchases") },
+                title = { Text(tr("Purchases")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -93,13 +94,13 @@ fun PurchasesScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "You haven't purchased anything yet",
+                    text = tr("You haven't purchased anything yet"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(Modifier.padding(4.dp))
                 Text(
-                    text = "When you buy or rent content, it'll show up here.",
+                    text = tr("When you buy or rent content, it'll show up here."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

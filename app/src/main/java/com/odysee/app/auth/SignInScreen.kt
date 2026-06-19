@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.auth.AuthState
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Suppress("DEPRECATION")
 @androidx.compose.ui.ExperimentalComposeUiApi
@@ -94,10 +95,10 @@ fun SignInScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (authState is AuthState.SignedIn) "Account" else "Sign in") },
+                title = { Text(if (authState is AuthState.SignedIn) tr("Account") else tr("Sign In")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -156,13 +157,13 @@ private fun SignInForm(
     var showPassword by remember { mutableStateOf(false) }
 
     Text(
-        text = "Sign in to Odysee",
+        text = tr("Sign in to Odysee"),
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onBackground,
     )
     Text(
-        text = "Enter your email. Add your password to sign in directly, or leave it blank to receive a verification email.",
+        text = tr("Enter your email. Add your password to sign in directly, or leave it blank to receive a verification email."),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -171,7 +172,7 @@ private fun SignInForm(
     OutlinedTextField(
         value = email,
         onValueChange = { email = it },
-        label = { Text("Email") },
+        label = { Text(tr("Email")) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         modifier = Modifier
@@ -186,7 +187,7 @@ private fun SignInForm(
     OutlinedTextField(
         value = password,
         onValueChange = { password = it },
-        label = { Text("Password (optional)") },
+        label = { Text(tr("Password (optional)")) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -194,7 +195,7 @@ private fun SignInForm(
             IconButton(onClick = { showPassword = !showPassword }) {
                 Icon(
                     imageVector = if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = if (showPassword) "Hide password" else "Show password",
+                    contentDescription = if (showPassword) tr("Hide password") else tr("Show password"),
                 )
             }
         },
@@ -220,7 +221,7 @@ private fun SignInForm(
                 strokeWidth = 2.dp,
             )
         } else {
-            Text("Sign in")
+            Text(tr("Sign In"))
         }
     }
     OutlinedButton(
@@ -229,14 +230,14 @@ private fun SignInForm(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("Create account")
+        Text(tr("Create Account"))
     }
     androidx.compose.material3.TextButton(
         onClick = { onForgotPassword(email) },
         enabled = !isSubmitting,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("Forgot password?")
+        Text(tr("Forgot Password?"))
     }
 }
 
@@ -247,7 +248,7 @@ private fun SignedInContent(
     onSignOut: () -> Unit,
 ) {
     Text(
-        text = "Signed in",
+        text = tr("Signed in"),
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onBackground,
@@ -266,6 +267,6 @@ private fun SignedInContent(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("Sign out")
+        Text(tr("Sign Out"))
     }
 }

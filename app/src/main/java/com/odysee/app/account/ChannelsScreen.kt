@@ -41,6 +41,7 @@ import coil3.compose.AsyncImage
 import com.odysee.app.auth.LocalAuthState
 import com.odysee.app.core.data.auth.AuthState
 import com.odysee.app.core.model.Channel
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,10 +59,10 @@ fun ChannelsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Your channels") },
+                title = { Text(tr("Your channels")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -72,7 +73,7 @@ fun ChannelsScreen(
                 onClick = onNewChannel,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
-            ) { Icon(Icons.Filled.Add, contentDescription = "New channel") }
+            ) { Icon(Icons.Filled.Add, contentDescription = tr("New channel")) }
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -83,12 +84,12 @@ fun ChannelsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "No channels yet",
+                    text = tr("No channels yet"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Create a channel to start uploading, commenting and following others.",
+                    text = tr("Create a channel to start uploading, commenting and following others."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -170,7 +171,7 @@ private fun ChannelRow(channel: Channel, isActive: Boolean, onClick: () -> Unit)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             ) {
                 Text(
-                    text = "Active",
+                    text = tr("Active"),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.odysee.app.core.data.player.CurrentMedia
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun MiniPlayerBar(
@@ -94,14 +95,14 @@ fun MiniPlayerBar(
             IconButton(onClick = onPlayPause, enabled = !isResolving) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = if (isPlaying) tr("Pause") else tr("Play"),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
-                    contentDescription = "Close player",
+                    contentDescription = tr("Close player"),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }

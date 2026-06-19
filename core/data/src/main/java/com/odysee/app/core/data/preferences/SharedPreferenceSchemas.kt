@@ -34,7 +34,6 @@ data class CollectionDoc(
     val thumbnail: CollectionThumbnail? = null,
     val description: String? = null,
     val tags: List<String> = emptyList(),
-    val isPublic: Boolean? = null,
 )
 
 @Serializable
@@ -51,6 +50,13 @@ object SharedPrefSlices {
     const val EDITED_COLLECTIONS = "editedCollections"
     const val AUTO_PUBLISH_BY_ID = "autoPublishById"
     const val BUILTIN_COLLECTIONS = "builtinCollections"
+    // The web persists every CLIENT_SYNC_KEY under this single slice — a
+    // flat object whose keys are the setting name strings from
+    // odysee-frontend/ui/constants/settings.ts (e.g. "show_mature",
+    // "hide_reposts", "autoplay_next"). Values are heterogeneous (bool,
+    // string, number) so we keep it as a raw JsonObject and let the
+    // ClientSettingsRepository handle per-key decoding.
+    const val SETTINGS = "settings"
 
     val StringList = ListSerializer(String.serializer())
     val FollowingList = ListSerializer(FollowingEntry.serializer())

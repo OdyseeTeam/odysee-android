@@ -46,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.odysee.app.core.data.notifications.NotificationItem
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,10 +62,10 @@ fun NotificationsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Notifications") },
+                title = { Text(tr("Notifications")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -83,7 +84,7 @@ fun NotificationsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Couldn't load",
+                    text = tr("Couldn't load"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
@@ -93,7 +94,7 @@ fun NotificationsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = viewModel::load) { Text("Retry") }
+                TextButton(onClick = viewModel::load) { Text(tr("Retry")) }
             }
             state.items.isEmpty() -> Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
@@ -101,12 +102,12 @@ fun NotificationsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Nothing here yet",
+                    text = tr("Nothing here yet"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Follow channels to get notified when they post.",
+                    text = tr("Follow channels to get notified when they post."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -198,7 +199,7 @@ private fun NotificationRow(
         androidx.compose.material3.IconButton(onClick = onDismiss) {
             androidx.compose.material3.Icon(
                 imageVector = androidx.compose.material.icons.Icons.Outlined.Close,
-                contentDescription = "Dismiss",
+                contentDescription = tr("Dismiss"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

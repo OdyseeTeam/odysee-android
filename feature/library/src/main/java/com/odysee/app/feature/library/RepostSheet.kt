@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 data class RepostUiState(
     val channels: List<Channel> = emptyList(),
@@ -104,12 +105,12 @@ class RepostViewModel @Inject constructor(
     fun repost(claimId: String) {
         val st = _state.value
         val channel = st.selectedChannelClaimId ?: run {
-            _state.update { it.copy(error = "Pick a channel first.") }
+            _state.update { it.copy(error = com.odysee.app.core.model.i18n.Translations.tr("Pick a channel first.")) }
             return
         }
         val bid = st.bid.toDoubleOrNull() ?: 0.0
         if (bid <= 0.0) {
-            _state.update { it.copy(error = "Bid must be greater than 0.") }
+            _state.update { it.copy(error = com.odysee.app.core.model.i18n.Translations.tr("Bid must be greater than 0.")) }
             return
         }
         viewModelScope.launch {
@@ -126,7 +127,7 @@ class RepostViewModel @Inject constructor(
                 onSuccess = { _state.update { it.copy(isPosting = false, success = true) } },
                 onFailure = { e ->
                     _state.update {
-                        it.copy(isPosting = false, error = e.message ?: "Repost failed.")
+                        it.copy(isPosting = false, error = e.message ?: com.odysee.app.core.model.i18n.Translations.tr("Repost failed."))
                     }
                 },
             )
@@ -148,7 +149,7 @@ fun RepostSheet(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Repost") },
+        title = { Text(tr("Repost")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
@@ -190,8 +191,8 @@ fun RepostSheet(
                     onValueChange = viewModel::onBidChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    placeholder = { Text("Bid (LBC)", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    suffix = { Text("LBC") },
+                    placeholder = { Text(tr("Bid (LBC)"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    suffix = { Text(tr("LBC")) },
                     shape = RoundedCornerShape(10.dp),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
@@ -216,10 +217,10 @@ fun RepostSheet(
             TextButton(
                 onClick = { viewModel.repost(claimId) },
                 enabled = !state.isPosting,
-            ) { Text(if (state.isPosting) "Reposting…" else "Repost") }
+            ) { Text(if (state.isPosting) tr("Reposting…") else tr("Repost")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(tr("Cancel")) }
         },
     )
 }
@@ -267,7 +268,7 @@ private fun RepostChannelDropdown(
             }
             Spacer(Modifier.width(10.dp))
             Text(
-                text = selected?.title?.takeIf { it.isNotBlank() } ?: selected?.name ?: "Select a channel",
+                text = selected?.title?.takeIf { it.isNotBlank() } ?: selected?.name ?: tr("Select a channel"),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,

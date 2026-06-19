@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.datastore.NotificationDeliveryMode
 import com.odysee.app.core.datastore.NotificationPreferences
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,10 +55,10 @@ fun NotificationSettingsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Notifications") },
+                title = { Text(tr("Notifications")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -83,13 +84,13 @@ fun NotificationSettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Enable notifications",
+                            text = tr("Enable notifications"),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                         Text(
-                            text = "When off, neither push nor background fetch will fire.",
+                            text = tr("When off, neither push nor background fetch will fire."),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -104,7 +105,7 @@ fun NotificationSettingsScreen(
             if (!state.notificationsEnabled) return@Column
 
             Text(
-                text = "How should we deliver notifications?",
+                text = tr("How should we deliver notifications?"),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -112,8 +113,8 @@ fun NotificationSettingsScreen(
 
             if (state.pushSupported) {
                 ModeRow(
-                    title = "Push notifications",
-                    subtitle = "Instant — Google services delivers them via FCM.",
+                    title = tr("Push notifications"),
+                    subtitle = tr("Instant — Google services delivers them via FCM."),
                     selected = state.mode == NotificationDeliveryMode.Push,
                     onClick = { viewModel.setMode(NotificationDeliveryMode.Push) },
                 )
@@ -124,7 +125,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "Push delivery isn't available in this FOSS build (no Google services). Notifications are fetched periodically in the background.",
+                        text = tr("Push delivery isn't available in this FOSS build (no Google services). Notifications are fetched periodically in the background."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(12.dp),
@@ -133,8 +134,8 @@ fun NotificationSettingsScreen(
             }
 
             ModeRow(
-                title = "Background fetch",
-                subtitle = "App checks for new notifications at the interval below.",
+                title = tr("Background fetch"),
+                subtitle = tr("App checks for new notifications at the interval below."),
                 selected = state.mode == NotificationDeliveryMode.Poll,
                 onClick = { viewModel.setMode(NotificationDeliveryMode.Poll) },
             )
@@ -142,7 +143,7 @@ fun NotificationSettingsScreen(
             if (state.mode == NotificationDeliveryMode.Poll) {
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    text = "Fetch interval",
+                    text = tr("Fetch interval"),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -152,7 +153,7 @@ fun NotificationSettingsScreen(
                     onChange = viewModel::setIntervalMinutes,
                 )
                 Text(
-                    text = "Battery savers like Doze may delay fetches when the device is idle.",
+                    text = tr("Battery savers like Doze may delay fetches when the device is idle."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

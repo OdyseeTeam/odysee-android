@@ -74,3 +74,10 @@ CLAUDE.md
 *.tmp
 hs_err_pid*.log
 
+
+# Per-session changelog scratchpad (not for distribution; tracks
+# what changed between version bumps so Claude/Codex can recap).
+CHANGES.md
+
+# Local-only release driver (built/upload script). Not for distribution.
+publish

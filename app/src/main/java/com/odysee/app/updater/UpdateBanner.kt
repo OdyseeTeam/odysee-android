@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.updater.AppUpdater
 import com.odysee.app.core.data.updater.UpdateState
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun UpdateBannerHost(appUpdater: AppUpdater, modifier: Modifier = Modifier) {
@@ -59,7 +60,7 @@ fun UpdateBannerHost(appUpdater: AppUpdater, modifier: Modifier = Modifier) {
                         modifier = Modifier.weight(1f).padding(start = 10.dp),
                     ) {
                         Text(
-                            text = "Update available",
+                            text = tr("Update available"),
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyMedium,
@@ -73,10 +74,10 @@ fun UpdateBannerHost(appUpdater: AppUpdater, modifier: Modifier = Modifier) {
                     TextButton(
                         onClick = { scope.launch { appUpdater.downloadAndInstall() } },
                     ) {
-                        Text("Download", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Download"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                     IconButton(onClick = { appUpdater.dismiss() }) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Dismiss", tint = Color.White)
+                        Icon(Icons.Outlined.Close, contentDescription = tr("Dismiss"), tint = Color.White)
                     }
                 }
             }

@@ -70,6 +70,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 data class PlaylistWatchTarget(
     val playlistId: String,
@@ -97,7 +98,7 @@ class PlaylistDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     val playlistId: String = checkNotNull(savedStateHandle["playlistId"]) {
-        "playlistId required"
+        com.odysee.app.core.model.i18n.Translations.tr("playlistId required")
     }
     val autoplay: Boolean = savedStateHandle.get<Boolean>("autoplay") ?: false
     val shuffle: Boolean = savedStateHandle.get<Boolean>("shuffle") ?: false
@@ -225,7 +226,7 @@ fun PlaylistDetailScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
@@ -239,7 +240,7 @@ fun PlaylistDetailScreen(
                     IconButton(onClick = { reorderMode = !reorderMode }) {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Outlined.SwapVert,
-                            contentDescription = if (reorderMode) "Done reordering" else "Reorder",
+                            contentDescription = if (reorderMode) tr("Done reordering") else tr("Reorder"),
                             tint = if (reorderMode) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onBackground,
                         )
@@ -248,7 +249,7 @@ fun PlaylistDetailScreen(
                         IconButton(onClick = { sortMenuOpen = true }) {
                             Icon(
                                 imageVector = androidx.compose.material.icons.Icons.Outlined.Sort,
-                                contentDescription = "Sort",
+                                contentDescription = tr("Sort"),
                             )
                         }
                         androidx.compose.material3.DropdownMenu(
@@ -256,28 +257,28 @@ fun PlaylistDetailScreen(
                             onDismissRequest = { sortMenuOpen = false },
                         ) {
                             androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Newest first") },
+                                text = { Text(tr("Newest first")) },
                                 onClick = {
                                     viewModel.applySortAndPersist(PlaylistSort.Newest)
                                     sortMenuOpen = false
                                 },
                             )
                             androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Oldest first") },
+                                text = { Text(tr("Oldest first")) },
                                 onClick = {
                                     viewModel.applySortAndPersist(PlaylistSort.Oldest)
                                     sortMenuOpen = false
                                 },
                             )
                             androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Title (A–Z)") },
+                                text = { Text(tr("Title (A–Z)")) },
                                 onClick = {
                                     viewModel.applySortAndPersist(PlaylistSort.TitleAsc)
                                     sortMenuOpen = false
                                 },
                             )
                             androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Title (Z–A)") },
+                                text = { Text(tr("Title (Z–A)")) },
                                 onClick = {
                                     viewModel.applySortAndPersist(PlaylistSort.TitleDesc)
                                     sortMenuOpen = false
@@ -288,7 +289,7 @@ fun PlaylistDetailScreen(
                     IconButton(onClick = { onEdit(viewModel.playlistId) }) {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Outlined.Edit,
-                            contentDescription = "Edit playlist",
+                            contentDescription = tr("Edit playlist"),
                         )
                     }
                 },
@@ -340,7 +341,7 @@ fun PlaylistDetailScreen(
                             tint = Color.White,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Play all", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Play all"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -366,7 +367,7 @@ fun PlaylistDetailScreen(
                                         ) {
                                             Icon(
                                                 imageVector = androidx.compose.material.icons.Icons.Outlined.KeyboardArrowUp,
-                                                contentDescription = "Move up",
+                                                contentDescription = tr("Move up"),
                                             )
                                         }
                                         IconButton(
@@ -375,7 +376,7 @@ fun PlaylistDetailScreen(
                                         ) {
                                             Icon(
                                                 imageVector = androidx.compose.material.icons.Icons.Outlined.KeyboardArrowDown,
-                                                contentDescription = "Move down",
+                                                contentDescription = tr("Move down"),
                                             )
                                         }
                                     }
@@ -410,7 +411,7 @@ fun PlaylistDetailScreen(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title.ifBlank { target.name })
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, com.odysee.app.core.model.i18n.Translations.tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")

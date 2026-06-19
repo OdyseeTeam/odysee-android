@@ -85,8 +85,17 @@ class AuthRepositoryImpl @Inject constructor(
     private val playlistsRepository: Lazy<PlaylistsRepository>,
     private val tagsRepository: Lazy<TagsRepository>,
     private val walletSyncRepository: Lazy<com.odysee.app.core.data.wallet.WalletSyncRepository>,
+    private val clientSettingsRepository: Lazy<com.odysee.app.core.data.settings.ClientSettingsRepository>,
     private val crashReporter: CrashReporter,
 ) : AuthRepository {
+
+    init {
+        // Start observing local setting changes so any local mutation is
+        // pushed to the LBRY shared-preferences "settings" slice. Runs
+        // unconditionally because anonymous users still own a wallet auth
+        // token and the SDK preference API works with it.
+        clientSettingsRepository.get().startAutoPush()
+    }
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
     override val state: StateFlow<AuthState> = _state.asStateFlow()
@@ -128,10 +137,13 @@ class AuthRepositoryImpl @Inject constructor(
                 onSuccess = { env ->
                     if (env.success) {
                         adoptResponseToken(env.data?.authToken)
-                        refreshUser()
+                        applyUserFromResponse(env.data)
+                        if (_state.value !is AuthState.SignedIn) refreshUser()
                         if (password == null && _state.value !is AuthState.SignedIn) {
                             startVerificationPolling(email)
                             SignInResult.VerificationEmailSent
+                        } else if (password != null && _state.value !is AuthState.SignedIn) {
+                            SignInResult.Failure("Signed in, but the server hasn't confirmed your account yet. Try again.")
                         } else {
                             SignInResult.Success
                         }
@@ -152,7 +164,8 @@ class AuthRepositoryImpl @Inject constructor(
                 onSuccess = { env ->
                     if (env.success) {
                         adoptResponseToken(env.data?.authToken)
-                        refreshUser()
+                        applyUserFromResponse(env.data)
+                        if (_state.value !is AuthState.SignedIn) refreshUser()
                         if (password != null) SignInResult.Success
                         else {
                             startVerificationPolling(email)
@@ -170,6 +183,18 @@ class AuthRepositoryImpl @Inject constructor(
                     }
                 },
             )
+    }
+
+    private suspend fun applyUserFromResponse(dto: UserDto?) {
+        val user = dto?.toDomain() ?: return
+        val token = authHolder.get() ?: return
+        _state.value = stateFor(token, user)
+        if (user.email != null) authPreferences.setEmail(user.email)
+        crashReporter.setUserId(user.id?.toString())
+        if (_state.value is AuthState.SignedIn) {
+            loadChannels()
+            walletSyncRepository.get().sync()
+        }
     }
 
     override suspend fun signOut() {
@@ -242,6 +267,7 @@ class AuthRepositoryImpl @Inject constructor(
         runCatching { favoritesRepository.get().syncFromServer() }
         runCatching { playlistsRepository.get().syncFromServer() }
         runCatching { tagsRepository.get().syncFromServer() }
+        runCatching { clientSettingsRepository.get().syncFromServer() }
         runCatching { fetchPremiumStatus() }
     }
 

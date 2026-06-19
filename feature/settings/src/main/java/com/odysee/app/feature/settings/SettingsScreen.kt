@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,10 +78,10 @@ fun SettingsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Settings") },
+                title = { Text(tr("Settings")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -95,31 +98,31 @@ fun SettingsScreen(
                 .let { if (wide) it.widthIn(max = 720.dp).padding(horizontal = 24.dp) else it },
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            item { SectionHeader("Appearance") }
+            item { SectionHeader(tr("Appearance")) }
             item {
                 ActionRow(
-                    title = "Homepage",
+                    title = tr("Homepage"),
                     subtitle = homepageLanguageLabel(state.homepageLanguage),
                     onClick = { showHomepageLanguageDialog = true },
                 )
             }
             item {
                 ActionRow(
-                    title = "Language",
+                    title = tr("Language"),
                     subtitle = languageLabel(state.language),
                     onClick = { showLanguageDialog = true },
                 )
             }
             item {
                 ToggleRow(
-                    title = "Search only in the selected language by default",
+                    title = tr("Search only in the selected language by default"),
                     checked = state.searchInLanguage,
                     onCheckedChange = viewModel::setSearchInLanguage,
                 )
             }
             item {
                 ChoiceChipsRow(
-                    title = "Theme",
+                    title = tr("Theme"),
                     options = themeOptions,
                     selected = state.theme,
                     onSelect = viewModel::setTheme,
@@ -134,157 +137,150 @@ fun SettingsScreen(
             }
             item {
                 ToggleRow(
-                    title = "Hide wallet balance in header",
-                    checked = state.hideWalletBalance,
-                    onCheckedChange = viewModel::setHideWalletBalance,
-                )
-            }
-            item {
-                ToggleRow(
-                    title = "Hide notification count in title bar",
+                    title = tr("Hide unread notification count"),
                     checked = state.hideNotificationCount,
                     onCheckedChange = viewModel::setHideNotificationCount,
                 )
             }
             item { Divider() }
 
-            item { SectionHeader("Account") }
+            item { SectionHeader(tr("Account")) }
             item {
                 ActionRow(
-                    title = "Password",
-                    subtitle = "Sign in to change your password.",
+                    title = tr("Password"),
+                    subtitle = tr("Sign in to change your password."),
                     onClick = onOpenPassword,
                 )
             }
             if (state.hasChannels) {
                 item {
                     ActionRow(
-                        title = "Comments",
-                        subtitle = "View your past comments.",
+                        title = tr("Comments"),
+                        subtitle = tr("View your past comments."),
                         onClick = onOpenComments,
                     )
                 }
             }
             item {
                 ActionRow(
-                    title = "Purchases",
-                    subtitle = "View your purchased content.",
+                    title = tr("Purchases"),
+                    subtitle = tr("View your purchased content."),
                     onClick = onOpenPurchases,
                 )
             }
             item { Divider() }
 
-            item { SectionHeader("Content") }
+            item { SectionHeader(tr("Content")) }
             item {
                 ToggleRow(
-                    title = "Hide members-only content",
-                    subtitle = "You will not see content that requires a membership subscription.",
+                    title = tr("Hide members-only content"),
+                    subtitle = tr("You will not see content that requires a membership subscription."),
                     checked = state.hideMembersOnly,
                     onCheckedChange = viewModel::setHideMembersOnly,
                 )
             }
             item {
                 ToggleRow(
-                    title = "Hide reposts",
-                    subtitle = "You will not see reposts by people you follow.",
+                    title = tr("Hide reposts"),
+                    subtitle = tr("You will not see reposts by people you follow."),
                     checked = state.hideReposts,
                     onCheckedChange = viewModel::setHideReposts,
                 )
             }
             item {
                 ActionRow(
-                    title = "Default playlist action",
+                    title = tr("Default playlist action"),
                     subtitle = playlistActionLabel(state.defaultPlaylistAction),
                     onClick = { showPlaylistActionDialog = true },
                 )
             }
             item {
                 ActionRow(
-                    title = "Notifications",
-                    subtitle = "Push or background fetch — your choice",
+                    title = tr("Notifications"),
+                    subtitle = tr("Push or background fetch — your choice"),
                     onClick = onOpenNotificationSettings,
                 )
             }
             item {
                 ActionRow(
-                    title = "Blocked and hidden channels",
+                    title = tr("Blocked and hidden channels"),
                     subtitle = null,
                     onClick = onOpenBlockedChannels,
                 )
             }
             item {
                 ToggleRow(
-                    title = "Publish confirmation",
-                    subtitle = "Show preview and confirmation dialog before publishing content.",
+                    title = tr("Publish confirmation"),
+                    subtitle = tr("Show preview and confirmation dialog before publishing content."),
                     checked = state.publishConfirmation,
                     onCheckedChange = viewModel::setPublishConfirmation,
                 )
             }
             item {
                 ToggleRow(
-                    title = "Purchase and tip confirmations",
-                    subtitle = "Show a confirmation dialog before purchases and tips.",
+                    title = tr("Purchase and tip confirmations"),
+                    subtitle = tr("Show a confirmation dialog before purchases and tips."),
                     checked = state.purchaseTipConfirmation,
                     onCheckedChange = viewModel::setPurchaseTipConfirmation,
                 )
             }
             item { Divider() }
 
-            item { SectionHeader("Player") }
+            item { SectionHeader(tr("Player")) }
             item {
                 ToggleRow(
-                    title = "Autoplay media files",
-                    subtitle = "Autoplay video and audio when opening a file.",
+                    title = tr("Autoplay media files"),
+                    subtitle = tr("Autoplay video and audio when opening a file."),
                     checked = state.autoplayMedia,
                     onCheckedChange = viewModel::setAutoplayMedia,
                 )
             }
             item {
                 ToggleRow(
-                    title = "Autoplay next recommended content",
-                    subtitle = "Autoplay the next related item when a file finishes.",
+                    title = tr("Autoplay next recommended content"),
+                    subtitle = tr("Autoplay the next related item when a file finishes."),
                     checked = state.autoplay,
                     onCheckedChange = viewModel::setAutoplay,
                 )
             }
             item {
                 ActionRow(
-                    title = "Default video quality",
+                    title = tr("Default video quality"),
                     subtitle = qualityLabel(state.defaultVideoQuality),
                     onClick = { showQualityDialog = true },
                 )
             }
             item {
                 ToggleRow(
-                    title = "P2P stream delivery",
-                    subtitle = "Help other viewers by sharing video segments peer-to-peer.",
+                    title = tr("P2P stream delivery"),
+                    subtitle = tr("Help other viewers by sharing video segments peer-to-peer."),
                     checked = state.p2pDelivery,
                     onCheckedChange = viewModel::setP2pDelivery,
                 )
             }
             item { Divider() }
 
-            item { SectionHeader("System") }
+            item { SectionHeader(tr("System")) }
             item {
                 ActionRow(
-                    title = "Clear application cache",
-                    subtitle = "This might fix issues you are having.",
+                    title = tr("Clear application cache"),
+                    subtitle = tr("This might fix issues you are having."),
                     onClick = {
                         onClearCache()
-                        toast(ctx, "Cache cleared")
+                        toast(ctx, com.odysee.app.core.model.i18n.Translations.tr("Cache cleared"))
                     },
                 )
             }
             item {
                 ActionRow(
-                    title = "Request account deletion",
-                    subtitle = "Send account deletion request to Odysee.",
+                    title = tr("Request account deletion"),
+                    subtitle = tr("Send account deletion request to Odysee."),
                     onClick = { showDeleteAccount = true },
                 )
             }
             item { Divider() }
 
-            item { SectionHeader("About") }
+            item { SectionHeader(tr("About")) }
             item {
                 val versionLabel = remember(ctx) {
                     runCatching {
@@ -294,17 +290,17 @@ fun SettingsScreen(
                         "${info.versionName} ($code)"
                     }.getOrDefault("unknown")
                 }
-                InfoRow(title = "Version", subtitle = versionLabel)
+                InfoRow(title = tr("Version"), subtitle = versionLabel)
             }
             item {
                 ActionRow(
-                    title = "Privacy policy",
+                    title = tr("Privacy policy"),
                     onClick = { openUrl(ctx, "https://odysee.com/\$/privacypolicy") },
                 )
             }
             item {
                 ActionRow(
-                    title = "Terms of service",
+                    title = tr("Terms of service"),
                     onClick = { openUrl(ctx, "https://odysee.com/\$/tos") },
                 )
             }
@@ -312,7 +308,7 @@ fun SettingsScreen(
                 item {
                     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
                     val subtitle = when (val s = updateState) {
-                        is com.odysee.app.core.data.updater.UpdateState.Checking -> "Checking…"
+                        is com.odysee.app.core.data.updater.UpdateState.Checking -> tr("Checking…")
                         is com.odysee.app.core.data.updater.UpdateState.UpToDate ->
                             "Up to date (${s.installedVersion})"
                         is com.odysee.app.core.data.updater.UpdateState.Available ->
@@ -320,16 +316,16 @@ fun SettingsScreen(
                         is com.odysee.app.core.data.updater.UpdateState.Downloading ->
                             "Downloading… ${(s.progress * 100).toInt()}%"
                         is com.odysee.app.core.data.updater.UpdateState.ReadyToInstall ->
-                            "Ready to install"
+                            tr("Ready to install")
                         is com.odysee.app.core.data.updater.UpdateState.Failed ->
                             "Failed: ${s.message}"
-                        else -> "Tap to check"
+                        else -> tr("Tap to check")
                     }
                     ActionRow(
                         title = if (updateState is com.odysee.app.core.data.updater.UpdateState.Available ||
                             updateState is com.odysee.app.core.data.updater.UpdateState.ReadyToInstall) {
-                            "Install update"
-                        } else "Check for updates",
+                            tr("Install update")
+                        } else tr("Check for updates"),
                         subtitle = subtitle,
                         onClick = {
                             when (updateState) {
@@ -347,7 +343,7 @@ fun SettingsScreen(
 
     if (showLanguageDialog) {
         ChoiceDialog(
-            title = "Language",
+            title = tr("Language"),
             options = languageOptions,
             selected = state.language ?: "system",
             onSelect = {
@@ -360,7 +356,7 @@ fun SettingsScreen(
 
     if (showHomepageLanguageDialog) {
         ChoiceDialog(
-            title = "Homepage language",
+            title = tr("Homepage language"),
             options = homepageLanguageOptions,
             selected = state.homepageLanguage ?: "en",
             onSelect = {
@@ -372,7 +368,7 @@ fun SettingsScreen(
     }
     if (showQualityDialog) {
         ChoiceDialog(
-            title = "Default video quality",
+            title = tr("Default video quality"),
             options = qualityOptions,
             selected = state.defaultVideoQuality,
             onSelect = {
@@ -384,7 +380,7 @@ fun SettingsScreen(
     }
     if (showPlaylistActionDialog) {
         ChoiceDialog(
-            title = "Default playlist action",
+            title = tr("Default playlist action"),
             options = playlistActionOptions,
             selected = state.defaultPlaylistAction,
             onSelect = {
@@ -397,18 +393,18 @@ fun SettingsScreen(
     if (showDeleteAccount) {
         AlertDialog(
             onDismissRequest = { showDeleteAccount = false },
-            title = { Text("Request account deletion?") },
-            text = { Text("This sends a deletion request to Odysee. You'll need to delete all uploads first.") },
+            title = { Text(tr("Request account deletion?")) },
+            text = { Text(tr("This sends a deletion request to Odysee. You'll need to delete all uploads first.")) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteAccount = false
                     viewModel.requestAccountDeletion { ok, msg ->
-                        toast(ctx, if (ok) "Deletion request sent" else (msg ?: "Couldn't send request"))
+                        toast(ctx, if (ok) com.odysee.app.core.model.i18n.Translations.tr("Deletion request sent") else (msg ?: com.odysee.app.core.model.i18n.Translations.tr("Couldn't send request")))
                     }
-                }) { Text("Send request") }
+                }) { Text(tr("Send request")) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteAccount = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteAccount = false }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -430,7 +426,7 @@ private fun openUrl(ctx: android.content.Context, url: String) {
 @Composable
 private fun SectionHeader(text: String) {
     Text(
-        text = text,
+        text = tr(text),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.SemiBold,
@@ -459,13 +455,13 @@ private fun ToggleRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = title,
+                text = tr(title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
-                    text = subtitle,
+                    text = tr(subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -490,13 +486,13 @@ private fun ActionRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = title,
+                text = tr(title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
-                    text = subtitle,
+                    text = tr(subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -519,7 +515,7 @@ private fun ChoiceChipsRow(
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
-            text = title,
+            text = tr(title),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -538,7 +534,7 @@ private fun ChoiceChipsRow(
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
                     Text(
-                        text = label,
+                        text = tr(label),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (isSelected) Color.White
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -561,13 +557,21 @@ private fun ChoiceDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column {
-                options.forEach { (value, label) ->
+            // 56 languages overflow a non-scrolling AlertDialog body; make
+            // the content scrollable and cap its height so the dialog
+            // doesn't push its title/buttons off-screen.
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.material3.LocalMinimumInteractiveComponentSize provides 0.dp,
+            ) {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 400.dp),
+            ) {
+                items(options, key = { it.first }) { (value, label) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onSelect(value) }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         androidx.compose.material3.RadioButton(
@@ -575,12 +579,17 @@ private fun ChoiceDialog(
                             onClick = { onSelect(value) },
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(label, color = MaterialTheme.colorScheme.onBackground)
+                        Text(
+                            label,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
             }
+            }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Done")) } },
     )
 }
 
@@ -606,20 +615,10 @@ private val themeOptions = listOf(
     "dark" to "Dark",
 )
 
-private val languageOptions = listOf(
-    "system" to "System default",
-    "en" to "English",
-    "de" to "Deutsch",
-    "es" to "Español",
-    "fr" to "Français",
-    "it" to "Italiano",
-    "pt" to "Português",
-    "ru" to "Русский",
-    "zh" to "中文",
-)
+private val languageOptions =
+    com.odysee.app.core.data.i18n.TranslationStore.SUPPORTED
 
-// Mirrors web/ui/constants/homepage_languages.ts — these are the languages
-// for which Odysee actually serves a localized homepage.
+// Endonyms — these stay in their native script regardless of UI language.
 private val homepageLanguageOptions = listOf(
     "en" to "English",
     "fr" to "Français",
@@ -647,13 +646,18 @@ private val playlistActionOptions = listOf(
 )
 
 private fun languageLabel(value: String?): String =
-    languageOptions.firstOrNull { it.first == (value ?: "system") }?.second ?: "System default"
+    languageOptions.firstOrNull { it.first == (value ?: "system") }?.second
+        ?: com.odysee.app.core.model.i18n.Translations.tr("System default")
 
 private fun homepageLanguageLabel(value: String?): String =
     homepageLanguageOptions.firstOrNull { it.first == value }?.second ?: "English"
 
-private fun qualityLabel(value: String): String =
-    qualityOptions.firstOrNull { it.first == value }?.second ?: "Auto"
+private fun qualityLabel(value: String): String {
+    val raw = qualityOptions.firstOrNull { it.first == value }?.second ?: "Auto"
+    return if (raw == "Auto") com.odysee.app.core.model.i18n.Translations.tr("Auto") else raw
+}
 
 private fun playlistActionLabel(value: String): String =
-    playlistActionOptions.firstOrNull { it.first == value }?.second ?: "View"
+    com.odysee.app.core.model.i18n.Translations.tr(
+        playlistActionOptions.firstOrNull { it.first == value }?.second ?: "View"
+    )

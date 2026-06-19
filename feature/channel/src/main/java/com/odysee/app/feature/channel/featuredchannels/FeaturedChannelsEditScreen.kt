@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.odysee.app.core.data.featured.FeaturedChannelSection
 import com.odysee.app.core.model.Channel
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,10 +78,10 @@ fun FeaturedChannelsEditScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Featured channels") },
+                title = { Text(tr("Featured channels")) },
                 actions = {
                     TextButton(onClick = viewModel::save, enabled = !state.isSaving && !state.isLoading) {
                         if (state.isSaving) {
@@ -90,7 +91,7 @@ fun FeaturedChannelsEditScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Save", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Save"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -119,7 +120,7 @@ fun FeaturedChannelsEditScreen(
                     FilterChip(
                         selected = state.activeSectionId == section.id,
                         onClick = { viewModel.setActiveSection(section.id) },
-                        label = { Text(section.title.ifBlank { "Untitled" }) },
+                        label = { Text(section.title.ifBlank { tr("Untitled") }) },
                     )
                 }
                 item {
@@ -130,7 +131,7 @@ fun FeaturedChannelsEditScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("New section")
+                                Text(tr("New section"))
                             }
                         },
                     )
@@ -144,7 +145,7 @@ fun FeaturedChannelsEditScreen(
                         value = active.title,
                         onValueChange = { viewModel.renameSection(active.id, it) },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Section title") },
+                        placeholder = { Text(tr("Section title")) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -158,21 +159,21 @@ fun FeaturedChannelsEditScreen(
                     IconButton(onClick = { renameTarget = active }) {
                         Icon(
                             Icons.Outlined.Delete,
-                            contentDescription = "Delete section",
+                            contentDescription = tr("Delete section"),
                             tint = Color(0xFFE2202D),
                         )
                     }
                 }
 
                 Text(
-                    text = "Channels in this section",
+                    text = tr("Channels in this section"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
                 )
                 if (active.uris.isEmpty()) {
                     Text(
-                        text = "No channels yet. Search below to add one.",
+                        text = tr("No channels yet. Search below to add one."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -187,7 +188,7 @@ fun FeaturedChannelsEditScreen(
                                 subtitle = ch?.name ?: "",
                                 trailing = {
                                     IconButton(onClick = { viewModel.removeChannelFromActiveSection(uri) }) {
-                                        Icon(Icons.Outlined.Close, contentDescription = "Remove")
+                                        Icon(Icons.Outlined.Close, contentDescription = tr("Remove"))
                                     }
                                 },
                             )
@@ -197,7 +198,7 @@ fun FeaturedChannelsEditScreen(
 
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Add channels",
+                    text = tr("Add channels"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
@@ -206,7 +207,7 @@ fun FeaturedChannelsEditScreen(
                     value = state.searchQuery,
                     onValueChange = viewModel::search,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search by name") },
+                    placeholder = { Text(tr("Search by name")) },
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -236,14 +237,14 @@ fun FeaturedChannelsEditScreen(
                                 val alreadyAdded = active2?.uris?.any { it.endsWith("#${ch.claimId}") } == true
                                 if (alreadyAdded) {
                                     Text(
-                                        "Added",
+                                        tr("Added"),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         style = MaterialTheme.typography.labelSmall,
                                         modifier = Modifier.padding(end = 12.dp),
                                     )
                                 } else {
                                     TextButton(onClick = { viewModel.addChannelToActiveSection(ch) }) {
-                                        Text("Add")
+                                        Text(tr("Add"))
                                     }
                                 }
                             },
@@ -272,16 +273,16 @@ fun FeaturedChannelsEditScreen(
     renameTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { renameTarget = null },
-            title = { Text("Delete section?") },
+            title = { Text(tr("Delete section?")) },
             text = { Text("Remove “${target.title}” and its channels?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteSection(target.id)
                     renameTarget = null
-                }) { Text("Delete", color = Color(0xFFE2202D)) }
+                }) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
             dismissButton = {
-                TextButton(onClick = { renameTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { renameTarget = null }) { Text(tr("Cancel")) }
             },
         )
     }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun OdyseeCommentThread(
@@ -49,7 +50,7 @@ fun OdyseeCommentThread(
                 contentPadding = PaddingValues(start = 56.dp, end = 16.dp, top = 0.dp, bottom = 4.dp),
             ) {
                 Text(
-                    text = if (expanded) "Hide replies"
+                    text = if (expanded) tr("Hide replies")
                     else "View ${comment.replyCount} ${if (comment.replyCount == 1) "reply" else "replies"}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,10 +73,10 @@ fun FeaturedContentScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Featured content") },
+                title = { Text(tr("Featured content")) },
                 actions = {
                     TextButton(
                         onClick = viewModel::save,
@@ -88,7 +89,7 @@ fun FeaturedContentScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Save", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Save"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -107,7 +108,7 @@ fun FeaturedContentScreen(
         }
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             Text(
-                text = "Select claims to pin to the top of your channel.",
+                text = tr("Select claims to pin to the top of your channel."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),

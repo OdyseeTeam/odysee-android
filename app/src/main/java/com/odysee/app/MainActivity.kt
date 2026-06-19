@@ -71,6 +71,7 @@ import com.odysee.app.player.PlayerSheet
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -79,6 +80,7 @@ class MainActivity : FragmentActivity() {
     @Inject lateinit var authRepository: AuthRepository
     @Inject lateinit var appUpdater: com.odysee.app.core.data.updater.AppUpdater
     @Inject lateinit var authPreferences: com.odysee.app.core.datastore.AuthPreferences
+    @Inject lateinit var translationStore: com.odysee.app.core.data.i18n.TranslationStore
 
     private var mediaControllerFuture:
         com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.MediaController>? = null
@@ -186,9 +188,11 @@ class MainActivity : FragmentActivity() {
             }
             OdyseeTheme(darkTheme = useDark) {
                 val authState by authRepository.state.collectAsStateWithLifecycle()
+                val translations by translationStore.messages.collectAsStateWithLifecycle()
                 CompositionLocalProvider(
                     LocalPlayerController provides playerController,
                     LocalAuthState provides authState,
+                    com.odysee.app.core.designsystem.i18n.LocalTranslations provides translations,
                 ) {
                     val navController = rememberNavController()
                     val onChannelClick: (String, String) -> Unit = { id, name ->
@@ -270,10 +274,10 @@ class MainActivity : FragmentActivity() {
                                                 val result = authRepository.confirmEmail(email, verToken, newAuth)
                                                 val msg = when (result) {
                                                     is com.odysee.app.core.data.auth.SignInResult.Success ->
-                                                        "Signed in."
+                                                        tr("Signed in.")
                                                     is com.odysee.app.core.data.auth.SignInResult.Failure ->
                                                         "Verification failed: ${result.message}"
-                                                    else -> "Verification pending — check your email."
+                                                    else -> tr("Verification pending — check your email.")
                                                 }
                                                 android.widget.Toast.makeText(
                                                     this@MainActivity, msg, android.widget.Toast.LENGTH_LONG,
@@ -435,9 +439,9 @@ fun HomeBottomTabs(
                 ) + androidx.compose.animation.fadeOut(),
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                    CreateMenuItem(icon = Icons.Outlined.CloudUpload, label = "Upload file", onClick = onUploadFile)
-                    CreateMenuItem(icon = Icons.Outlined.Videocam, label = "Go live", onClick = onGoLive)
-                    CreateMenuItem(icon = Icons.Outlined.Edit, label = "Post", onClick = onPost)
+                    CreateMenuItem(icon = Icons.Outlined.CloudUpload, label = tr("Upload file"), onClick = onUploadFile)
+                    CreateMenuItem(icon = Icons.Outlined.Videocam, label = tr("Go live"), onClick = onGoLive)
+                    CreateMenuItem(icon = Icons.Outlined.Edit, label = tr("Post"), onClick = onPost)
                 }
             }
             Row(
@@ -445,7 +449,7 @@ fun HomeBottomTabs(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 BottomTabItem(
-                    label = "Home",
+                    label = tr("Home"),
                     icon = Icons.Outlined.Home,
                     selected = selected == BottomTab.Home,
                     onClick = { onSelect(BottomTab.Home) },
@@ -465,7 +469,7 @@ fun HomeBottomTabs(
                     )
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = if (createMenuExpanded) "Close" else "New",
+                        contentDescription = if (createMenuExpanded) tr("Close") else "New",
                         tint = Color.White,
                         modifier = Modifier
                             .size(26.dp)
@@ -473,7 +477,7 @@ fun HomeBottomTabs(
                     )
                 }
                 BottomTabItem(
-                    label = "Playlists",
+                    label = tr("Library"),
                     icon = Icons.Outlined.PlaylistPlay,
                     selected = selected == BottomTab.Playlists,
                     onClick = { onSelect(BottomTab.Playlists) },
@@ -529,7 +533,7 @@ internal fun BottomTabItem(
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            text = label,
+            text = com.odysee.app.core.designsystem.i18n.tr(label),
             color = tint,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             style = MaterialTheme.typography.labelSmall,

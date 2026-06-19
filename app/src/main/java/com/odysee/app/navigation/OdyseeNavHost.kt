@@ -223,7 +223,8 @@ fun OdyseeNavHost(
                 androidx.compose.foundation.layout.Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(androidx.compose.ui.Alignment.TopCenter),
+                        .align(androidx.compose.ui.Alignment.TopCenter)
+                        .statusBarsPadding(),
                 ) {
                     com.odysee.app.feature.home.OdyseeHomeHeader(
                         onSearchClick = onSearchClick,

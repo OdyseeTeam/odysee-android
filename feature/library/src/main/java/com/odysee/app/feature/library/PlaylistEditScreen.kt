@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,10 +76,10 @@ fun PlaylistEditScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text(if (state.id == null) "New playlist" else "Edit playlist") },
+                title = { Text(if (state.id == null) tr("New playlist") else tr("Edit playlist")) },
                 actions = {
                     TextButton(onClick = viewModel::save, enabled = !state.isSaving && !state.isLoading) {
                         if (state.isSaving) {
@@ -88,7 +89,7 @@ fun PlaylistEditScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Save", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Save"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -134,7 +135,7 @@ fun PlaylistEditScreen(
                     CircularProgressIndicator(color = Color.White)
                 } else if (state.thumbnailUrl.isNullOrBlank()) {
                     Text(
-                        text = "Tap to set thumbnail",
+                        text = tr("Tap to set thumbnail"),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -142,7 +143,7 @@ fun PlaylistEditScreen(
             }
             if (!state.thumbnailUrl.isNullOrBlank()) {
                 TextButton(onClick = viewModel::clearThumbnail) {
-                    Text("Remove thumbnail")
+                    Text(tr("Remove thumbnail"))
                 }
             }
 
@@ -150,14 +151,14 @@ fun PlaylistEditScreen(
             FlatField(
                 value = state.name,
                 onValueChange = viewModel::onName,
-                placeholder = "My awesome playlist",
+                placeholder = tr("My awesome playlist"),
             )
 
             FieldLabel("Description")
             FlatField(
                 value = state.description,
                 onValueChange = viewModel::onDescription,
-                placeholder = "What's in this playlist?",
+                placeholder = tr("What's in this playlist?"),
                 minLines = 4,
                 maxLines = 8,
             )
@@ -173,13 +174,13 @@ fun PlaylistEditScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Public playlist",
+                        text = tr("Public playlist"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Anyone can find and view this playlist. Private playlists stay on your device.",
+                        text = tr("Anyone can find and view this playlist. Private playlists stay on your device."),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -296,7 +297,7 @@ private fun TagsEditor(
                     if (draft.isNotBlank()) { onAdd(draft); draft = "" }
                 },
                 enabled = draft.isNotBlank(),
-            ) { Text("Add") }
+            ) { Text(tr("Add")) }
         }
         if (tags.isNotEmpty()) {
             TagWrap(tags = tags, onRemove = onRemove)
@@ -328,7 +329,7 @@ private fun TagWrap(tags: List<String>, onRemove: (String) -> Unit) {
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Remove",
+                            contentDescription = tr("Remove"),
                             tint = Color.White,
                             modifier = Modifier.size(14.dp),
                         )

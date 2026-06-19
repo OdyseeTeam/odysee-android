@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.memberships.MySubscription
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,13 +58,13 @@ fun MembershipsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Memberships") },
+                title = { Text(tr("Memberships")) },
                 actions = {
                     IconButton(onClick = viewModel::load) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Outlined.Refresh, contentDescription = tr("Refresh"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -84,13 +85,13 @@ fun MembershipsScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "No active memberships",
+                    text = tr("No active memberships"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    text = "When you join a creator's membership, it'll show up here.",
+                    text = tr("When you join a creator's membership, it'll show up here."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -155,7 +156,7 @@ private fun SubscriptionRow(sub: MySubscription, onChannelClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = sub.creatorChannelName ?: "Unknown channel",
+                    text = sub.creatorChannelName ?: tr("Unknown channel"),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,

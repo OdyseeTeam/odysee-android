@@ -32,6 +32,7 @@ fun ClaimDto.toDomain(): Claim? {
         paywall = paywall,
         isPurchased = purchaseReceipt != null,
         isMembersOnly = membersOnly,
+        tags = tagSet,
     )
 }
 

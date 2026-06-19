@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun OdyseeClaimMenuSheet(
@@ -67,40 +68,40 @@ fun OdyseeClaimMenuSheet(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                MenuRow(Icons.Outlined.PictureInPicture, "Play in background") {
+                MenuRow(Icons.Outlined.PictureInPicture, tr("Play in background")) {
                     actions.onPlayBackground(); onDismiss()
                 }
-                MenuRow(Icons.Outlined.PictureInPicture, "Play in pop-up player") {
+                MenuRow(Icons.Outlined.PictureInPicture, tr("Play in pop-up player")) {
                     actions.onPlayPip(); onDismiss()
                 }
-                MenuRow(Icons.Outlined.Bookmark, "Save to Watch Later") {
+                MenuRow(Icons.Outlined.Bookmark, tr("Save to Watch Later")) {
                     actions.onSaveWatchLater(); onDismiss()
                 }
-                MenuRow(Icons.Outlined.Favorite, "Add to Favorites") {
+                MenuRow(Icons.Outlined.Favorite, tr("Add to Favorites")) {
                     actions.onSaveFavorite(); onDismiss()
                 }
-                MenuRow(Icons.Outlined.PlaylistAdd, "Add to playlist") {
+                MenuRow(Icons.Outlined.PlaylistAdd, tr("Add to playlist")) {
                     actions.onAddToPlaylist(); onDismiss()
                 }
                 actions.onRemoveFromPlaylist?.let { remove ->
-                    MenuRow(Icons.Outlined.PlaylistRemove, "Remove from this playlist") {
+                    MenuRow(Icons.Outlined.PlaylistRemove, tr("Remove from this playlist")) {
                         remove(); onDismiss()
                     }
                 }
                 actions.onRepost?.let { repost ->
-                    MenuRow(Icons.Outlined.Repeat, "Repost") {
+                    MenuRow(Icons.Outlined.Repeat, tr("Repost")) {
                         repost(); onDismiss()
                     }
                 }
                 actions.onEdit?.let { edit ->
-                    MenuRow(Icons.Outlined.Edit, "Edit") {
+                    MenuRow(Icons.Outlined.Edit, tr("Edit")) {
                         edit(); onDismiss()
                     }
                 }
-                MenuRow(Icons.Outlined.Share, "Share") {
+                MenuRow(Icons.Outlined.Share, tr("Share")) {
                     actions.onShare(); onDismiss()
                 }
-                MenuRow(Icons.Outlined.ContentCopy, "Copy link") {
+                MenuRow(Icons.Outlined.ContentCopy, tr("Copy link")) {
                     actions.onCopyLink(); onDismiss()
                 }
                 actions.onGoToChannel?.let { go ->
@@ -111,11 +112,11 @@ fun OdyseeClaimMenuSheet(
                     }
                 }
                 actions.onBlockChannel?.let { block ->
-                    MenuRow(Icons.Outlined.Block, "Block channel") {
+                    MenuRow(Icons.Outlined.Block, tr("Block channel")) {
                         block(); onDismiss()
                     }
                 }
-                MenuRow(Icons.Outlined.Flag, "Report content") {
+                MenuRow(Icons.Outlined.Flag, tr("Report content")) {
                     actions.onReport(); onDismiss()
                 }
             }
@@ -135,7 +136,7 @@ private fun MenuRow(icon: ImageVector, label: String, onClick: () -> Unit) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(16.dp))
         Text(
-            text = label,
+            text = com.odysee.app.core.designsystem.i18n.tr(label),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )

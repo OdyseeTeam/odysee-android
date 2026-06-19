@@ -61,7 +61,9 @@ class SignInViewModel @Inject constructor(
             _ui.update { it.copy(isSubmitting = true, statusMessage = null, statusIsError = false) }
             val result = authRepository.signIn(email.trim(), password?.takeIf { it.isNotBlank() })
             _ui.update { it.copy(isSubmitting = false, statusMessage = result.toMessage(), statusIsError = result is SignInResult.Failure) }
-            if (result is SignInResult.Success) _dismiss.trySend(Unit)
+            if (result is SignInResult.Success && authRepository.state.value is AuthState.SignedIn) {
+                _dismiss.trySend(Unit)
+            }
         }
     }
 
@@ -74,7 +76,9 @@ class SignInViewModel @Inject constructor(
             _ui.update { it.copy(isSubmitting = true, statusMessage = null, statusIsError = false) }
             val result = authRepository.signUp(email.trim(), password?.takeIf { it.isNotBlank() })
             _ui.update { it.copy(isSubmitting = false, statusMessage = result.toMessage(), statusIsError = result is SignInResult.Failure) }
-            if (result is SignInResult.Success) _dismiss.trySend(Unit)
+            if (result is SignInResult.Success && authRepository.state.value is AuthState.SignedIn) {
+                _dismiss.trySend(Unit)
+            }
         }
     }
 

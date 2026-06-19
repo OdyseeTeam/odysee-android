@@ -13,7 +13,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
-        android:layout_margin="4dp">
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
+        android:fitsSystemWindows="true">
 
         <ImageButton
             android:id="@+id/odysee_player_settings_btn"
@@ -40,6 +42,44 @@
             android:visibility="gone" />
     </FrameLayout>
 
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@id/exo_rew"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="24dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:padding="12dp"
+            android:src="@drawable/exo_ic_rewind"
+            android:contentDescription="Rewind 10 seconds" />
+
+        <ImageButton
+            android:id="@id/exo_play_pause"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:padding="12dp"
+            android:contentDescription="Play / pause" />
+
+        <ImageButton
+            android:id="@id/exo_ffwd"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="24dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:padding="12dp"
+            android:src="@drawable/exo_ic_forward"
+            android:contentDescription="Fast-forward 10 seconds" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@id/exo_bottom_bar"
@@ -49,7 +89,8 @@
         android:paddingHorizontal="8dp"
         android:paddingVertical="4dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:fitsSystemWindows="true">
 
         <TextView
             android:id="@id/exo_position"

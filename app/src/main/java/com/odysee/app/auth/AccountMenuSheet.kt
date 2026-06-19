@@ -55,6 +55,7 @@ import com.odysee.app.core.data.auth.AuthState
 import com.odysee.app.core.model.Channel
 import com.odysee.app.core.designsystem.R as DesignR
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,40 +135,40 @@ fun AccountMenuSheet(
                         .verticalScroll(rememberScrollState()),
                 ) {
                     // Library / activity
-                    MenuItem(DesignR.drawable.ic_menu_channel, "Following") { close(onFollowing) }
-                    MenuItem(DesignR.drawable.ic_menu_wallet, "Wallet") { close(onWallet) }
+                    MenuItem(DesignR.drawable.ic_menu_channel, tr("Following")) { close(onFollowing) }
+                    MenuItem(DesignR.drawable.ic_menu_wallet, tr("Wallet")) { close(onWallet) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                     // Channels / creator
-                    MenuItem(DesignR.drawable.ic_menu_channel, "New Channel") { close(onNewChannel) }
-                    MenuItem(DesignR.drawable.ic_menu_channel, "Channels") { close(onChannels) }
-                    MenuItem(DesignR.drawable.ic_menu_publish, "Uploads") { close(onUploads) }
-                    MenuItem(DesignR.drawable.ic_menu_analytics, "Creator Analytics") { close(onAnalytics) }
-                    MenuItem(DesignR.drawable.ic_menu_youtube, "Sync YouTube Channel") { close(onYoutubeSync) }
+                    MenuItem(DesignR.drawable.ic_menu_channel, tr("New Channel")) { close(onNewChannel) }
+                    MenuItem(DesignR.drawable.ic_menu_channel, tr("Channels")) { close(onChannels) }
+                    MenuItem(DesignR.drawable.ic_menu_publish, tr("Uploads")) { close(onUploads) }
+                    MenuItem(DesignR.drawable.ic_menu_analytics, tr("Creator Analytics")) { close(onAnalytics) }
+                    MenuItem(DesignR.drawable.ic_menu_youtube, tr("Sync YouTube Channel")) { close(onYoutubeSync) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                     // Rewards
-                    MenuItem(DesignR.drawable.ic_menu_rewards, "Credits") { close(onCredits) }
-                    MenuItem(DesignR.drawable.ic_menu_rewards, "Rewards") { close(onRewards) }
-                    MenuItem(DesignR.drawable.ic_menu_invite, "Invites") { close(onInvites) }
-                    MenuItem(DesignR.drawable.ic_menu_membership, "Memberships") { close(onMemberships) }
-                    MenuItem(DesignR.drawable.ic_menu_upgrade, "Odysee Premium") { close(onPremium) }
+                    MenuItem(DesignR.drawable.ic_menu_rewards, tr("Credits")) { close(onCredits) }
+                    MenuItem(DesignR.drawable.ic_menu_rewards, tr("Rewards")) { close(onRewards) }
+                    MenuItem(DesignR.drawable.ic_menu_invite, tr("Invites")) { close(onInvites) }
+                    MenuItem(DesignR.drawable.ic_menu_membership, tr("Memberships")) { close(onMemberships) }
+                    MenuItem(DesignR.drawable.ic_menu_upgrade, tr("Odysee Premium")) { close(onPremium) }
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                MenuItem(DesignR.drawable.ic_menu_settings, "Settings") { close(onSettings) }
-                MenuItem(DesignR.drawable.ic_menu_help, "Help") { close(onHelp) }
+                MenuItem(DesignR.drawable.ic_menu_settings, tr("Settings")) { close(onSettings) }
+                MenuItem(DesignR.drawable.ic_menu_help, tr("Help")) { close(onHelp) }
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                 MenuItem(
                     iconRes = DesignR.drawable.ic_menu_signout,
-                    label = "Sign Out",
+                    label = tr("Sign Out"),
                     destructive = true,
                 ) { close(onSignOut) }
             } else {
-                MenuItem(DesignR.drawable.ic_menu_signin, "Log In") { close(onSignIn) }
-                MenuItem(DesignR.drawable.ic_menu_signup, "Sign Up") { close(onSignUp) }
-                MenuItem(DesignR.drawable.ic_menu_settings, "Settings") { close(onSettings) }
-                MenuItem(DesignR.drawable.ic_menu_help, "Help") { close(onHelp) }
+                MenuItem(DesignR.drawable.ic_menu_signin, tr("Log In")) { close(onSignIn) }
+                MenuItem(DesignR.drawable.ic_menu_signup, tr("Sign Up")) { close(onSignUp) }
+                MenuItem(DesignR.drawable.ic_menu_settings, tr("Settings")) { close(onSettings) }
+                MenuItem(DesignR.drawable.ic_menu_help, tr("Help")) { close(onHelp) }
             }
             Spacer(Modifier.size(8.dp))
         }
@@ -208,7 +209,7 @@ private fun AccountHeader(
                     Column(modifier = Modifier.weight(1f)) {
                         val displayName = authState.activeChannel?.let {
                             it.title?.takeIf { t -> t.isNotBlank() } ?: it.name
-                        } ?: authState.user.email ?: "Account"
+                        } ?: authState.user.email ?: tr("Account")
                         Text(
                             text = displayName,
                             style = MaterialTheme.typography.titleMedium,
@@ -237,7 +238,7 @@ private fun AccountHeader(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.KeyboardArrowDown,
-                            contentDescription = if (isExpanded) "Hide channels" else "Switch channel",
+                            contentDescription = if (isExpanded) tr("Hide channels") else tr("Switch channel"),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.rotate(chevronRotation),
                         )
@@ -259,7 +260,7 @@ private fun AccountHeader(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "Not signed in",
+                        text = tr("Not signed in"),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -360,7 +361,7 @@ private fun MenuItem(
             modifier = Modifier.size(22.dp),
         )
         Text(
-            text = label,
+            text = com.odysee.app.core.designsystem.i18n.tr(label),
             style = MaterialTheme.typography.bodyLarge,
             color = tint,
             fontWeight = FontWeight.Medium,

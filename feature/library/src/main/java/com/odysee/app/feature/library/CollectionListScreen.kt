@@ -65,6 +65,7 @@ import coil3.compose.AsyncImage
 import com.odysee.app.core.data.collections.CollectionEntry
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,11 +76,11 @@ fun WatchLaterScreen(
 ) {
     val entries by viewModel.items.collectAsStateWithLifecycle()
     CollectionListContent(
-        title = "Watch later",
+        title = tr("Watch later"),
         playlistId = "watchlater",
         entries = entries,
-        emptyTitle = "No videos saved",
-        emptyMessage = "Tap the bookmark icon on a video to save it for later.",
+        emptyTitle = tr("No videos saved"),
+        emptyMessage = tr("Tap the bookmark icon on a video to save it for later."),
         onBack = onBack,
         onWatchPlaylist = onWatchPlaylist,
         onRemove = viewModel::remove,
@@ -95,11 +96,11 @@ fun FavoritesScreen(
 ) {
     val entries by viewModel.items.collectAsStateWithLifecycle()
     CollectionListContent(
-        title = "Favorites",
+        title = tr("Favorites"),
         playlistId = "favorites",
         entries = entries,
-        emptyTitle = "No favorites yet",
-        emptyMessage = "Mark videos as favorite to find them here.",
+        emptyTitle = tr("No favorites yet"),
+        emptyMessage = tr("Mark videos as favorite to find them here."),
         onBack = onBack,
         onWatchPlaylist = onWatchPlaylist,
         onRemove = viewModel::remove,
@@ -148,7 +149,7 @@ private fun CollectionListContent(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = { Text(title) },
@@ -205,7 +206,7 @@ private fun CollectionListContent(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Play all",
+                                text = tr("Play all"),
                                 color = androidx.compose.ui.graphics.Color.White,
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -245,7 +246,7 @@ private fun CollectionListContent(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, com.odysee.app.core.model.i18n.Translations.tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")
@@ -343,7 +344,7 @@ private fun EntryRow(
         IconButton(onClick = onRemove) {
             Icon(
                 Icons.Outlined.Close,
-                contentDescription = "Remove",
+                contentDescription = tr("Remove"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -376,15 +377,15 @@ fun PlaylistsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Playlists") },
+                title = { Text(tr("Playlists")) },
                 actions = {
                     IconButton(onClick = onAddPlaylist) {
                         Icon(
                             imageVector = Icons.Outlined.Add,
-                            contentDescription = "Add playlist",
+                            contentDescription = tr("Add playlist"),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -417,12 +418,12 @@ fun PlaylistsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "No playlists yet",
+                        text = tr("No playlists yet"),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Your synced collections will appear here.",
+                        text = tr("Your synced collections will appear here."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -485,16 +486,16 @@ fun PlaylistsScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete playlist?") },
+            title = { Text(tr("Delete playlist?")) },
             text = { Text("Remove \"${target.name}\"? This deletes it from your account.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(target.id)
                     deleteTarget = null
-                }) { Text("Delete", color = Color(0xFFE2202D)) }
+                }) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteTarget = null }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -533,14 +534,14 @@ private fun PlaylistActionsSheet(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                PlaylistActionRow(Icons.Outlined.Visibility, "Open", onClick = onOpen)
+                PlaylistActionRow(Icons.Outlined.Visibility, tr("Open"), onClick = onOpen)
                 if (hasItems) {
-                    PlaylistActionRow(Icons.Outlined.Shuffle, "Shuffle Play", onClick = onShuffle)
+                    PlaylistActionRow(Icons.Outlined.Shuffle, tr("Shuffle Play"), onClick = onShuffle)
                 }
                 if (hasItems) {
                     PlaylistActionRow(
                         icon = Icons.Outlined.Publish,
-                        label = if (target.isPublic) "Update" else "Publish",
+                        label = if (target.isPublic) tr("Update") else tr("Publish"),
                         iconTint = Color(0xFFE50054),
                         onClick = onPublish,
                     )
@@ -548,14 +549,14 @@ private fun PlaylistActionsSheet(
                 if (target.isPublic) {
                     PlaylistActionRow(
                         icon = if (target.autoPublish) Icons.Outlined.Sync else Icons.Outlined.SyncDisabled,
-                        label = if (target.autoPublish) "Disable Auto-publish" else "Enable Auto-publish",
+                        label = if (target.autoPublish) tr("Disable Auto-publish") else tr("Enable Auto-publish"),
                         onClick = onToggleAutoPublish,
                     )
                 }
-                PlaylistActionRow(Icons.Outlined.Edit, "Edit", onClick = onEdit)
+                PlaylistActionRow(Icons.Outlined.Edit, tr("Edit"), onClick = onEdit)
                 PlaylistActionRow(
                     icon = Icons.Outlined.Delete,
-                    label = "Delete",
+                    label = tr("Delete"),
                     iconTint = Color(0xFFE2202D),
                     labelColor = Color(0xFFE2202D),
                     onClick = onDelete,
@@ -662,21 +663,21 @@ private fun PlaylistsScreenInternal(
             item("history") {
                 LibraryRow(
                     iconRes = com.odysee.app.core.designsystem.R.drawable.ic_menu_watch_history,
-                    label = "Watch History",
+                    label = tr("Watch History"),
                     onClick = onWatchHistory,
                 )
             }
             item("watch_later") {
                 LibraryRow(
                     iconRes = com.odysee.app.core.designsystem.R.drawable.ic_menu_time,
-                    label = "Watch Later",
+                    label = tr("Watch Later"),
                     onClick = onWatchLater,
                 )
             }
             item("favorites") {
                 LibraryRow(
                     iconRes = com.odysee.app.core.designsystem.R.drawable.ic_menu_star,
-                    label = "Favorites",
+                    label = tr("Favorites"),
                     onClick = onFavorites,
                 )
             }
@@ -703,7 +704,7 @@ private fun PlaylistsScreenInternal(
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        text = "My Playlists",
+                        text = tr("My Playlists"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -712,7 +713,7 @@ private fun PlaylistsScreenInternal(
                     IconButton(onClick = onAddPlaylist) {
                         Icon(
                             imageVector = Icons.Outlined.Add,
-                            contentDescription = "Add playlist",
+                            contentDescription = tr("Add playlist"),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -721,7 +722,7 @@ private fun PlaylistsScreenInternal(
             if (playlists.isEmpty()) {
                 item("playlists_empty") {
                     Text(
-                        text = "No playlists yet.",
+                        text = tr("No playlists yet."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -783,16 +784,16 @@ private fun PlaylistsScreenInternal(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete playlist?") },
+            title = { Text(tr("Delete playlist?")) },
             text = { Text("Remove \"${target.name}\"? This only deletes it on this device.") },
             confirmButton = {
                 TextButton(onClick = {
                     onDeletePlaylist(target.id)
                     deleteTarget = null
-                }) { Text("Delete", color = Color(0xFFE2202D)) }
+                }) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteTarget = null }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -856,7 +857,7 @@ private fun PlaylistListRow(
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    text = if (playlist.isPublic) "Public" else "Private",
+                    text = if (playlist.isPublic) tr("Public") else tr("Private"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -878,7 +879,7 @@ private fun PlaylistListRow(
         ) {
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play",
+                contentDescription = tr("Play"),
                 tint = if (playlist.itemUrls.isEmpty())
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                 else MaterialTheme.colorScheme.primary,

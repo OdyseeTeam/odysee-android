@@ -80,6 +80,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import com.odysee.app.core.designsystem.R as DesignR
 import com.odysee.app.core.designsystem.theme.OdyseeTheme
+import com.odysee.app.core.designsystem.i18n.tr
 
 val LocalHazeState = androidx.compose.runtime.compositionLocalOf<HazeState?> { null }
 
@@ -150,7 +151,7 @@ fun OdyseeHomeHeader(
         ),
         actions = {
             HeaderCircleIconButton(onClick = onSearchClick) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search")
+                Icon(Icons.Outlined.Search, contentDescription = tr("Search"))
             }
             if (isSignedIn) {
                 Spacer(Modifier.width(6.dp))
@@ -171,7 +172,7 @@ fun OdyseeHomeHeader(
                             }
                         },
                     ) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                        Icon(Icons.Outlined.Notifications, contentDescription = tr("Notifications"))
                     }
                 }
             }
@@ -226,7 +227,11 @@ private fun HomeScreenContent(
                     )
                 }
                 if (showOdyseeTopBar) {
-                    Box(modifier = Modifier.hazeEffect(state = hazeState, style = HazeMaterials.thick())) {
+                    Box(
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .hazeEffect(state = hazeState, style = HazeMaterials.thick()),
+                    ) {
                         TopAppBar(
                             modifier = Modifier.displayCutoutPadding(),
                             title = {
@@ -237,7 +242,7 @@ private fun HomeScreenContent(
                             ),
                             actions = {
                                 HeaderCircleIconButton(onClick = onSearchClick) {
-                                    Icon(Icons.Outlined.Search, contentDescription = "Search")
+                                    Icon(Icons.Outlined.Search, contentDescription = tr("Search"))
                                 }
                                 if (state.isSignedIn) {
                                     Spacer(Modifier.width(6.dp))
@@ -258,7 +263,7 @@ private fun HomeScreenContent(
                                                 }
                                             },
                                         ) {
-                                            Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                                            Icon(Icons.Outlined.Notifications, contentDescription = tr("Notifications"))
                                         }
                                     }
                                 }
@@ -310,8 +315,8 @@ private fun HomeScreenContent(
                 val empty = filteredFollowing is FeedState.Success && filteredFollowing.videos.isEmpty()
                 if (empty) {
                     EmptyState(
-                        title = "Follow your favorites",
-                        message = "Tap Follow on any channel page and their newest videos show up here.",
+                        title = tr("Follow your favorites"),
+                        message = tr("Tap Follow on any channel page and their newest videos show up here."),
                         padding = innerPadding,
                     )
                 } else {
@@ -377,9 +382,15 @@ private fun FeedState.filterByTypes(types: Set<String>): FeedState {
     if (this !is FeedState.Success) return this
     val mediaOn = "videos" in types
     val shortsOn = "shorts" in types
-    if (mediaOn && shortsOn) return this
+    val liveOn = "live" in types
+    val upcomingOn = "upcoming" in types
     val filtered = videos.filter { v ->
-        if (v.isShort) shortsOn else mediaOn
+        when {
+            v.isUpcoming -> upcomingOn
+            v.isLivestream -> liveOn
+            v.isShort -> shortsOn
+            else -> mediaOn
+        }
     }
     return FeedState.Success(filtered)
 }
@@ -402,14 +413,12 @@ private fun ContentTypeFilterRow(
     selected: Set<String>,
     onChange: (Set<String>) -> Unit,
 ) {
-    val options = remember {
-        listOf(
-            "videos" to "Media",
-            "shorts" to "Shorts",
-            "live" to "Live",
-            "upcoming" to "Upcoming",
-        )
-    }
+    val options = listOf(
+        "videos" to tr("Media"),
+        "shorts" to tr("Shorts"),
+        "live" to tr("Live"),
+        "upcoming" to tr("Upcoming"),
+    )
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.material3.LocalMinimumInteractiveComponentSize provides 0.dp,
     ) {
@@ -539,25 +548,25 @@ private fun CategoryChipRow(
 
 @androidx.annotation.DrawableRes
 private fun categoryIconRes(iconName: String?): Int? = when (iconName) {
-    "Speaker" -> DesignR.drawable.ic_category_speaker
-    "Aperature" -> DesignR.drawable.ic_category_aperature
-    "DollarSign" -> DesignR.drawable.ic_category_dollarsign
-    "MusicCategory" -> DesignR.drawable.ic_category_music
-    "WildWest" -> DesignR.drawable.ic_category_wildwest
-    "Universe" -> DesignR.drawable.ic_category_universe
-    "MindBlown" -> DesignR.drawable.ic_category_mindblown
-    "Gaming" -> DesignR.drawable.ic_category_gaming
-    "Sports" -> DesignR.drawable.ic_category_sports
-    "Artists" -> DesignR.drawable.ic_category_artists
-    "Education" -> DesignR.drawable.ic_category_education
-    "Pop Culture" -> DesignR.drawable.ic_category_pop_culture
-    "Comedy" -> DesignR.drawable.ic_category_comedy
-    "Lifestyle" -> DesignR.drawable.ic_category_lifestyle
-    "Spirituality" -> DesignR.drawable.ic_category_spirituality
-    "Horror" -> DesignR.drawable.ic_category_horror
-    "Featured" -> DesignR.drawable.ic_category_featured
-    "Life" -> DesignR.drawable.ic_category_life
-    "Peace" -> DesignR.drawable.ic_category_peace
+    tr("Speaker") -> DesignR.drawable.ic_category_speaker
+    tr("Aperature") -> DesignR.drawable.ic_category_aperature
+    tr("DollarSign") -> DesignR.drawable.ic_category_dollarsign
+    tr("MusicCategory") -> DesignR.drawable.ic_category_music
+    tr("WildWest") -> DesignR.drawable.ic_category_wildwest
+    tr("Universe") -> DesignR.drawable.ic_category_universe
+    tr("MindBlown") -> DesignR.drawable.ic_category_mindblown
+    tr("Gaming") -> DesignR.drawable.ic_category_gaming
+    tr("Sports") -> DesignR.drawable.ic_category_sports
+    tr("Artists") -> DesignR.drawable.ic_category_artists
+    tr("Education") -> DesignR.drawable.ic_category_education
+    tr("Pop Culture") -> DesignR.drawable.ic_category_pop_culture
+    tr("Comedy") -> DesignR.drawable.ic_category_comedy
+    tr("Lifestyle") -> DesignR.drawable.ic_category_lifestyle
+    tr("Spirituality") -> DesignR.drawable.ic_category_spirituality
+    tr("Horror") -> DesignR.drawable.ic_category_horror
+    tr("Featured") -> DesignR.drawable.ic_category_featured
+    tr("Life") -> DesignR.drawable.ic_category_life
+    tr("Peace") -> DesignR.drawable.ic_category_peace
     else -> null
 }
 
@@ -726,27 +735,27 @@ private fun VerticalVideoFeed(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                     )
                     androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                    SheetRow(label = "Play in background") {
+                    SheetRow(label = tr("Play in background")) {
                         onPlayBackground(video)
                         moreSheetVideo = null
                     }
-                    SheetRow(label = "Play in pop-up player") {
+                    SheetRow(label = tr("Play in pop-up player")) {
                         onPlayPip(video)
                         moreSheetVideo = null
                     }
-                    SheetRow(label = "Save to Watch Later") {
+                    SheetRow(label = tr("Save to Watch Later")) {
                         onSaveWatchLater(video)
                         moreSheetVideo = null
                     }
-                    SheetRow(label = "Add to Favorites") {
+                    SheetRow(label = tr("Add to Favorites")) {
                         onSaveFavorite(video)
                         moreSheetVideo = null
                     }
-                    SheetRow(label = "Add to playlist…") {
+                    SheetRow(label = tr("Add to playlist…")) {
                         addToPlaylistVideo = video
                         moreSheetVideo = null
                     }
-                    SheetRow(label = "Share") {
+                    SheetRow(label = tr("Share")) {
                         val stripped = video.permanentUrl.removePrefix("lbry://")
                         val url = "https://odysee.com/$stripped"
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -754,7 +763,7 @@ private fun VerticalVideoFeed(
                             putExtra(android.content.Intent.EXTRA_SUBJECT, video.title)
                             putExtra(android.content.Intent.EXTRA_TEXT, url)
                         }
-                        context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                        context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                         moreSheetVideo = null
                     }
                     video.channelClaimId?.let { channelId ->
@@ -881,12 +890,12 @@ private fun YouPane(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = signedInEmail ?: "Not signed in",
+                        text = signedInEmail ?: tr("Not signed in"),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     TextButton(onClick = onAccountClick, contentPadding = PaddingValues(0.dp)) {
-                        Text(if (signedInEmail != null) "Account menu" else "Sign in")
+                        Text(if (signedInEmail != null) tr("Account menu") else tr("Sign in"))
                     }
                 }
             }
@@ -894,7 +903,7 @@ private fun YouPane(
         if (subscriptions.isNotEmpty()) {
             item {
                 Text(
-                    text = "Following",
+                    text = tr("Following"),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -942,7 +951,7 @@ private fun CenteredError(message: String, onRetry: () -> Unit, padding: Padding
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Couldn't load the feed",
+            text = tr("Couldn't load the feed"),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -953,7 +962,7 @@ private fun CenteredError(message: String, onRetry: () -> Unit, padding: Padding
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.size(16.dp))
-        TextButton(onClick = onRetry) { Text("Retry") }
+        TextButton(onClick = onRetry) { Text(tr("Retry")) }
     }
 }
 
@@ -986,7 +995,7 @@ private fun AccountButton(
                 ) {
                     AsyncImage(
                         model = avatarUrl,
-                        contentDescription = email ?: "Account",
+                        contentDescription = email ?: tr("Account"),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -1016,7 +1025,7 @@ private fun AccountButton(
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.AccountCircle, contentDescription = "Sign in")
+                Icon(Icons.Outlined.AccountCircle, contentDescription = tr("Sign in"))
             }
         }
         }
@@ -1026,7 +1035,7 @@ private fun AccountButton(
             else DesignR.drawable.badge_premium
             Image(
                 painter = painterResource(id = res),
-                contentDescription = "Premium",
+                contentDescription = tr("Premium"),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = 8.dp)
@@ -1040,7 +1049,7 @@ private fun AccountButton(
 private fun OdyseeWordmark(onClick: (() -> Unit)? = null) {
     Image(
         painter = painterResource(id = DesignR.drawable.odysee_wordmark),
-        contentDescription = "Odysee",
+        contentDescription = tr("Odysee"),
         modifier = Modifier
             .height(38.dp)
             .let { m -> if (onClick != null) m.clickable(onClick = onClick) else m },
@@ -1113,7 +1122,7 @@ private fun BoxScope.ThumbnailOverlay(video: VideoUiModel) {
                 )
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    text = "LIVE",
+                    text = tr("LIVE"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -1130,7 +1139,7 @@ private fun BoxScope.ThumbnailOverlay(video: VideoUiModel) {
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             ) {
                 Text(
-                    text = "UPCOMING",
+                    text = tr("UPCOMING"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -1174,10 +1183,11 @@ private fun VideoMeta(
         Text(
             text = buildString {
                 append(video.channelName)
-                video.viewCount?.let {
-                    append(" • ")
-                    append(formatViewCount(it))
-                    append(" views")
+                if (!video.isUpcoming) {
+                    video.viewCount?.let {
+                        append(" • ")
+                        append(com.odysee.app.core.model.i18n.Translations.tr("%s views").format(formatViewCount(it)))
+                    }
                 }
                 if (video.ageLabel.isNotEmpty()) {
                     append(" • ")
@@ -1252,9 +1262,9 @@ private fun HomeScreenPreview() {
             state = HomeUiState(
                 isLoadingHomepage = false,
                 baseCategories = listOf(
-                    CategoryChip("FEATURED", "Featured", "Featured"),
-                    CategoryChip("TECH", "Tech", "Speaker"),
-                    CategoryChip("MUSIC", "Music", "MusicCategory"),
+                    CategoryChip("FEATURED", tr("Featured"), tr("Featured")),
+                    CategoryChip("TECH", tr("Tech"), tr("Speaker")),
+                    CategoryChip("MUSIC", tr("Music"), tr("MusicCategory")),
                 ),
                 selectedCategoryId = "FEATURED",
                 feed = FeedState.Success(
@@ -1262,7 +1272,7 @@ private fun HomeScreenPreview() {
                         VideoUiModel(
                             id = "1",
                             permanentUrl = "lbry://example#1",
-                            title = "A long video title that wraps to two lines",
+                            title = tr("A long video title that wraps to two lines"),
                             description = null,
                             channelClaimId = null,
                             channelName = "@SomeChannel",

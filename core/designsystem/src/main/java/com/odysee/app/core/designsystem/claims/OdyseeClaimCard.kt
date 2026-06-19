@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 /**
  * Generic claim "card" used in the home feed, channel videos tab, search
@@ -203,7 +204,7 @@ private fun BoxScope.ThumbnailOverlay(claim: OdyseeClaimCardModel) {
                 )
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    text = "LIVE",
+                    text = tr("LIVE"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -220,7 +221,7 @@ private fun BoxScope.ThumbnailOverlay(claim: OdyseeClaimCardModel) {
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             ) {
                 Text(
-                    text = "UPCOMING",
+                    text = tr("UPCOMING"),
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -253,7 +254,7 @@ private fun BoxScope.PaywallBadge(claim: OdyseeClaimCardModel) {
         is ClaimCardPaywall.Lbc -> formatLbcAmount(pw.amount) to null
         is ClaimCardPaywall.Usd -> "$${"%.2f".format(pw.amount)}" to null
         is ClaimCardPaywall.Rental -> "$${"%.2f".format(pw.amount)}" to "Rent"
-        ClaimCardPaywall.None -> if (claim.isMembersOnly) "Members" to null else return
+        ClaimCardPaywall.None -> if (claim.isMembersOnly) tr("Members") to null else return
     }
     Row(
         modifier = Modifier
@@ -288,7 +289,7 @@ private fun BoxScope.PaywallBadge(claim: OdyseeClaimCardModel) {
             )
         } else {
             Text(
-                text = if (purchased) "Purchased" else label,
+                text = if (purchased) tr("Purchased") else label,
                 color = Color.White,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
@@ -320,10 +321,11 @@ private fun ClaimMeta(
         Spacer(Modifier.size(4.dp))
         val subtitle = buildString {
             if (claim.channelName.isNotEmpty()) append(claim.channelName)
-            claim.viewCount?.let {
-                if (isNotEmpty()) append(" • ")
-                append(formatViewCount(it))
-                append(" views")
+            if (!claim.isUpcoming) {
+                claim.viewCount?.let {
+                    if (isNotEmpty()) append(" • ")
+                    append(com.odysee.app.core.model.i18n.Translations.tr("%s views").format(formatViewCount(it)))
+                }
             }
             if (claim.ageLabel.isNotEmpty()) {
                 if (isNotEmpty()) append(" • ")

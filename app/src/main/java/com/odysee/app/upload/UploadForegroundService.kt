@@ -92,7 +92,7 @@ class UploadForegroundService : Service() {
                     postFinalNotification(title.ifBlank { params.title }, success = true)
                 }
                 .onFailure { err ->
-                    uploadManager.failed(jobId, err.message ?: "Upload failed")
+                    uploadManager.failed(jobId, err.message ?: com.odysee.app.core.model.i18n.Translations.tr("Upload failed"))
                     postFinalNotification(title.ifBlank { params.title }, success = false)
                 }
             runCatching { file.delete() }
@@ -116,10 +116,10 @@ class UploadForegroundService : Service() {
         if (existing != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Uploads",
+            com.odysee.app.core.model.i18n.Translations.tr("Uploads"),
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Shows upload progress"
+            description = com.odysee.app.core.model.i18n.Translations.tr("Shows upload progress")
             setShowBadge(false)
         }
         notificationManager.createNotificationChannel(channel)
@@ -146,7 +146,7 @@ class UploadForegroundService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(contentIntent)
-            .addAction(0, "Cancel", cancelIntent)
+            .addAction(0, com.odysee.app.core.model.i18n.Translations.tr("Cancel"), cancelIntent)
             .build()
     }
 

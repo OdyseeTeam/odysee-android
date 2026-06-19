@@ -81,16 +81,17 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import com.odysee.app.core.designsystem.i18n.tr
 
 private enum class ChannelTab(val label: String, val ownerOnly: Boolean = false) {
-    Content("Content"),
-    Shorts("Shorts"),
-    Playlists("Playlists"),
-    Channels("Channels"),
-    Membership("Membership"),
-    Discussion("Discussion"),
-    About("About"),
-    Settings("Settings", ownerOnly = true),
+    Content(tr("Content")),
+    Shorts(tr("Shorts")),
+    Playlists(tr("Playlists")),
+    Channels(tr("Channels")),
+    Membership(tr("Membership")),
+    Discussion(tr("Discussion")),
+    About(tr("About")),
+    Settings(tr("Settings"), ownerOnly = true),
 }
 
 data class ChannelShortTarget(
@@ -192,7 +193,7 @@ fun ChannelScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
@@ -211,17 +212,17 @@ fun ChannelScreen(
                             putExtra(android.content.Intent.EXTRA_SUBJECT, state.channel?.title ?: state.displayName)
                             putExtra(android.content.Intent.EXTRA_TEXT, url)
                         }
-                        context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                        context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                     }) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Share")
+                        Icon(Icons.Outlined.Share, contentDescription = tr("Share"))
                     }
                     IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+                        Icon(Icons.Outlined.MoreVert, contentDescription = tr("More"))
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         val channelUrl = "https://odysee.com/${state.displayName}:${state.claimId}"
                         DropdownMenuItem(
-                            text = { Text("Copy link") },
+                            text = { Text(tr("Copy link")) },
                             onClick = {
                                 val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
                                 clipboard?.setPrimaryClip(
@@ -231,7 +232,7 @@ fun ChannelScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Open in browser") },
+                            text = { Text(tr("Open in browser")) },
                             onClick = {
                                 val intent = android.content.Intent(
                                     android.content.Intent.ACTION_VIEW,
@@ -243,7 +244,7 @@ fun ChannelScreen(
                         )
                         if (state.isOwnChannel) {
                             DropdownMenuItem(
-                                text = { Text("Edit channel") },
+                                text = { Text(tr("Edit channel")) },
                                 onClick = {
                                     state.channel?.let { onEditChannel(it.claimId, it.name) }
                                     menuOpen = false
@@ -252,7 +253,7 @@ fun ChannelScreen(
                         }
                         if (!state.isOwnChannel) {
                             DropdownMenuItem(
-                                text = { Text("Repost channel") },
+                                text = { Text(tr("Repost channel")) },
                                 onClick = {
                                     repostChannelTarget = state.claimId to state.displayName
                                     menuOpen = false
@@ -261,14 +262,14 @@ fun ChannelScreen(
                         }
                         if (!state.isOwnChannel) {
                             DropdownMenuItem(
-                                text = { Text(if (state.isBlocked) "Unblock channel" else "Block channel") },
+                                text = { Text(if (state.isBlocked) tr("Unblock channel") else tr("Block channel")) },
                                 onClick = {
                                     viewModel.toggleBlock()
                                     menuOpen = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Report content") },
+                                text = { Text(tr("Report content")) },
                                 onClick = {
                                     val intent = android.content.Intent(
                                         android.content.Intent.ACTION_VIEW,
@@ -466,7 +467,7 @@ fun ChannelScreen(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")
@@ -542,7 +543,7 @@ fun ChannelScreen(
                 onCopyLink = {
                     clipboardMgr?.setPrimaryClip(
                         android.content.ClipData.newPlainText(
-                            "Comment link",
+                            tr("Comment link"),
                             "https://odysee.com/?lc=${target.id}",
                         ),
                     )
@@ -588,7 +589,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No videos yet.",
+                        text = tr("No videos yet."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -596,7 +597,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(
             }
         else -> {
             item { Spacer(Modifier.height(16.dp)) }
-            items(state.videos.chunked(columns), key = { it.first().id }) { chunk ->
+            // distinctBy is a belt-and-braces dedup — the server occasionally
+            // returns a claim twice across paginated requests, and a duplicate
+            // key crashes the LazyColumn on measure.
+            items(state.videos.distinctBy { it.id }.chunked(columns), key = { it.first().id }) { chunk ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -653,7 +657,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No shorts yet.",
+                        text = tr("No shorts yet."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -661,7 +665,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
             }
         else -> {
             item { Spacer(Modifier.height(16.dp)) }
-            items(state.shorts.chunked(columns), key = { it.first().id }) { chunk ->
+            items(state.shorts.distinctBy { it.id }.chunked(columns), key = { it.first().id }) { chunk ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -704,7 +708,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.membershipTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "This channel doesn't offer memberships.",
+                        text = tr("This channel doesn't offer memberships."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -781,7 +785,7 @@ private fun MembershipTierRow(
         }
         Spacer(Modifier.height(12.dp))
         androidx.compose.material3.OutlinedButton(onClick = onJoin) {
-            Text("Join on odysee.com")
+            Text(tr("Join on odysee.com"))
         }
     }
 }
@@ -800,7 +804,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.channelsTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No featured channels.",
+                        text = tr("No featured channels."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -808,7 +812,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.channelsTab(
             }
         else -> {
             item { Spacer(Modifier.height(12.dp)) }
-            items(state.featuredChannels, key = { it.claimId }) { ch ->
+            items(state.featuredChannels.distinctBy { it.claimId }, key = { it.claimId }) { ch ->
                 FeaturedChannelRow(channel = ch, onClick = { onChannelClick(ch.claimId, ch.name) })
                 Spacer(Modifier.height(8.dp))
             }
@@ -886,7 +890,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.playlistsTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No playlists yet.",
+                        text = tr("No playlists yet."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -894,7 +898,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.playlistsTab(
             }
         else -> {
             item { Spacer(Modifier.height(12.dp)) }
-            items(state.playlists, key = { it.claimId }) { p ->
+            items(state.playlists.distinctBy { it.claimId }, key = { it.claimId }) { p ->
                 ChannelPlaylistRow(playlist = p)
                 Spacer(Modifier.height(12.dp))
             }
@@ -960,7 +964,7 @@ private fun DiscussionComposer(canPost: Boolean, onPost: (String) -> Unit) {
                 posting = false
             }
         },
-        placeholder = if (canPost) "Add a comment…" else "Sign in to comment",
+        placeholder = if (canPost) tr("Add a comment…") else tr("Sign in to comment"),
         enabled = canPost && !posting,
         maxLength = com.odysee.app.core.designsystem.comments.ODYSEE_MAX_CHARS_COMMENT,
     )
@@ -994,14 +998,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.discussionTab(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "No discussion yet.",
+                            text = tr("No discussion yet."),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             } else {
-                items(state.comments, key = { it.id }) { comment ->
+                items(state.comments.distinctBy { it.id }, key = { it.id }) { comment ->
                     OdyseeCommentThread(
                         comment = comment,
                         replies = state.repliesByParent[comment.id],
@@ -1045,44 +1049,44 @@ private fun androidx.compose.foundation.lazy.LazyListScope.settingsTab(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Creator settings",
+                text = tr("Creator settings"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             SettingsAction(
-                label = "Edit channel",
-                subtitle = "Title, description, avatar, banner",
+                label = tr("Edit channel"),
+                subtitle = tr("Title, description, avatar, banner"),
                 onClick = onEditChannel,
             )
             SettingsAction(
-                label = "Featured content",
-                subtitle = "Pin claims to your channel",
+                label = tr("Featured content"),
+                subtitle = tr("Pin claims to your channel"),
                 onClick = onOpenFeaturedContent,
             )
             SettingsAction(
-                label = "Featured channels",
-                subtitle = "Showcase channels you support",
+                label = tr("Featured channels"),
+                subtitle = tr("Showcase channels you support"),
                 onClick = onOpenFeaturedChannels,
             )
             SettingsAction(
-                label = "Memberships",
-                subtitle = "Configure tiers and perks",
+                label = tr("Memberships"),
+                subtitle = tr("Configure tiers and perks"),
                 onClick = onOpenCreatorMemberships,
             )
             SettingsAction(
-                label = "Moderation",
-                subtitle = "Manage blocked viewers and mods",
+                label = tr("Moderation"),
+                subtitle = tr("Manage blocked viewers and mods"),
                 onClick = onOpenModeration,
             )
             SettingsAction(
-                label = "Discussion",
-                subtitle = "Comment and reply preferences",
+                label = tr("Discussion"),
+                subtitle = tr("Comment and reply preferences"),
                 onClick = onOpenDiscussionSettings,
             )
             SettingsAction(
-                label = "Analytics",
-                subtitle = "Views, watch time, audience",
+                label = tr("Analytics"),
+                subtitle = tr("Views, watch time, audience"),
                 onClick = onOpenAnalytics,
             )
         }
@@ -1143,7 +1147,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutTab(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Channel info unavailable.",
+                    text = tr("Channel info unavailable."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1175,7 +1179,7 @@ private fun ChannelAboutContent(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         channel.description?.takeIf { it.isNotBlank() }?.let { desc ->
-            AboutSection(label = "Description") {
+            AboutSection(label = tr("Description")) {
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1184,7 +1188,7 @@ private fun ChannelAboutContent(
             }
         }
         channel.email?.let { email ->
-            AboutSection(label = "Contact") {
+            AboutSection(label = tr("Contact")) {
                 Text(
                     text = email,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1196,7 +1200,7 @@ private fun ChannelAboutContent(
             }
         }
         channel.websiteUrl?.let { site ->
-            AboutSection(label = "Site") {
+            AboutSection(label = tr("Site")) {
                 Text(
                     text = site,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1210,7 +1214,7 @@ private fun ChannelAboutContent(
             }
         }
         if (channel.tags.isNotEmpty()) {
-            AboutSection(label = "Tags") {
+            AboutSection(label = tr("Tags")) {
                 TagFlowRow(
                     tags = channel.tags,
                     followed = followedTagsForAbout,
@@ -1220,7 +1224,7 @@ private fun ChannelAboutContent(
             }
         }
         if (channel.languages.isNotEmpty()) {
-            AboutSection(label = "Languages") {
+            AboutSection(label = tr("Languages")) {
                 Text(
                     text = channel.languages.joinToString(" ") { supportedLanguages[it] ?: it },
                     style = MaterialTheme.typography.bodyMedium,
@@ -1229,7 +1233,7 @@ private fun ChannelAboutContent(
             }
         }
         channel.claimsInChannel?.takeIf { it > 0 }?.let { uploads ->
-            AboutSection(label = "Total Uploads") {
+            AboutSection(label = tr("Total Uploads")) {
                 Text(
                     text = uploads.toString(),
                     style = MaterialTheme.typography.bodyMedium,
@@ -1239,7 +1243,7 @@ private fun ChannelAboutContent(
         }
         val updatedTs = channel.modifiedAt ?: channel.creationTimestamp
         updatedTs?.let { ts ->
-            AboutSection(label = "Last Updated") {
+            AboutSection(label = tr("Last Updated")) {
                 Text(
                     text = timeAgo(ts),
                     style = MaterialTheme.typography.bodyMedium,
@@ -1248,7 +1252,7 @@ private fun ChannelAboutContent(
             }
         }
         (channel.canonicalUrl ?: channel.permanentUrl).takeIf { it.isNotBlank() }?.let { url ->
-            AboutSection(label = "URL") {
+            AboutSection(label = tr("URL")) {
                 Text(
                     text = url,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1256,14 +1260,14 @@ private fun ChannelAboutContent(
                 )
             }
         }
-        AboutSection(label = "Claim ID") {
+        AboutSection(label = tr("Claim ID")) {
             Text(
                 text = channel.claimId,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        AboutSection(label = "Staked Credits") {
+        AboutSection(label = tr("Staked Credits")) {
             Text(
                 text = formatCredits(channel.stakedAmount),
                 style = MaterialTheme.typography.bodyMedium,
@@ -1480,7 +1484,7 @@ private fun ChannelHeader(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                         ) {
                             Text(
-                                text = if (isSubscribed) "Following" else "Follow",
+                                text = if (isSubscribed) tr("Following") else tr("Follow"),
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
@@ -1498,7 +1502,7 @@ private fun ChannelHeader(
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             ) {
                                 Text(
-                                    text = "Join",
+                                    text = tr("Join"),
                                     fontWeight = FontWeight.SemiBold,
                                 )
                             }
@@ -1582,7 +1586,7 @@ private fun CenteredErrorItem(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Couldn't load",
+            text = tr("Couldn't load"),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -1594,7 +1598,7 @@ private fun CenteredErrorItem(message: String, onRetry: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(Modifier.size(8.dp))
-        TextButton(onClick = onRetry) { Text("Retry") }
+        TextButton(onClick = onRetry) { Text(tr("Retry")) }
     }
 }
 
@@ -1614,32 +1618,32 @@ private val thumbnailPalette = listOf(
 )
 
 private val supportedLanguages: Map<String, String> = mapOf(
-    "en" to "English",
-    "es" to "Spanish",
-    "fr" to "French",
-    "de" to "German",
-    "it" to "Italian",
-    "pt" to "Portuguese",
-    "ru" to "Russian",
-    "pl" to "Polish",
-    "nl" to "Dutch",
-    "sv" to "Swedish",
-    "no" to "Norwegian",
-    "da" to "Danish",
-    "fi" to "Finnish",
-    "tr" to "Turkish",
-    "ja" to "Japanese",
-    "zh" to "Chinese",
-    "ko" to "Korean",
-    "ar" to "Arabic",
-    "hi" to "Hindi",
-    "id" to "Indonesian",
-    "vi" to "Vietnamese",
-    "uk" to "Ukrainian",
-    "cs" to "Czech",
-    "el" to "Greek",
-    "he" to "Hebrew",
-    "hu" to "Hungarian",
-    "ro" to "Romanian",
-    "th" to "Thai",
+    "en" to tr("English"),
+    "es" to tr("Spanish"),
+    "fr" to tr("French"),
+    "de" to tr("German"),
+    "it" to tr("Italian"),
+    "pt" to tr("Portuguese"),
+    "ru" to tr("Russian"),
+    "pl" to tr("Polish"),
+    "nl" to tr("Dutch"),
+    "sv" to tr("Swedish"),
+    "no" to tr("Norwegian"),
+    "da" to tr("Danish"),
+    "fi" to tr("Finnish"),
+    "tr" to tr("Turkish"),
+    "ja" to tr("Japanese"),
+    "zh" to tr("Chinese"),
+    "ko" to tr("Korean"),
+    "ar" to tr("Arabic"),
+    "hi" to tr("Hindi"),
+    "id" to tr("Indonesian"),
+    "vi" to tr("Vietnamese"),
+    "uk" to tr("Ukrainian"),
+    "cs" to tr("Czech"),
+    "el" to tr("Greek"),
+    "he" to tr("Hebrew"),
+    "hu" to tr("Hungarian"),
+    "ro" to tr("Romanian"),
+    "th" to tr("Thai"),
 )

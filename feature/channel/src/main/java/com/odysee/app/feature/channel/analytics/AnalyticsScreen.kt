@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.analytics.ChannelStats
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,13 +55,13 @@ fun AnalyticsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Analytics") },
+                title = { Text(tr("Analytics")) },
                 actions = {
                     IconButton(onClick = viewModel::load) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Outlined.Refresh, contentDescription = tr("Refresh"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,7 +103,7 @@ fun AnalyticsScreen(
             if (stats == null) {
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No analytics yet — publish content and check back soon.",
+                        text = tr("No analytics yet — publish content and check back soon."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -111,23 +112,23 @@ fun AnalyticsScreen(
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatCard(
-                    label = "Followers",
+                    label = tr("Followers"),
                     value = formatNumber(stats.subscribers),
                     trend = stats.subscriberChange,
                     modifier = Modifier.weight(1f),
                 )
                 StatCard(
-                    label = "Views",
+                    label = tr("Views"),
                     value = formatNumber(stats.totalViews),
                     trend = stats.viewChange,
                     modifier = Modifier.weight(1f),
                 )
             }
 
-            SectionHeader("Top performers")
+            SectionHeader(tr("Top performers"))
             stats.topNewVideoUri?.takeIf { it.isNotBlank() }?.let { uri ->
                 TopRow(
-                    title = "Most-watched (recent)",
+                    title = tr("Most-watched (recent)"),
                     uri = uri,
                     value = "${formatNumber(stats.topNewVideoViews)} views",
                     trend = stats.topNewVideoViewChange,
@@ -135,7 +136,7 @@ fun AnalyticsScreen(
             }
             stats.topCommentedVideoUri?.takeIf { it.isNotBlank() }?.let { uri ->
                 TopRow(
-                    title = "Most-commented (recent)",
+                    title = tr("Most-commented (recent)"),
                     uri = uri,
                     value = "${formatNumber(stats.topCommentedVideoComments)} comments",
                     trend = stats.topCommentedVideoCommentChange,
@@ -143,7 +144,7 @@ fun AnalyticsScreen(
             }
             stats.topAllTimeVideoUri?.takeIf { it.isNotBlank() }?.let { uri ->
                 TopRow(
-                    title = "Most-watched (all time)",
+                    title = tr("Most-watched (all time)"),
                     uri = uri,
                     value = "${formatNumber(stats.topAllTimeVideoViews)} views",
                     trend = stats.topAllTimeVideoViewChange,

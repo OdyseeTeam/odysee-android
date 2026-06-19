@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,10 +83,10 @@ fun EditChannelScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Edit channel") },
+                title = { Text(tr("Edit channel")) },
                 actions = {
                     TextButton(
                         onClick = viewModel::save,
@@ -98,7 +99,7 @@ fun EditChannelScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
-                            Text("Save", fontWeight = FontWeight.SemiBold)
+                            Text(tr("Save"), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 },
@@ -156,7 +157,7 @@ fun EditChannelScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Image,
-                        contentDescription = "Edit cover",
+                        contentDescription = tr("Edit cover"),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp),
                     )
@@ -198,7 +199,7 @@ fun EditChannelScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Image,
-                            contentDescription = "Edit avatar",
+                            contentDescription = tr("Edit avatar"),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp),
                         )
@@ -213,7 +214,7 @@ fun EditChannelScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Tap the camera icons to replace",
+                        text = tr("Tap the camera icons to replace"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -221,13 +222,13 @@ fun EditChannelScreen(
             }
 
             FieldLabel("Title")
-            FlatField(value = state.title, onValueChange = viewModel::onTitle, placeholder = "Display name")
+            FlatField(value = state.title, onValueChange = viewModel::onTitle, placeholder = tr("Display name"))
 
             FieldLabel("Description")
             FlatField(
                 value = state.description,
                 onValueChange = viewModel::onDescription,
-                placeholder = "Tell people about your channel",
+                placeholder = tr("Tell people about your channel"),
                 minLines = 4,
                 maxLines = 8,
             )
@@ -243,7 +244,7 @@ fun EditChannelScreen(
                 tags = state.tags,
                 onAdd = viewModel::addTag,
                 onRemove = viewModel::removeTag,
-                placeholder = "Add a tag",
+                placeholder = tr("Add a tag"),
             )
 
             FieldLabel("Languages")
@@ -351,7 +352,7 @@ private fun TagsEditor(
                     }
                 },
                 enabled = draft.isNotBlank(),
-            ) { Text("Add") }
+            ) { Text(tr("Add")) }
         }
         if (tags.isNotEmpty()) {
             TagWrap(
@@ -386,7 +387,7 @@ private fun TagWrap(tags: List<String>, onRemove: (String) -> Unit) {
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Remove",
+                            contentDescription = tr("Remove"),
                             tint = Color.White,
                             modifier = Modifier.size(14.dp),
                         )

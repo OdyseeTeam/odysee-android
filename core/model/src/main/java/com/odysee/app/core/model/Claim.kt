@@ -18,6 +18,14 @@ data class Claim(
     val paywall: Paywall = Paywall.Free,
     val isPurchased: Boolean = false,
     val isMembersOnly: Boolean = false,
+    /**
+     * Raw tag list from the claim's metadata. Includes both user-facing tags
+     * and internal `c:*` markers (paywall encoding, comments-disabled,
+     * reactions-disabled, etc.). UI code that surfaces user tags must filter
+     * out the `c:` prefix; the player consults the c:* set to decide whether
+     * to render comments/reactions.
+     */
+    val tags: List<String> = emptyList(),
 ) {
     val isUpcoming: Boolean
         get() {

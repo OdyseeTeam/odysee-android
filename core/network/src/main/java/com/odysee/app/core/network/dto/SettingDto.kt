@@ -17,6 +17,11 @@ data class SettingResponse(
     @SerialName("slow_mode_min_gap") val slowModeMinGap: Int? = null,
     @SerialName("comments_members_only") val commentsMembersOnly: Boolean? = null,
     @SerialName("livestream_chat_members_only") val livestreamChatMembersOnly: Boolean? = null,
+    // Channel-wide comments toggle from setting.Get. When false, the channel
+    // owner has turned off comments for ALL their content; the web hides the
+    // comment composer + thread. Field is present only on channels that have
+    // ever had a setting written, so null = default (enabled).
+    @SerialName("comments_enabled") val commentsEnabled: Boolean? = null,
 )
 
 @Serializable

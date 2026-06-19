@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import com.odysee.app.core.designsystem.i18n.tr
 
 const val ODYSEE_MAX_CHARS_COMMENT = 2000
 const val ODYSEE_MAX_CHARS_LIVESTREAM_COMMENT = 300
@@ -65,7 +66,7 @@ fun OdyseeCommentComposer(
     onDraftChange: (String) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Add a comment…",
+    placeholder: String = tr("Add a comment…"),
     maxLength: Int = ODYSEE_MAX_CHARS_COMMENT,
     maxLines: Int = 4,
     singleLine: Boolean = false,
@@ -96,7 +97,7 @@ fun OdyseeCommentComposer(
             Box(modifier = Modifier.weight(1f).padding(vertical = 12.dp)) {
                 if (draft.isEmpty()) {
                     Text(
-                        text = placeholder,
+                        text = com.odysee.app.core.designsystem.i18n.tr(placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -121,7 +122,7 @@ fun OdyseeCommentComposer(
                 IconButton(onClick = { showEmojiSheet = true }, modifier = Modifier.size(36.dp), enabled = enabled) {
                     Icon(
                         imageVector = Icons.Outlined.EmojiEmotions,
-                        contentDescription = "Emoji",
+                        contentDescription = tr("Emoji"),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
@@ -131,7 +132,7 @@ fun OdyseeCommentComposer(
                 IconButton(onClick = { showStickerSheet = true }, modifier = Modifier.size(36.dp), enabled = enabled) {
                     Icon(
                         imageVector = Icons.Outlined.AddReaction,
-                        contentDescription = "Sticker",
+                        contentDescription = tr("Sticker"),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
@@ -141,7 +142,7 @@ fun OdyseeCommentComposer(
                 IconButton(onClick = onOpenHyperchat, modifier = Modifier.size(36.dp), enabled = enabled) {
                     Icon(
                         imageVector = Icons.Outlined.AttachMoney,
-                        contentDescription = "Hyperchat",
+                        contentDescription = tr("Hyperchat"),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
@@ -156,7 +157,7 @@ fun OdyseeCommentComposer(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Post",
+                contentDescription = tr("Post"),
                 tint = if (enabled && trimmed.isNotEmpty()) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(22.dp),
@@ -202,7 +203,7 @@ fun OdyseeStickerPickerSheet(onDismiss: () -> Unit, onPick: (StickerDef) -> Unit
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    text = "Free",
+                    text = tr("Free"),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
@@ -213,7 +214,7 @@ fun OdyseeStickerPickerSheet(onDismiss: () -> Unit, onPick: (StickerDef) -> Unit
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    text = "Tips",
+                    text = tr("Tips"),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
@@ -346,7 +347,7 @@ fun OdyseeHyperchatStickerDialog(
     val coScope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("Send sticker hyperchat") },
+        title = { Text(tr("Send sticker hyperchat")) },
         text = {
             Column {
                 AsyncImage(
@@ -380,13 +381,13 @@ fun OdyseeHyperchatStickerDialog(
                     coScope.launch {
                         val result = onConfirm(price)
                         sending = false
-                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: "Failed"
+                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: com.odysee.app.core.model.i18n.Translations.tr("Failed")
                         else onDismiss()
                     }
                 },
-            ) { Text(if (sending) "Sending…" else "Send") }
+            ) { Text(if (sending) tr("Sending…") else tr("Send")) }
         },
-        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text(tr("Cancel")) } },
     )
 }
 
@@ -403,11 +404,11 @@ fun OdyseeHyperchatTextDialog(
     val coScope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("Hyperchat") },
+        title = { Text(tr("Hyperchat")) },
         text = {
             Column {
                 Text(
-                    text = "Highlight your comment by tipping the creator. Paid in LBC from your wallet.",
+                    text = tr("Highlight your comment by tipping the creator. Paid in LBC from your wallet."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -416,7 +417,7 @@ fun OdyseeHyperchatTextDialog(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Message") },
+                    label = { Text(tr("Message")) },
                     maxLines = 4,
                 )
                 Spacer(Modifier.size(8.dp))
@@ -424,7 +425,7 @@ fun OdyseeHyperchatTextDialog(
                     value = amount,
                     onValueChange = { v -> amount = v.filter { it.isDigit() || it == '.' } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Amount (LBC)") },
+                    label = { Text(tr("Amount (LBC)")) },
                     singleLine = true,
                 )
                 error?.let {
@@ -447,12 +448,12 @@ fun OdyseeHyperchatTextDialog(
                     coScope.launch {
                         val result = onConfirm(text.trim(), amt)
                         sending = false
-                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: "Failed"
+                        if (result.isFailure) error = result.exceptionOrNull()?.message ?: com.odysee.app.core.model.i18n.Translations.tr("Failed")
                         else onDismiss()
                     }
                 },
-            ) { Text(if (sending) "Sending…" else "Send") }
+            ) { Text(if (sending) tr("Sending…") else tr("Send")) }
         },
-        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text(tr("Cancel")) } },
     )
 }

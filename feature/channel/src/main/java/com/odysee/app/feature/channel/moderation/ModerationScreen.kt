@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.odysee.app.core.data.moderation.BlockScope
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,20 +61,20 @@ fun ModerationScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
     var selected by rememberSaveable { mutableStateOf(0) }
-    val tabs = listOf("Blocked viewers", "Moderators")
+    val tabs = listOf(tr("Blocked viewers"), tr("Moderators"))
 
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Moderation") },
+                title = { Text(tr("Moderation")) },
                 actions = {
                     IconButton(onClick = viewModel::refresh) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Outlined.Refresh, contentDescription = tr("Refresh"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -149,7 +150,7 @@ private fun BlockedList(
         return
     }
     if (state.blocked.isEmpty()) {
-        EmptyView("No blocked viewers.")
+        EmptyView(tr("No blocked viewers."))
         return
     }
     LazyColumn(Modifier.fillMaxSize()) {
@@ -170,9 +171,9 @@ private fun BlockedList(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     val scopeLabel = when (c.scope) {
-                        BlockScope.Channel -> "Blocked on your channel"
-                        BlockScope.Global -> "Blocked across all your channels"
-                        BlockScope.Delegated -> "Blocked by a delegated moderator"
+                        BlockScope.Channel -> tr("Blocked on your channel")
+                        BlockScope.Global -> tr("Blocked across all your channels")
+                        BlockScope.Delegated -> tr("Blocked by a delegated moderator")
                     }
                     Text(
                         text = scopeLabel,
@@ -191,7 +192,7 @@ private fun BlockedList(
                             strokeWidth = 2.dp,
                         )
                     } else {
-                        Text("Unblock")
+                        Text(tr("Unblock"))
                     }
                 }
             }
@@ -211,7 +212,7 @@ private fun ModeratorList(
         return
     }
     if (state.moderators.isEmpty()) {
-        EmptyView("You haven't delegated any moderators yet.")
+        EmptyView(tr("You haven't delegated any moderators yet."))
         return
     }
     LazyColumn(Modifier.fillMaxSize()) {
@@ -232,7 +233,7 @@ private fun ModeratorList(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Delegated moderator",
+                        text = tr("Delegated moderator"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -248,7 +249,7 @@ private fun ModeratorList(
                             strokeWidth = 2.dp,
                         )
                     } else {
-                        Text("Remove")
+                        Text(tr("Remove"))
                     }
                 }
             }

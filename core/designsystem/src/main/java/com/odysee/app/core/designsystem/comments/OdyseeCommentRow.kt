@@ -56,6 +56,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.odysee.app.core.designsystem.R
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -99,7 +100,7 @@ fun OdyseeCommentRow(
                 if (comment.isPinned) {
                     Icon(
                         imageVector = Icons.Outlined.PushPin,
-                        contentDescription = "Pinned",
+                        contentDescription = tr("Pinned"),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(14.dp),
                     )
@@ -107,7 +108,7 @@ fun OdyseeCommentRow(
                     val pinLabel = comment.pinnedByName?.let { name ->
                         val handle = if (name.startsWith("@")) name else "@$name"
                         "Pinned by $handle"
-                    } ?: "Pinned"
+                    } ?: tr("Pinned")
                     Text(
                         text = pinLabel,
                         style = MaterialTheme.typography.labelSmall,
@@ -142,7 +143,7 @@ fun OdyseeCommentRow(
                     Spacer(Modifier.width(4.dp))
                     Image(
                         painter = painterResource(id = R.drawable.badge_admin),
-                        contentDescription = "Admin",
+                        contentDescription = tr("Admin"),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -150,7 +151,7 @@ fun OdyseeCommentRow(
                     Spacer(Modifier.width(4.dp))
                     Image(
                         painter = painterResource(id = R.drawable.badge_mod),
-                        contentDescription = "Moderator",
+                        contentDescription = tr("Moderator"),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -159,7 +160,7 @@ fun OdyseeCommentRow(
                         Spacer(Modifier.width(4.dp))
                         Image(
                             painter = painterResource(id = R.drawable.badge_premium),
-                            contentDescription = "Premium",
+                            contentDescription = tr("Premium"),
                             modifier = Modifier.size(14.dp),
                         )
                     }
@@ -167,7 +168,7 @@ fun OdyseeCommentRow(
                         Spacer(Modifier.width(4.dp))
                         Image(
                             painter = painterResource(id = R.drawable.badge_premium_plus),
-                            contentDescription = "Premium+",
+                            contentDescription = tr("Premium+"),
                             modifier = Modifier.size(14.dp),
                         )
                     }
@@ -251,7 +252,7 @@ fun OdyseeCommentRow(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_creator_like_heart),
-                            contentDescription = "Creator loved this",
+                            contentDescription = tr("Creator loved this"),
                             modifier = Modifier.size(22.dp),
                         )
                         if (!comment.creatorAvatarUrl.isNullOrBlank()) {
@@ -274,7 +275,7 @@ fun OdyseeCommentRow(
                         contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = if (replyOpen) "Cancel" else "Reply",
+                            text = if (replyOpen) com.odysee.app.core.designsystem.i18n.tr("Cancel") else com.odysee.app.core.designsystem.i18n.tr("Reply"),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
@@ -286,7 +287,7 @@ fun OdyseeCommentRow(
                         value = draft,
                         onValueChange = { draft = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Write a reply...") },
+                        placeholder = { Text(tr("Write a reply...")) },
                         maxLines = 4,
                     )
                     Spacer(Modifier.size(8.dp))
@@ -297,7 +298,7 @@ fun OdyseeCommentRow(
                             draft = ""
                             onReplyOpenChange(false)
                         },
-                    ) { Text("Post") }
+                    ) { Text(tr("Post")) }
                 }
             }
         }
@@ -427,43 +428,43 @@ fun OdyseeCommentActionsSheet(
                     }
                 }
                 if (canReply && actions.onReply != null) {
-                    SheetRow(icon = Icons.AutoMirrored.Outlined.Reply, label = "Reply") {
+                    SheetRow(icon = Icons.AutoMirrored.Outlined.Reply, label = tr("Reply")) {
                         actions.onReply.invoke("")
                     }
                 }
-                SheetRow(icon = Icons.Outlined.ContentCopy, label = "Copy text", onClick = actions.onCopyText)
-                SheetRow(icon = Icons.Outlined.Link, label = "Copy link", onClick = actions.onCopyLink)
+                SheetRow(icon = Icons.Outlined.ContentCopy, label = tr("Copy text"), onClick = actions.onCopyText)
+                SheetRow(icon = Icons.Outlined.Link, label = tr("Copy link"), onClick = actions.onCopyLink)
                 if (isClaimOwner) {
                     SheetRow(
                         icon = Icons.Outlined.PushPin,
-                        label = if (comment.isPinned) "Unpin" else "Pin",
+                        label = if (comment.isPinned) tr("Unpin") else "Pin",
                         onClick = actions.onPinToggle,
                     )
                 }
                 if (comment.isMine) {
-                    SheetRow(icon = Icons.Outlined.Edit, label = "Edit", onClick = actions.onEdit)
+                    SheetRow(icon = Icons.Outlined.Edit, label = tr("Edit"), onClick = actions.onEdit)
                 }
                 if (comment.isMine || isClaimOwner) {
                     SheetRow(
                         icon = Icons.Outlined.Delete,
-                        label = "Delete",
+                        label = tr("Delete"),
                         danger = true,
                         onClick = actions.onDelete,
                     )
                 }
                 if (!comment.isMine && !comment.authorChannelId.isNullOrBlank()) {
-                    SheetRow(icon = Icons.Outlined.Block, label = "Block", onClick = actions.onBlock)
+                    SheetRow(icon = Icons.Outlined.Block, label = tr("Block"), onClick = actions.onBlock)
                 }
                 if (isClaimOwner && !comment.isMine) {
                     SheetRow(
                         icon = Icons.Outlined.AdminPanelSettings,
-                        label = if (comment.isModerator) "Remove as moderator" else "Add as moderator",
+                        label = if (comment.isModerator) tr("Remove as moderator") else tr("Add as moderator"),
                     ) {
                         if (comment.isModerator) actions.onRemoveModerator() else actions.onAddModerator()
                     }
                 }
                 if (!comment.isMine) {
-                    SheetRow(icon = Icons.Outlined.Flag, label = "Report", onClick = actions.onReport)
+                    SheetRow(icon = Icons.Outlined.Flag, label = tr("Report"), onClick = actions.onReport)
                 }
             }
         }

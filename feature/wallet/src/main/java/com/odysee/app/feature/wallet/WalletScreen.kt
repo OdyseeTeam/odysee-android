@@ -58,6 +58,7 @@ import com.odysee.app.core.data.wallet.WalletBalance
 import com.odysee.app.core.data.wallet.WalletTransaction
 import java.text.DateFormat
 import java.util.Date
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,10 +78,10 @@ fun WalletScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Wallet") },
+                title = { Text(tr("Wallet")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -99,7 +100,7 @@ fun WalletScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Wallet unavailable",
+                    text = tr("Wallet unavailable"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
@@ -110,7 +111,7 @@ fun WalletScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(16.dp))
-                TextButton(onClick = viewModel::load) { Text("Retry") }
+                TextButton(onClick = viewModel::load) { Text(tr("Retry")) }
             }
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -143,7 +144,7 @@ fun WalletScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Send", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(tr("Send"), color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.SemiBold)
                         }
                         OutlinedButton(
                             onClick = {
@@ -158,13 +159,13 @@ fun WalletScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Receive")
+                            Text(tr("Receive"))
                         }
                     }
                 }
                 item {
                     Text(
-                        text = "Recent transactions",
+                        text = tr("Recent transactions"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -174,7 +175,7 @@ fun WalletScreen(
                 if (state.transactions.isEmpty()) {
                     item {
                         Text(
-                            text = "No transactions yet.",
+                            text = tr("No transactions yet."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -192,11 +193,11 @@ fun WalletScreen(
     if (showReceive) {
         AlertDialog(
             onDismissRequest = { showReceive = false },
-            title = { Text("Receive LBC") },
+            title = { Text(tr("Receive LBC")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Send LBC to this address from any LBRY wallet. A new unused address is generated each time.",
+                        text = tr("Send LBC to this address from any LBRY wallet. A new unused address is generated each time."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -233,7 +234,7 @@ fun WalletScreen(
                             }) {
                                 Icon(
                                     Icons.Outlined.ContentCopy,
-                                    contentDescription = "Copy",
+                                    contentDescription = tr("Copy"),
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -242,7 +243,7 @@ fun WalletScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showReceive = false }) { Text("Done") }
+                TextButton(onClick = { showReceive = false }) { Text(tr("Done")) }
             },
         )
     }
@@ -253,7 +254,7 @@ fun WalletScreen(
                 showSend = false
                 viewModel.clearSendStatus()
             },
-            title = { Text("Send LBC") },
+            title = { Text(tr("Send LBC")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextField(
@@ -264,7 +265,7 @@ fun WalletScreen(
                         shape = RoundedCornerShape(10.dp),
                         placeholder = {
                             Text(
-                                "Destination address",
+                                tr("Destination address"),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         },
@@ -283,14 +284,14 @@ fun WalletScreen(
                         shape = RoundedCornerShape(10.dp),
                         placeholder = {
                             Text(
-                                "Amount in LBC",
+                                tr("Amount in LBC"),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         },
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
                         ),
-                        suffix = { Text("LBC") },
+                        suffix = { Text(tr("LBC")) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -312,13 +313,13 @@ fun WalletScreen(
                 TextButton(
                     onClick = { viewModel.send() },
                     enabled = !state.isSending,
-                ) { Text(if (state.isSending) "Sending…" else "Send") }
+                ) { Text(if (state.isSending) tr("Sending…") else tr("Send")) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showSend = false
                     viewModel.clearSendStatus()
-                }) { Text("Cancel") }
+                }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -333,7 +334,7 @@ private fun BalanceCard(balance: WalletBalance) {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "Available",
+                text = tr("Available"),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -345,14 +346,14 @@ private fun BalanceCard(balance: WalletBalance) {
             )
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
-                BalanceStat("Total", balance.total, modifier = Modifier.weight(1f))
-                BalanceStat("Reserved", balance.reserved, modifier = Modifier.weight(1f))
+                BalanceStat(tr("Total"), balance.total, modifier = Modifier.weight(1f))
+                BalanceStat(tr("Reserved"), balance.reserved, modifier = Modifier.weight(1f))
             }
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
-                BalanceStat("Claims", balance.reservedForClaims, modifier = Modifier.weight(1f))
-                BalanceStat("Supports", balance.reservedForSupports, modifier = Modifier.weight(1f))
-                BalanceStat("Tips", balance.reservedForTips, modifier = Modifier.weight(1f))
+                BalanceStat(tr("Claims"), balance.reservedForClaims, modifier = Modifier.weight(1f))
+                BalanceStat(tr("Supports"), balance.reservedForSupports, modifier = Modifier.weight(1f))
+                BalanceStat(tr("Tips"), balance.reservedForTips, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -383,14 +384,14 @@ private fun TransactionRow(tx: WalletTransaction) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = tx.description.ifBlank { "Transaction" },
+                text = tx.description.ifBlank { tr("Transaction") },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = tx.timestamp?.let { formatDate(it) } ?: "Pending",
+                text = tx.timestamp?.let { formatDate(it) } ?: tr("Pending"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

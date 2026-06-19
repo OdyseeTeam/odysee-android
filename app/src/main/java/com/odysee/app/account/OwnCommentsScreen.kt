@@ -68,6 +68,7 @@ import coil3.compose.AsyncImage
 import com.odysee.app.core.designsystem.comments.RichCommentBody
 import com.odysee.app.core.model.Claim
 import com.odysee.app.core.model.Comment
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,12 +102,12 @@ fun OwnCommentsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
                     Column {
-                        Text("Your comments")
+                        Text(tr("Your comments"))
                         if (state.totalItems > 0) {
                             Text(
                                 text = if (state.totalItems == 1) "1 comment" else "${state.totalItems} comments",
@@ -118,7 +119,7 @@ fun OwnCommentsScreen(
                 },
                 actions = {
                     IconButton(onClick = viewModel::refresh) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Outlined.Refresh, contentDescription = tr("Refresh"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -142,7 +143,7 @@ fun OwnCommentsScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Create a channel to view your comments",
+                        text = tr("Create a channel to view your comments"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -156,7 +157,7 @@ fun OwnCommentsScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No comments yet",
+                        text = tr("No comments yet"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -258,18 +259,18 @@ fun OwnCommentsScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete comment?") },
-            text = { Text("This will permanently remove your comment.") },
+            title = { Text(tr("Delete comment?")) },
+            text = { Text(tr("This will permanently remove your comment.")) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         viewModel.deleteComment(target.commentId)
                         deleteTarget = null
                     },
-                ) { Text("Delete", color = Color(0xFFE2202D)) }
+                ) { Text(tr("Delete"), color = Color(0xFFE2202D)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteTarget = null }) { Text(tr("Cancel")) }
             },
         )
     }
@@ -298,16 +299,16 @@ private fun CommentActionsDialog(
         ) {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 if (claim != null) {
-                    ActionRow(icon = Icons.Outlined.OpenInNew, label = "Open content", onClick = onOpenContent)
+                    ActionRow(icon = Icons.Outlined.OpenInNew, label = tr("Open content"), onClick = onOpenContent)
                 }
-                ActionRow(icon = Icons.Outlined.ContentCopy, label = "Copy text", onClick = onCopyText)
+                ActionRow(icon = Icons.Outlined.ContentCopy, label = tr("Copy text"), onClick = onCopyText)
                 if (claim != null) {
-                    ActionRow(icon = Icons.Outlined.Link, label = "Copy link", onClick = onCopyLink)
+                    ActionRow(icon = Icons.Outlined.Link, label = tr("Copy link"), onClick = onCopyLink)
                 }
-                ActionRow(icon = Icons.Outlined.Edit, label = "Edit", onClick = onEdit)
+                ActionRow(icon = Icons.Outlined.Edit, label = tr("Edit"), onClick = onEdit)
                 ActionRow(
                     icon = Icons.Outlined.Delete,
-                    label = "Delete",
+                    label = tr("Delete"),
                     color = Color(0xFFE2202D),
                     onClick = onDelete,
                 )
@@ -345,7 +346,7 @@ private fun CommentEditDialog(
     var text by remember { mutableStateOf(initialText) }
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Edit comment") },
+        title = { Text(tr("Edit comment")) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -359,10 +360,10 @@ private fun CommentEditDialog(
             TextButton(
                 onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank() && text.trim() != initialText.trim(),
-            ) { Text("Save") }
+            ) { Text(tr("Save")) }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            TextButton(onClick = onCancel) { Text(tr("Cancel")) }
         },
     )
 }
@@ -474,7 +475,7 @@ private fun CommentCard(
                 }
             } else {
                 Text(
-                    text = "Content or channel was deleted.",
+                    text = tr("Content or channel was deleted."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -547,12 +548,13 @@ private fun formatTimeAgo(timestampSeconds: Long): String {
     if (timestampSeconds <= 0) return ""
     val nowSec = System.currentTimeMillis() / 1000
     val diff = nowSec - timestampSeconds
+    val tr = com.odysee.app.core.model.i18n.Translations::tr
     return when {
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86_400 -> "${diff / 3600}h ago"
-        diff < 30L * 86_400 -> "${diff / 86_400}d ago"
-        diff < 365L * 86_400 -> "${diff / (30L * 86_400)}mo ago"
-        else -> "${diff / (365L * 86_400)}y ago"
+        diff < 60 -> tr("Just now")
+        diff < 3600 -> tr("%d minutes ago").format(diff / 60)
+        diff < 86_400 -> tr("%d hours ago").format(diff / 3600)
+        diff < 30L * 86_400 -> tr("%d days ago").format(diff / 86_400)
+        diff < 365L * 86_400 -> tr("%d months ago").format(diff / (30L * 86_400))
+        else -> tr("%d years ago").format(diff / (365L * 86_400))
     }
 }

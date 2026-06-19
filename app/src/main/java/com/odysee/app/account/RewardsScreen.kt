@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.odysee.app.core.designsystem.i18n.tr
 
 data class RewardsState(
     val isLoading: Boolean = true,
@@ -107,7 +108,7 @@ class RewardsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             claiming = it.claiming - code,
-                            statusMessage = err.message ?: "Couldn't claim reward.",
+                            statusMessage = err.message ?: tr("Couldn't claim reward."),
                             statusIsError = true,
                         )
                     }
@@ -130,10 +131,10 @@ fun RewardsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Rewards") },
+                title = { Text(tr("Rewards")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -155,17 +156,17 @@ fun RewardsScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "No rewards available",
+                    text = tr("No rewards available"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = state.error ?: "Check back later — new rewards appear as you use Odysee.",
+                    text = state.error ?: tr("Check back later — new rewards appear as you use Odysee."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
-                TextButton(onClick = viewModel::load) { Text("Refresh") }
+                TextButton(onClick = viewModel::load) { Text(tr("Refresh")) }
             }
             return@Scaffold
         }
@@ -222,7 +223,7 @@ fun RewardsScreen(
                     when {
                         claimed -> Icon(
                             Icons.Outlined.CheckCircle,
-                            contentDescription = "Claimed",
+                            contentDescription = tr("Claimed"),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp),
                         )
@@ -234,13 +235,13 @@ fun RewardsScreen(
                             ),
                         ) {
                             Text(
-                                text = if (claiming) "Claiming…" else "Claim",
+                                text = if (claiming) tr("Claiming…") else tr("Claim"),
                                 color = Color.White,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
                         else -> Text(
-                            text = "Locked",
+                            text = tr("Locked"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -252,18 +253,18 @@ fun RewardsScreen(
 }
 
 private fun rewardLabel(type: String?): String = when (type) {
-    "new_user" -> "New user"
-    "new_android" -> "New Android user"
-    "email_provided" -> "Confirm email"
-    "new_channel" -> "First channel"
-    "first_stream" -> "First stream"
-    "first_publish" -> "First publish"
-    "referrer" -> "Referral reward"
-    "referee" -> "Referred user"
-    "reward_code" -> "Reward code"
-    "weekly_watch" -> "Weekly watch"
-    "subscription" -> "Subscribe reward"
-    "youtube_creator" -> "YouTube creator"
-    null -> "Reward"
+    "new_user" -> tr("New user")
+    "new_android" -> tr("New Android user")
+    "email_provided" -> tr("Confirm email")
+    "new_channel" -> tr("First channel")
+    "first_stream" -> tr("First stream")
+    "first_publish" -> tr("First publish")
+    "referrer" -> tr("Referral reward")
+    "referee" -> tr("Referred user")
+    "reward_code" -> tr("Reward code")
+    "weekly_watch" -> tr("Weekly watch")
+    "subscription" -> tr("Subscribe reward")
+    "youtube_creator" -> tr("YouTube creator")
+    null -> tr("Reward")
     else -> type
 }

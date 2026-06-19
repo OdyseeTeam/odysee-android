@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.odysee.app.core.data.history.WatchHistoryEntry
+import com.odysee.app.core.designsystem.i18n.tr
 
 data class HistoryWatchTarget(
     val claimId: String,
@@ -82,13 +83,13 @@ fun WatchHistoryScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Watch history") },
+                title = { Text(tr("Watch history")) },
                 actions = {
                     if (history.isNotEmpty()) {
-                        TextButton(onClick = viewModel::clear) { Text("Clear") }
+                        TextButton(onClick = viewModel::clear) { Text(tr("Clear")) }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -105,12 +106,12 @@ fun WatchHistoryScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Nothing watched yet",
+                    text = tr("Nothing watched yet"),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Videos you play will show up here.",
+                    text = tr("Videos you play will show up here."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -175,7 +176,7 @@ fun WatchHistoryScreen(
                         putExtra(android.content.Intent.EXTRA_SUBJECT, target.title)
                         putExtra(android.content.Intent.EXTRA_TEXT, url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+                    context.startActivity(android.content.Intent.createChooser(intent, com.odysee.app.core.model.i18n.Translations.tr("Share via")))
                 },
                 onCopyLink = {
                     val stripped = target.permanentUrl.removePrefix("lbry://")
@@ -273,7 +274,7 @@ private fun HistoryRow(
         IconButton(onClick = onRemove) {
             Icon(
                 Icons.Outlined.Close,
-                contentDescription = "Remove",
+                contentDescription = tr("Remove"),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

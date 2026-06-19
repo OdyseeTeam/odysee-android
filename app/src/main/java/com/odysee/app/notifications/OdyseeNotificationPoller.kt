@@ -97,10 +97,10 @@ class OdyseeNotificationPoller @Inject constructor(
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Odysee notifications",
+            com.odysee.app.core.model.i18n.Translations.tr("Odysee notifications"),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "New comments, replies, uploads from channels you follow"
+            description = com.odysee.app.core.model.i18n.Translations.tr("New comments, replies, uploads from channels you follow")
         }
         manager.createNotificationChannel(channel)
     }

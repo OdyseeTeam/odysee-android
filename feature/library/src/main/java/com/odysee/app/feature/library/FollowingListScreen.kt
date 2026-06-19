@@ -64,6 +64,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.serialization.Serializable
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Serializable
 data object FollowingListRoute
@@ -163,12 +164,12 @@ fun FollowingListScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Following")
+                        Text(tr("Following"))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = subs.size.toString(),
@@ -195,12 +196,12 @@ fun FollowingListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Filter following") },
+                placeholder = { Text(tr("Filter following")) },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { viewModel.setQuery("") }) {
-                            Icon(Icons.Outlined.Close, contentDescription = "Clear")
+                            Icon(Icons.Outlined.Close, contentDescription = tr("Clear"))
                         }
                     }
                 },
@@ -222,13 +223,13 @@ fun FollowingListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = if (query.isBlank()) "Not following anyone" else "No matches",
+                        text = if (query.isBlank()) tr("Not following anyone") else tr("No matches"),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     if (query.isBlank()) {
                         Text(
-                            text = "Tap Follow on a channel to add it to your list.",
+                            text = tr("Tap Follow on a channel to add it to your list."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -299,7 +300,7 @@ fun FollowingListScreen(
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                             ) {
-                                Text("Following", style = MaterialTheme.typography.labelSmall)
+                                Text(tr("Following"), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }

@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.odysee.app.auth.LocalAuthState
 import com.odysee.app.core.data.auth.AuthState
+import com.odysee.app.core.designsystem.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +60,7 @@ private fun PlaceholderScaffold(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
                 title = { Text(title) },
@@ -95,10 +96,10 @@ fun InvitesScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = tr("Back"))
                     }
                 },
-                title = { Text("Invites") },
+                title = { Text(tr("Invites")) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -121,7 +122,7 @@ fun InvitesScreen(
             item("header") {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Earn credits for inviting friends",
+                        text = tr("Earn credits for inviting friends"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -129,7 +130,7 @@ fun InvitesScreen(
                     Text(
                         text = if (state.invitesRemaining > 0)
                             "You have ${state.invitesRemaining} invites left to send."
-                        else "Send your referral link or invite by email.",
+                        else tr("Send your referral link or invite by email."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -140,7 +141,7 @@ fun InvitesScreen(
                 item("link") {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "Your invite link",
+                            text = tr("Your invite link"),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -163,7 +164,7 @@ fun InvitesScreen(
                             IconButton(onClick = {
                                 clipboard.setText(AnnotatedString(state.inviteUrl))
                             }) {
-                                Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy")
+                                Icon(Icons.Outlined.ContentCopy, contentDescription = tr("Copy"))
                             }
                         }
                         if (state.channels.isNotEmpty()) {
@@ -185,7 +186,7 @@ fun InvitesScreen(
                                 }
                                 runCatching {
                                     context.startActivity(
-                                        android.content.Intent.createChooser(intent, "Share"),
+                                        android.content.Intent.createChooser(intent, tr("Share")),
                                     )
                                 }
                             },
@@ -194,7 +195,7 @@ fun InvitesScreen(
                             ),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Share link", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(tr("Share link"), color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -203,7 +204,7 @@ fun InvitesScreen(
             item("send") {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Invite by email",
+                        text = tr("Invite by email"),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -236,7 +237,7 @@ fun InvitesScreen(
                         ),
                     ) {
                         Text(
-                            text = if (state.isSending) "Sending…" else "Send invite",
+                            text = if (state.isSending) tr("Sending…") else tr("Send invite"),
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -259,7 +260,7 @@ fun InvitesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Invite History",
+                            text = tr("Invite History"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onBackground,
@@ -275,7 +276,7 @@ fun InvitesScreen(
                                 ),
                             ) {
                                 Text(
-                                    text = if (state.isClaiming) "Claiming…"
+                                    text = if (state.isClaiming) tr("Claiming…")
                                     else "Receive ${reward.rewardAmount ?: 0.0} LBC",
                                     color = Color.White,
                                     fontWeight = FontWeight.SemiBold,
@@ -289,19 +290,19 @@ fun InvitesScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     ) {
                         Text(
-                            text = "Email",
+                            text = tr("Email"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1.4f),
                         )
                         Text(
-                            text = "Status",
+                            text = tr("Status"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(0.9f),
                         )
                         Text(
-                            text = "Credit",
+                            text = tr("Credit"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(0.9f),
@@ -326,16 +327,16 @@ fun InvitesScreen(
                             maxLines = 1,
                         )
                         Text(
-                            text = if (invitee.inviteAccepted == true) "Accepted" else "Not Accepted",
+                            text = if (invitee.inviteAccepted == true) tr("Accepted") else tr("Not Accepted"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(0.9f),
                         )
                         Text(
                             text = when {
-                                invitee.inviteRewardClaimed == true -> "Claimed"
-                                invitee.inviteRewardClaimable == true -> "Claimable"
-                                else -> "Unclaimable"
+                                invitee.inviteRewardClaimed == true -> tr("Claimed")
+                                invitee.inviteRewardClaimable == true -> tr("Claimable")
+                                else -> tr("Unclaimable")
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = if (invitee.inviteRewardClaimed == true) MaterialTheme.colorScheme.primary
@@ -372,7 +373,7 @@ private fun InviteCustomizeDropdown(
     val selectedLabel = channels.firstOrNull { it.name == selectedKey }?.name ?: referralCode
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            text = "Customize link",
+            text = tr("Customize link"),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

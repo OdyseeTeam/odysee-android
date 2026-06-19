@@ -50,6 +50,7 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import kotlin.math.max
 import kotlin.math.min
+import com.odysee.app.core.designsystem.i18n.tr
 
 @Composable
 fun ImageCropDialog(
@@ -78,7 +79,7 @@ fun ImageCropDialog(
                 }
             }.getOrNull()
         }
-        if (bmp == null) loadError = "Couldn't load image" else sourceBitmap = bmp
+        if (bmp == null) loadError = tr("Couldn't load image") else sourceBitmap = bmp
     }
 
     Dialog(
@@ -99,10 +100,10 @@ fun ImageCropDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onCancel, enabled = !processing) {
-                        Text("Cancel", color = Color.White)
+                        Text(tr("Cancel"), color = Color.White)
                     }
                     Text(
-                        text = "Adjust crop",
+                        text = tr("Adjust crop"),
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -123,7 +124,7 @@ fun ImageCropDialog(
                         },
                         enabled = sourceBitmap != null && !processing,
                     ) {
-                        Text("Done", color = MaterialTheme.colorScheme.primary)
+                        Text(tr("Done"), color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -182,7 +183,7 @@ fun ImageCropDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Pinch to zoom, drag to position",
+                        text = tr("Pinch to zoom, drag to position"),
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelMedium,
                     )

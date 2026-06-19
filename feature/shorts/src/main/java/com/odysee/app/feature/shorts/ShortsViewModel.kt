@@ -185,28 +185,13 @@ class ShortsViewModel @Inject constructor(
                         .setReadTimeoutMs(30_000),
                 )
                 .setLoadErrorHandlingPolicy(
-                    object : androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy() {
-                        override fun getRetryDelayMsFor(
-                            loadErrorInfo: androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo,
-                        ): Long {
-                            val ex = loadErrorInfo.exception
-                            if (ex is androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException) {
-                                if (ex.responseCode == 429 || ex.responseCode in 500..599) {
-                                    if (loadErrorInfo.errorCount > 24) return androidx.media3.common.C.TIME_UNSET
-                                    val base = 2000L
-                                    val backoff = base * (1L shl (loadErrorInfo.errorCount.coerceAtMost(4) - 1).coerceAtLeast(0))
-                                    return backoff.coerceAtMost(15_000L)
-                                }
-                            }
-                            return super.getRetryDelayMsFor(loadErrorInfo)
-                        }
-
-                        override fun getMinimumLoadableRetryCount(dataType: Int): Int = Int.MAX_VALUE
-                    },
+                    com.odysee.app.core.data.player.odyseeLoadErrorHandlingPolicy(),
                 ),
         )
         .build().apply {
             playWhenReady = true
+            // Keep CPU/network alive while screen dims so shorts don't stutter.
+            setWakeMode(androidx.media3.common.C.WAKE_MODE_NETWORK)
             // Default repeat — only loop when autoplay-next is off.
             repeatMode = Player.REPEAT_MODE_ONE
             addListener(object : Player.Listener {
