@@ -159,13 +159,8 @@ abstract class BaseLocalCollectionRepository(
         merged.size
     }
 
-    private fun extractClaimIdFromLbryUrl(url: String): String? {
-        val stripped = url.removePrefix("lbry://").trim()
-        val sepIdx = stripped.lastIndexOfAny(charArrayOf('#', ':'))
-        if (sepIdx <= 0) return null
-        val tail = stripped.substring(sepIdx + 1).takeWhile { it != '/' && it != '?' }
-        return tail.takeIf { id -> id.length in 8..40 && id.all { it.isLetterOrDigit() } }
-    }
+    private fun extractClaimIdFromLbryUrl(url: String): String? =
+        com.odysee.app.core.model.LbryUri.claimIdOf(url)
 
     private suspend fun writeCollectionToSharedPreference() {
         val list = items.first()

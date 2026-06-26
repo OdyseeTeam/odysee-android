@@ -24,6 +24,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -33,7 +34,7 @@ import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class PlaylistSummary(
+data class Playlist(
     val id: String,
     val name: String,
     val itemUrls: List<String>,
@@ -55,11 +56,11 @@ data class PlaylistDraft(
 )
 
 interface PlaylistsRepository {
-    val playlists: Flow<List<PlaylistSummary>>
+    val playlists: Flow<List<Playlist>>
     suspend fun syncFromServer(): Result<Int>
     suspend fun upsertLocalPlaylist(draft: PlaylistDraft): String
     suspend fun deleteLocalPlaylist(id: String)
-    suspend fun getLocalPlaylist(id: String): PlaylistSummary?
+    suspend fun getLocalPlaylist(id: String): Playlist?
     suspend fun addItem(playlistId: String, permanentUrl: String)
     suspend fun removeItem(playlistId: String, permanentUrl: String)
     suspend fun setAutoPublish(playlistId: String, enabled: Boolean)
@@ -135,7 +136,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun buildPlaylistDocJson(p: PlaylistSummary): JsonObject = buildJsonObject {
+    private fun buildPlaylistDocJson(p: Playlist): JsonObject = buildJsonObject {
         put("id", JsonPrimitive(p.id))
         put("name", JsonPrimitive(p.name))
         put("type", JsonPrimitive("playlist"))
@@ -152,7 +153,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         }
     }
 
-    override val playlists: Flow<List<PlaylistSummary>> =
+    override val playlists: Flow<List<Playlist>> =
         authPreferences.customPlaylists.map { raw -> decode(raw) }
 
     override suspend fun syncFromServer(): Result<Int> = runCatching {
@@ -160,7 +161,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun syncFromServerLocked(): Int {
-        val collections = mutableMapOf<String, PlaylistSummary>()
+        val collections = mutableMapOf<String, Playlist>()
 
         // 1. Private / unpublished / edited collections from shared preferences.
         val autoPublishMap = sharedStore.readSlice(
@@ -175,7 +176,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
             for ((id, coll) in group) {
                 if (coll.type != "playlist") continue
                 val name = coll.name ?: continue
-                collections[id] = PlaylistSummary(
+                collections[id] = Playlist(
                     id = id,
                     name = name,
                     itemUrls = coll.items,
@@ -208,7 +209,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
                     // c.timestamp is in seconds; normalize to ms so comparison
                     // with unpublished entries (also normalized to ms) is sane.
                     val updatedAt = (c.timestamp ?: 0L) * 1000L
-                    collections[c.claimId] = PlaylistSummary(
+                    collections[c.claimId] = Playlist(
                         id = c.claimId,
                         name = name,
                         itemUrls = urls.map { id -> "lbry://?#$id" },
@@ -313,7 +314,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         } else {
             current.add(
                 0,
-                PlaylistSummary(
+                Playlist(
                     id = targetId,
                     name = cleanName,
                     itemUrls = emptyList(),
@@ -338,7 +339,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         pushToServerAsync()
     }
 
-    override suspend fun getLocalPlaylist(id: String): PlaylistSummary? {
+    override suspend fun getLocalPlaylist(id: String): Playlist? {
         return decode(authPreferences.customPlaylists.first()).firstOrNull { it.id == id }
     }
 
@@ -400,71 +401,129 @@ class PlaylistsRepositoryImpl @Inject constructor(
         pushToServerAsync()
     }
 
-    private fun extractClaimId(url: String?): String? {
-        if (url.isNullOrBlank()) return null
-        val hash = url.lastIndexOf('#')
-        if (hash < 0 || hash >= url.length - 1) return null
-        return url.substring(hash + 1).takeWhile { it.isLetterOrDigit() }.takeIf { it.isNotBlank() }
+    private fun extractClaimId(url: String?): String? =
+        com.odysee.app.core.model.LbryUri.claimIdOf(url)
+
+    private fun extractItemUrl(raw: String?): String? {
+        val s = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        // Heal a historical Android bug: a previous build wrote object
+        // toString() output of the form
+        //   `OdyseeCollection.Item(url=lbry://..., itemOrder=N)`
+        // into the items array. Contaminated accounts still have these
+        // strings on the server. Extract the real `url=` value when we
+        // see one; otherwise pass the string through.
+        val match = MALFORMED_ITEM.find(s)
+        return match?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() } ?: s
     }
 
-    private fun decode(raw: String?): List<PlaylistSummary> {
+    private fun decode(raw: String?): List<Playlist> {
         if (raw.isNullOrBlank()) return emptyList()
         return runCatching {
-            val arr = json.parseToJsonElement(raw) as? JsonArray ?: return emptyList()
-            arr.mapNotNull { el ->
-                val obj = el as? JsonObject ?: return@mapNotNull null
-                val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                val urls = (obj["items"] as? JsonArray)
-                    ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
-                val updatedAt = obj["updatedAt"]?.jsonPrimitive?.longOrNull ?: 0L
-                val thumb = obj["thumbnail"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                val desc = obj["description"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                val tags = (obj["tags"] as? JsonArray)
-                    ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
-                val isPublic = obj["isPublic"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: false
-                val autoPublish = obj["autoPublish"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: false
-                PlaylistSummary(
-                    id = id,
-                    name = name,
-                    itemUrls = urls,
-                    updatedAt = updatedAt,
-                    thumbnailUrl = thumb,
-                    description = desc,
-                    tags = tags,
-                    isPublic = isPublic,
-                    autoPublish = autoPublish,
-                )
-            }
+            json.decodeFromString(
+                kotlinx.serialization.builtins.ListSerializer(StoredPlaylist.serializer()),
+                raw,
+            ).map { it.toPlaylist(::extractItemUrl) }
         }.getOrDefault(emptyList())
     }
 
-    private fun encode(list: List<PlaylistSummary>): String {
-        val arr = list.map { p ->
-            JsonObject(
-                buildMap {
-                    put("id", JsonPrimitive(p.id))
-                    put("name", JsonPrimitive(p.name))
-                    put("items", JsonArray(p.itemUrls.map { JsonPrimitive(it) }))
-                    put("updatedAt", JsonPrimitive(p.updatedAt))
-                    if (!p.thumbnailUrl.isNullOrBlank()) {
-                        put("thumbnail", JsonPrimitive(p.thumbnailUrl))
-                    }
-                    p.description?.takeIf { it.isNotBlank() }?.let {
-                        put("description", JsonPrimitive(it))
-                    }
-                    if (p.tags.isNotEmpty()) {
-                        put("tags", JsonArray(p.tags.map { JsonPrimitive(it) }))
-                    }
-                    if (p.isPublic) {
-                        put("isPublic", JsonPrimitive("true"))
-                    }
-                    if (p.autoPublish) {
-                        put("autoPublish", JsonPrimitive("true"))
-                    }
-                },
-            )
-        }
-        return JsonArray(arr).toString()
+    private fun encode(list: List<Playlist>): String =
+        json.encodeToString(
+            kotlinx.serialization.builtins.ListSerializer(StoredPlaylist.serializer()),
+            list.map { StoredPlaylist.fromPlaylist(it) },
+        )
+
+    private companion object {
+        private val MALFORMED_ITEM = Regex(
+            """OdyseeCollection\.Item\s*\(\s*url\s*=\s*([^,)\s]+).*\)""",
+            RegexOption.IGNORE_CASE,
+        )
+    }
+}
+
+/**
+ * On-disk serialization of [Playlist] for the DataStore-backed local cache.
+ *
+ * Kept as a separate type so the public domain `Playlist` doesn't have to
+ * leak `@Serializable` annotations or care about historical field-name
+ * quirks. The wire format we PUSH to the server is built independently in
+ * `buildPlaylistDocJson` because the server-side schema uses different
+ * field names (e.g. seconds-since-epoch `updatedAt`, nested `thumbnail`
+ * object). This type is local-only.
+ *
+ * Backward-compat quirks:
+ *  - `isPublic` / `autoPublish` used to be stored as the STRINGS `"true"`
+ *    / `"false"` (see legacy encoder). [LooseBoolSerializer] accepts both
+ *    forms on read and emits a real boolean on write so old caches still
+ *    decode after this refactor.
+ *  - `items` historically may contain Android-emitted `OdyseeCollection.Item(...)`
+ *    strings; the repository's `extractItemUrl` strips them at the
+ *    domain-mapping boundary instead of here, so the wire form stays
+ *    transparent.
+ */
+@kotlinx.serialization.Serializable
+private data class StoredPlaylist(
+    val id: String,
+    val name: String,
+    val items: List<String> = emptyList(),
+    val updatedAt: Long = 0L,
+    val thumbnail: String? = null,
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    @kotlinx.serialization.Serializable(with = LooseBoolSerializer::class)
+    val isPublic: Boolean = false,
+    @kotlinx.serialization.Serializable(with = LooseBoolSerializer::class)
+    val autoPublish: Boolean = false,
+) {
+    fun toPlaylist(healItemUrl: (String?) -> String?): Playlist = Playlist(
+        id = id,
+        name = name,
+        itemUrls = items.mapNotNull(healItemUrl),
+        updatedAt = updatedAt,
+        thumbnailUrl = thumbnail?.takeIf { it.isNotBlank() },
+        description = description?.takeIf { it.isNotBlank() },
+        tags = tags,
+        isPublic = isPublic,
+        autoPublish = autoPublish,
+    )
+
+    companion object {
+        fun fromPlaylist(p: Playlist): StoredPlaylist = StoredPlaylist(
+            id = p.id,
+            name = p.name,
+            items = p.itemUrls,
+            updatedAt = p.updatedAt,
+            thumbnail = p.thumbnailUrl?.takeIf { it.isNotBlank() },
+            description = p.description?.takeIf { it.isNotBlank() },
+            tags = p.tags,
+            isPublic = p.isPublic,
+            autoPublish = p.autoPublish,
+        )
+    }
+}
+
+/** Reads either a JSON boolean or the legacy `"true"`/`"false"` string. */
+private object LooseBoolSerializer : kotlinx.serialization.KSerializer<Boolean> {
+    override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
+        kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
+            "LooseBool",
+            kotlinx.serialization.descriptors.PrimitiveKind.BOOLEAN,
+        )
+
+    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): Boolean {
+        val jd = decoder as? kotlinx.serialization.json.JsonDecoder
+            ?: return decoder.decodeBoolean()
+        val element = jd.decodeJsonElement() as? kotlinx.serialization.json.JsonPrimitive
+            ?: return false
+        return looseBool(element)
+    }
+
+    private fun looseBool(p: kotlinx.serialization.json.JsonPrimitive): Boolean {
+        val b: Boolean? = p.booleanOrNull
+        if (b != null) return b
+        return p.contentOrNull?.equals("true", ignoreCase = true) == true
+    }
+
+    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: Boolean) {
+        encoder.encodeBoolean(value)
     }
 }

@@ -62,7 +62,7 @@ interface SdkProxyApi {
     @POST("api/v1/proxy")
     suspend fun streamRepost(
         @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.StreamRepostParams>,
-    ): JsonRpcResponse<kotlinx.serialization.json.JsonObject>
+    ): JsonRpcResponse<com.odysee.app.core.network.dto.SdkPublishResult>
 
     @POST("api/v1/proxy")
     suspend fun preferenceGet(

@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.odysee.app.core.data.collections.CollectionEntry
 import com.odysee.app.core.data.collections.FavoritesRepository
 import com.odysee.app.core.data.collections.PlaylistDraft
-import com.odysee.app.core.data.collections.PlaylistSummary
+import com.odysee.app.core.data.collections.Playlist
 import com.odysee.app.core.data.collections.PlaylistsRepository
 import com.odysee.app.core.data.collections.WatchLaterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +32,7 @@ class AddToPlaylistViewModel @Inject constructor(
     private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
 
-    val playlists: StateFlow<List<PlaylistSummary>> =
+    val playlists: StateFlow<List<Playlist>> =
         repository.playlists.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val watchLaterIds: StateFlow<Set<String>> =

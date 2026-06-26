@@ -2,7 +2,6 @@ package com.odysee.app.core.data.notifications
 
 import com.odysee.app.core.network.LbryioApi
 import com.odysee.app.core.network.dto.NotificationDto
-import com.odysee.app.core.network.dto.stringOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,11 +66,11 @@ class NotificationsRepositoryImpl @Inject constructor(
 private fun NotificationDto.toItem(): NotificationItem {
     val device = parameters?.device
     val dynamic = parameters?.dynamic
-    val channelUrl = dynamic?.stringOrNull("channel_url")
-        ?: dynamic?.stringOrNull("comment_author")
-        ?: dynamic?.stringOrNull("reply_author")
-    val channelThumbnail = dynamic?.stringOrNull("channel_thumbnail")
-        ?: dynamic?.stringOrNull("comment_author_thumbnail")
+    val channelUrl = dynamic?.channelUrl
+        ?: dynamic?.commentAuthor
+        ?: dynamic?.replyAuthor
+    val channelThumbnail = dynamic?.channelThumbnail
+        ?: dynamic?.commentAuthorThumbnail
     return NotificationItem(
         id = id,
         rule = rule.orEmpty(),

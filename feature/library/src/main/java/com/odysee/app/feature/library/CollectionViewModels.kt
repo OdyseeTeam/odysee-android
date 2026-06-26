@@ -48,7 +48,7 @@ class FavoritesViewModel @Inject constructor(
 class PlaylistsViewModel @Inject constructor(
     private val repository: com.odysee.app.core.data.collections.PlaylistsRepository,
 ) : ViewModel() {
-    val playlists: StateFlow<List<com.odysee.app.core.data.collections.PlaylistSummary>> =
+    val playlists: StateFlow<List<com.odysee.app.core.data.collections.Playlist>> =
         repository.playlists.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)

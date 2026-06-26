@@ -198,6 +198,23 @@ class HomeViewModel @Inject constructor(
                 if (signedIn && !userPickedCategory && before.selectedCategoryId != FOLLOWING_ID) {
                     _state.update { it.copy(selectedCategoryId = FOLLOWING_ID) }
                 }
+                // On sign-out, the Following category disappears from the
+                // categories list (see `categories` getter). If the user
+                // was viewing Following they'd otherwise stay on a stale
+                // "none followed" screen — snap to the first available
+                // category (Featured) instead.
+                if (!signedIn && before.selectedCategoryId == FOLLOWING_ID) {
+                    val next = before.baseCategories.firstOrNull()?.id
+                    _state.update {
+                        it.copy(
+                            selectedCategoryId = next,
+                            subscriptions = emptyList(),
+                            followingFeed = FeedState.Success(emptyList()),
+                        )
+                    }
+                    userPickedCategory = false
+                    if (next != null) loadCategory(next)
+                }
             }
         }
         viewModelScope.launch {
@@ -269,7 +286,19 @@ class HomeViewModel @Inject constructor(
     }
 
     fun retryFollowing() {
-        loadFollowing(lastFollowingIds ?: emptyList())
+        // Pull-to-refresh on the Following category must also re-fetch the
+        // subscription list itself — otherwise we'd reload the feed using
+        // the stale `lastFollowingIds` and the user's most recent
+        // subscribe/unsubscribe (made from another client) wouldn't show.
+        viewModelScope.launch {
+            runCatching { subscriptionsRepository.syncFromServer() }
+            // The subscriptions Flow collector at init time will fire
+            // loadFollowing(...) when the list changes. If it's unchanged
+            // (server hasn't drifted) the collector won't re-emit, so do
+            // an unconditional feed reload as the fallback.
+            val ids = _state.value.subscriptions.map { it.claimId }
+            loadFollowing(ids)
+        }
     }
 
     private fun loadFollowing(ids: List<String>) {

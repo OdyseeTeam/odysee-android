@@ -187,9 +187,6 @@ class FeaturedChannelsEditViewModel @Inject constructor(
 
     fun clearError() = _state.update { it.copy(error = null) }
 
-    private fun extractClaimId(uri: String): String? {
-        val hash = uri.lastIndexOf('#')
-        if (hash < 0 || hash >= uri.length - 1) return null
-        return uri.substring(hash + 1).takeWhile { it.isLetterOrDigit() }.takeIf { it.isNotBlank() }
-    }
+    private fun extractClaimId(uri: String): String? =
+        com.odysee.app.core.model.LbryUri.claimIdOf(uri)
 }

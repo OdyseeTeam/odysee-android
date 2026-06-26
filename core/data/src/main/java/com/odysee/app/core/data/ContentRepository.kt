@@ -11,7 +11,6 @@ import com.odysee.app.core.network.LighthouseApi
 import com.odysee.app.core.network.LivestreamApi
 import com.odysee.app.core.network.OdyseeContentApi
 import com.odysee.app.core.network.SdkProxyApi
-import kotlinx.serialization.json.contentOrNull
 import com.odysee.app.core.network.dto.ChannelSignParams
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -384,19 +383,21 @@ class ContentRepositoryImpl @Inject constructor(
         resp.use { r ->
             val text = r.body?.string().orEmpty()
             if (!r.isSuccessful) error("Publish HTTP ${r.code}: $text")
-            val parsed = runCatching {
-                kotlinx.serialization.json.Json.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject
+            val rpcJson = kotlinx.serialization.json.Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+            }
+            val envelope = runCatching {
+                rpcJson.decodeFromString(
+                    com.odysee.app.core.network.jsonrpc.JsonRpcResponse.serializer(
+                        com.odysee.app.core.network.dto.SdkPublishResult.serializer(),
+                    ),
+                    text,
+                )
             }.getOrNull() ?: error("Unexpected publish response")
-            val result = parsed["result"] as? kotlinx.serialization.json.JsonObject
-                ?: run {
-                    val err = (parsed["error"] as? kotlinx.serialization.json.JsonObject)
-                        ?.get("message") as? kotlinx.serialization.json.JsonPrimitive
-                    error(err?.contentOrNull ?: "Publish failed")
-                }
-            val outputs = result["outputs"] as? kotlinx.serialization.json.JsonArray
-            val firstOutput = outputs?.firstOrNull() as? kotlinx.serialization.json.JsonObject
-            val claimId = (firstOutput?.get("claim_id") as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-            return@withContext claimId ?: error("Publish: no claim id returned")
+            envelope.error?.let { error(it.message) }
+            return@withContext envelope.result?.claimId
+                ?: error("Publish: no claim id returned")
         }
     }
 
@@ -418,15 +419,10 @@ class ContentRepositoryImpl @Inject constructor(
             okHttpClient.newCall(request).execute().use { resp ->
                 val text = resp.body?.string().orEmpty()
                 if (!resp.isSuccessful) error("HTTP ${resp.code}: $text")
-                val obj = runCatching {
-                    kotlinx.serialization.json.Json.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject
-                }.getOrNull() ?: error("Unexpected response")
-                val type = (obj["type"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-                if (type != "success") {
-                    error((obj["message"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull ?: "Upload failed")
-                }
-                (obj["message"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-                    ?: error("Missing URL in response")
+                val result = com.odysee.app.core.network.dto.UploadResult.parseLenient(text)
+                    ?: error("Unexpected response")
+                if (!result.isSuccess) error(result.message ?: "Upload failed")
+                result.message ?: error("Missing URL in response")
             }
         }
 
@@ -1182,7 +1178,7 @@ class ContentRepositoryImpl @Inject constructor(
             .trim('-')
             .take(100)
             .ifBlank { "repost-" + claimId.take(8) }
-        val res = sdkProxyApi.streamRepost(
+        sdkProxyApi.streamRepost(
             com.odysee.app.core.network.jsonrpc.JsonRpcRequest(
                 method = "stream_repost",
                 params = com.odysee.app.core.network.dto.StreamRepostParams(
@@ -1192,11 +1188,7 @@ class ContentRepositoryImpl @Inject constructor(
                     channelId = channelId,
                 ),
             ),
-        ).unwrap()
-        val outputs = res["outputs"] as? kotlinx.serialization.json.JsonArray
-        val first = outputs?.firstOrNull() as? kotlinx.serialization.json.JsonObject
-        (first?.get("claim_id") as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-            ?: error("Repost: no claim id returned")
+        ).unwrap().claimId ?: error("Repost: no claim id returned")
     }
 
     override suspend fun createChannel(

@@ -166,13 +166,10 @@ class LivestreamFormViewModel @Inject constructor(
                 okHttpClient.newCall(request).execute().use { resp ->
                     val text = resp.body?.string().orEmpty()
                     if (!resp.isSuccessful) error("HTTP ${resp.code}: $text")
-                    val obj = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull()
+                    val result = com.odysee.app.core.network.dto.UploadResult.parseLenient(text)
                         ?: error("Unexpected response")
-                    if (obj["type"]?.jsonPrimitive?.contentOrNull != "success") {
-                        error(obj["message"]?.jsonPrimitive?.contentOrNull ?: "Upload failed")
-                    }
-                    obj["message"]?.jsonPrimitive?.contentOrNull
-                        ?: error("Missing URL in response")
+                    if (!result.isSuccess) error(result.message ?: "Upload failed")
+                    result.message ?: error("Missing URL in response")
                 }
             }
         }

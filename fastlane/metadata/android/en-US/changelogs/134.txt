@@ -1,0 +1,4 @@
+- Faster sign-in
+- Magic-link fix
+- Playlist parsing fixes
+- Bug fixes

@@ -149,15 +149,14 @@ class SubscriptionsRepositoryImpl @Inject constructor(
 }
 
 /**
- * Parses a Lbry URL like "lbry://@channel#claimid" or "lbry://@channel:claimid" → Subscription.
+ * Parse a `lbry://@channel#claimid` (or `:claimid`) URL into a Subscription.
+ * Backed by [com.odysee.app.core.model.LbryUri] so URI handling stays
+ * consistent across the codebase.
  */
 internal fun parseLbryUrl(url: String): Subscription? {
-    val stripped = url.removePrefix("lbry://").trim()
-    if (stripped.isBlank() || !stripped.startsWith("@")) return null
-    val sepIdx = stripped.indexOfAny(charArrayOf('#', ':'))
-    return if (sepIdx > 0) {
-        val name = stripped.substring(0, sepIdx)
-        val claimId = stripped.substring(sepIdx + 1).takeWhile { it != '/' }
-        if (claimId.isBlank()) null else Subscription(claimId = claimId, name = name)
-    } else null
+    val parsed = com.odysee.app.core.model.LbryUri.parse(url) ?: return null
+    // Subscriptions are by definition channels — content claims wouldn't be
+    // in the subscriptions slice.
+    if (!parsed.isChannel) return null
+    return Subscription(claimId = parsed.claimId, name = parsed.name)
 }

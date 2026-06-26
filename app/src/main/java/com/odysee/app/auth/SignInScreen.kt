@@ -9,7 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -155,6 +160,16 @@ private fun SignInForm(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+    val focus = LocalFocusManager.current
+    val keyboardCtrl = LocalSoftwareKeyboardController.current
+
+    // Submitter used by both the button click and the IME "Done" action,
+    // so Enter on the keyboard does exactly what tapping the button does.
+    fun trySubmit() {
+        if (email.isBlank() || isSubmitting) return
+        keyboardCtrl?.hide()
+        onSignIn(email, password.takeIf { it.isNotBlank() })
+    }
 
     Text(
         text = tr("Sign in to Odysee"),
@@ -174,7 +189,13 @@ private fun SignInForm(
         onValueChange = { email = it },
         label = { Text(tr("Email")) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { focus.moveFocus(FocusDirection.Down) },
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .autofillField(
@@ -189,7 +210,11 @@ private fun SignInForm(
         onValueChange = { password = it },
         label = { Text(tr("Password (optional)")) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(onDone = { trySubmit() }),
         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { showPassword = !showPassword }) {
@@ -209,7 +234,7 @@ private fun SignInForm(
     )
     Spacer(Modifier.size(8.dp))
     Button(
-        onClick = { onSignIn(email, password.takeIf { it.isNotBlank() }) },
+        onClick = { trySubmit() },
         enabled = !isSubmitting,
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth(),

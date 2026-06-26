@@ -2,11 +2,6 @@ package com.odysee.app.core.network.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.contentOrNull
 
 @Serializable
 data class NotificationDto(
@@ -24,7 +19,7 @@ data class NotificationDto(
 @Serializable
 data class NotificationParameters(
     val device: NotificationDevice? = null,
-    val dynamic: JsonObject? = null,
+    val dynamic: NotificationDynamic? = null,
 )
 
 @Serializable
@@ -34,5 +29,19 @@ data class NotificationDevice(
     val text: String? = null,
 )
 
-fun JsonObject.stringOrNull(key: String): String? =
-    (this[key] as? JsonElement)?.jsonPrimitive?.contentOrNull
+/**
+ * Per-rule notification payload. The server emits different fields
+ * depending on the notification type (new-content vs comment vs
+ * comment-reply, etc.), but the small set of fields the app actually
+ * reads is stable. Add fields here as we surface more notification
+ * types — every field is optional so unrelated rules just leave them
+ * null.
+ */
+@Serializable
+data class NotificationDynamic(
+    @SerialName("channel_url") val channelUrl: String? = null,
+    @SerialName("channel_thumbnail") val channelThumbnail: String? = null,
+    @SerialName("comment_author") val commentAuthor: String? = null,
+    @SerialName("comment_author_thumbnail") val commentAuthorThumbnail: String? = null,
+    @SerialName("reply_author") val replyAuthor: String? = null,
+)

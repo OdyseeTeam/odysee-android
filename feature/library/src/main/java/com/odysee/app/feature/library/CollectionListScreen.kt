@@ -367,10 +367,10 @@ fun PlaylistsScreen(
     val items by viewModel.playlists.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     var menuTarget by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.PlaylistSummary?>(null)
+        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.Playlist?>(null)
     }
     var deleteTarget by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.PlaylistSummary?>(null)
+        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.Playlist?>(null)
     }
     Scaffold(
         topBar = {
@@ -503,7 +503,7 @@ fun PlaylistsScreen(
 
 @Composable
 private fun PlaylistActionsSheet(
-    target: com.odysee.app.core.data.collections.PlaylistSummary,
+    target: com.odysee.app.core.data.collections.Playlist,
     onOpen: () -> Unit,
     onShuffle: () -> Unit,
     onPublish: () -> Unit,
@@ -634,7 +634,7 @@ private fun PlaylistsScreenInternal(
     onWatchHistory: () -> Unit = {},
     onWatchLater: () -> Unit = {},
     onFavorites: () -> Unit = {},
-    playlists: List<com.odysee.app.core.data.collections.PlaylistSummary> = emptyList(),
+    playlists: List<com.odysee.app.core.data.collections.Playlist> = emptyList(),
     onOpenPlaylist: (String) -> Unit = {},
     onPlayPlaylist: (String) -> Unit = {},
     onShufflePlaylist: (String) -> Unit = {},
@@ -645,10 +645,10 @@ private fun PlaylistsScreenInternal(
     onToggleAutoPublish: (String, Boolean) -> Unit = { _, _ -> },
 ) {
     var menuTarget by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.PlaylistSummary?>(null)
+        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.Playlist?>(null)
     }
     var deleteTarget by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.PlaylistSummary?>(null)
+        androidx.compose.runtime.mutableStateOf<com.odysee.app.core.data.collections.Playlist?>(null)
     }
     Scaffold(
         topBar = topBar,
@@ -802,7 +802,7 @@ private fun PlaylistsScreenInternal(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistListRow(
-    playlist: com.odysee.app.core.data.collections.PlaylistSummary,
+    playlist: com.odysee.app.core.data.collections.Playlist,
     onClick: () -> Unit,
     onPlay: () -> Unit = {},
     onLongPress: () -> Unit = {},

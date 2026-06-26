@@ -1,10 +1,6 @@
 package com.odysee.app.core.data.reactions
 
 import com.odysee.app.core.network.LbryioApi
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,18 +29,18 @@ class ReactionsRepositoryImpl @Inject constructor(
     override suspend fun fetch(claimId: String): Reactions? {
         val env = runCatching { lbryioApi.reactionList(claimId) }.getOrNull() ?: return null
         val data = env.data ?: return null
-        val others = (data["others_reactions"] as? JsonObject)?.get(claimId) as? JsonObject
-        val mine = (data["my_reactions"] as? JsonObject)?.get(claimId) as? JsonObject
-        val likes = (others?.get(LIKE)?.jsonPrimitive?.longOrNull) ?: 0L
-        val dislikes = (others?.get(DISLIKE)?.jsonPrimitive?.longOrNull) ?: 0L
-        val myLike = (mine?.get(LIKE)?.jsonPrimitive?.longOrNull) ?: 0L
-        val myDislike = (mine?.get(DISLIKE)?.jsonPrimitive?.longOrNull) ?: 0L
+        val others = data.othersReactions[claimId]
+        val mine = data.myReactions[claimId]
         val myReaction = when {
-            myLike > 0 -> MyReaction.LIKE
-            myDislike > 0 -> MyReaction.DISLIKE
+            (mine?.like ?: 0) > 0 -> MyReaction.LIKE
+            (mine?.dislike ?: 0) > 0 -> MyReaction.DISLIKE
             else -> MyReaction.NONE
         }
-        return Reactions(likes = likes, dislikes = dislikes, myReaction = myReaction)
+        return Reactions(
+            likes = others?.like ?: 0L,
+            dislikes = others?.dislike ?: 0L,
+            myReaction = myReaction,
+        )
     }
 
     override suspend fun like(claimId: String, remove: Boolean): Boolean = runCatching {

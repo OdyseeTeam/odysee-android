@@ -382,6 +382,13 @@ class AuthRepositoryImpl @Inject constructor(
         if (email.isBlank() || verificationToken.isBlank() || authToken.isBlank()) {
             return SignInResult.Failure("Invalid verification link.")
         }
+        // Stop the verification poller BEFORE we touch state. Otherwise an
+        // in-flight `userMe` it kicked off seconds ago (with the pre-verify
+        // token) can still resolve and overwrite the SignedIn state we're
+        // about to set, flipping the user back to Anonymous and giving them
+        // the "signed in, then suddenly logged out again" experience.
+        verificationJob?.cancel()
+        verificationJob = null
         // The auth_token from the link becomes our new session token. Persist it
         // first so the subsequent call carries it, then ask the server to confirm.
         authPreferences.setAuthToken(authToken)

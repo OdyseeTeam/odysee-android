@@ -141,7 +141,7 @@ interface LbryioApi {
     @POST("reaction/list")
     suspend fun reactionList(
         @Field("claim_ids") claimIds: String,
-    ): LbryioEnvelope<kotlinx.serialization.json.JsonObject?>
+    ): LbryioEnvelope<com.odysee.app.core.network.dto.ReactionListResult?>
 
     @FormUrlEncoded
     @POST("reaction/react")
