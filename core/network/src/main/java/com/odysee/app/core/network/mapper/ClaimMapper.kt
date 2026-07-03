@@ -87,7 +87,13 @@ fun ClaimDto.toChannel(): Channel? {
         coverUrl = value?.cover?.url?.takeIf { it.isNotBlank() },
         permanentUrl = permanentUrl ?: "lbry://$n#$id",
         canonicalUrl = canonicalUrl,
-        tags = (value?.tags ?: emptyList()).filterNot { it.startsWith("c:", ignoreCase = true) },
+        // Keep the full tag set — including internal `c:*` markers. The
+        // player needs `c:disable-slimes-all`, `c:disable-reactions-all`,
+        // etc. on the CHANNEL claim to honour creator settings (web checks
+        // them on stream OR channel via `makeSelectTagInClaimOrChannelForUri`).
+        // UI code that surfaces user-facing tag chips is responsible for
+        // filtering `c:*` at the render site.
+        tags = value?.tags ?: emptyList(),
         languages = value?.languages ?: emptyList(),
         email = value?.email?.takeIf { it.isNotBlank() },
         websiteUrl = value?.websiteUrl?.takeIf { it.isNotBlank() },

@@ -385,11 +385,18 @@ class PlayerController @Inject constructor(
             androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(
                     androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setUserAgent(com.odysee.app.core.model.i18n.Translations.tr("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36"))
-                        .setDefaultRequestProperties(mapOf(com.odysee.app.core.model.i18n.Translations.tr("Referer") to "https://odysee.com/"))
+                        .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
+                        .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
                         .setAllowCrossProtocolRedirects(true)
-                        .setConnectTimeoutMs(30_000)
-                        .setReadTimeoutMs(30_000),
+                        // Older content that lives in cold storage on the
+                        // CDN can take ~30-60s for the streaming server to
+                        // warm and serve the first segment. Media3's own
+                        // defaults are 8s each which is what caused the
+                        // "2 month-old videos don't load" reports. Match
+                        // web's SDK ceiling (60s) so we're at least as
+                        // patient as the browser.
+                        .setConnectTimeoutMs(60_000)
+                        .setReadTimeoutMs(60_000),
                 )
                 .setLoadErrorHandlingPolicy(odyseeLoadErrorHandlingPolicy()),
         )
@@ -814,12 +821,24 @@ class PlayerController @Inject constructor(
         channelClaimId: String?,
         claimMeta: com.odysee.app.core.model.Claim?,
     ): CreatorRestrictions {
-        val tags = claimMeta?.tags.orEmpty().map { it.lowercase() }
-        val tagCommentsOff = "c:disable-comments" in tags
-        val tagReactionsAllOff = "c:disable-reactions-all" in tags
-        val tagReactionsVideoOff = "c:disable-reactions-video" in tags
-        val tagSlimesAllOff = "c:disable-slimes-all" in tags
-        val tagSlimesVideoOff = "c:disable-slimes-video" in tags
+        // Web checks each `c:disable-*` marker on EITHER the stream claim OR
+        // the channel claim (see `makeSelectTagInClaimOrChannelForUri` in
+        // `fileReactions/view.tsx`). Channel-level toggles from the Creator
+        // Settings page write to the channel claim's tags, not the stream —
+        // if we only look at the stream we miss "no dislikes on content"
+        // and friends.
+        val streamTags = claimMeta?.tags.orEmpty().map { it.lowercase() }
+        val channelTags = channelClaimId?.let { id ->
+            runCatching { contentRepository.getChannel(id)?.tags }
+                .getOrNull().orEmpty().map { it.lowercase() }
+        }.orEmpty()
+        fun has(tag: String): Boolean = tag in streamTags || tag in channelTags
+
+        val tagCommentsOff = has("c:disable-comments")
+        val tagReactionsAllOff = has("c:disable-reactions-all")
+        val tagReactionsVideoOff = has("c:disable-reactions-video")
+        val tagSlimesAllOff = has("c:disable-slimes-all")
+        val tagSlimesVideoOff = has("c:disable-slimes-video")
         // Channel-wide comments toggle from setting.Get. Missing/null = enabled.
         val channelCommentsOff = channelClaimId?.let { id ->
             runCatching {

@@ -1,0 +1,4 @@
+- Older videos load
+- Unlisted content hidden
+- Creator settings honored
+- Background playback fix

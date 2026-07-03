@@ -275,7 +275,32 @@ class ContentRepositoryImpl @Inject constructor(
     private val lbryioApi: LbryioApi,
     private val livestreamApi: LivestreamApi,
     private val okHttpClient: okhttp3.OkHttpClient,
+    // Provider avoids the circular dependency chain
+    // AuthRepository → PlaylistsRepository → ContentRepository → AuthRepository.
+    private val authRepository: javax.inject.Provider<com.odysee.app.core.data.auth.AuthRepository>,
 ) : ContentRepository {
+
+    /**
+     * Drop claims whose creator has marked them unlisted (or the stubbed
+     * `c:private`) — UNLESS the signed-in viewer owns the publishing
+     * channel. The SDK's `not_tags = ["c:unlisted"]` filter doesn't
+     * reliably catch every unlisted claim (older content published before
+     * the `c:` tag convention landed, tag serialization quirks around the
+     * colon), so this is a belt-and-suspenders client-side check applied
+     * to every browse endpoint. Direct-resolve paths (getClaimsByIds,
+     * deep-link handling) intentionally skip this so unlisted URLs the
+     * viewer received still play.
+     */
+    private fun filterHiddenFromViewer(claims: List<Claim>): List<Claim> {
+        val ownedChannelIds = (authRepository.get().state.value
+            as? com.odysee.app.core.data.auth.AuthState.SignedIn)
+            ?.channels?.map { it.claimId }?.toSet()
+            ?: emptySet()
+        return claims.filterNot { claim ->
+            (claim.isUnlisted || claim.isPrivate) &&
+                claim.signingChannel?.claimId !in ownedChannelIds
+        }
+    }
 
     override suspend fun publishStream(
         file: java.io.File,
@@ -468,7 +493,7 @@ class ContentRepositoryImpl @Inject constructor(
         val response = sdkProxyApi.claimSearch(
             JsonRpcRequest(method = "claim_search", params = params),
         )
-        return response.unwrap().items.mapNotNull { it.toDomain() }
+        return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
     override suspend fun resolveStreamUrl(uri: String): String {
@@ -978,7 +1003,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             ),
         )
-        return response.unwrap().items.mapNotNull { it.toDomain() }
+        return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
     override suspend fun search(query: String, size: Int, from: Int): List<Claim> {
@@ -1054,11 +1079,11 @@ class ContentRepositoryImpl @Inject constructor(
         }
 
         val winningDomain = winning?.toDomain()
-        if (winningDomain == null) return lighthouseClaims
+        if (winningDomain == null) return filterHiddenFromViewer(lighthouseClaims)
         // If Lighthouse already has the winning claim, promote it; otherwise
         // prepend it as a featured result.
         val without = lighthouseClaims.filterNot { it.claimId == winningDomain.claimId }
-        return listOf(winningDomain) + without
+        return filterHiddenFromViewer(listOf(winningDomain) + without)
     }
 
     override suspend fun getClaimsByTags(tags: List<String>, page: Int, pageSize: Int): List<Claim> {
@@ -1080,7 +1105,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             )
         }.getOrNull() ?: return emptyList()
-        return response.unwrap().items.mapNotNull { it.toDomain() }
+        return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
     override suspend fun getRelated(
@@ -1606,7 +1631,7 @@ class ContentRepositoryImpl @Inject constructor(
             p++
             attempts++
         }
-        return collected
+        return filterHiddenFromViewer(collected)
     }
 
     override suspend fun getLivestreams(pageSize: Int): List<Claim> {
@@ -1632,7 +1657,9 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             )
         }.getOrNull() ?: return emptyList()
-        return response.unwrap().items.mapNotNull { it.toDomain()?.copy(hasSource = false) }
+        return filterHiddenFromViewer(
+            response.unwrap().items.mapNotNull { it.toDomain()?.copy(hasSource = false) },
+        )
     }
 
     override suspend fun getLivestreamUrls(): Map<String, String> {
@@ -1662,12 +1689,12 @@ class ContentRepositoryImpl @Inject constructor(
                         pageSize = pageSize.coerceIn(1, 50),
                         orderBy = listOf("release_time"),
                         releaseTime = ">$now",
-                        notTags = listOf("mature"),
+                        notTags = listOf("mature", "c:unlisted"),
                     ),
                 ),
             )
         }.getOrNull() ?: return emptyList()
-        return response.unwrap().items.mapNotNull { it.toDomain() }
+        return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
     override suspend fun getFollowingFeed(
@@ -1691,7 +1718,7 @@ class ContentRepositoryImpl @Inject constructor(
                 ),
             ),
         )
-        return response.unwrap().items.mapNotNull { it.toDomain() }
+        return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
     override suspend fun listOwnComments(

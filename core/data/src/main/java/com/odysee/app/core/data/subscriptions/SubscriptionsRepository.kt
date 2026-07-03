@@ -109,8 +109,32 @@ class SubscriptionsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun syncFromServerInternal(): Int = syncMutex.withLock {
-        val urls = sharedStore.readSlice(SharedPrefSlices.SUBSCRIPTIONS, SharedPrefSlices.StringList)
-            ?: run { hasSynced.set(true); return@withLock 0 }
+        // Read BOTH server slices and union their URIs. Historically we only
+        // read `subscriptions`, so any account whose server state only
+        // populated `following` (older web sessions, iOS, etc.) would sync
+        // as empty and the next subscribe() would push a fresh 1-entry list
+        // that overwrites all the user's existing follows on the server.
+        //
+        // `following` is preferred as the source of truth — it's the richer
+        // shape ({uri, notificationsDisabled}) and the web always writes it.
+        val followingEntries = sharedStore.readSlice(
+            SharedPrefSlices.FOLLOWING,
+            SharedPrefSlices.FollowingList,
+        ).orEmpty()
+        val subscriptionUrls = sharedStore.readSlice(
+            SharedPrefSlices.SUBSCRIPTIONS,
+            SharedPrefSlices.StringList,
+        ).orEmpty()
+        if (followingEntries.isEmpty() && subscriptionUrls.isEmpty()) {
+            hasSynced.set(true)
+            return@withLock 0
+        }
+        // Merge — following wins on ties (same URI in both) so we don't
+        // duplicate. Preserves any URI that appears in only one slice.
+        val urls = LinkedHashSet<String>().apply {
+            addAll(followingEntries.map { it.uri })
+            addAll(subscriptionUrls)
+        }
         val parsed = urls.mapNotNull { parseLbryUrl(it) }
         val serverEntries = parsed.map { "${it.claimId}|${it.name}" }
         val serverIds = parsed.map { it.claimId }.toSet()
@@ -126,6 +150,15 @@ class SubscriptionsRepositoryImpl @Inject constructor(
     private suspend fun push() = syncMutex.withLock {
         val subs = subscriptions.first()
         val urls = subs.map { "lbry://${it.name}#${it.claimId}" }
+
+        // Preserve per-URI notificationsDisabled from whatever's on the
+        // server. We don't surface a per-channel mute UI in the app, so if
+        // we naively emitted `notificationsDisabled: false` for everything
+        // we'd nuke mutes the user set on web.
+        val existingMutes: Map<String, Boolean> = runCatching {
+            sharedStore.readSlice(SharedPrefSlices.FOLLOWING, SharedPrefSlices.FollowingList)
+        }.getOrNull().orEmpty().associate { it.uri to it.notificationsDisabled }
+
         val subscriptionsJson = buildJsonArray { urls.forEach { add(JsonPrimitive(it)) } }
         // Build following manually so notificationsDisabled is always emitted,
         // even when false. kotlinx with encodeDefaults=false would drop it.
@@ -134,7 +167,10 @@ class SubscriptionsRepositoryImpl @Inject constructor(
                 add(
                     buildJsonObject {
                         put("uri", JsonPrimitive(uri))
-                        put("notificationsDisabled", JsonPrimitive(false))
+                        put(
+                            "notificationsDisabled",
+                            JsonPrimitive(existingMutes[uri] ?: false),
+                        )
                     },
                 )
             }

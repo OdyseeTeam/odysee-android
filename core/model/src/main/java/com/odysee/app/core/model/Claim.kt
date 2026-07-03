@@ -34,6 +34,17 @@ data class Claim(
         }
     val isLivestream: Boolean
         get() = !hasSource && !isUpcoming
+    /**
+     * The creator has marked this claim unlisted via the web's Visibility
+     * setting; it should only surface on the owner's own screens (Uploads,
+     * their own channel), not in Following / search / homepage / etc.
+     * Matches web `VISIBILITY_TAGS.UNLISTED` (`odysee-frontend/ui/constants/tags.ts`).
+     */
+    val isUnlisted: Boolean
+        get() = tags.any { it.equals("c:unlisted", ignoreCase = true) }
+    /** Web `VISIBILITY_TAGS.PRIVATE`. Currently a stub in the web too. */
+    val isPrivate: Boolean
+        get() = tags.any { it.equals("c:private", ignoreCase = true) }
     /** Matches the web's Shorts criteria: aspect ratio ≤ 0.8 and duration ≤ 180s. */
     val isShort: Boolean
         get() {

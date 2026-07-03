@@ -35,10 +35,19 @@ class OdyseePlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player ?: return super.onTaskRemoved(rootIntent)
-        if (!player.playWhenReady || player.mediaItemCount == 0) {
-            stopSelf()
+        // When the user swipes the app away from Recents, stop playback and
+        // tear down the service — otherwise Media3's default behavior is to
+        // KEEP playing (background audio), which for a video app means the
+        // user hears a stuck stream with no way to pause it short of force-
+        // stopping the app. Users who explicitly want audio to continue
+        // after leaving the video screen have the "Play in background"
+        // menu action; app dismissal should not be a hidden opt-in for it.
+        mediaSession?.player?.let { player ->
+            player.pause()
+            player.clearMediaItems()
         }
+        stopSelf()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {

@@ -181,8 +181,11 @@ class ShortsViewModel @Inject constructor(
                         .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
                         .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
                         .setAllowCrossProtocolRedirects(true)
-                        .setConnectTimeoutMs(30_000)
-                        .setReadTimeoutMs(30_000),
+                        // Match PlayerController — see note there. Cold-
+                        // storage warm-up on the CDN can take up to ~60s
+                        // for older content.
+                        .setConnectTimeoutMs(60_000)
+                        .setReadTimeoutMs(60_000),
                 )
                 .setLoadErrorHandlingPolicy(
                     com.odysee.app.core.data.player.odyseeLoadErrorHandlingPolicy(),

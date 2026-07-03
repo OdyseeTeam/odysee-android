@@ -49,8 +49,13 @@ object NetworkModule {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+        // Match the web's SDK fetch ceiling (SDK_FETCH_TIMEOUT_MS = 60000 in
+        // odysee-frontend/ui/lbry.ts). Read timeout is kept higher (120s)
+        // because our OkHttp is also used for streaming-adjacent requests
+        // where the SDK's `get_file` can block while waiting for the
+        // streaming server to warm a cold-storage blob.
         return OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(logging)

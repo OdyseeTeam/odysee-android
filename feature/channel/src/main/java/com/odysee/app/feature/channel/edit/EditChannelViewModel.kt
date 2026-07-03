@@ -25,6 +25,13 @@ data class EditChannelState(
     val websiteUrl: String = "",
     val email: String = "",
     val tags: List<String> = emptyList(),
+    /**
+     * Internal `c:*` markers pulled off the channel claim at load time —
+     * creator-settings flags like `c:disable-slimes-all`, `c:disable-comments`,
+     * etc. Not shown in the edit UI, but re-emitted on save so full-replace
+     * `updateChannel(replace = true)` doesn't wipe them.
+     */
+    val internalTags: List<String> = emptyList(),
     val languages: List<String> = emptyList(),
     val thumbnailUrl: String? = null,
     val coverUrl: String? = null,
@@ -72,7 +79,13 @@ class EditChannelViewModel @Inject constructor(
                     description = channel.description.orEmpty(),
                     websiteUrl = channel.websiteUrl.orEmpty(),
                     email = channel.email.orEmpty(),
-                    tags = channel.tags,
+                    // Only edit user-facing tags in this form. Internal
+                    // `c:*` markers (creator-settings flags) stay on the
+                    // claim untouched — dropping them here would silently
+                    // wipe the user's "no dislikes" / "no comments" / etc.
+                    // settings the next time they save.
+                    tags = channel.tags.filterNot { it.startsWith("c:", ignoreCase = true) },
+                    internalTags = channel.tags.filter { it.startsWith("c:", ignoreCase = true) },
                     languages = channel.languages,
                     thumbnailUrl = channel.thumbnailUrl,
                     coverUrl = channel.coverUrl,
@@ -153,7 +166,10 @@ class EditChannelViewModel @Inject constructor(
                     coverUrl = st.coverUrl,
                     websiteUrl = st.websiteUrl.takeIf { it.isNotBlank() },
                     email = st.email.takeIf { it.isNotBlank() },
-                    tags = st.tags,
+                    // Merge user-facing tags with the preserved internal
+                    // `c:*` markers so full-replace doesn't drop creator
+                    // settings (see [EditChannelState.internalTags]).
+                    tags = st.tags + st.internalTags,
                     languages = st.languages,
                     replace = true,
                 )

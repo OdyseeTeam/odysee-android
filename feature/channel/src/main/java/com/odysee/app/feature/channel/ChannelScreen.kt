@@ -1213,10 +1213,14 @@ private fun ChannelAboutContent(
                 )
             }
         }
-        if (channel.tags.isNotEmpty()) {
+        // Filter out internal `c:*` metadata (creator-settings flags,
+        // paywall encoding) — those live alongside real tags on the claim
+        // but shouldn't render in the About-Tags UI chip strip.
+        val userFacingTags = channel.tags.filterNot { it.startsWith("c:", ignoreCase = true) }
+        if (userFacingTags.isNotEmpty()) {
             AboutSection(label = tr("Tags")) {
                 TagFlowRow(
-                    tags = channel.tags,
+                    tags = userFacingTags,
                     followed = followedTagsForAbout,
                     onTagClick = onTagClick,
                     onToggleTag = onToggleTag,
