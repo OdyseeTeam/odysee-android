@@ -64,6 +64,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @javax.inject.Named("media")
+    fun provideMediaOkHttp(client: OkHttpClient): OkHttpClient =
+        client.newBuilder().apply { interceptors().clear() }.build()
+
+    @Provides
+    @Singleton
     fun provideSdkProxyApi(
         json: Json,
         client: OkHttpClient,

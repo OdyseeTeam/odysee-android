@@ -93,7 +93,7 @@ fun ShortsScreen(
     val pagerState = rememberPagerState(pageCount = { state.items.size })
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+        snapshotFlow { pagerState.settledPage }.collect { page ->
             viewModel.onPageChanged(page)
         }
     }
@@ -120,9 +120,9 @@ fun ShortsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val currentItem = state.items.getOrNull(pagerState.currentPage)
-    val hasPrevious = pagerState.currentPage > 0
-    val hasNext = pagerState.currentPage < state.items.size - 1
+    val currentItem = state.items.getOrNull(pagerState.settledPage)
+    val hasPrevious = pagerState.settledPage > 0
+    val hasNext = pagerState.settledPage < state.items.size - 1
 
     var repostTarget by remember { mutableStateOf<ShortUi?>(null) }
 
@@ -137,8 +137,11 @@ fun ShortsScreen(
                 val isSubscribed = item.channelClaimId?.let { it in state.subscribedChannelIds } ?: false
                 ShortPage(
                     item = item,
-                    isCurrent = page == pagerState.currentPage,
+                    isCurrent = page == pagerState.settledPage,
                     isPlaying = state.isPlaying,
+                    playRequested = state.playRequested,
+                    isBuffering = state.isBuffering,
+                    hasRenderedFirstFrame = state.renderedClaimId == item.claimId,
                     isMuted = state.isMuted,
                     viewModel = viewModel,
                     onRepost = { repostTarget = item },
@@ -159,48 +162,50 @@ fun ShortsScreen(
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(8.dp)
-                .zIndex(10f)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.45f))
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = tr("Close"),
-                tint = Color.White,
-            )
-        }
-        // Top-center: Related / From [Channel] view-mode toggle.
         val currentChannelName = currentItem?.channelTitle?.takeIf { it.isNotBlank() }
             ?: currentItem?.channelName.orEmpty()
         Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(top = 8.dp)
-                .zIndex(10f),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(8.dp)
+                .zIndex(10f)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            ViewModePill(
-                label = tr("Related"),
-                active = state.viewMode == ShortsViewMode.RELATED,
-                onClick = { viewModel.setViewMode(ShortsViewMode.RELATED) },
-            )
-            if (currentChannelName.isNotBlank()) {
-                val short = if (currentChannelName.length > 15) currentChannelName.take(15) + "…" else currentChannelName
-                ViewModePill(
-                    label = "From $short",
-                    active = state.viewMode == ShortsViewMode.CHANNEL,
-                    onClick = { viewModel.setViewMode(ShortsViewMode.CHANNEL) },
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = tr("Close"),
+                    tint = Color.White,
                 )
             }
+            Row(
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            ) {
+                ViewModePill(
+                    label = tr("Related"),
+                    active = state.viewMode == ShortsViewMode.RELATED,
+                    onClick = { viewModel.setViewMode(ShortsViewMode.RELATED) },
+                )
+                if (currentChannelName.isNotBlank()) {
+                    val short = if (currentChannelName.length > 15) currentChannelName.take(15) + "…" else currentChannelName
+                    ViewModePill(
+                        label = "From $short",
+                        active = state.viewMode == ShortsViewMode.CHANNEL,
+                        onClick = { viewModel.setViewMode(ShortsViewMode.CHANNEL) },
+                    )
+                }
+            }
+            Spacer(Modifier.size(40.dp))
         }
         if (state.showInfo && currentItem != null) {
             ModalBottomSheet(
@@ -700,6 +705,9 @@ private fun ShortPage(
     item: ShortUi,
     isCurrent: Boolean,
     isPlaying: Boolean,
+    playRequested: Boolean,
+    isBuffering: Boolean,
+    hasRenderedFirstFrame: Boolean,
     isMuted: Boolean,
     viewModel: ShortsViewModel,
     onRepost: () -> Unit,
@@ -720,7 +728,7 @@ private fun ShortPage(
             // SurfaceView doesn't intercept the pager's swipe like PlayerView does.
             // We size it to the actual video aspect so portrait shorts fill the
             // screen but 16:9 / square clips letterbox cleanly instead of stretching.
-            var aspect by remember { mutableStateOf(9f / 16f) }
+            var aspect by remember(item.claimId) { mutableStateOf(item.videoAspect ?: 9f / 16f) }
             androidx.compose.runtime.DisposableEffect(viewModel.exoPlayer) {
                 val listener = object : androidx.media3.common.Player.Listener {
                     override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) {
@@ -747,12 +755,15 @@ private fun ShortPage(
                     view.keepScreenOn = isPlaying
                     viewModel.exoPlayer.setVideoSurfaceView(view)
                 },
+                onRelease = { view ->
+                    viewModel.exoPlayer.clearVideoSurfaceView(view)
+                },
             )
         }
         // Thumbnail sits on TOP of the surface until playback actually starts, so the
         // last frame of the previous short can't leak through. Cropped to fill the
         // portrait screen — matches how the video itself renders.
-        if (!item.thumbnailUrl.isNullOrBlank() && (!isCurrent || !isPlaying)) {
+        if (!item.thumbnailUrl.isNullOrBlank() && (!isCurrent || !hasRenderedFirstFrame)) {
             AsyncImage(
                 model = item.thumbnailUrl,
                 contentDescription = null,
@@ -772,22 +783,27 @@ private fun ShortPage(
                     ),
             )
             // Big centered play indicator when paused.
-            if (!isPlaying) {
+            if (!playRequested) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(72.dp)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f)),
+                        .background(Color(0xFFE50054)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.PlayArrow,
+                    Image(
+                        painter = painterResource(id = DesignR.drawable.ic_player_play),
                         contentDescription = tr("Play"),
-                        tint = Color.White,
                         modifier = Modifier.size(40.dp),
                     )
                 }
+            }
+            if (playRequested && isBuffering && !isPlaying) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center).size(48.dp),
+                )
             }
         }
         // Readability gradient at the bottom.
@@ -1156,6 +1172,8 @@ private fun ViewModePill(label: String, active: Boolean, onClick: () -> Unit) {
             color = Color.White,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

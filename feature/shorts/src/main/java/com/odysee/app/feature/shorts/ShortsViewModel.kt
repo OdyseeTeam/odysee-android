@@ -43,6 +43,7 @@ data class ShortUi(
     val channelAvatarUrl: String?,
     val thumbnailUrl: String?,
     val channelInitial: Char,
+    val videoAspect: Float? = null,
 )
 
 enum class ShortsViewMode { RELATED, CHANNEL }
@@ -59,6 +60,9 @@ data class ShortsUiState(
     val showInfo: Boolean = false,
     val showComments: Boolean = false,
     val isPlaying: Boolean = true,
+    val playRequested: Boolean = true,
+    val isBuffering: Boolean = false,
+    val renderedClaimId: String? = null,
     val isMuted: Boolean = false,
     val viewMode: ShortsViewMode = ShortsViewMode.RELATED,
 )
@@ -75,6 +79,8 @@ class ShortsViewModel @Inject constructor(
     private val lbryioApi: com.odysee.app.core.network.LbryioApi,
     private val watchLaterRepository: com.odysee.app.core.data.collections.WatchLaterRepository,
     private val favoritesRepository: com.odysee.app.core.data.collections.FavoritesRepository,
+    @javax.inject.Named("media") private val mediaOkHttpClient: okhttp3.OkHttpClient,
+    private val mediaCache: androidx.media3.datasource.cache.Cache,
 ) : ViewModel() {
 
     val canComment: StateFlow<Boolean> = authRepository.state
@@ -177,21 +183,39 @@ class ShortsViewModel @Inject constructor(
         .setMediaSourceFactory(
             androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(
-                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
-                        .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
-                        .setAllowCrossProtocolRedirects(true)
-                        // Match PlayerController — see note there. Cold-
-                        // storage warm-up on the CDN can take up to ~60s
-                        // for older content.
-                        .setConnectTimeoutMs(60_000)
-                        .setReadTimeoutMs(60_000),
+                    androidx.media3.datasource.cache.CacheDataSource.Factory()
+                        .setCache(mediaCache)
+                        .setUpstreamDataSourceFactory(
+                            androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(mediaOkHttpClient)
+                                .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
+                                .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/")),
+                        )
+                        .setFlags(androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR),
                 )
                 .setLoadErrorHandlingPolicy(
-                    com.odysee.app.core.data.player.odyseeLoadErrorHandlingPolicy(),
+                    com.odysee.app.core.data.player.odyseeLoadErrorHandlingPolicy(maxHttpRetries = 1),
                 ),
         )
         .build().apply {
+            addAnalyticsListener(object : androidx.media3.exoplayer.analytics.AnalyticsListener {
+                override fun onLoadError(
+                    eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                    loadEventInfo: androidx.media3.exoplayer.source.LoadEventInfo,
+                    mediaLoadData: androidx.media3.exoplayer.source.MediaLoadData,
+                    error: java.io.IOException,
+                    wasCanceled: Boolean,
+                ) {
+                    if (wasCanceled) return
+                    val uriString = loadEventInfo.uri.toString()
+                    val claimId = streamUrlByClaim.entries.firstOrNull { it.value == uriString }?.key ?: return
+                    val currentId = _state.value.items.getOrNull(_state.value.currentIndex)?.claimId
+                    if (claimId != currentId) {
+                        val count = (loadErrorCounts[claimId] ?: 0) + 1
+                        loadErrorCounts[claimId] = count
+                        if (count >= 2) removeFailedShort(claimId)
+                    }
+                }
+            })
             playWhenReady = true
             // Keep CPU/network alive while screen dims so shorts don't stutter.
             setWakeMode(androidx.media3.common.C.WAKE_MODE_NETWORK)
@@ -200,17 +224,55 @@ class ShortsViewModel @Inject constructor(
             addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     _state.update { it.copy(isPlaying = isPlaying) }
+                    if (isPlaying) maybeEnqueueNext()
+                }
+
+                override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                    _state.update { it.copy(playRequested = playWhenReady) }
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED && _state.value.autoplayNextShort) {
-                        advanceToNext()
+                    _state.update { it.copy(isBuffering = playbackState == Player.STATE_BUFFERING) }
+                    if (playbackState == Player.STATE_ENDED) {
+                        val st = _state.value
+                        val current = st.items.getOrNull(st.currentIndex)
+                        if (current != null && st.renderedClaimId != current.claimId) {
+                            retryCurrent(current)
+                        } else if (st.autoplayNextShort) {
+                            advanceToNext()
+                        }
                     }
+                }
+
+                override fun onRenderedFirstFrame() {
+                    val id = exoPlayer.currentMediaItem?.mediaId
+                    _state.update { st ->
+                        st.copy(renderedClaimId = id ?: st.items.getOrNull(st.currentIndex)?.claimId)
+                    }
+                }
+
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                        _state.update { it.copy(renderedClaimId = null) }
+                        if (_state.value.autoplayNextShort) {
+                            advanceToNext()
+                        }
+                    }
+                }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    val current = _state.value.items.getOrNull(_state.value.currentIndex)
+                    _state.update { it.copy(isPlaying = false, isBuffering = false, renderedClaimId = null) }
+                    if (current == null) return
+                    retryCurrent(current)
                 }
             })
         }
 
     private val streamUrlByClaim = mutableMapOf<String, String>()
+    private val resolving = mutableSetOf<String>()
+    private val errorRetries = mutableMapOf<String, Int>()
+    private val loadErrorCounts = mutableMapOf<String, Int>()
 
     init {
         playCurrent()
@@ -230,6 +292,8 @@ class ShortsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             authPreferences.autoplayNextShort.collect { v ->
+                // When autoplay-next is on we don't want to also loop the current short.
+                exoPlayer.repeatMode = if (v) Player.REPEAT_MODE_OFF else Player.REPEAT_MODE_ONE
                 _state.update { it.copy(autoplayNextShort = v) }
             }
         }
@@ -237,10 +301,7 @@ class ShortsViewModel @Inject constructor(
 
     fun toggleAutoplayNextShort() {
         viewModelScope.launch {
-            val next = !_state.value.autoplayNextShort
-            authPreferences.setAutoplayNextShort(next)
-            // When autoplay-next is on we don't want to also loop the current short.
-            exoPlayer.repeatMode = if (next) Player.REPEAT_MODE_OFF else Player.REPEAT_MODE_ONE
+            authPreferences.setAutoplayNextShort(!_state.value.autoplayNextShort)
         }
     }
 
@@ -262,6 +323,15 @@ class ShortsViewModel @Inject constructor(
     }
 
     fun togglePlayPause() {
+        if (exoPlayer.mediaItemCount == 0 || exoPlayer.playbackState == Player.STATE_IDLE) {
+            _state.value.items.getOrNull(_state.value.currentIndex)?.let { current ->
+                errorRetries.remove(current.claimId)
+                streamUrlByClaim.remove(current.claimId)
+            }
+            exoPlayer.playWhenReady = true
+            playCurrent()
+            return
+        }
         val playing = !exoPlayer.playWhenReady
         exoPlayer.playWhenReady = playing
         _state.update { it.copy(isPlaying = playing) }
@@ -344,21 +414,39 @@ class ShortsViewModel @Inject constructor(
 
     fun onPageChanged(index: Int) {
         if (index !in _state.value.items.indices) return
-        // Clear the video surface immediately so the previous short's last frame
-        // doesn't get shown over the next short's thumbnail.
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
-        _state.update { it.copy(currentIndex = index) }
-        playCurrent()
-        // Pre-resolve the next short so swiping to it starts playback instantly.
-        _state.value.items.getOrNull(index + 1)?.let { next ->
-            if (next.claimId !in streamUrlByClaim) {
-                viewModelScope.launch {
-                    runCatching { contentRepository.resolveStreamUrl(next.permanentUrl) }
-                        .onSuccess { streamUrlByClaim[next.claimId] = it }
-                }
+        currentRetryJob?.cancel()
+        val claimId = _state.value.items[index].claimId
+        val playingThis = exoPlayer.currentMediaItem?.mediaId == claimId &&
+            exoPlayer.playbackState != Player.STATE_IDLE
+        val queuedNext = exoPlayer.mediaItemCount > 1 &&
+            exoPlayer.currentMediaItemIndex == 0 &&
+            exoPlayer.getMediaItemAt(1).mediaId == claimId
+        val resolvingThis = index == _state.value.currentIndex && claimId in resolving
+        when {
+            playingThis -> {
+                while (exoPlayer.currentMediaItemIndex > 0) exoPlayer.removeMediaItem(0)
+                _state.update { it.copy(currentIndex = index) }
+            }
+            queuedNext -> {
+                exoPlayer.seekToNextMediaItem()
+                exoPlayer.removeMediaItem(0)
+                _state.update { it.copy(currentIndex = index, renderedClaimId = null) }
+            }
+            resolvingThis -> Unit
+            else -> {
+                // Clear the video surface immediately so the previous short's last frame
+                // doesn't get shown over the next short's thumbnail.
+                exoPlayer.stop()
+                exoPlayer.clearMediaItems()
+                _state.update { it.copy(currentIndex = index, renderedClaimId = null, isBuffering = true) }
+                playCurrent()
             }
         }
+        // Pre-resolve the next short so swiping to it starts playback instantly.
+        _state.value.items.getOrNull(index + 1)?.let { next ->
+            if (next.claimId !in streamUrlByClaim) resolveAndMaybePlay(next)
+        }
+        maybeEnqueueNext()
         val current = _state.value.items.getOrNull(index)
         if (current != null && current.claimId !in _state.value.reactionsByClaim) {
             fetchReactionsFor(current.claimId)
@@ -369,23 +457,110 @@ class ShortsViewModel @Inject constructor(
     private fun playCurrent() {
         val current = _state.value.items.getOrNull(_state.value.currentIndex) ?: return
         val cached = streamUrlByClaim[current.claimId]
-        if (cached != null) {
-            exoPlayer.setMediaItem(MediaItem.fromUri(cached))
-            exoPlayer.prepare()
-            exoPlayer.playWhenReady = true
+        if (cached != null) startPlayback(cached, current.claimId) else resolveAndMaybePlay(current)
+    }
+
+    private fun maybeEnqueueNext() {
+        if (!exoPlayer.isPlaying) return
+        val st = _state.value
+        val next = st.items.getOrNull(st.currentIndex + 1) ?: return
+        val url = streamUrlByClaim[next.claimId] ?: return
+        if (exoPlayer.mediaItemCount != 1) return
+        if (exoPlayer.currentMediaItem?.mediaId == next.claimId) return
+        exoPlayer.addMediaItem(
+            MediaItem.Builder().setUri(url).setMediaId(next.claimId).build(),
+        )
+    }
+
+    private fun retryCurrent(current: ShortUi) {
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
+        val attempts = errorRetries[current.claimId] ?: 0
+        if (attempts < 1) {
+            errorRetries[current.claimId] = attempts + 1
+            streamUrlByClaim.remove(current.claimId)
+            resolveAndMaybePlay(current)
+        } else {
+            _state.update { it.copy(isBuffering = true) }
+            scheduleCurrentRetry(current.claimId)
+        }
+    }
+
+    private var currentRetryJob: kotlinx.coroutines.Job? = null
+
+    private fun scheduleCurrentRetry(claimId: String) {
+        if (currentRetryJob?.isActive == true) return
+        currentRetryJob = viewModelScope.launch {
+            var delayMs = 3_000L
+            while (_state.value.items.getOrNull(_state.value.currentIndex)?.claimId == claimId) {
+                kotlinx.coroutines.delay(delayMs)
+                delayMs = (delayMs * 2).coerceAtMost(15_000L)
+                val current = _state.value.items.getOrNull(_state.value.currentIndex) ?: break
+                if (current.claimId != claimId) break
+                if (exoPlayer.mediaItemCount > 0 && exoPlayer.playbackState != Player.STATE_IDLE) break
+                streamUrlByClaim.remove(claimId)
+                resolveAndMaybePlay(current)
+            }
+        }
+    }
+
+    private fun removeFailedShort(claimId: String) {
+        val idx = _state.value.items.indexOfFirst { it.claimId == claimId }
+        when {
+            idx < 0 || idx <= _state.value.currentIndex -> return
+            else -> _state.update { st ->
+                val i = st.items.indexOfFirst { it.claimId == claimId }
+                if (i > st.currentIndex) st.copy(items = st.items.filterIndexed { j, _ -> j != i }) else st
+            }
+        }
+        if (exoPlayer.mediaItemCount > 1 && exoPlayer.getMediaItemAt(1).mediaId == claimId) {
+            exoPlayer.removeMediaItem(1)
+        }
+        _state.value.items.getOrNull(_state.value.currentIndex + 1)?.let { next ->
+            if (next.claimId !in streamUrlByClaim) resolveAndMaybePlay(next)
+        }
+        maybeEnqueueNext()
+        if (_state.value.currentIndex >= _state.value.items.size - 3) loadMore()
+    }
+
+    private fun startPlayback(url: String, claimId: String) {
+        exoPlayer.setMediaItem(MediaItem.Builder().setUri(url).setMediaId(claimId).build())
+        exoPlayer.prepare()
+        maybeEnqueueNext()
+    }
+
+    private fun resolveAndMaybePlay(item: ShortUi) {
+        if (item.claimId in resolving) {
             return
         }
+        resolving += item.claimId
         viewModelScope.launch {
-            runCatching { contentRepository.resolveStreamUrl(current.permanentUrl) }
-                .onSuccess { url ->
-                    streamUrlByClaim[current.claimId] = url
-                    if (_state.value.items.getOrNull(_state.value.currentIndex)?.claimId == current.claimId) {
-                        exoPlayer.setMediaItem(MediaItem.fromUri(url))
-                        exoPlayer.prepare()
-                        exoPlayer.playWhenReady = true
-                    }
+            val url = resolveWithRetry(item.permanentUrl)
+            resolving -= item.claimId
+            val isCurrent = _state.value.items.getOrNull(_state.value.currentIndex)?.claimId == item.claimId
+            if (url != null) {
+                streamUrlByClaim[item.claimId] = url
+                if (isCurrent && exoPlayer.mediaItemCount == 0) {
+                    startPlayback(url, item.claimId)
+                } else {
+                    maybeEnqueueNext()
                 }
+            } else if (isCurrent) {
+                _state.update { it.copy(isBuffering = true) }
+                scheduleCurrentRetry(item.claimId)
+            } else {
+                removeFailedShort(item.claimId)
+            }
         }
+    }
+
+    private suspend fun resolveWithRetry(permanentUrl: String): String? {
+        repeat(2) { attempt ->
+            runCatching { contentRepository.resolveStreamUrl(permanentUrl) }
+                .onSuccess { return it }
+            if (attempt == 0) kotlinx.coroutines.delay(500)
+        }
+        return null
     }
 
     private var loadingMore = false
@@ -451,5 +626,8 @@ private fun Claim.toShortUi(): ShortUi {
         channelAvatarUrl = signingChannel?.thumbnailUrl,
         thumbnailUrl = thumbnailUrl,
         channelInitial = (channelName.firstOrNull { it.isLetterOrDigit() } ?: 'O').uppercaseChar(),
+        videoAspect = videoWidth?.let { w ->
+            videoHeight?.let { h -> if (w > 0 && h > 0) w.toFloat() / h.toFloat() else null }
+        },
     )
 }

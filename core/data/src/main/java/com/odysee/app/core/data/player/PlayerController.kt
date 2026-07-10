@@ -168,6 +168,8 @@ data class PlayerState(
     val errorMessage: String? = null,
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,
+    val hasPlaybackStarted: Boolean = false,
+    val playRequested: Boolean = false,
     val comments: CommentsState = CommentsState.Idle,
     val creatorRestrictions: CreatorRestrictions = CreatorRestrictions(),
     val related: RelatedState = RelatedState.Idle,
@@ -232,6 +234,8 @@ class PlayerController @Inject constructor(
     private val lbryioApi: LbryioApi,
     private val commentronApi: com.odysee.app.core.network.CommentronApi,
     private val okHttpClient: okhttp3.OkHttpClient,
+    @javax.inject.Named("media") private val mediaOkHttpClient: okhttp3.OkHttpClient,
+    private val mediaCache: androidx.media3.datasource.cache.Cache,
     private val watchman: WatchmanReporter,
     val castController: com.odysee.app.core.data.cast.CastController,
 ) {
@@ -384,19 +388,14 @@ class PlayerController @Inject constructor(
         .setMediaSourceFactory(
             androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(
-                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
-                        .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/"))
-                        .setAllowCrossProtocolRedirects(true)
-                        // Older content that lives in cold storage on the
-                        // CDN can take ~30-60s for the streaming server to
-                        // warm and serve the first segment. Media3's own
-                        // defaults are 8s each which is what caused the
-                        // "2 month-old videos don't load" reports. Match
-                        // web's SDK ceiling (60s) so we're at least as
-                        // patient as the browser.
-                        .setConnectTimeoutMs(60_000)
-                        .setReadTimeoutMs(60_000),
+                    androidx.media3.datasource.cache.CacheDataSource.Factory()
+                        .setCache(mediaCache)
+                        .setUpstreamDataSourceFactory(
+                            androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(mediaOkHttpClient)
+                                .setUserAgent("Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
+                                .setDefaultRequestProperties(mapOf("Referer" to "https://odysee.com/")),
+                        )
+                        .setFlags(androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR),
                 )
                 .setLoadErrorHandlingPolicy(odyseeLoadErrorHandlingPolicy()),
         )
@@ -416,9 +415,18 @@ class PlayerController @Inject constructor(
         )
         setHandleAudioBecomingNoisy(true)
         addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                _state.update { it.copy(playRequested = playWhenReady) }
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 android.util.Log.i("PlayerController", "isPlaying=$isPlaying")
-                _state.update { it.copy(isPlaying = isPlaying) }
+                _state.update {
+                    it.copy(
+                        isPlaying = isPlaying,
+                        hasPlaybackStarted = it.hasPlaybackStarted || isPlaying,
+                    )
+                }
                 watchman.onIsPlayingChanged(isPlaying)
                 if (isPlaying) {
                     // Only start the foreground media-notification service once the player
@@ -440,7 +448,15 @@ class PlayerController @Inject constructor(
                 )
                 if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
                     watchman.onPlaybackEnded()
-                    advanceToNextPlaylistItem()
+                    if (_state.value.playlist != null) {
+                        advanceToNextPlaylistItem()
+                    } else if (_state.value.media?.liveStreamUrl == null) {
+                        scope.launch {
+                            if (authPreferences.autoplay.firstOrNull() == true) {
+                                playNextRecommended()
+                            }
+                        }
+                    }
                 }
             }
 
@@ -548,8 +564,9 @@ class PlayerController @Inject constructor(
 
     fun play(
         media: CurrentMedia,
-        openMode: PlayerOpenMode = PlayerOpenMode.Expanded,
+        openMode: PlayerOpenMode? = PlayerOpenMode.Expanded,
         playlist: PlaylistContext? = null,
+        forceAutoplay: Boolean = false,
     ) {
         if (media.isShort) {
             // Hand off to the shorts player; never let a short open in the
@@ -558,7 +575,7 @@ class PlayerController @Inject constructor(
             _openShortsEvents.trySend(media)
             return
         }
-        _uiCommands.trySend(PlayerUiCommand.Show(openMode))
+        openMode?.let { _uiCommands.trySend(PlayerUiCommand.Show(it)) }
         val current = _state.value
         val effectivePlaylist = playlist ?: current.playlist
         if (current.media?.claimId == media.claimId && current.streamingUrl != null) {
@@ -622,6 +639,9 @@ class PlayerController @Inject constructor(
         commentsJob?.cancel()
 
         resolveJob = scope.launch {
+            val shouldAutoplay = forceAutoplay || authPreferences.autoplayMedia.firstOrNull() != false
+            exoPlayer.playWhenReady = shouldAutoplay
+            _state.update { it.copy(playRequested = shouldAutoplay) }
             // First: resolve claim metadata to learn paywall / purchase state.
             // Without this we'd happily request the stream URL for a paid claim
             // even though the SDK would refuse to serve until purchase.
@@ -731,7 +751,7 @@ class PlayerController @Inject constructor(
                             }
                         }
                     }
-                    exoPlayer.playWhenReady = true
+                    exoPlayer.playWhenReady = shouldAutoplay || exoPlayer.playWhenReady
                     val signedUserId = (authRepository.state.value as? AuthState.SignedIn)
                         ?.user?.id
                     watchman.onPlaybackStarted(
@@ -1483,7 +1503,9 @@ class PlayerController @Inject constructor(
                 thumbnailUrl = item.thumbnailUrl,
                 ageLabel = null,
             ),
+            openMode = null,
             playlist = ctx.copy(currentIndex = index),
+            forceAutoplay = true,
         )
         // If a cast session is active, push the whole playlist to the device so
         // it can auto-advance natively instead of round-tripping through the app
@@ -1577,6 +1599,29 @@ class PlayerController @Inject constructor(
         if (next >= 0 && next < ctx.items.size) {
             playPlaylistItem(next)
         }
+    }
+
+    private fun playNextRecommended() {
+        val related = (_state.value.related as? RelatedState.Success)?.items ?: return
+        val currentId = _state.value.media?.claimId
+        val next = related.firstOrNull { it.claimId != currentId } ?: return
+        play(
+            media = CurrentMedia(
+                claimId = next.claimId,
+                permanentUrl = next.permanentUrl,
+                title = next.title,
+                description = next.description,
+                channelClaimId = next.channelClaimId,
+                channelName = next.channelName,
+                channelTitle = next.channelTitle,
+                channelInitial = next.channelInitial,
+                channelAvatarUrl = next.channelAvatarUrl,
+                thumbnailUrl = next.thumbnailUrl,
+                ageLabel = next.ageLabel.takeIf { it.isNotEmpty() },
+            ),
+            openMode = null,
+            forceAutoplay = true,
+        )
     }
 
     /**

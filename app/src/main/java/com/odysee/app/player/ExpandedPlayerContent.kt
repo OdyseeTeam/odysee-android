@@ -106,6 +106,7 @@ import android.view.LayoutInflater
 import androidx.media3.ui.PlayerView
 import com.odysee.app.R
 import coil3.compose.AsyncImage
+import coil3.load as coilLoad
 import androidx.compose.ui.text.withStyle
 import com.odysee.app.core.data.player.CommentUiModel
 import com.odysee.app.core.data.player.CommentsState
@@ -371,6 +372,9 @@ fun ExpandedPlayerContent(
             ) {
             val needsPurchase = state.paywall !is com.odysee.app.core.model.Paywall.Free && !state.isPurchased
             val needsMembership = state.isMembersOnly && !state.isMemberOfChannel
+            val posterShowing = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
+                !state.hasPlaybackStarted && !media.thumbnailUrl.isNullOrBlank() &&
+                !needsPurchase && !needsMembership && !isCasting && !isPipActive
             if (needsPurchase) {
                 PaywallGateSurface(
                     media = media,
@@ -408,6 +412,7 @@ fun ExpandedPlayerContent(
                 thumbnailUrl = media.thumbnailUrl,
                 onRetry = controller::retryResolve,
                 fillScreen = isFullscreen,
+                posterVisible = posterShowing,
                 exoPlayerFactory = { ctx ->
                     (LayoutInflater.from(ctx).inflate(R.layout.odysee_player_view, null) as PlayerView).apply {
                         layoutParams = android.view.ViewGroup.LayoutParams(
@@ -439,10 +444,36 @@ fun ExpandedPlayerContent(
                                 controlsVisible = visibility == android.view.View.VISIBLE
                             },
                         )
+                        overlayFrameLayout?.addView(
+                            android.widget.ImageView(ctx).apply {
+                                tag = "posterOverlay"
+                                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                            },
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        )
                         playerViewRef = this
                     }
                 },
                 onUpdate = { view ->
+                    view.overlayFrameLayout
+                        ?.findViewWithTag<android.widget.ImageView>("posterOverlay")
+                        ?.let { poster ->
+                            val showPoster = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
+                                !state.hasPlaybackStarted && !media.thumbnailUrl.isNullOrBlank()
+                            if (showPoster) {
+                                if (poster.contentDescription != media.claimId) {
+                                    poster.contentDescription = media.claimId
+                                    poster.coilLoad(media.thumbnailUrl)
+                                }
+                                poster.visibility = android.view.View.VISIBLE
+                                view.useController = false
+                                view.hideController()
+                            } else {
+                                poster.visibility = android.view.View.GONE
+                                view.useController = true
+                            }
+                        }
                     view.findViewById<android.widget.TextView?>(R.id.odysee_hd_label)?.visibility =
                         if (activeVideoHeight >= 720) android.view.View.VISIBLE else android.view.View.GONE
                     view.findViewById<android.widget.ImageButton?>(R.id.odysee_player_settings_btn)?.let { cog ->
@@ -483,7 +514,11 @@ fun ExpandedPlayerContent(
                 modifier = Modifier
                     .matchParentSize()
                     .then(
-                        if (!controlsVisible) Modifier.pointerInput(Unit) {
+                        if (posterShowing) Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { controller.togglePlayPause() },
+                            )
+                        } else if (!controlsVisible) Modifier.pointerInput(Unit) {
                             detectTapGestures(
                                 onTap = { playerViewRef?.showController() },
                                 onDoubleTap = { offset ->
@@ -495,7 +530,7 @@ fun ExpandedPlayerContent(
                         } else Modifier,
                     ),
             )
-            if (controlsVisible) {
+            if (controlsVisible || posterShowing) {
                 Box(
                     modifier = Modifier
                         .size(84.dp)
@@ -535,7 +570,7 @@ fun ExpandedPlayerContent(
                     )
                 }
             }
-            if (controlsVisible) {
+            if (controlsVisible && !posterShowing) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -2977,6 +3012,7 @@ private fun PlayerSurface(
     thumbnailUrl: String?,
     onRetry: () -> Unit,
     fillScreen: Boolean = false,
+    posterVisible: Boolean = false,
     exoPlayerFactory: (android.content.Context) -> PlayerView,
     onUpdate: (PlayerView) -> Unit = {},
 ) {
@@ -2986,26 +3022,16 @@ private fun PlayerSurface(
             .background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (streamingUrl != null) {
+        if (streamingUrl != null || isResolving) {
             val context = LocalContext.current
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx -> exoPlayerFactory(ctx) },
                 update = { onUpdate(it) },
             )
-            if (isBuffering) {
+            if (isBuffering && !posterVisible) {
                 CircularProgressIndicator(color = Color.White)
             }
-        } else if (isResolving) {
-            if (!thumbnailUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = thumbnailUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            CircularProgressIndicator(color = Color.White)
         } else if (errorMessage != null) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

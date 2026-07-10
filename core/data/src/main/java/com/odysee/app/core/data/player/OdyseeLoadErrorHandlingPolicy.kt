@@ -16,7 +16,7 @@ import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
  * - I/O errors (timeouts, DNS, etc.) → six retries with default backoff,
  *   then surface as an error.
  */
-fun odyseeLoadErrorHandlingPolicy(): LoadErrorHandlingPolicy =
+fun odyseeLoadErrorHandlingPolicy(maxHttpRetries: Int = 24): LoadErrorHandlingPolicy =
     object : DefaultLoadErrorHandlingPolicy() {
         override fun getRetryDelayMsFor(
             loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo,
@@ -27,7 +27,7 @@ fun odyseeLoadErrorHandlingPolicy(): LoadErrorHandlingPolicy =
                 val code = ex.responseCode
                 return when {
                     code == 429 || code in 500..599 -> {
-                        if (errorCount > 24) C.TIME_UNSET
+                        if (errorCount > maxHttpRetries) C.TIME_UNSET
                         else {
                             val base = 2000L
                             val backoff =

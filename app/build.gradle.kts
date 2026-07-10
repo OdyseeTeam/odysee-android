@@ -31,8 +31,8 @@ android {
         // installs treat the native build as an update and migrate.
         // Cordova's apk.odysee.tv/release.json was at 124 when the native
         // app shipped; 125 is the first native release. Bump monotonically.
-        versionCode = 135
-        versionName = "0.1.8"
+        versionCode = 136
+        versionName = "0.1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -149,6 +149,7 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.session)
     implementation(libs.coil.compose)
+    implementation(libs.coil.views)
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.haze)

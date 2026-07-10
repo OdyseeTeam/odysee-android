@@ -1622,6 +1622,8 @@ class ContentRepositoryImpl @Inject constructor(
                         orderBy = listOf("trending_mixed"),
                         notTags = listOf("mature"),
                         duration = "<=180",
+                        releaseTime = "<${System.currentTimeMillis() / 1000 - 900}",
+                        height = ">0",
                     ),
                 ),
             )

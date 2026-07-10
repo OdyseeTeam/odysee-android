@@ -17,6 +17,7 @@ data class ClaimSearchParams(
     @SerialName("claim_ids") val claimIds: List<String>? = null,
     @SerialName("limit_claims_per_channel") val limitClaimsPerChannel: Int? = null,
     @SerialName("release_time") val releaseTime: String? = null,
+    val height: String? = null,
     val duration: String? = null,
     @SerialName("content_aspect_ratio") val contentAspectRatio: String? = null,
     @SerialName("any_languages") val anyLanguages: List<String>? = null,

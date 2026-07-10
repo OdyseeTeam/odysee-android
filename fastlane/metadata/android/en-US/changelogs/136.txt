@@ -1,0 +1,4 @@
+- Faster, smoother shorts
+- Video caching added
+- Autoplay settings work
+- Startup crash fixed

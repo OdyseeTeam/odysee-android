@@ -22,7 +22,7 @@ class TranslationStore @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authPreferences: AuthPreferences,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val cache = mutableMapOf<String, Map<String, String>>()
 
