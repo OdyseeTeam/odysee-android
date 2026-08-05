@@ -129,7 +129,7 @@ interface ContentRepository {
     suspend fun getChannelCollections(channelClaimId: String): List<com.odysee.app.core.network.dto.CollectionClaimDto>
     suspend fun getChannelVideos(channelClaimId: String, page: Int = 1, pageSize: Int = 20): List<Claim>
     suspend fun getFollowingFeed(channelClaimIds: List<String>, page: Int = 1, pageSize: Int = 30): List<Claim>
-    suspend fun search(query: String, size: Int = 20, from: Int = 0): List<Claim>
+    suspend fun search(query: String, size: Int = 20, from: Int = 0, channelId: String? = null): List<Claim>
     suspend fun getClaimsByTags(tags: List<String>, page: Int = 1, pageSize: Int = 20): List<Claim>
     suspend fun getRelated(channelClaimId: String?, excludeClaimId: String, query: String? = null): List<Claim>
     suspend fun getViewCounts(claimIds: List<String>): Map<String, Long>
@@ -1006,16 +1006,21 @@ class ContentRepositoryImpl @Inject constructor(
         return filterHiddenFromViewer(response.unwrap().items.mapNotNull { it.toDomain() })
     }
 
-    override suspend fun search(query: String, size: Int, from: Int): List<Claim> {
+    override suspend fun search(query: String, size: Int, from: Int, channelId: String?): List<Claim> {
         if (query.isBlank()) return emptyList()
         val cleaned = query.trim()
-        val hits = lighthouseApi.search(query = cleaned, size = size.coerceIn(1, 50), from = from.coerceAtLeast(0))
+        val hits = lighthouseApi.search(
+            query = cleaned,
+            size = size.coerceIn(1, 50),
+            from = from.coerceAtLeast(0),
+            channelId = channelId,
+        )
 
         // Resolve the "winning" claim for this exact name in parallel with the
         // Lighthouse relevance results. The winning claim is the one with the
         // highest effective bid for `<query>` and `@<query>` — that's what the
         // web frontend surfaces as the top result.
-        val winning = runCatching {
+        val winning = if (channelId != null) null else runCatching {
             val raw = cleaned.removePrefix("@")
             val candidates = mutableListOf<com.odysee.app.core.network.dto.ClaimDto>()
             // Stream / generic name claim.

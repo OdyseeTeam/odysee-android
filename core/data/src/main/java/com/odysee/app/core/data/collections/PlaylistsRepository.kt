@@ -44,6 +44,7 @@ data class Playlist(
     val tags: List<String> = emptyList(),
     val isPublic: Boolean = false,
     val autoPublish: Boolean = false,
+    val hasUnpublishedChanges: Boolean = false,
 )
 
 data class PlaylistDraft(
@@ -65,6 +66,7 @@ interface PlaylistsRepository {
     suspend fun removeItem(playlistId: String, permanentUrl: String)
     suspend fun setAutoPublish(playlistId: String, enabled: Boolean)
     suspend fun reorderItems(playlistId: String, orderedUrls: List<String>)
+    suspend fun publishChanges(playlistId: String): Result<Unit>
 }
 
 @Singleton
@@ -92,11 +94,13 @@ class PlaylistsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun writePlaylistsToSharedPreference() = syncMutex.withLock {
-        val current = decode(authPreferences.customPlaylists.first())
+        val all = decode(authPreferences.customPlaylists.first())
+        val current = all
             // isPublic playlists belong to collection_list, NOT unpublishedCollections.
             // Including them here pollutes the bucket with malformed entries that
             // confuse the web and iOS clients.
             .filterNot { it.isPublic }
+        val edited = all.filter { it.isPublic && it.hasUnpublishedChanges }
 
         // Preserve unpublished entries that aren't playlists (web stores other
         // claim types in the same bucket). Preserve them verbatim as raw JSON
@@ -127,9 +131,22 @@ class PlaylistsRepositoryImpl @Inject constructor(
         val mergedAuto = existingAuto.filterKeys { it !in knownIds }.toMutableMap()
         current.forEach { p -> if (p.autoPublish) mergedAuto[p.id] = true }
 
+        val existingEditedRaw = existingValue?.get(SharedPrefSlices.EDITED_COLLECTIONS) as? JsonObject
+        val mergedEdited = buildJsonObject {
+            existingEditedRaw?.forEach { (id, entry) ->
+                val obj = entry as? JsonObject ?: return@forEach
+                val type = obj["type"]?.jsonPrimitive?.contentOrNull
+                if (type != "playlist") put(id, entry)
+            }
+            edited.forEach { p ->
+                put(p.id, buildPlaylistDocJson(p))
+            }
+        }
+
         sharedStore.patch(
             mapOf(
                 SharedPrefSlices.UNPUBLISHED_COLLECTIONS to mergedUnpublished,
+                SharedPrefSlices.EDITED_COLLECTIONS to mergedEdited,
                 SharedPrefSlices.AUTO_PUBLISH_BY_ID to
                     json.encodeToJsonElement(SharedPrefSlices.BoolMap, mergedAuto),
             ),
@@ -168,14 +185,17 @@ class PlaylistsRepositoryImpl @Inject constructor(
             SharedPrefSlices.AUTO_PUBLISH_BY_ID,
             SharedPrefSlices.BoolMap,
         ).orEmpty()
+        val editedIds = mutableSetOf<String>()
         listOf(
             SharedPrefSlices.UNPUBLISHED_COLLECTIONS,
             SharedPrefSlices.EDITED_COLLECTIONS,
         ).forEach { key ->
+            val isEdited = key == SharedPrefSlices.EDITED_COLLECTIONS
             val group = sharedStore.readSlice(key, SharedPrefSlices.CollectionMap) ?: return@forEach
             for ((id, coll) in group) {
                 if (coll.type != "playlist") continue
                 val name = coll.name ?: continue
+                if (isEdited) editedIds += id
                 collections[id] = Playlist(
                     id = id,
                     name = name,
@@ -184,7 +204,8 @@ class PlaylistsRepositoryImpl @Inject constructor(
                     thumbnailUrl = coll.thumbnail?.url?.takeIf { it.isNotBlank() },
                     description = coll.description?.takeIf { it.isNotBlank() },
                     tags = coll.tags,
-                    isPublic = false,
+                    isPublic = isEdited,
+                    hasUnpublishedChanges = isEdited,
                 )
             }
         }
@@ -209,6 +230,21 @@ class PlaylistsRepositoryImpl @Inject constructor(
                     // c.timestamp is in seconds; normalize to ms so comparison
                     // with unpublished entries (also normalized to ms) is sane.
                     val updatedAt = (c.timestamp ?: 0L) * 1000L
+                    val edited = collections[c.claimId]?.takeIf { c.claimId in editedIds }
+                    if (edited != null) {
+                        val editedItemIds = edited.itemUrls.mapNotNull(::extractClaimId)
+                        if (editedItemIds == urls) {
+                            editedIds -= c.claimId
+                        } else {
+                            collections[c.claimId] = edited.copy(
+                                thumbnailUrl = edited.thumbnailUrl
+                                    ?: c.value?.thumbnail?.url?.takeIf { it.isNotBlank() },
+                                description = edited.description
+                                    ?: c.value?.description?.takeIf { it.isNotBlank() },
+                            )
+                            return@forEach
+                        }
+                    }
                     collections[c.claimId] = Playlist(
                         id = c.claimId,
                         name = name,
@@ -274,7 +310,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
             } else s.itemUrls
             val firstCid = extractClaimId(rewrittenItems.firstOrNull())
             val thumb = firstCid?.let { resolved[it]?.second }
-            val withThumb = if (thumb != null) s.copy(thumbnailUrl = thumb) else s
+            val withThumb = if (s.thumbnailUrl.isNullOrBlank() && thumb != null) s.copy(thumbnailUrl = thumb) else s
             if (rewrittenItems !== s.itemUrls) withThumb.copy(itemUrls = rewrittenItems) else withThumb
         }
 
@@ -354,6 +390,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         current[idx] = ex.copy(
             itemUrls = ex.itemUrls + url,
             updatedAt = System.currentTimeMillis(),
+            hasUnpublishedChanges = ex.hasUnpublishedChanges || ex.isPublic,
         )
         authPreferences.setCustomPlaylists(encode(current))
         pushToServerAsync()
@@ -370,6 +407,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         current[idx] = ex.copy(
             itemUrls = ex.itemUrls - url,
             updatedAt = System.currentTimeMillis(),
+            hasUnpublishedChanges = ex.hasUnpublishedChanges || ex.isPublic,
         )
         authPreferences.setCustomPlaylists(encode(current))
         pushToServerAsync()
@@ -396,8 +434,30 @@ class PlaylistsRepositoryImpl @Inject constructor(
         // Only accept a permutation of the existing items — never drop or add via reorder.
         if (orderedUrls.toSet() != ex.itemUrls.toSet()) return
         if (orderedUrls == ex.itemUrls) return
-        current[idx] = ex.copy(itemUrls = orderedUrls, updatedAt = System.currentTimeMillis())
+        current[idx] = ex.copy(itemUrls = orderedUrls, updatedAt = System.currentTimeMillis(), hasUnpublishedChanges = ex.hasUnpublishedChanges || ex.isPublic)
         authPreferences.setCustomPlaylists(encode(current))
+        pushToServerAsync()
+    }
+
+    override suspend fun publishChanges(playlistId: String): Result<Unit> = runCatching {
+        val p = decode(authPreferences.customPlaylists.first()).firstOrNull { it.id == playlistId }
+            ?: error("Playlist not found")
+        val claimIds = p.itemUrls.mapNotNull(::extractClaimId)
+        sdkProxyApi.collectionUpdate(
+            JsonRpcRequest(
+                method = "collection_update",
+                params = com.odysee.app.core.network.dto.CollectionUpdateParams(
+                    claimId = playlistId,
+                    claims = claimIds,
+                ),
+            ),
+        ).unwrap()
+        val current = decode(authPreferences.customPlaylists.first()).toMutableList()
+        val idx = current.indexOfFirst { it.id == playlistId }
+        if (idx >= 0) {
+            current[idx] = current[idx].copy(hasUnpublishedChanges = false)
+            authPreferences.setCustomPlaylists(encode(current))
+        }
         pushToServerAsync()
     }
 
@@ -473,6 +533,8 @@ private data class StoredPlaylist(
     val isPublic: Boolean = false,
     @kotlinx.serialization.Serializable(with = LooseBoolSerializer::class)
     val autoPublish: Boolean = false,
+    @kotlinx.serialization.Serializable(with = LooseBoolSerializer::class)
+    val hasUnpublishedChanges: Boolean = false,
 ) {
     fun toPlaylist(healItemUrl: (String?) -> String?): Playlist = Playlist(
         id = id,
@@ -484,6 +546,7 @@ private data class StoredPlaylist(
         tags = tags,
         isPublic = isPublic,
         autoPublish = autoPublish,
+        hasUnpublishedChanges = hasUnpublishedChanges,
     )
 
     companion object {
@@ -497,6 +560,7 @@ private data class StoredPlaylist(
             tags = p.tags,
             isPublic = p.isPublic,
             autoPublish = p.autoPublish,
+            hasUnpublishedChanges = p.hasUnpublishedChanges,
         )
     }
 }

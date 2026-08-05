@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.SwapVert
@@ -108,6 +109,9 @@ class PlaylistDetailViewModel @Inject constructor(
         val itemUrls: List<String> = emptyList(),
         val claims: List<Claim> = emptyList(),
         val isLoading: Boolean = true,
+        val hasUnpublishedChanges: Boolean = false,
+        val isPublishing: Boolean = false,
+        val publishError: String? = null,
     )
 
     private val _state = MutableStateFlow(State())
@@ -125,6 +129,7 @@ class PlaylistDetailViewModel @Inject constructor(
                 itemUrls = p.itemUrls,
                 claims = emptyList(),
                 isLoading = true,
+                hasUnpublishedChanges = p.hasUnpublishedChanges,
             )
             val claimIds = p.itemUrls.mapNotNull { extractClaimId(it) }.distinct()
             val claims = runCatching { contentRepository.getClaimsByIds(claimIds) }
@@ -141,6 +146,28 @@ class PlaylistDetailViewModel @Inject constructor(
     private fun extractClaimId(url: String): String? =
         com.odysee.app.core.model.LbryUri.claimIdOf(url)
 
+    private suspend fun refreshUnpublishedFlag() {
+        val p = playlistsRepository.playlists.first().firstOrNull { it.id == playlistId } ?: return
+        _state.value = _state.value.copy(hasUnpublishedChanges = p.hasUnpublishedChanges)
+    }
+
+    fun publishChanges() {
+        if (_state.value.isPublishing) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isPublishing = true, publishError = null)
+            val result = playlistsRepository.publishChanges(playlistId)
+            _state.value = _state.value.copy(
+                isPublishing = false,
+                hasUnpublishedChanges = result.isFailure,
+                publishError = result.exceptionOrNull()?.message,
+            )
+        }
+    }
+
+    fun clearPublishError() {
+        _state.value = _state.value.copy(publishError = null)
+    }
+
     fun removeFromPlaylist(claim: Claim) {
         viewModelScope.launch {
             val url = state.value.itemUrls.firstOrNull { extractClaimId(it) == claim.claimId }
@@ -149,7 +176,11 @@ class PlaylistDetailViewModel @Inject constructor(
             val updated = playlistsRepository.playlists.first().firstOrNull { it.id == playlistId }
                 ?: return@launch
             val newClaims = state.value.claims.filterNot { it.claimId == claim.claimId }
-            _state.value = _state.value.copy(itemUrls = updated.itemUrls, claims = newClaims)
+            _state.value = _state.value.copy(
+                itemUrls = updated.itemUrls,
+                claims = newClaims,
+                hasUnpublishedChanges = updated.hasUnpublishedChanges,
+            )
         }
     }
 
@@ -169,6 +200,7 @@ class PlaylistDetailViewModel @Inject constructor(
         _state.value = cur.copy(claims = sortedClaims, itemUrls = orderedUrls)
         viewModelScope.launch {
             playlistsRepository.reorderItems(playlistId, orderedUrls)
+            refreshUnpublishedFlag()
         }
     }
 
@@ -182,6 +214,7 @@ class PlaylistDetailViewModel @Inject constructor(
         _state.value = cur.copy(claims = claims, itemUrls = urls)
         viewModelScope.launch {
             playlistsRepository.reorderItems(playlistId, urls)
+            refreshUnpublishedFlag()
         }
     }
 }
@@ -201,6 +234,12 @@ fun PlaylistDetailScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val clipboardMgr = context.getSystemService(android.content.ClipboardManager::class.java)
     var autoplayConsumed by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(state.publishError) {
+        state.publishError?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearPublishError()
+        }
+    }
     androidx.compose.runtime.LaunchedEffect(state.claims) {
         if (!autoplayConsumed && viewModel.autoplay && state.claims.isNotEmpty()) {
             autoplayConsumed = true
@@ -319,24 +358,57 @@ fun PlaylistDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            val target = buildTarget(viewModel.playlistId, state.title, state.claims, 0)
-                                ?: return@Button
-                            onWatch(target)
-                        },
-                        enabled = state.claims.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = {
+                                val target = buildTarget(viewModel.playlistId, state.title, state.claims, 0)
+                                    ?: return@Button
+                                onWatch(target)
+                            },
+                            enabled = state.claims.isNotEmpty(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(tr("Play all"), color = Color.White, fontWeight = FontWeight.SemiBold)
+                        }
                         Spacer(Modifier.width(8.dp))
-                        Text(tr("Play all"), color = Color.White, fontWeight = FontWeight.SemiBold)
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = {
+                                buildTarget(viewModel.playlistId, state.title, state.claims.shuffled(), 0)
+                                    ?.let(onWatch)
+                            },
+                            enabled = state.claims.isNotEmpty(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Shuffle,
+                                contentDescription = null,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(tr("Shuffle"), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    if (state.hasUnpublishedChanges) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = tr("Unpublished changes"),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            androidx.compose.material3.TextButton(
+                                onClick = { viewModel.publishChanges() },
+                                enabled = !state.isPublishing,
+                            ) {
+                                Text(if (state.isPublishing) tr("Publishing…") else tr("Publish"))
+                            }
+                        }
                     }
                 }
             }

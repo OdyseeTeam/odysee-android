@@ -320,7 +320,8 @@ private fun ClaimMeta(
         )
         Spacer(Modifier.size(4.dp))
         val subtitle = buildString {
-            if (claim.channelName.isNotEmpty()) append(claim.channelName)
+            val displayChannel = claim.channelTitle?.takeIf { it.isNotBlank() } ?: claim.channelName
+            if (displayChannel.isNotEmpty()) append(displayChannel)
             if (!claim.isUpcoming) {
                 claim.viewCount?.let {
                     if (isNotEmpty()) append(" • ")

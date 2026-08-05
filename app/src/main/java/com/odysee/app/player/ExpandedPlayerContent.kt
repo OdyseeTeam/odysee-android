@@ -43,6 +43,8 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Person
@@ -279,6 +281,15 @@ fun ExpandedPlayerContent(
     }
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
+    var playlistTabShownForId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.playlist?.id) {
+        val playlistId = state.playlist?.id
+        if (playlistId != null && playlistId != playlistTabShownForId) {
+            playlistTabShownForId = playlistId
+            val idx = tabs.indexOf(WatchTab.Playlist)
+            if (idx >= 0) pagerState.scrollToPage(idx)
+        }
+    }
     val isFullscreen by controller.isFullscreen.collectAsStateWithLifecycle()
     val isPipActive by controller.isPipActive.collectAsStateWithLifecycle()
     val isCasting by controller.castController.isSessionActive.collectAsStateWithLifecycle()
@@ -372,9 +383,13 @@ fun ExpandedPlayerContent(
             ) {
             val needsPurchase = state.paywall !is com.odysee.app.core.model.Paywall.Free && !state.isPurchased
             val needsMembership = state.isMembersOnly && !state.isMemberOfChannel
-            val posterShowing = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
-                !state.hasPlaybackStarted && !media.thumbnailUrl.isNullOrBlank() &&
+            val posterShowing = (
+                media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video ||
+                    media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Audio
+                ) &&
+                !state.hasPlaybackStarted && !state.manualPlayRequested && !media.thumbnailUrl.isNullOrBlank() &&
                 !needsPurchase && !needsMembership && !isCasting && !isPipActive
+            val posterLoading = posterShowing && state.playRequested && !state.isPlaying
             if (needsPurchase) {
                 PaywallGateSurface(
                     media = media,
@@ -413,6 +428,7 @@ fun ExpandedPlayerContent(
                 onRetry = controller::retryResolve,
                 fillScreen = isFullscreen,
                 posterVisible = posterShowing,
+                posterLoading = posterLoading,
                 exoPlayerFactory = { ctx ->
                     (LayoutInflater.from(ctx).inflate(R.layout.odysee_player_view, null) as PlayerView).apply {
                         layoutParams = android.view.ViewGroup.LayoutParams(
@@ -459,21 +475,64 @@ fun ExpandedPlayerContent(
                     view.overlayFrameLayout
                         ?.findViewWithTag<android.widget.ImageView>("posterOverlay")
                         ?.let { poster ->
-                            val showPoster = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
-                                !state.hasPlaybackStarted && !media.thumbnailUrl.isNullOrBlank()
+                            val isAudio = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Audio
+                            val showPoster = !media.thumbnailUrl.isNullOrBlank() &&
+                                (
+                                    isAudio ||
+                                        (
+                                            media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Video &&
+                                                !state.hasPlaybackStarted && !state.manualPlayRequested
+                                            )
+                                    )
+                            poster.scaleType = if (isAudio) {
+                                android.widget.ImageView.ScaleType.FIT_CENTER
+                            } else {
+                                android.widget.ImageView.ScaleType.CENTER_CROP
+                            }
                             if (showPoster) {
                                 if (poster.contentDescription != media.claimId) {
                                     poster.contentDescription = media.claimId
                                     poster.coilLoad(media.thumbnailUrl)
                                 }
                                 poster.visibility = android.view.View.VISIBLE
-                                view.useController = false
-                                view.hideController()
+                                if (state.hasPlaybackStarted || state.manualPlayRequested) {
+                                    view.useController = true
+                                } else {
+                                    view.useController = false
+                                    view.hideController()
+                                }
                             } else {
                                 poster.visibility = android.view.View.GONE
                                 view.useController = true
                             }
                         }
+                    val playlistCtx = state.playlist
+                    view.findViewById<android.widget.ImageButton?>(R.id.odysee_player_prev_btn)?.apply {
+                        visibility = if (playlistCtx != null) android.view.View.VISIBLE else android.view.View.GONE
+                        setOnClickListener {
+                            val pl = controller.state.value.playlist ?: return@setOnClickListener
+                            if (controller.exoPlayer.currentPosition > 5_000 || pl.currentIndex <= 0) {
+                                controller.exoPlayer.seekTo(0)
+                            } else {
+                                controller.playPlaylistItem(pl.currentIndex - 1)
+                            }
+                        }
+                    }
+                    view.findViewById<android.widget.ImageButton?>(R.id.odysee_player_next_btn)?.apply {
+                        visibility = if (playlistCtx != null) android.view.View.VISIBLE else android.view.View.GONE
+                        val hasNext = playlistCtx != null &&
+                            (playlistCtx.currentIndex < playlistCtx.items.size - 1 || state.playlistLoop)
+                        isEnabled = hasNext
+                        alpha = if (hasNext) 1f else 0.4f
+                        setOnClickListener {
+                            val pl = controller.state.value.playlist ?: return@setOnClickListener
+                            if (pl.currentIndex < pl.items.size - 1) {
+                                controller.playPlaylistItem(pl.currentIndex + 1)
+                            } else if (controller.state.value.playlistLoop) {
+                                controller.playPlaylistItem(0)
+                            }
+                        }
+                    }
                     view.findViewById<android.widget.TextView?>(R.id.odysee_hd_label)?.visibility =
                         if (activeVideoHeight >= 720) android.view.View.VISIBLE else android.view.View.GONE
                     view.findViewById<android.widget.ImageButton?>(R.id.odysee_player_settings_btn)?.let { cog ->
@@ -530,7 +589,7 @@ fun ExpandedPlayerContent(
                         } else Modifier,
                     ),
             )
-            if (controlsVisible || posterShowing) {
+            if ((controlsVisible || posterShowing) && !posterLoading) {
                 Box(
                     modifier = Modifier
                         .size(84.dp)
@@ -579,9 +638,6 @@ fun ExpandedPlayerContent(
                 ) {
                     com.odysee.app.cast.OdyseeCastButton(modifier = Modifier.size(36.dp))
                 }
-            }
-            if (media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Audio) {
-                AudioCoverOverlay(thumbnailUrl = media.thumbnailUrl)
             }
             }
         }
@@ -661,6 +717,10 @@ fun ExpandedPlayerContent(
                     }
                 }
                 WatchTab.Playlist -> PlaylistTabContent(
+                    loopEnabled = state.playlistLoop,
+                    shuffleEnabled = state.playlistShuffle,
+                    onToggleLoop = controller::togglePlaylistLoop,
+                    onToggleShuffle = controller::togglePlaylistShuffle,
                     playlist = state.playlist,
                     currentClaimId = media.claimId,
                     onSelect = { index -> controller.playPlaylistItem(index) },
@@ -3013,6 +3073,7 @@ private fun PlayerSurface(
     onRetry: () -> Unit,
     fillScreen: Boolean = false,
     posterVisible: Boolean = false,
+    posterLoading: Boolean = false,
     exoPlayerFactory: (android.content.Context) -> PlayerView,
     onUpdate: (PlayerView) -> Unit = {},
 ) {
@@ -3029,7 +3090,7 @@ private fun PlayerSurface(
                 factory = { ctx -> exoPlayerFactory(ctx) },
                 update = { onUpdate(it) },
             )
-            if (isBuffering && !posterVisible) {
+            if ((!posterVisible && (isBuffering || isResolving)) || posterLoading) {
                 CircularProgressIndicator(color = Color.White)
             }
         } else if (errorMessage != null) {
@@ -3061,6 +3122,10 @@ private fun PlayerSurface(
 private fun PlaylistTabContent(
     playlist: com.odysee.app.core.data.player.PlaylistContext?,
     currentClaimId: String?,
+    loopEnabled: Boolean = false,
+    shuffleEnabled: Boolean = false,
+    onToggleLoop: () -> Unit = {},
+    onToggleShuffle: () -> Unit = {},
     onSelect: (Int) -> Unit,
 ) {
     if (playlist == null) {
@@ -3074,7 +3139,11 @@ private fun PlaylistTabContent(
         return
     }
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = playlist.name,
                 style = MaterialTheme.typography.titleSmall,
@@ -3089,6 +3158,23 @@ private fun PlaylistTabContent(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            }
+            IconButton(onClick = onToggleShuffle) {
+                Icon(
+                    imageVector = Icons.Outlined.Shuffle,
+                    contentDescription = tr("Shuffle"),
+                    tint = if (shuffleEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = onToggleLoop) {
+                Icon(
+                    imageVector = Icons.Outlined.Repeat,
+                    contentDescription = tr("Loop"),
+                    tint = if (loopEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -3153,44 +3239,6 @@ private fun PlaylistTabContent(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BoxScope.AudioCoverOverlay(thumbnailUrl: String?) {
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(Color.Black),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (!thumbnailUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = thumbnailUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .aspectRatio(1f)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .aspectRatio(1f)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "♪",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.displayLarge,
-                )
             }
         }
     }

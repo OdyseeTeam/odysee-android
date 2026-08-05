@@ -453,7 +453,7 @@ private fun ResultRow(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = buildString {
-                            result.channelName?.let { append(it) }
+                            (result.channelTitle?.takeIf { it.isNotBlank() } ?: result.channelName)?.let { append(it) }
                             if (result.ageLabel.isNotEmpty()) {
                                 if (isNotEmpty()) append(" • ")
                                 append(result.ageLabel)

@@ -81,6 +81,9 @@ data class ChannelUiState(
     val followerCount: Long? = null,
     val followedTags: Set<String> = emptySet(),
     val canPostDiscussion: Boolean = false,
+    val searchQuery: String = "",
+    val searchResults: List<ChannelVideoUi> = emptyList(),
+    val isSearching: Boolean = false,
 )
 
 data class ChannelPlaylistUi(
@@ -604,6 +607,33 @@ class ChannelViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    private var searchJob: kotlinx.coroutines.Job? = null
+
+    fun onSearchQueryChanged(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        if (query.trim().length <= 2) {
+            _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
+            return
+        }
+        searchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(400)
+            _state.update { it.copy(isSearching = true) }
+            val results = runCatching {
+                contentRepository.search(query.trim(), size = 30, channelId = route.claimId)
+            }.getOrDefault(emptyList())
+            _state.update { st ->
+                if (st.searchQuery.trim() != query.trim()) st
+                else st.copy(searchResults = results.map { it.toUi() }, isSearching = false)
+            }
+        }
+    }
+
+    fun clearSearch() {
+        searchJob?.cancel()
+        _state.update { it.copy(searchQuery = "", searchResults = emptyList(), isSearching = false) }
     }
 
     fun loadMoreVideos() {

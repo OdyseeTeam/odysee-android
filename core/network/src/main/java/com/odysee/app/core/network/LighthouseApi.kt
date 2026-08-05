@@ -13,5 +13,6 @@ interface LighthouseApi {
         @Query("nsfw") nsfw: Boolean = false,
         @Query("claimType") claimType: String? = null,
         @Query("mediaType") mediaType: String? = null,
+        @Query("channel_id") channelId: String? = null,
     ): List<LighthouseHit>
 }

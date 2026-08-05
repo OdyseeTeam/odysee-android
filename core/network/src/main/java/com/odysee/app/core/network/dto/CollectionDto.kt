@@ -11,6 +11,14 @@ data class CollectionListParams(
 )
 
 @Serializable
+data class CollectionUpdateParams(
+    @SerialName("claim_id") val claimId: String,
+    val claims: List<String>,
+    @SerialName("clear_claims") val clearClaims: Boolean = true,
+    val blocking: Boolean = true,
+)
+
+@Serializable
 data class CollectionListResult(
     val items: List<CollectionClaimDto> = emptyList(),
     val page: Int? = null,

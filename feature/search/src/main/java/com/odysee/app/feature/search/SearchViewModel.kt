@@ -25,6 +25,7 @@ data class SearchResultUi(
     val thumbnailUrl: String?,
     val channelClaimId: String?,
     val channelName: String?,
+    val channelTitle: String? = null,
     val channelAvatarUrl: String?,
     val ageLabel: String,
     val durationLabel: String,
@@ -176,6 +177,8 @@ private fun Claim.toUi(): SearchResultUi {
         thumbnailUrl = thumbnailUrl,
         channelClaimId = signingChannel?.claimId,
         channelName = signingChannel?.name ?: name.takeIf { isChannel },
+        channelTitle = signingChannel?.title?.takeIf { it.isNotBlank() }
+            ?: title.takeIf { isChannel && it.isNotBlank() },
         channelAvatarUrl = signingChannel?.thumbnailUrl,
         ageLabel = formatAge(releaseTime),
         durationLabel = formatDuration(durationSeconds),

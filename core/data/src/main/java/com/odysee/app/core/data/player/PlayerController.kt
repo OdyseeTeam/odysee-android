@@ -183,6 +183,9 @@ data class PlayerState(
     val commentSort: CommentSort = CommentSort.Best,
     val repliesByParent: Map<String, List<CommentUiModel>> = emptyMap(),
     val playlist: PlaylistContext? = null,
+    val manualPlayRequested: Boolean = false,
+    val playlistLoop: Boolean = false,
+    val playlistShuffle: Boolean = false,
     val paywall: com.odysee.app.core.model.Paywall = com.odysee.app.core.model.Paywall.Free,
     val isPurchased: Boolean = false,
     val isMembersOnly: Boolean = false,
@@ -433,6 +436,7 @@ class PlayerController @Inject constructor(
                     // is actually playing — otherwise Android kills the app for not calling
                     // startForeground within 5s when playback errors out before we play.
                     ensurePlaybackServiceStarted()
+                    warmUpNextPlaylistItem()
                 } else {
                     persistCurrentPosition()
                 }
@@ -601,7 +605,12 @@ class PlayerController @Inject constructor(
                     .indexOfFirst { it.claimId == media.claimId }
                     .takeIf { it >= 0 } ?: effectivePlaylist.currentIndex,
             ),
+            playlistLoop = if (effectivePlaylist?.id == current.playlist?.id) current.playlistLoop else false,
+            playlistShuffle = if (effectivePlaylist?.id == current.playlist?.id) current.playlistShuffle else false,
         )
+        if (effectivePlaylist?.id != current.playlist?.id) {
+            unshuffledPlaylistItems = null
+        }
         media.channelClaimId?.let { channelId ->
             scope.launch {
                 runCatching { lbryioApi.subCount(channelId) }.getOrNull()
@@ -1224,7 +1233,11 @@ class PlayerController @Inject constructor(
     }
 
     fun togglePlayPause() {
-        exoPlayer.playWhenReady = !exoPlayer.playWhenReady
+        val turningOn = !exoPlayer.playWhenReady
+        exoPlayer.playWhenReady = turningOn
+        if (turningOn) {
+            _state.update { it.copy(manualPlayRequested = true) }
+        }
     }
 
     fun toggleWatchLater() {
@@ -1598,6 +1611,65 @@ class PlayerController @Inject constructor(
         val next = ctx.currentIndex + 1
         if (next >= 0 && next < ctx.items.size) {
             playPlaylistItem(next)
+        } else if (_state.value.playlistLoop && ctx.items.isNotEmpty()) {
+            playPlaylistItem(0)
+        }
+    }
+
+    private var unshuffledPlaylistItems: List<PlaylistContextItem>? = null
+    private var warmedNextClaimId: String? = null
+
+    private fun warmUpNextPlaylistItem() {
+        val ctx = _state.value.playlist ?: return
+        val next = ctx.items.getOrNull(ctx.currentIndex + 1)
+            ?: if (_state.value.playlistLoop) ctx.items.firstOrNull() else null
+        if (next == null || next.claimId == warmedNextClaimId) return
+        warmedNextClaimId = next.claimId
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val url = contentRepository.resolveStreamUrl(next.permanentUrl)
+                val request = okhttp3.Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android) Chrome/120.0.0.0 Mobile Safari/537.36")
+                    .header("Referer", "https://odysee.com/")
+                    .header("Range", "bytes=0-65535")
+                    .build()
+                mediaOkHttpClient.newCall(request).execute().use { it.body?.bytes() }
+            }
+        }
+    }
+
+    fun togglePlaylistLoop() {
+        _state.update { it.copy(playlistLoop = !it.playlistLoop) }
+    }
+
+    fun togglePlaylistShuffle() {
+        val ctx = _state.value.playlist ?: return
+        if (!_state.value.playlistShuffle) {
+            unshuffledPlaylistItems = ctx.items
+            val currentItem = ctx.items.getOrNull(ctx.currentIndex)
+            val rest = ctx.items.filterIndexed { i, _ -> i != ctx.currentIndex }.shuffled()
+            _state.update {
+                it.copy(
+                    playlist = ctx.copy(items = listOfNotNull(currentItem) + rest, currentIndex = 0),
+                    playlistShuffle = true,
+                )
+            }
+        } else {
+            val original = unshuffledPlaylistItems
+            unshuffledPlaylistItems = null
+            if (original == null) {
+                _state.update { it.copy(playlistShuffle = false) }
+                return
+            }
+            val currentItem = ctx.items.getOrNull(ctx.currentIndex)
+            val idx = original.indexOfFirst { it.claimId == currentItem?.claimId }.coerceAtLeast(0)
+            _state.update {
+                it.copy(
+                    playlist = ctx.copy(items = original, currentIndex = idx),
+                    playlistShuffle = false,
+                )
+            }
         }
     }
 

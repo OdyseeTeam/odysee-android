@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.DropdownMenu
@@ -181,6 +183,7 @@ fun ChannelScreen(
 
     val context = androidx.compose.ui.platform.LocalContext.current
     var menuOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    var searchActive by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var menuTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<OdyseeComment?>(null) }
     var claimMenuTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<ChannelVideoUi?>(null) }
     var addToPlaylistTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<ChannelVideoUi?>(null) }
@@ -197,14 +200,43 @@ fun ChannelScreen(
                     }
                 },
                 title = {
-                    Text(
-                        text = state.channel?.title?.takeIf { it.isNotBlank() }
-                            ?: state.displayName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (searchActive) {
+                        androidx.compose.material3.TextField(
+                            value = state.searchQuery,
+                            onValueChange = viewModel::onSearchQueryChanged,
+                            placeholder = { Text(tr("Search")) },
+                            singleLine = true,
+                            colors = androidx.compose.material3.TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Text(
+                            text = state.channel?.title?.takeIf { it.isNotBlank() }
+                                ?: state.displayName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        if (searchActive) {
+                            viewModel.clearSearch()
+                            searchActive = false
+                        } else {
+                            searchActive = true
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (searchActive) Icons.Outlined.Close else Icons.Outlined.Search,
+                            contentDescription = if (searchActive) tr("Close search") else tr("Search"),
+                        )
+                    }
                     IconButton(onClick = {
                         val url = "https://odysee.com/${state.displayName}:${state.claimId}"
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -349,7 +381,14 @@ fun ChannelScreen(
                 }
             }
             val activeTab = if (selectedTab in visibleTabs) selectedTab else ChannelTab.Content
-            when (activeTab) {
+            if (searchActive && state.searchQuery.trim().length > 2) {
+                channelSearchTab(
+                    state = state,
+                    columns = columns,
+                    onVideoClick = onVideoClick,
+                    onVideoLongPress = { claimMenuTarget = it },
+                )
+            } else when (activeTab) {
                 ChannelTab.Content -> videosTab(
                     state = state,
                     columns = columns,
@@ -567,6 +606,54 @@ fun ChannelScreen(
                 },
             ),
         )
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.channelSearchTab(
+    state: ChannelUiState,
+    columns: Int,
+    onVideoClick: (ChannelVideoUi) -> Unit,
+    onVideoLongPress: (ChannelVideoUi) -> Unit,
+) {
+    when {
+        state.isSearching -> item(key = "search_loading") { CenteredLoadingItem() }
+        state.searchResults.isEmpty() ->
+            item(key = "search_empty") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = tr("No results"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        else -> {
+            item { Spacer(Modifier.height(16.dp)) }
+            items(state.searchResults.distinctBy { it.id }.chunked(columns), key = { "s_" + it.first().id }) { chunk ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (columns > 1) 12.dp else 0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (columns > 1) 12.dp else 0.dp),
+                ) {
+                    chunk.forEach { video ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            ChannelVideoRow(
+                                video = video,
+                                onClick = { onVideoClick(video) },
+                                onLongPress = { onVideoLongPress(video) },
+                                forceColumnLayout = columns > 1,
+                            )
+                        }
+                    }
+                    repeat(columns - chunk.size) { Spacer(modifier = Modifier.weight(1f)) }
+                }
+                Spacer(Modifier.height(20.dp))
+            }
+        }
     }
 }
 
@@ -1437,8 +1524,8 @@ private fun ChannelHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = 16.dp + avatarSize + 12.dp,
-                        end = 16.dp,
+                        start = 8.dp + avatarSize + 8.dp,
+                        end = 8.dp,
                         top = 12.dp,
                         bottom = 16.dp,
                     ),
@@ -1517,7 +1604,7 @@ private fun ChannelHeader(
         }
         Box(
             modifier = Modifier
-                .padding(start = 16.dp)
+                .padding(start = 8.dp)
                 .offset(y = coverHeight - overlap)
                 .size(avatarSize)
                 .clip(CircleShape)

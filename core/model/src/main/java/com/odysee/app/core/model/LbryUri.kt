@@ -135,7 +135,13 @@ data class LbryUri(
          * ID (the video), matching what the legacy `extractClaimId`
          * helpers returned and what callers actually want.
          */
-        fun claimIdOf(input: String?): String? = parse(input)?.effectiveClaimId
+        fun claimIdOf(input: String?): String? {
+            val bare = input?.trim()?.removePrefix("lbry://")?.removePrefix("?#")
+            if (bare != null && bare.length == 40 && bare.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }) {
+                return bare
+            }
+            return parse(input)?.effectiveClaimId
+        }
 
         /** Parse one `name(#|:)claimId` segment. Returns null if malformed. */
         private fun parseSegment(s: String): Pair<String, String>? {

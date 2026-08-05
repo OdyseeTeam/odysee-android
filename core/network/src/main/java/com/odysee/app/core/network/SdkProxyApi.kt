@@ -90,6 +90,11 @@ interface SdkProxyApi {
     ): JsonRpcResponse<CollectionListResult>
 
     @POST("api/v1/proxy")
+    suspend fun collectionUpdate(
+        @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.CollectionUpdateParams>,
+    ): JsonRpcResponse<kotlinx.serialization.json.JsonObject>
+
+    @POST("api/v1/proxy")
     suspend fun channelUpdate(
         @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.ChannelUpdateParams>,
     ): JsonRpcResponse<com.odysee.app.core.network.dto.ChannelUpdateResult>
