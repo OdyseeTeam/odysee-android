@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -642,6 +643,7 @@ fun ExpandedPlayerContent(
             }
         }
     }
+    val isPost = media.renderMode == com.odysee.app.core.data.player.MediaRenderMode.Text
     val sidePane: @Composable ColumnScope.() -> Unit = {
         HorizontalPager(
             state = pagerState,
@@ -666,6 +668,15 @@ fun ExpandedPlayerContent(
                         onHashtagClick(tag)
                     },
                     onSeekTo = { ms -> controller.exoPlayer.seekTo(ms) },
+                    postContent = if (isPost) {
+                        {
+                            TextMediaSurface(
+                                state = state,
+                                fillScreen = false,
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 480.dp),
+                            )
+                        }
+                    } else null,
                 )
                 WatchTab.Comments -> {
                     val auth = com.odysee.app.auth.LocalAuthState.current
@@ -797,14 +808,16 @@ fun ExpandedPlayerContent(
 
     if (wide) {
         Row(modifier = outerModifier) {
-            Box(
-                modifier = Modifier
-                    .weight(1.6f)
-                    .fillMaxHeight()
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center,
-            ) {
-                videoSurface(Modifier.fillMaxWidth())
+            if (isFullscreen || !isPost) {
+                Box(
+                    modifier = Modifier
+                        .weight(1.6f)
+                        .fillMaxHeight()
+                        .background(Color.Black),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    videoSurface(Modifier.fillMaxWidth())
+                }
             }
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 sidePane()
@@ -812,9 +825,11 @@ fun ExpandedPlayerContent(
         }
     } else {
         Column(modifier = outerModifier) {
-            videoSurface(
-                if (isFullscreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
-            )
+            if (isFullscreen || !isPost) {
+                videoSurface(
+                    if (isFullscreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                )
+            }
             if (!isFullscreen) sidePane()
         }
     }
@@ -1191,6 +1206,7 @@ private fun InfoPage(
     onDislike: () -> Unit,
     onHashtagClick: (String) -> Unit = {},
     onSeekTo: (Long) -> Unit = {},
+    postContent: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scroll = rememberScrollState()
@@ -1253,6 +1269,7 @@ private fun InfoPage(
                 }
             }
         }
+        postContent?.let { it() }
         Spacer(Modifier.size(16.dp))
         val playerCtrl = com.odysee.app.player.LocalPlayerController.current
         val authStateForFollow = com.odysee.app.auth.LocalAuthState.current
@@ -3266,9 +3283,18 @@ private fun ImageMediaSurface(state: com.odysee.app.core.data.player.PlayerState
 }
 
 @Composable
-private fun TextMediaSurface(state: com.odysee.app.core.data.player.PlayerState, fillScreen: Boolean) {
+private fun TextMediaSurface(
+    state: com.odysee.app.core.data.player.PlayerState,
+    fillScreen: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Box(
-        modifier = if (fillScreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+        modifier =
+            if (fillScreen) {
+                Modifier.fillMaxSize()
+            } else if (modifier == Modifier) {
+                Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+            } else modifier,
         contentAlignment = Alignment.Center,
     ) {
         if (state.isResolving) {
