@@ -32,6 +32,7 @@
         <activity
             android:name="com.odysee.app.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Odysee.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,6 +43,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="odysee.com" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="odysee.com"
+                    android:pathPrefix="/$/verify" />
+                <data
+                    android:scheme="https"
+                    android:host="odysee.com"
+                    android:pathPrefix="/%24/verify" />
             </intent-filter>
         </activity>
 
