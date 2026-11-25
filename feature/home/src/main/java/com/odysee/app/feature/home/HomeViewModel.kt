@@ -188,6 +188,7 @@ class HomeViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            var wasSignedIn = authRepository.state.value is AuthState.SignedIn
             authRepository.state.collect { auth ->
                 val signedIn = auth is AuthState.SignedIn
                 val before = _state.value
@@ -195,6 +196,13 @@ class HomeViewModel @Inject constructor(
                 if (signedIn) {
                     runCatching { notificationsRepository.refreshUnseen() }
                 }
+                if (signedIn && !wasSignedIn) {
+                    lastFollowingIds = null
+                    runCatching { subscriptionsRepository.syncFromServer() }
+                    val ids = _state.value.subscriptions.map { it.claimId }
+                    loadFollowing(ids)
+                }
+                wasSignedIn = signedIn
                 if (signedIn && !userPickedCategory && before.selectedCategoryId != FOLLOWING_ID) {
                     _state.update { it.copy(selectedCategoryId = FOLLOWING_ID) }
                 }
@@ -213,6 +221,7 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                     userPickedCategory = false
+                    lastFollowingIds = null
                     if (next != null) loadCategory(next)
                 }
             }

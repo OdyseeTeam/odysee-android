@@ -54,13 +54,15 @@ class SharedPreferencesStore @Inject constructor(
     //   await the same Deferred.
     // - Completed reads cache for [cacheTtlMs]; subsequent reads within
     //   that window skip the network entirely.
-    // - Any call to [patch] invalidates the cache so the next read sees
-    //   the just-written changes.
+    // - Any call to [patch] or [invalidateCache] bumps [cacheGeneration]
+    //   and clears the cache so the next read sees fresh data — and so an
+    //   in-flight anonymous preference_get cannot settle after sign-in.
     private val cacheScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val cacheMutex = Mutex()
     private var cachedValue: JsonObject? = null
     private var cachedAt: Long = 0L
     private var inFlight: kotlinx.coroutines.Deferred<JsonObject?>? = null
+    private var cacheGeneration: Long = 0L
     private val cacheTtlMs: Long = 30_000L
 
     /** Fetch the inner `value` object of the shared envelope. */
@@ -70,6 +72,7 @@ class SharedPreferencesStore @Inject constructor(
             if (!forceRefresh && cachedValue != null && (now - cachedAt) < cacheTtlMs) {
                 return cachedValue
             }
+            val generation = cacheGeneration
             inFlight ?: cacheScope.async {
                 runCatching {
                     val resp = sdkProxyApi.preferenceGet(
@@ -87,6 +90,12 @@ class SharedPreferencesStore @Inject constructor(
                 cacheScope.launch {
                     val result = runCatching { d.await() }.getOrNull()
                     cacheMutex.withLock {
+                        // Generation advanced (auth change / patch) while we were
+                        // in flight — drop the stale result instead of caching it.
+                        if (generation != cacheGeneration) {
+                            if (inFlight === d) inFlight = null
+                            return@withLock
+                        }
                         cachedValue = result
                         cachedAt = System.currentTimeMillis()
                         // Only clear inFlight if it's still pointing at our
@@ -101,10 +110,14 @@ class SharedPreferencesStore @Inject constructor(
     }
 
     /** Drop the cache so the next read goes to the network. */
-    private suspend fun invalidate() = cacheMutex.withLock {
+    suspend fun invalidateCache() = cacheMutex.withLock {
         cachedValue = null
         cachedAt = 0L
+        inFlight = null
+        cacheGeneration++
     }
+
+    private suspend fun invalidate() = invalidateCache()
 
     /**
      * Read a typed slice — pulls one top-level key out of `value` and decodes

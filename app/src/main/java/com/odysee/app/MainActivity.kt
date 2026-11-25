@@ -105,6 +105,13 @@ class MainActivity : FragmentActivity() {
         mediaControllerFuture = androidx.media3.session.MediaController.Builder(this, token).buildAsync()
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            runCatching { authRepository.checkPendingEmailVerification() }
+        }
+    }
+
     override fun onStop() {
         mediaControllerFuture?.let { androidx.media3.session.MediaController.releaseFuture(it) }
         mediaControllerFuture = null
@@ -260,9 +267,12 @@ class MainActivity : FragmentActivity() {
                                 if (!opened) navController.navigate(NotificationsRoute)
                             } else if (intent.action == android.content.Intent.ACTION_VIEW) {
                                 val data = intent.data
-                                if (data != null && data.host == "odysee.com") {
+                                if (data != null &&
+                                    data.scheme.equals("https", ignoreCase = true) &&
+                                    data.host.equals("odysee.com", ignoreCase = true)
+                                ) {
                                     val path = data.path.orEmpty()
-                                    if (path == "/\$/verify" || path == "/$/verify") {
+                                    if (isEmailVerifyPath(path)) {
                                         val email = data.getQueryParameter("email")
                                         val verToken = data.getQueryParameter("verification_token")
                                         val newAuth = data.getQueryParameter("auth_token")
@@ -276,7 +286,7 @@ class MainActivity : FragmentActivity() {
                                                     is com.odysee.app.core.data.auth.SignInResult.Success ->
                                                         tr("Signed in.")
                                                     is com.odysee.app.core.data.auth.SignInResult.Failure ->
-                                                        "Verification failed: ${result.message}"
+                                                        result.message
                                                     else -> tr("Verification pending — check your email.")
                                                 }
                                                 android.widget.Toast.makeText(
@@ -548,4 +558,11 @@ private fun openExternalUrl(context: android.content.Context, url: String) {
         android.net.Uri.parse(url),
     )
     runCatching { context.startActivity(intent) }
+}
+
+private fun isEmailVerifyPath(path: String): Boolean {
+    val normalized = path.trimEnd('/')
+    return normalized == "/\$/verify" ||
+        normalized == "/$/verify" ||
+        normalized == "/%24/verify"
 }

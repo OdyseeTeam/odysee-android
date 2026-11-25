@@ -123,4 +123,14 @@ interface SdkProxyApi {
     suspend fun syncApply(
         @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.SyncApplyParams>,
     ): JsonRpcResponse<com.odysee.app.core.network.dto.SyncApplyResult>
+
+    @POST("api/v1/proxy")
+    suspend fun accountList(
+        @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.AccountListParams>,
+    ): JsonRpcResponse<com.odysee.app.core.network.dto.AccountListResult>
+
+    @POST("api/v1/proxy")
+    suspend fun accountSet(
+        @Body request: JsonRpcRequest<com.odysee.app.core.network.dto.AccountSetParams>,
+    ): JsonRpcResponse<kotlinx.serialization.json.JsonElement?>
 }

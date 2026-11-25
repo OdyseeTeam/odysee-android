@@ -23,6 +23,7 @@ class AuthPreferences @Inject constructor(
 
     val authToken: Flow<String?> = store.data.map { it[KEY_AUTH_TOKEN] }
     val email: Flow<String?> = store.data.map { it[KEY_EMAIL] }
+    val pendingVerificationEmail: Flow<String?> = store.data.map { it[KEY_PENDING_VERIFICATION_EMAIL] }
     val activeChannelClaimId: Flow<String?> = store.data.map { it[KEY_ACTIVE_CHANNEL_ID] }
     val subscriptions: Flow<List<String>> = store.data.map { prefs ->
         prefs[KEY_SUBSCRIPTIONS]?.takeIf { it.isNotBlank() }?.split('\n')?.filter { it.isNotBlank() } ?: emptyList()
@@ -106,6 +107,13 @@ class AuthPreferences @Inject constructor(
     suspend fun setEmail(email: String?) {
         store.edit { prefs ->
             if (email == null) prefs.remove(KEY_EMAIL) else prefs[KEY_EMAIL] = email
+        }
+    }
+
+    suspend fun setPendingVerificationEmail(email: String?) {
+        store.edit { prefs ->
+            if (email.isNullOrBlank()) prefs.remove(KEY_PENDING_VERIFICATION_EMAIL)
+            else prefs[KEY_PENDING_VERIFICATION_EMAIL] = email
         }
     }
 
@@ -277,6 +285,7 @@ class AuthPreferences @Inject constructor(
         val KEY_INSTALLATION_ID = stringPreferencesKey("installation_id")
         val KEY_AUTH_TOKEN = stringPreferencesKey("auth_token")
         val KEY_EMAIL = stringPreferencesKey("email")
+        val KEY_PENDING_VERIFICATION_EMAIL = stringPreferencesKey("pending_verification_email")
         val KEY_ACTIVE_CHANNEL_ID = stringPreferencesKey("active_channel_claim_id")
         val KEY_SUBSCRIPTIONS = stringPreferencesKey("subscriptions")
         val KEY_SHOW_MATURE = booleanPreferencesKey("show_mature")
