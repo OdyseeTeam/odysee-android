@@ -96,6 +96,9 @@ fun SignInScreen(
     LaunchedEffect(Unit) {
         viewModel.dismissEvents.collect { onBack() }
     }
+    LaunchedEffect(authState) {
+        if (authState is AuthState.SignedIn) onBack()
+    }
 
     Scaffold(
         topBar = {
