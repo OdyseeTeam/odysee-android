@@ -14,6 +14,7 @@ data class LbryioEnvelope<T>(
 data class UserDto(
     val id: Long? = null,
     @SerialName("primary_email") val primaryEmail: String? = null,
+    val email: String? = null,
     @SerialName("has_verified_email") val hasVerifiedEmail: Boolean = false,
     @SerialName("is_identity_verified") val isIdentityVerified: Boolean = false,
     @SerialName("is_reward_approved") val isRewardApproved: Boolean = false,

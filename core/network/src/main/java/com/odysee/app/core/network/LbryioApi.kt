@@ -266,6 +266,13 @@ interface LbryioApi {
     ): LbryioEnvelope<Map<String, Double>?>
 
     @FormUrlEncoded
+    @POST("user/view_history")
+    suspend fun userViewHistory(
+        @Field("page") page: Int = 1,
+        @Field("page_size") pageSize: Int = 100,
+    ): LbryioEnvelope<kotlinx.serialization.json.JsonElement?>
+
+    @FormUrlEncoded
     @POST("user/language")
     suspend fun userLanguage(
         @Field("language") language: String,
