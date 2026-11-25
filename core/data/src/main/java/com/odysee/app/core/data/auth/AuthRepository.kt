@@ -65,8 +65,14 @@ interface AuthRepository {
     suspend fun signOut()
     suspend fun refreshUser()
     suspend fun selectActiveChannel(claimId: String)
+    /** Triggers an email with a reset link. The user follows that to set a new password. */
     suspend fun requestPasswordReset(email: String): SignInResult
+    /** Sends an account deletion request to the server and signs out locally on success. */
     suspend fun requestAccountDeletion(): SignInResult
+    /**
+     * Completes email verification using the parameters from the verify deep link
+     * ({@code odysee.com/$/verify?email=...&verification_token=...&auth_token=...}).
+     */
     suspend fun confirmEmail(email: String, verificationToken: String, authToken: String): SignInResult
     suspend fun checkPendingEmailVerification()
 }
@@ -91,6 +97,10 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     init {
+        // Start observing local setting changes so any local mutation is
+        // pushed to the LBRY shared-preferences "settings" slice. Runs
+        // unconditionally because anonymous users still own a wallet auth
+        // token and the SDK preference API works with it.
         clientSettingsRepository.get().startAutoPush()
     }
 
@@ -206,6 +216,8 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOut() {
+        // Best-effort server-side sign-out; if the network call fails we still
+        // tear down local state so the user appears signed out immediately.
         runCatching { lbryioApi.userSignout() }
         verificationJob?.cancel()
         verificationJob = null
@@ -215,6 +227,8 @@ class AuthRepositoryImpl @Inject constructor(
         authPreferences.setEmail(null)
         authPreferences.setPendingVerificationEmail(null)
         authPreferences.setActiveChannelClaimId(null)
+        // Drop all account-bound local caches so a new sign-in starts clean and
+        // we don't leak the previous user's playlists / subs / watch history / etc.
         authPreferences.setCustomPlaylists(null)
         authPreferences.setWatchLater(emptyList())
         authPreferences.setFavorites(emptyList())
@@ -517,9 +531,13 @@ class AuthRepositoryImpl @Inject constructor(
         return runCatching { lbryioApi.userDelete() }.fold(
             onSuccess = { env ->
                 if (env.success) {
+                    // Server accepted the deletion request. Sign out locally so the
+                    // user can't keep using the app with a now-doomed account.
                     signOut()
                     SignInResult.Success
                 } else {
+                    // Server rejects deletion while the account still owns
+                    // claims, has open transactions, etc. Surface the reason.
                     SignInResult.Failure(env.error ?: "Account can't be deleted right now.")
                 }
             },
@@ -640,12 +658,18 @@ class AuthRepositoryImpl @Inject constructor(
             return SignInResult.Failure("You're signed in as another account. Sign out first.")
         }
 
-        // Keep the previous session intact until the server accepts this link.
-        val previousToken = authHolder.get()
-            ?: authPreferences.authToken.firstOrNull()
+        // Stop the verification poller BEFORE we touch state. Otherwise an
+        // in-flight `userMe` it kicked off seconds ago (with the pre-verify
+        // token) can still resolve and overwrite the SignedIn state we're
+        // about to set, flipping the user back to Anonymous and giving them
+        // the "signed in, then suddenly logged out again" experience.
         verificationJob?.cancel()
         verificationJob = null
 
+        // Keep the previous session intact until the server accepts this link.
+        // Persist the link token only after a successful confirm (below).
+        val previousToken = authHolder.get()
+            ?: authPreferences.authToken.firstOrNull()
         // Interceptor appends holder token into the form body; point it at the
         // link token only for this call, then restore on failure.
         authHolder.set(authToken)

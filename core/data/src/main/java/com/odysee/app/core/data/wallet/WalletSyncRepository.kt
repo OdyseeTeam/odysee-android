@@ -11,7 +11,25 @@ import com.odysee.app.core.network.jsonrpc.unwrap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Encrypted-wallet sync via lbryio `sync/get` + SDK `sync_apply` (mirrors odysee-frontend). */
+/**
+ * Encrypted-wallet sync against Odysee's sync/get + sync/set lbryio endpoints, mirroring
+ * the web frontend's flow in `ui/redux/actions/sync.ts`.
+ *
+ * Steps:
+ * 1. `sync_hash` on the SDK → fingerprint of the local wallet blob.
+ * 2. `sync/get` on lbryio with that hash → returns `(hash, data, changed)`.
+ *    `changed=false` means the server's blob matches ours — nothing to do.
+ *    `changed=true` means the server has a different / newer blob.
+ * 3. `sync_apply` on the SDK with `{ password, data }` → SDK merges the
+ *    server blob with our local wallet and emits a fresh `(hash, data)`.
+ * 4. If the post-apply hash differs from what the server gave us, push it
+ *    back via `sync/set { old_hash, new_hash, data }`.
+ * 5. [ensureDefaultAccount] picks the funded / post-sync account so
+ *    channel_list and preference calls use the signed-in wallet, not the
+ *    empty anonymous default.
+ *
+ * Triggers: sign-in success, post-purchase, post-tip, periodic refresh.
+ */
 @Singleton
 class WalletSyncRepository @Inject constructor(
     private val sdkProxyApi: SdkProxyApi,
@@ -24,13 +42,22 @@ class WalletSyncRepository @Inject constructor(
         data class Failed(val message: String) : Result()
     }
 
+    /**
+     * Runs the full hash → get → apply → set chain. [password] is the wallet
+     * encryption password — empty string for the default unencrypted wallet
+     * (which is what Odysee normally uses). Always ends with
+     * [ensureDefaultAccount] so callers see the correct default account even
+     * when the blob was already in sync.
+     */
     suspend fun sync(password: String = ""): Result {
         val result = runCatching {
+            // 1. Local hash.
             val localHash = sdkProxyApi.syncHash(
                 JsonRpcRequest(method = "sync_hash", params = SyncHashParams()),
             ).unwrap()
             android.util.Log.i(TAG, "sync: localHash=${localHash.take(12)}…")
 
+            // 2. Ask the server.
             val envelope = lbryioApi.syncGet(hash = localHash)
             if (!envelope.success) {
                 val err = envelope.error.orEmpty()
@@ -48,6 +75,7 @@ class WalletSyncRepository @Inject constructor(
                 return@runCatching Result.NotChanged
             }
 
+            // 3. Apply server blob to our wallet via the SDK.
             val applied = sdkProxyApi.syncApply(
                 JsonRpcRequest(
                     method = "sync_apply",
@@ -66,6 +94,7 @@ class WalletSyncRepository @Inject constructor(
             }
             android.util.Log.i(TAG, "sync_apply: hash=${appliedHash.take(12)}…")
 
+            // 4. If the post-apply hash diverged from the server's, push it back.
             if (appliedHash != getResp.hash) {
                 lbryioApi.syncSet(
                     oldHash = getResp.hash.orEmpty(),
@@ -79,6 +108,7 @@ class WalletSyncRepository @Inject constructor(
             Result.Failed(err.message ?: "Wallet sync failed")
         }
 
+        // 5. Prefer funded / post-sync account over the empty anonymous default.
         runCatching { ensureDefaultAccount() }
             .onFailure { android.util.Log.e(TAG, "ensureDefaultAccount failed", it) }
 

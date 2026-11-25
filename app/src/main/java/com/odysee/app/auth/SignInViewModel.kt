@@ -45,6 +45,9 @@ class SignInViewModel @Inject constructor(
     private var emailWaitJob: Job? = null
 
     init {
+        // When the background poll / deep-link flips us into SignedIn while this
+        // screen is open, close it automatically — otherwise the user sits on
+        // the "check your email" UI even though they're already signed in.
         viewModelScope.launch {
             var wasSignedIn = authRepository.state.value is AuthState.SignedIn
             authRepository.state.collect { st ->

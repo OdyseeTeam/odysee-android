@@ -23,7 +23,17 @@ import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Owns the SDK `shared` preference_get/set envelope and typed slice access. */
+/**
+ * The Odysee SDK persists the user's per-account preferences as a single
+ * "shared" key on `preference_get`/`preference_set`. The payload is an
+ * envelope `{ type, version, value }` where `value` is an object whose
+ * top-level keys are namespaces ("subscriptions", "blocked", "tags",
+ * "unpublishedCollections", …).
+ *
+ * Each consumer used to inline the get/set round-trip plus the envelope
+ * wrapping plus the "preserve other keys" merge. This class is the single
+ * owner of that protocol; consumers just deal in typed slices.
+ */
 @Singleton
 class SharedPreferencesStore @Inject constructor(
     private val sdkProxyApi: SdkProxyApi,
@@ -35,6 +45,18 @@ class SharedPreferencesStore @Inject constructor(
         encodeDefaults = false
     }
 
+    // Cache the shared-prefs envelope so a sync burst (subscriptions +
+    // blocked + tags + playlists + settings + watchLater + favorites all
+    // calling readSlice() in parallel on login) shares ONE network round
+    // trip instead of firing seven identical preference_get requests.
+    //
+    // - In-flight requests are deduped via [inFlight]: concurrent callers
+    //   await the same Deferred.
+    // - Completed reads cache for [cacheTtlMs]; subsequent reads within
+    //   that window skip the network entirely.
+    // - Any call to [patch] or [invalidateCache] bumps [cacheGeneration]
+    //   and clears the cache so the next read sees fresh data — and so an
+    //   in-flight anonymous preference_get cannot settle after sign-in.
     private val cacheScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val cacheMutex = Mutex()
     private var cachedValue: JsonObject? = null
@@ -43,6 +65,7 @@ class SharedPreferencesStore @Inject constructor(
     private var cacheGeneration: Long = 0L
     private val cacheTtlMs: Long = 30_000L
 
+    /** Fetch the inner `value` object of the shared envelope. */
     suspend fun readValueObject(forceRefresh: Boolean = false): JsonObject? {
         val deferred = cacheMutex.withLock {
             val now = System.currentTimeMillis()
@@ -63,15 +86,21 @@ class SharedPreferencesStore @Inject constructor(
                 }.getOrNull()
             }.also { d ->
                 inFlight = d
+                // Settle the cache once the request completes.
                 cacheScope.launch {
                     val result = runCatching { d.await() }.getOrNull()
                     cacheMutex.withLock {
+                        // Generation advanced (auth change / patch) while we were
+                        // in flight — drop the stale result instead of caching it.
                         if (generation != cacheGeneration) {
                             if (inFlight === d) inFlight = null
                             return@withLock
                         }
                         cachedValue = result
                         cachedAt = System.currentTimeMillis()
+                        // Only clear inFlight if it's still pointing at our
+                        // deferred — concurrent invalidations might have
+                        // replaced it already.
                         if (inFlight === d) inFlight = null
                     }
                 }
@@ -80,6 +109,7 @@ class SharedPreferencesStore @Inject constructor(
         return deferred.await()
     }
 
+    /** Drop the cache so the next read goes to the network. */
     suspend fun invalidateCache() = cacheMutex.withLock {
         cachedValue = null
         cachedAt = 0L
@@ -89,12 +119,22 @@ class SharedPreferencesStore @Inject constructor(
 
     private suspend fun invalidate() = invalidateCache()
 
+    /**
+     * Read a typed slice — pulls one top-level key out of `value` and decodes
+     * it through kotlinx.serialization. Returns null if the key is missing or
+     * the slice fails to decode.
+     */
     suspend fun <T> readSlice(key: String, deserializer: DeserializationStrategy<T>): T? {
         val value = readValueObject() ?: return null
         val element = value[key] ?: return null
         return runCatching { json.decodeFromJsonElement(deserializer, element) }.getOrNull()
     }
 
+    /**
+     * Update top-level keys inside `value`. Any keys present in the existing
+     * blob but absent from [overrides] are preserved verbatim. Wraps the
+     * result in the envelope and POSTs `preference_set` for "shared".
+     */
     suspend fun patch(overrides: Map<String, JsonElement>) {
         if (overrides.isEmpty()) return
         val existing = readValueObject()
@@ -116,9 +156,14 @@ class SharedPreferencesStore @Inject constructor(
                 ),
             ),
         )
+        // The server now holds a newer state than our cache; force the next
+        // reader to fetch fresh. We could optimistically prime the cache
+        // with `newValue` but the round-trip is harmless and avoids
+        // dropping in-flight server-side merges of other clients.
         invalidate()
     }
 
+    /** Convenience: encode [value] via kotlinx.serialization and patch one key. */
     suspend fun <T> writeSlice(key: String, serializer: SerializationStrategy<T>, value: T) {
         patch(mapOf(key to json.encodeToJsonElement(serializer, value)))
     }
